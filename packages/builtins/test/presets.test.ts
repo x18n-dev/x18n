@@ -79,3 +79,17 @@ describe('tier 1 presets', () => {
     expect(analysis.undefinedUsages).toEqual([])
   })
 })
+
+describe('glossary check', () => {
+  it('matches terms as whole words', async () => {
+    const { project } = await createTestProject({
+      'locales/en.json': json({ a: 'Open the workspace', b: 'Workspaces list', c: 'Homepage' }),
+      'locales/de.json': json({ a: 'Öffne den Ordner', b: 'Liste', c: 'Startseite' }),
+    }, {
+      resources: [{ pattern: 'locales/{locale}.json' }],
+      glossary: [{ term: 'Workspace', translations: { de: 'Arbeitsbereich' } }, { term: 'Home', translations: { de: 'Start' } }],
+      checks: { glossary: 'warning' },
+    })
+    expect(project.analyze().diagnostics.filter(d => d.code === 'glossary').map(d => d.key)).toEqual(['a'])
+  })
+})

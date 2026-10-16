@@ -251,18 +251,23 @@ export const hardString: Check = {
   },
 }
 
+/** A term as a whole word, so "Home" does not match "Homepage". */
+function wordPattern(term: string): RegExp {
+  return new RegExp(`(?<![\\p{L}\\p{N}])${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}\\p{N}])`, 'iu')
+}
+
 function* glossaryDiagnostics(ctx: Parameters<Check['run']>[0], entry: GlossaryEntry): Generator<DiagnosticInput> {
-  const term = entry.term.toLowerCase()
+  const term = wordPattern(entry.term)
   for (const key of ctx.keys()) {
     const source = ctx.message(key, ctx.sourceLocale)?.value
-    if (typeof source !== 'string' || !source.toLowerCase().includes(term))
+    if (typeof source !== 'string' || !term.test(source))
       continue
     for (const locale of ctx.locales) {
       const value = ctx.message(key, locale)?.value
       const expected = entry.doNotTranslate ? entry.term : entry.translations?.[locale]
       if (locale === ctx.sourceLocale || typeof value !== 'string' || value === '' || !expected)
         continue
-      if (!value.toLowerCase().includes(expected.toLowerCase()))
+      if (!wordPattern(expected).test(value))
         yield { key, locale, message: `"${key}" in ${locale} should use "${expected}" for "${entry.term}".` }
     }
   }
