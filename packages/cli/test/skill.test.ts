@@ -20,8 +20,18 @@ function commandsIn(text: string): { command: string, flags: string[] }[] {
 }
 
 describe('shipped skill and prompts', () => {
+  it('links only to files that exist', async () => {
+    const dir = new URL('../skills/x18n/', import.meta.url)
+    const skill = await readFile(new URL('SKILL.md', dir), 'utf8')
+    for (const [, target] of skill.matchAll(/\]\((?!https?:)([^)#]+)\)/g))
+      await expect(readFile(new URL(target!, dir), 'utf8'), target).resolves.toBeTruthy()
+  })
+
   it('only names commands and flags that exist', async () => {
-    const skill = await readFile(fileURLToPath(new URL('../skills/x18n/SKILL.md', import.meta.url)), 'utf8')
+    const skill = [
+      await readFile(fileURLToPath(new URL('../skills/x18n/SKILL.md', import.meta.url)), 'utf8'),
+      await readFile(fileURLToPath(new URL('../skills/x18n/references/migrate-i18n-ally.md', import.meta.url)), 'utf8'),
+    ].join('\n')
     const prompt = await readFile(fileURLToPath(new URL('../../core/src/project/prompt.ts', import.meta.url)), 'utf8')
     const all = [...commandsIn(skill), ...commandsIn(prompt)]
     expect(all.length).toBeGreaterThan(10)
