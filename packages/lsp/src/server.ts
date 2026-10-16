@@ -380,7 +380,7 @@ class Server {
     if (target.type === 'key') {
       lines.push('| | |', '| --- | --- |')
       for (const locale of project.locales) {
-        const value = display(project.message(target.key, locale)?.value)
+        const value = display(project.lookup(target.key, locale)?.value)
         lines.push(`| ${project.localeInfo(locale).flag ?? ''} ${locale} | ${value === undefined ? '_missing_' : value === '' ? '_empty_' : value.replace(/\|/g, '\\|').replace(/\n/g, ' ')} |`)
       }
     }
@@ -404,7 +404,7 @@ class Server {
     for (const { usage } of entry.project.usages({ path })) {
       if (usage.key === undefined || usage.dynamic !== false || usage.range.start < start || usage.range.end > end)
         continue
-      const value = display(entry.project.message(usage.key, locale)?.value)
+      const value = display(entry.project.lookup(usage.key, locale)?.value)
       hints.push({
         position: index.position(usage.range.end + 1),
         label: value === undefined ? ' ⚠ missing' : ` ${truncate(value, this.settings.annotationMaxLength)}`,
@@ -436,7 +436,7 @@ class Server {
           return []
         insert = insert.slice(prefix.length)
       }
-      const source = display(project.message(key, project.sourceLocale)?.value)
+      const source = display(project.lookup(key, project.sourceLocale)?.value)
       return [{ label: insert, kind: CompletionItemKind.Text, ...source === undefined ? {} : { detail: source }, textEdit: { range, newText: insert }, filterText: insert }]
     })
   }
@@ -689,7 +689,7 @@ class Server {
       ? entry.project.nodes(path).filter(n => n.leaf).map(n => ({ key: n.key, range: this.range(entry, path, n.range.key), value: display(entry.project.message(n.key, locale)?.value), missing: entry.project.get(n.key)!.missing.length > 0, dynamic: false }))
       : entry.project.usages({ path }).flatMap(({ usage }) => usage.key === undefined
           ? []
-          : [{ key: usage.key, range: this.range(entry, path, usage.range), value: display(entry.project.message(usage.key, locale)?.value), missing: usage.dynamic === false && entry.project.message(usage.key, entry.project.sourceLocale) === undefined, dynamic: usage.dynamic !== false }])
+          : [{ key: usage.key, range: this.range(entry, path, usage.range), value: display(entry.project.lookup(usage.key, locale)?.value), missing: usage.dynamic === false && entry.project.lookup(usage.key, entry.project.sourceLocale) === undefined, dynamic: usage.dynamic !== false }])
     const hardStrings = entry.project.hardStrings(path).map(h => ({ text: h.text, range: this.range(entry, path, h.range) }))
     return { keys, hardStrings }
   }
@@ -727,7 +727,7 @@ class Server {
       decorations: entry.project.usages({ path }).flatMap(({ usage }) => {
         if (usage.key === undefined)
           return []
-        const value = display(entry.project.message(usage.key, locale)?.value)
+        const value = display(entry.project.lookup(usage.key, locale)?.value)
         const state = usage.dynamic !== false ? 'dynamic' as const : value === undefined ? 'missing' as const : 'ok' as const
         return [{ range: this.range(entry, path, usage.range), key: usage.key, value, state }]
       }),

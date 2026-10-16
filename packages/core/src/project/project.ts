@@ -692,7 +692,22 @@ export function createProject(options: CreateProjectOptions): Project {
     nodes: path => idx().nodes.get(path) ?? [],
     locations(key) {
       const order = new Map(locales.map((locale, i) => [locale, i]))
-      return [...idx().nodes.values()].flat().filter(node => node.key === key).sort((a, b) => (order.get(a.locale) ?? 0) - (order.get(b.locale) ?? 0))
+      const all = [...idx().nodes.values()].flat()
+      let found = all.filter(node => node.key === key)
+      // A base key used with plural or context suffixes lives in its derived keys.
+      if (found.length === 0) {
+        const derived = new Set(idx().derived.get(key) ?? [])
+        found = all.filter(node => derived.has(node.key))
+      }
+      return found.sort((a, b) => (order.get(a.locale) ?? 0) - (order.get(b.locale) ?? 0))
+    },
+    lookup(key, locale) {
+      const exact = message(key, locale)
+      if (exact)
+        return exact
+      const derived = [...idx().derived.get(key) ?? []].sort()
+      const other = derived.find(k => /[._-]other$/.test(k)) ?? derived[0]
+      return other === undefined ? undefined : message(other, locale)
     },
     keySlots: path => files.get(path)?.result.keySlots ?? [],
     hardStrings: path => [...files].filter(([p]) => path === undefined || p === path).flatMap(([p, state]) => (state.result.hardStrings ?? []).map(h => ({ ...h, path: p }))),

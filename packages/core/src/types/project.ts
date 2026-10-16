@@ -159,6 +159,8 @@ export interface Project {
   readonly keys: (query?: KeyQuery) => KeyString[]
   readonly get: (key: KeyString) => KeyInfo | undefined
   readonly message: (key: KeyString, locale: LocaleCode) => Message | undefined
+  /** The message a usage of `key` shows: the key's own, or one of its derived keys (`item` → `item_other`). */
+  readonly lookup: (key: KeyString, locale: LocaleCode) => Message | undefined
   /** Parses user input such as `common:save` or `save` into a key string. */
   readonly parseKey: (input: string) => KeyString
   readonly usages: (query?: UsageQuery) => UsageMatch[]

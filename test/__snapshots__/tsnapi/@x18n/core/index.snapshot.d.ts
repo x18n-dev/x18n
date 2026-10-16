@@ -470,6 +470,7 @@ export interface Project {
   readonly keys: (_?: KeyQuery) => KeyString[];
   readonly get: (_: KeyString) => KeyInfo | undefined;
   readonly message: (_: KeyString, _: LocaleCode) => Message | undefined;
+  readonly lookup: (_: KeyString, _: LocaleCode) => Message | undefined;
   readonly parseKey: (_: string) => KeyString;
   readonly usages: (_?: UsageQuery) => UsageMatch[];
   readonly keyAt: (_: string, _: number) => KeyTarget | undefined;

@@ -45,7 +45,8 @@ export function regex(specs: readonly RegexScannerSpec[] = [], id = 'regex'): Pl
     },
     scan(file, ctx) {
       const all = [...specs, ...ctx.config.usage.regex]
-      return { usages: scanWithRegex(file.text, regexesFor(file.extension, all)) }
+      const usages = scanWithRegex(file.text, regexesFor(file.extension, all))
+      return { usages, keySlots: usages.map(usage => usage.range) }
     },
   }
   return {
