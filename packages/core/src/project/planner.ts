@@ -7,7 +7,7 @@ import type { Answers, ApplyResult, Decision, FileChange, Plan, ProjectChange, U
 import type { ResourceState } from './analysis'
 import { X18nError } from '../errors'
 import { isKeyUnder, replaceKeyPrefix, splitKey } from '../keys'
-import { applyMessageOps, isMessageLeaf, sortTree } from '../message-tree'
+import { applyMessageOps, isMessageLeaf, pathId, sortTree, walkLeaves } from '../message-tree'
 import { applyTextEdits, diffText, hashText } from '../text'
 
 interface PlannerState {
@@ -188,9 +188,13 @@ class PlanBuilder {
   createTarget(key: KeyString, locale: LocaleCode): Target {
     const { resources, sourceLocale, namespaced } = this.state
     const fits = (s: ResourceState): boolean => this.relativePath(key, s.resource) !== undefined
-    const namespace = namespaced ? this.keyId(key).namespace ?? this.config.namespace.default : undefined
+    const source = this.options.message(key, sourceLocale)
+    const sourceState = source && this.stateById.get(source.resource)
+    // In prefix mode the namespace is the one of the source file holding the key (`lang/en/messages.php`).
+    const namespace = namespaced ? this.keyId(key).namespace ?? this.config.namespace.default : sourceState?.resource.namespace
+    const exists = (path: string): boolean => resources.some(r => r.resource.path === path)
     const resolved = this.options.resolveNew(locale, namespace)
-    if (resolved) {
+    if (resolved && !exists(resolved)) {
       const format = this.options.registry.formatFor(resolved)
       if (format?.serialize) {
         const target: Target = { id: resolved, path: resolved, locale, namespace, format, state: undefined }
@@ -198,19 +202,30 @@ class PlanBuilder {
         return target
       }
     }
-    const model = resources.find(s => s.resource.locale === sourceLocale && fits(s)) ?? resources.find(fits)
+    // Next to a resource of the key's namespace in another locale, else next to one of another namespace in this locale.
+    const sibling = (r: ResourceState): boolean => r.resource.locale === locale && r.resource.namespace !== undefined && namespace !== undefined
+    const model = (sourceState && fits(sourceState) ? sourceState : undefined)
+      ?? resources.find(s => s.resource.locale === sourceLocale && fits(s)) ?? resources.find(fits) ?? resources.find(sibling)
     const format = model && this.options.registry.formatById(model.resource.format)
-    const path = model && mirrorPath(model.resource.path, model.resource.locale, locale)
-    if (!model || !format?.serialize || model.resource.block || !path || path === model.resource.path)
+    let path = model && mirrorPath(model.resource.path, model.resource.locale, locale)
+    if (model && path && namespace !== undefined && model.resource.namespace !== undefined && model.resource.namespace !== namespace)
+      path = mirrorPath(path, model.resource.namespace, namespace)
+    if (!model || !format?.serialize || model.resource.block || !path || exists(path))
       throw new X18nError('X18N4005', `${key} in ${locale}`)
-    const target: Target = { id: path, path, locale, namespace: model.resource.namespace ?? namespace, format, state: undefined }
+    const target: Target = { id: path, path, locale, namespace: namespace ?? model.resource.namespace, format, state: undefined }
     this.created.set(path, target)
     return target
   }
 
   /** Placement: the namespace's resource, then the longest shared prefix, then the first; a tie is a decision. */
   pickTarget(key: KeyString, locale: LocaleCode): Target {
-    const inLocale = this.state.resources.filter(s => s.resource.locale === locale && this.relativePath(key, s.resource) !== undefined)
+    let inLocale = this.state.resources.filter(s => s.resource.locale === locale && this.relativePath(key, s.resource) !== undefined)
+    // When the source locale keeps the key in a namespace file (`lang/en/messages.php`), mirror that file
+    // instead of using a file without the namespace (`lang/de.json`).
+    const source = this.options.message(key, this.state.sourceLocale)
+    const sourceNamespace = source && this.stateById.get(source.resource)?.resource.namespace
+    if (sourceNamespace !== undefined && !this.state.namespaced)
+      inLocale = inLocale.filter(s => s.resource.namespace === sourceNamespace)
     if (inLocale.length === 0) {
       const pending = [...this.created.values()].find(t => t.locale === locale && this.relativePath(key, t) !== undefined)
       return pending ?? this.createTarget(key, locale)
@@ -274,11 +289,44 @@ class PlanBuilder {
   }
 
   /** Renames a key in every locale, in place when only the last segment changes. */
-  moveKey(from: KeyString, to: KeyString): void {
+  /**
+   * Renames a parent object in place where only its last segment changes, so the subtree keeps its
+   * position and layout. Returns the resources it handled.
+   */
+  renameNode(from: KeyString, to: KeyString): Set<string> {
+    const handled = new Set<string>()
+    for (const s of this.state.resources) {
+      const relativeFrom = this.relativePath(from, s.resource)
+      const relativeTo = this.relativePath(to, s.resource)
+      if (!relativeFrom || !relativeTo || s.resource.readonly || !this.options.registry.formatById(s.resource.format)?.edit)
+        continue
+      const stored = s.toStored(relativeFrom)
+      const next = s.toStored(relativeTo)
+      const node = nodeAt(s.rawTree, stored)
+      const range = s.ranges.get(pathId(stored))
+      const last = next.at(-1)!
+      const sameParent = next.length === stored.length && next.slice(0, -1).every((segment, i) => segment === stored[i])
+      if (node === undefined || isMessageLeaf(node) || !range || !sameParent || !safeSegment.test(last))
+        continue
+      const entry = this.workFor(this.targetOf(s))
+      entry.keyRenames.push({ range: { start: range.key.start + s.offset, end: range.key.end + s.offset }, text: last })
+      const leaves = [...walkLeaves(node, stored)]
+      entry.tree = applyMessageOps(entry.tree, [
+        ...leaves.map(leaf => ({ type: 'delete' as const, path: leaf.path })),
+        ...leaves.map(leaf => ({ type: 'set' as const, path: [...next, ...leaf.path.slice(stored.length)], value: leaf.value })),
+      ])
+      handled.add(s.resource.id)
+    }
+    return handled
+  }
+
+  moveKey(from: KeyString, to: KeyString, renamed: ReadonlySet<string> = new Set()): void {
     this.touched.add(from)
     this.touched.add(to)
     for (const [locale, list] of this.options.messages(from) ?? []) {
       const m = list[0]!
+      if (renamed.has(m.resource))
+        continue
       const s = this.writable(m.resource)
       const relative = this.relativePath(to, s.resource)
       if (!relative) {
@@ -305,6 +353,12 @@ class PlanBuilder {
 
   /** The raw text a usage needs to refer to `next`, given its scope. */
   rawFor(usage: Usage, next: KeyString): string | undefined {
+    // A relative key (Rails `t('.title')`) stays relative when the new key keeps its scope.
+    if (usage.raw.startsWith('.') && usage.key?.endsWith(usage.raw)) {
+      const scope = usage.key.slice(0, usage.key.length - usage.raw.length)
+      if (next.startsWith(`${scope}.`))
+        return next.slice(scope.length)
+    }
     const { namespace, path } = this.keyId(next)
     let rest = path.join('.')
     const separator = this.config.namespace.separator
@@ -382,8 +436,9 @@ class PlanBuilder {
     const pairs = keys.map(key => [key, replaceKeyPrefix(key, op.from, op.to)] as const)
     for (const [, to] of pairs)
       this.conflictCheck(to)
+    const renamed = keys.includes(op.from) ? new Set<string>() : this.renameNode(op.from, op.to)
     for (const [from, to] of pairs) {
-      this.moveKey(from, to)
+      this.moveKey(from, to, renamed)
       if (op.usages !== false)
         this.rewriteUsages(from, to)
     }
@@ -490,6 +545,8 @@ class PlanBuilder {
       renameOps.push({ type: 'delete', path: oldPath })
       if (value !== undefined && isMessageLeaf(value))
         renameOps.push({ type: 'set', path: newPath, value })
+      else if (value !== undefined)
+        renameOps.push(...[...walkLeaves(value, newPath)].map(leaf => ({ type: 'set' as const, path: leaf.path, value: leaf.value })))
     }
     return applyTextEdits(s.content, edit(s.content, [...renameOps, ...entry.ops], ctx))
   }

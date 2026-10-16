@@ -131,7 +131,10 @@ describe('rename', () => {
 
   it('renames a subtree and rewrites the static part of dynamic usages', async () => {
     const { project, files } = await createTestProject(vueFiles, { presets: [vueI18n()] })
+    const before = files.get('src/locales/en.json')!
     const plan = await write(project, [{ type: 'rename-prefix', from: 'pages', to: 'screens' }])
+    // The parent is renamed in place; the subtree keeps its position.
+    expect(files.get('src/locales/en.json')).toBe(before.replace('"pages"', '"screens"'))
     const en = JSON.parse(files.get('src/locales/en.json')!)
     expect(en.screens).toEqual({ a: { title: 'A' }, b: 'B' })
     expect(en.pages).toBeUndefined()
