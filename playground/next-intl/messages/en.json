@@ -1,0 +1,14 @@
+{
+  "Home": {
+    "title": "Hello {name}",
+    "intro": "This is <b>next-intl</b>",
+    "cta": "Get started"
+  },
+  "Pricing": {
+    "title": "Pricing",
+    "plans": "{count, plural, one {# plan} other {# plans}}"
+  },
+  "Footer": {
+    "copyright": "© {year} Playground"
+  }
+}

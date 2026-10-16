@@ -1,0 +1,7 @@
+{
+  "name": "playground-i18n-ally",
+  "private": true,
+  "dependencies": {
+    "vue-i18n": "^9.0.0"
+  }
+}

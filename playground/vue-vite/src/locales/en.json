@@ -1,0 +1,35 @@
+{
+  "app": {
+    "title": "Playground",
+    "greeting": "Hello {name}!",
+    "footer": "Made with x18n"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "settings": "Settings"
+  },
+  "todo": {
+    "add": "Add a task",
+    "empty": "Nothing to do",
+    "count": "No tasks | One task | {n} tasks"
+  },
+  "pages": {
+    "home": {
+      "title": "Welcome home"
+    },
+    "about": {
+      "title": "About us"
+    },
+    "settings": {
+      "title": "Your settings"
+    }
+  },
+  "errors": {
+    "network": "Network error",
+    "unknown": "Something went wrong"
+  },
+  "legacy": {
+    "banner": "Old banner"
+  }
+}

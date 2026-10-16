@@ -1,0 +1,10 @@
+{
+  "HOME": {
+    "TITLE": "Hello Angular",
+    "SUBTITLE": "Translations with ngx-translate"
+  },
+  "ACTIONS": {
+    "SAVE": "Save",
+    "DELETE": "Delete"
+  }
+}

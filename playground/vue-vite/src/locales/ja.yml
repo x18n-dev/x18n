@@ -1,0 +1,5 @@
+app:
+  title: プレイグラウンド
+  greeting: こんにちは {name}
+nav:
+  home: ホーム

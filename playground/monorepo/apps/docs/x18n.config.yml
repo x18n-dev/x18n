@@ -1,0 +1,4 @@
+# yaml-language-server: $schema=../../../../packages/core/schema/config.json
+name: documentation
+resources:
+  - pattern: i18n/{locale}.yml

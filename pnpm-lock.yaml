@@ -424,6 +424,9 @@ importers:
       vitest:
         specifier: catalog:testing
         version: 5.0.4(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      vscode-jsonrpc:
+        specifier: catalog:testing
+        version: 9.0.3
 
   docs:
     dependencies:

@@ -1,0 +1,10 @@
+{
+  "Home": {
+    "title": "Hola {nombre}",
+    "intro": "Esto es <b>next-intl</b>"
+  },
+  "Pricing": {
+    "title": "Precios",
+    "plans": "{count, plural, one {# plan}"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "HOME": {
+    "TITLE": "Olá Angular"
+  },
+  "ACTIONS": {
+    "SAVE": "Salvar",
+    "DELETE": "Excluir"
+  }
+}

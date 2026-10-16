@@ -1,0 +1,8 @@
+en:
+  users:
+    index:
+      title: All users
+      empty: No users yet
+  greeting: Hello %{name}
+  shared:
+    save: Save

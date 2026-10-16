@@ -1,0 +1,80 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`x18n check finds the planted problems > angular 1`] = `
+[
+  "missing-key ACTIONS.ARCHIVE src/app/app.component.html:4",
+  "missing-translation HOME.SUBTITLE src/assets/i18n/en.json:4",
+]
+`;
+
+exports[`x18n check finds the planted problems > laravel 1`] = `
+[
+  "missing-key messages.dashboard.missing resources/views/dashboard.blade.php:3",
+  "missing-translation messages.dashboard.empty lang/en/messages.php:7",
+  "missing-translation messages.dashboard.title lang/en/messages.php:6",
+  "missing-translation messages.welcome lang/en/messages.php:4",
+  "placeholder-mismatch auth.throttle lang/de/auth.php:5",
+  "unused-key auth.throttle lang/en/auth.php:5",
+  "unused-key messages.dashboard.empty lang/en/messages.php:7",
+]
+`;
+
+exports[`x18n check finds the planted problems > monorepo 1`] = `
+[
+  "missing-translation unused locales/en.json:3",
+  "unused-key unused locales/en.json:3",
+]
+`;
+
+exports[`x18n check finds the planted problems > next-intl 1`] = `
+[
+  "invalid-syntax Pricing.plans messages/es.json:8",
+  "missing-key Home.subtitle app/[locale]/page.tsx:10",
+  "missing-translation Footer.copyright messages/en.json:12",
+  "missing-translation Home.cta messages/en.json:5",
+  "placeholder-mismatch Home.title messages/es.json:3",
+  "placeholder-mismatch Pricing.plans messages/es.json:8",
+  "unused-key Footer.copyright messages/en.json:12",
+]
+`;
+
+exports[`x18n check finds the planted problems > rails 1`] = `
+[
+  "missing-key users.index.missing app/views/users/index.html.erb:5",
+  "missing-translation shared.save config/locales/en.yml:8",
+  "missing-translation users.index.empty config/locales/en.yml:5",
+  "placeholder-mismatch greeting config/locales/es.yml:5",
+]
+`;
+
+exports[`x18n check finds the planted problems > react-i18next 1`] = `
+[
+  "missing-key common:checkout src/Cart.tsx:11",
+  "missing-translation auth:login.forgot public/locales/en/auth.json:7",
+  "missing-translation auth:login.submit public/locales/en/auth.json:6",
+  "missing-translation auth:logout public/locales/en/auth.json:9",
+  "placeholder-mismatch common:welcome public/locales/fr/common.json:6",
+]
+`;
+
+exports[`x18n check finds the planted problems > vue-vite 1`] = `
+[
+  "empty-translation nav.settings src/locales/de.json:10",
+  "missing-key nav.contact src/App.vue:19",
+  "missing-translation app.footer src/locales/en.json:5",
+  "missing-translation errors.network src/locales/en.json:29",
+  "missing-translation errors.unknown src/locales/en.json:30",
+  "missing-translation legacy.banner src/locales/en.json:33",
+  "missing-translation local.hint src/components/TodoList.vue:22",
+  "missing-translation nav.about src/locales/en.json:9",
+  "missing-translation nav.settings src/locales/en.json:10",
+  "missing-translation pages.about.title src/locales/en.json:22",
+  "missing-translation pages.home.title src/locales/en.json:19",
+  "missing-translation pages.settings.title src/locales/en.json:25",
+  "missing-translation todo.add src/locales/en.json:13",
+  "missing-translation todo.count src/locales/en.json:15",
+  "missing-translation todo.empty src/locales/en.json:14",
+  "placeholder-mismatch app.greeting src/locales/de.json:4",
+  "unused-key legacy.banner src/locales/en.json:33",
+]
+`;

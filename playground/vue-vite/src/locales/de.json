@@ -1,0 +1,27 @@
+{
+  "app": {
+    "title": "Spielwiese",
+    "greeting": "Hallo!",
+    "footer": "Gemacht mit x18n"
+  },
+  "nav": {
+    "home": "Start",
+    "about": "Über",
+    "settings": ""
+  },
+  "todo": {
+    "add": "Aufgabe hinzufügen",
+    "empty": "Nichts zu tun"
+  },
+  "pages": {
+    "home": {
+      "title": "Willkommen"
+    },
+    "about": {
+      "title": "Über uns"
+    }
+  },
+  "errors": {
+    "network": "Netzwerkfehler"
+  }
+}

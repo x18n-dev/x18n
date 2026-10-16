@@ -1,0 +1,7 @@
+{
+  "hello": "Hello",
+  "dynamic": {
+    "a": "A",
+    "b": "B"
+  }
+}

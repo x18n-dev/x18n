@@ -1,0 +1,5 @@
+es:
+  users:
+    index:
+      title: Todos los usuarios
+  greeting: Hola %{nombre}

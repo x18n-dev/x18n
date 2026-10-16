@@ -1,0 +1,7 @@
+{
+  "save": "Save",
+  "cancel": "Cancel",
+  "item_one": "{{count}} item",
+  "item_other": "{{count}} items",
+  "welcome": "Welcome, {{name}}"
+}

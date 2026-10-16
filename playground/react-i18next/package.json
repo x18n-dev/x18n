@@ -1,0 +1,9 @@
+{
+  "name": "playground-react-i18next",
+  "private": true,
+  "dependencies": {
+    "i18next": "^25.0.0",
+    "react": "^19.0.0",
+    "react-i18next": "^15.0.0"
+  }
+}

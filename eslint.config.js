@@ -16,6 +16,7 @@ export default antfu(
       'packages/core/schema',
       // Sample user projects for tests.
       'test/fixtures',
+      'playground',
     ],
   },
   {

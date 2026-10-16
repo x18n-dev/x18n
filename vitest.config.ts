@@ -27,6 +27,14 @@ export default defineConfig({
         test: {
           name: 'exports',
           root: './test',
+          include: ['exports.test.ts'],
+        },
+      },
+      {
+        test: {
+          name: 'playgrounds',
+          root: './test',
+          include: ['playgrounds.test.ts'],
         },
       },
     ],
