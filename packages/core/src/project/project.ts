@@ -384,7 +384,8 @@ export function createProject(options: CreateProjectOptions): Project {
   function buildIndex(): Index {
     resourceIndex ??= buildResourceIndex()
     const usages: Usage[] = []
-    for (const [path, state] of files) {
+    // Files are read concurrently; sort so results do not depend on I/O timing.
+    for (const [path, state] of [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
       let list = resolved.get(state)
       if (!list) {
         list = state.result.usages.map(candidate => resolver.resolve(candidate, state.result.scopes ?? [], path, 'scanner'))
@@ -710,7 +711,7 @@ export function createProject(options: CreateProjectOptions): Project {
       return other === undefined ? undefined : message(other, locale)
     },
     keySlots: path => files.get(path)?.result.keySlots ?? [],
-    hardStrings: path => [...files].filter(([p]) => path === undefined || p === path).flatMap(([p, state]) => (state.result.hardStrings ?? []).map(h => ({ ...h, path: p }))),
+    hardStrings: path => [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).filter(([p]) => path === undefined || p === path).flatMap(([p, state]) => (state.result.hardStrings ?? []).map(h => ({ ...h, path: p }))),
     analyze: (): Analysis => analyzer.analyze(),
     prompt: (kind, locale, promptOptions = {}) => buildPrompt(project, kind, locale, promptOptions, {
       config,
