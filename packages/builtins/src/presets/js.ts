@@ -1,5 +1,5 @@
 // Detection and syntax adapted from i18n-ally (MIT), src/frameworks/*
-import type { CallSpec, Preset } from '@x18n/core'
+import type { CallSpec, ConfigContext, Preset } from '@x18n/core'
 import { defaultTemplates } from '../extractors'
 import { sfcBlocks } from '../finders/sfc-blocks'
 import { braces, doubleBraces, icu, linked, nesting, placeholders } from '../placeholders'
@@ -50,9 +50,25 @@ export function nuxtI18n(): Preset {
   }
 }
 
+/** `defaultNS` from the i18next init code (`i18n.ts`, `next-i18next.config.js`), as keys without a namespace use it. */
+async function findDefaultNamespace(host: ConfigContext['host']): Promise<string | undefined> {
+  const files = await host.glob(['**/*i18n*.{js,mjs,cjs,ts,mts,cts}', '**/i18n/index.{js,ts}'], { ignore: ['**/node_modules/**', '**/dist/**'], gitignore: true })
+  for (const file of files.slice(0, 20)) {
+    const found = /\bdefaultNS\s*:\s*['"`]([^'"`]+)['"`]/.exec(await host.readFile(file) ?? '')
+    if (found)
+      return found[1]
+  }
+  return undefined
+}
+
 const i18nextPlugin = library({
   name: 'i18next',
   namespace: { separator: ':', default: 'translation' },
+  extra: async (draft, ctx) => {
+    const found = ctx.user.namespace?.default ? undefined : await findDefaultNamespace(ctx.host)
+    if (found)
+      draft.namespace = { ...draft.namespace, default: found }
+  },
   calls: [
     { callee: ['t', 'i18next.t', 'i18n.t'], namespace: { arg: 1, property: 'ns' } },
     { callee: ['getFixedT', 'i18next.getFixedT', 'i18n.getFixedT'], factory: true, returns: ['t'], namespace: { arg: 1 }, keyPrefix: { arg: 2 } },

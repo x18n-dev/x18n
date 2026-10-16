@@ -1,4 +1,4 @@
-import type { CallSpec, ConfigDraft, DetectContext, ExtractTemplate, LocaleFinder, Plugin, RegexScannerSpec, ResourceSpec, ResourceTransform } from '@x18n/core'
+import type { CallSpec, ConfigContext, ConfigDraft, DetectContext, ExtractTemplate, LocaleFinder, Plugin, RegexScannerSpec, ResourceSpec, ResourceTransform } from '@x18n/core'
 
 export interface LibraryOptions {
   readonly name: string
@@ -14,7 +14,7 @@ export interface LibraryOptions {
   readonly finders?: readonly LocaleFinder[]
   readonly normalizeKey?: Plugin['normalizeKey']
   readonly transformResource?: ResourceTransform
-  readonly extra?: (draft: ConfigDraft) => void | Promise<void>
+  readonly extra?: (draft: ConfigDraft, ctx: ConfigContext) => void | Promise<void>
   readonly translatePrompt?: Plugin['translatePrompt']
 }
 
@@ -40,7 +40,7 @@ export function library(options: LibraryOptions): Plugin {
         regex: [...draft.usage.regex, ...options.regex ?? []],
         derivedKeys: [...draft.usage.derivedKeys, ...options.derivedKeys ?? []],
       }
-      await options.extra?.(draft)
+      await options.extra?.(draft, ctx)
     },
     localeFinders: options.finders,
     normalizeKey: options.normalizeKey,
