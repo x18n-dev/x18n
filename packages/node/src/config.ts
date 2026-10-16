@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { compileYamlPlugin } from '@x18n/builtins/yaml-plugin'
 import { isX18nError, PluginFileSchema, validate, X18nError } from '@x18n/core'
 import { createJiti } from 'jiti'
@@ -43,7 +43,21 @@ export function findConfigUpward(cwd: string): string | undefined {
   }
 }
 
-const jiti = createJiti(import.meta.url, { moduleCache: false, interopDefault: true })
+const core = fileURLToPath(import.meta.resolve('@x18n/core'))
+const presets = fileURLToPath(import.meta.resolve('@x18n/builtins/presets'))
+
+// Configs and plugins import x18n's own packages; resolve them to the copies x18n runs from,
+// so a project needs no install of its own (`npx @x18n/cli`, a config written by `x18n init`).
+const jiti = createJiti(import.meta.url, {
+  moduleCache: false,
+  interopDefault: true,
+  alias: {
+    '@x18n/core': core,
+    '@x18n/cli/presets': presets,
+    '@x18n/cli': core,
+    '@x18n/builtins/presets': presets,
+  },
+})
 
 /** Imports a JS or TS module (config, plugin, executed resource). */
 export async function importModule(file: string): Promise<unknown> {

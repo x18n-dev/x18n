@@ -21,6 +21,16 @@ export async function schema(name: string | undefined, options: GlobalOptions): 
     out(text)
 }
 
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** The resource pattern that matches a found file: `public/locales/en/common.json` → `public/locales/{locale}/{namespaces}.{ext}`. */
+function patternOf(resource: { readonly path: string, readonly locale: string, readonly namespace: string | undefined }): string {
+  let pattern = resource.path.replace(/\.[^./]+$/, '.{ext}')
+  if (resource.namespace !== undefined)
+    pattern = pattern.replace(new RegExp(`(^|/)${escapeRegExp(resource.namespace.replace(/\./g, '/'))}(?=\.\{ext\}$|/)`), '$1{namespaces}')
+  return pattern.replace(new RegExp(`(^|[/._-])${escapeRegExp(resource.locale)}(?=[/._-])`), '$1{locale}')
+}
+
 export async function init(options: GlobalOptions & { readonly format?: string | undefined, readonly force?: boolean | undefined }): Promise<void> {
   const root = resolve(options.root ?? cwd())
   const existing = findConfigFile(root)
@@ -31,9 +41,8 @@ export async function init(options: GlobalOptions & { readonly format?: string |
   const { project } = loaded
   const explanation = project.explain()
   const detected = explanation.presets.filter(p => p.reason === 'detected' && p.name !== 'general').map(p => p.name)
-  const resources = explanation.config.resources.length > 0
-    ? explanation.config.resources.map(r => r.pattern)
-    : [...new Set(project.resources.map(r => r.path.replace(new RegExp(`(^|/)${r.locale}(?=[./])`), '$1{locale}').replace(/\.[^.]+$/, '.{ext}')))]
+  // Patterns of the files found, not every default of the detected presets.
+  const resources = [...new Set(project.resources.filter(r => !r.block).map(patternOf))]
   const config = { sourceLocale: project.sourceLocale, resources: resources.map(pattern => ({ pattern })) }
   const format = options.format ?? 'ts'
   let file: string

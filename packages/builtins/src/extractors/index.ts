@@ -23,6 +23,8 @@ export const rules: readonly ExtractionRule[] = [
   { id: 'sentence', test: text => /\p{L}\s+\p{L}/u.test(text) ? 'should-include' : 'none' },
   { id: 'text-node', test: (text, kind) => textKinds.has(kind) || kind.endsWith('attribute') ? 'should-include' : 'none' },
   { id: 'single-word', test: (text, kind) => !textKinds.has(kind) && !kind.endsWith('attribute') && !/\s/.test(text.trim()) ? 'should-exclude' : 'none' },
+  // `tag="p"`, `type="submit"`: attribute values that are one lowercase token are code, not text.
+  { id: 'attribute-token', test: (text, kind) => kind.endsWith('attribute') && /^[a-z][\w-]*$/.test(text.trim()) ? 'must-exclude' : 'none' },
   { id: 'identifier', test: text => /^[a-z]+(?:[A-Z][a-z\d]*)+$/.test(text) || /^[A-Z\d]+(?:_[A-Z\d]+)+$/.test(text) || /^[a-z\d]+(?:[-_.:][a-z\d]+)+$/.test(text) ? 'should-exclude' : 'none' },
 ]
 
