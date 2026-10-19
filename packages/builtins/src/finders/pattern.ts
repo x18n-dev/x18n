@@ -134,7 +134,7 @@ export async function guessResources(ctx: FinderContext): Promise<ResourceSpec[]
   return specs
 }
 
-async function findBySpecs(ctx: FinderContext, specs: readonly ResourceSpec[], guessed: boolean): Promise<ResourceCandidate[]> {
+async function findBySpecs(ctx: FinderContext, specs: readonly ResourceSpec[], strictLocales: boolean): Promise<ResourceCandidate[]> {
   const out: ResourceCandidate[] = []
   for (const spec of specs) {
     const compiled = compilePattern(spec.pattern, ctx.extensions)
@@ -146,8 +146,8 @@ async function findBySpecs(ctx: FinderContext, specs: readonly ResourceSpec[], g
       if (!matched)
         continue
       const locale = fixed ?? matched.locale ?? (spec.pattern.includes('{locale?}') ? ctx.config.sourceLocale : undefined)
-      // A guessed `{locale}` must look like a locale code, so `locales/index.ts` is not a resource.
-      if (!locale || (guessed && !isLocaleCode(locale)))
+      // A `{locale}` the user did not write must look like a locale code, so `locales/index.ts` is not a resource.
+      if (!locale || (strictLocales && !isLocaleCode(locale)))
         continue
       out.push({ path, locale, namespace: spec.namespace ?? matched.namespace, format: spec.format, readonly: spec.execute === true })
     }
@@ -175,9 +175,10 @@ export const patternFinder: LocaleFinder = {
   },
   async find(ctx) {
     const configured = ctx.config.resources
-    const found = configured.length > 0 ? await findBySpecs(ctx, configured, false) : []
-    // Preset defaults that match nothing fall back to the guess, as without a config.
     const fromUser = ctx.config.origins.resources === 'user' || ctx.config.origins.resources === 'parent'
+    // Patterns the user did not write (preset defaults, i18n-ally settings) only match locale-like names.
+    const found = configured.length > 0 ? await findBySpecs(ctx, configured, !fromUser) : []
+    // Preset defaults that match nothing fall back to the guess, as without a config.
     if (found.length > 0 || fromUser)
       return found
     return findBySpecs(ctx, await guessResources(ctx), true)
