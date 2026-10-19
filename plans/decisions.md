@@ -207,3 +207,9 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 - Resource defaults of detected presets add up; a user `resources` replaces them; when they match no file, x18n guesses locale directories as without a config.
 - `react-i18next` is no longer exclusive: shared plugins apply once by name. `laravel` stays exclusive (i18n-ally `monopoly`).
 - Why: users moving from i18n-ally expect their stack to work without a config. This pulls part of M15 into 1.0; tier 2 items i18n-ally never had (paraglide, typesafe-i18n, ARB, XLIFF and the other XML formats) stay in M15.
+
+## D35 - Without a config, i18n-ally settings are the defaults
+
+- Decided: when a project has no x18n config, x18n reads its i18n-ally settings (`.vscode/settings.json`, `*.code-workspace`, the custom framework file), with the same mapping as `x18n migrate i18n-ally`, and applies them as a plugin. They work like preset defaults: detection fills what they leave out, and stale locale paths fall back to the locale guess. Patterns that the user did not write only match locale-like names.
+- Considered: requiring `x18n migrate i18n-ally` first.
+- Why: an i18n-ally project should work in the CLI, CI and editor the moment x18n is installed. The real-world tests (furifont, pulls.review, elk) are all i18n-ally projects; one has stale paths.

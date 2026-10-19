@@ -4,7 +4,7 @@ Use this when a project has i18n-ally settings: `i18n-ally.*` (or legacy `vue-i1
 
 ## Steps
 
-1. Record the baseline before you change anything: `npx @x18n/cli status --json` and `npx @x18n/cli keys --unused --json`. x18n already works without a config, so this is what detection alone finds. **Done when** you have the locale list, the key count and the unused keys.
+1. Record the baseline before you change anything: `npx @x18n/cli status --json` and `npx @x18n/cli keys --unused --json`. x18n already reads the i18n-ally settings without a config, so this is what the project gets today. **Done when** you have the locale list, the key count and the unused keys.
 2. Preview the migration: `x18n migrate i18n-ally --dry-run`. It prints the files it would write and notes about settings it dropped. **Done when** you have read every note.
 3. Ask the user about each **decision** the notes raise, in one message. The usual ones:
    - `translate.*` settings (machine translation engines) are dropped. x18n writes translate prompts instead (`x18n prompt translate --to <locale>`).
