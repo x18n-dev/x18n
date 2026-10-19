@@ -30,7 +30,8 @@
     "ci": "pnpm run lint && pnpm run typecheck && pnpm run knip && pnpm run test --run && x18n check && pnpm -C docs run generate --check",
     "postinstall": "turbo run codegen",
     "prepare": "git config core.hooksPath .githooks && simple-git-hooks && skills experimental_sync -y",
-    "bench": "tsx scripts/bench.ts"
+    "bench": "tsx scripts/bench.ts",
+    "test:real-world": "pnpm run build && X18N_REAL_WORLD=1 vitest run --project real-world"
   },
   "scripts-info": {
     "build": "Build every package",
@@ -45,7 +46,8 @@
     "ci": "Run the full continuous integration pipeline",
     "postinstall": "Generate files that typecheck needs",
     "prepare": "Set up git hooks and skills",
-    "bench": "Measure the performance budgets on a generated fixture"
+    "bench": "Measure the performance budgets on a generated fixture",
+    "test:real-world": "Run x18n on real projects cloned from GitHub at pinned commits"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:cli",

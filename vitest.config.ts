@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
@@ -30,6 +31,10 @@ export default defineConfig({
           include: ['exports.test.ts'],
         },
       },
+      // Clones real projects from GitHub; opt-in with `pnpm test:real-world`.
+      ...process.env.X18N_REAL_WORLD
+        ? [{ test: { name: 'real-world', root: './test', include: ['real-world.test.ts'] } }]
+        : [],
       {
         test: {
           name: 'playgrounds',
