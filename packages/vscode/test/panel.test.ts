@@ -28,6 +28,7 @@ describe('panelHtml', () => {
 describe('i18n-ally migration', () => {
   it('detects i18n-ally settings', () => {
     expect(hasI18nAllySettings('{\n  // comment\n  "i18n-ally.localesPaths": ["locales"]\n}')).toBe(true)
+    expect(hasI18nAllySettings('{\n  "i18n-ally-next.localesPaths": ["locales"]\n}')).toBe(true)
     expect(hasI18nAllySettings('{ "editor.tabSize": 2 }')).toBe(false)
   })
 

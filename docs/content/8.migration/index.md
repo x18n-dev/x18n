@@ -16,10 +16,12 @@ npx @x18n/cli migrate i18n-ally
 
 The command reads:
 
-- the `i18n-ally.*` keys, and the legacy `vue-i18n-ally.*` keys, in `.vscode/settings.json`,
+- the `i18n-ally.*` keys, the legacy `vue-i18n-ally.*` keys, and the `i18n-ally-next.*` keys of the [i18n-ally-next](https://github.com/Lydanne/i18n-ally-next) fork, in `.vscode/settings.json`,
 - the `settings` of each `*.code-workspace` file in the root,
-- `.vscode/i18n-ally-custom-framework.yml`,
-- `.vscode/i18n-ally-reviews.yml`.
+- `.vscode/i18n-ally-custom-framework.yml`, or `.vscode/i18n-ally-next-custom-framework.yml`,
+- `.vscode/i18n-ally-reviews.yml`, or `.vscode/i18n-ally-next-reviews.yml`.
+
+When a setting or file exists under both names, the i18n-ally-next one wins.
 
 It writes:
 

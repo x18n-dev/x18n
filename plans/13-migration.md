@@ -2,9 +2,9 @@
 
 `x18n migrate i18n-ally` (CLI), "Migrate from i18n-ally" (VS Code). It reads:
 
-- `.vscode/settings.json` (JSONC) keys `i18n-ally.*` and the legacy `vue-i18n-ally.*`, plus `*.code-workspace` settings,
-- `.vscode/i18n-ally-custom-framework.yml`,
-- `.vscode/i18n-ally-reviews.yml`,
+- `.vscode/settings.json` (JSONC) keys `i18n-ally.*`, the legacy `vue-i18n-ally.*` and `i18n-ally-next.*` of the [i18n-ally-next](https://github.com/Lydanne/i18n-ally-next) fork, plus `*.code-workspace` settings. When a setting is set under more than one prefix, `i18n-ally-next.*` wins, then `i18n-ally.*`,
+- `.vscode/i18n-ally-custom-framework.yml` (or the fork's `i18n-ally-next-custom-framework.yml`, which wins),
+- `.vscode/i18n-ally-reviews.yml` (or the fork's `i18n-ally-next-reviews.yml`, which wins),
 
 and writes `x18n.config.ts` (or `--format yml`), `x18n/custom.x18n-plugin.yml` when a custom framework exists, and `.x18n/reviews.yml`. With `--dry-run` it prints the files. It never deletes i18n-ally files; it prints which settings can be removed.
 

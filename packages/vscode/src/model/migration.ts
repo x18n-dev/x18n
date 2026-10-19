@@ -1,6 +1,6 @@
-/** Whether a `.vscode/settings.json` text (JSONC) sets any `i18n-ally.*` key. */
+/** Whether a `.vscode/settings.json` text (JSONC) sets any `i18n-ally.*`, `i18n-ally-next.*` or `vue-i18n-ally.*` key. */
 export function hasI18nAllySettings(text: string): boolean {
-  return /^\s*"i18n-ally\.[^"]+"\s*:/m.test(text)
+  return /^\s*"(?:i18n-ally-next|i18n-ally|vue-i18n-ally)\.[^"]+"\s*:/m.test(text)
 }
 
 export interface MigrationResult {

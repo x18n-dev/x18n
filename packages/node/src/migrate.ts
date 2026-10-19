@@ -97,15 +97,28 @@ async function readText(path: string): Promise<string | undefined> {
   return readFile(path, 'utf8').catch(() => undefined)
 }
 
+/** The first of `paths` that exists; the i18n-ally-next name comes first. */
+async function readFirst(root: string, paths: readonly string[]): Promise<{ path: string, text: string } | undefined> {
+  for (const path of paths) {
+    const text = await readText(join(root, path))
+    if (text !== undefined)
+      return { path, text }
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 const asStrings = (value: unknown): string[] => (Array.isArray(value) ? value : value === undefined ? [] : [value]).filter((v): v is string => typeof v === 'string')
 
-/** `i18n-ally.*` and legacy `vue-i18n-ally.*` keys from `.vscode/settings.json` and `*.code-workspace` files. */
+/** Setting prefixes by priority: the i18n-ally-next fork renames `i18n-ally.*` keys, so its value is the newest. */
+const settingPrefixes = ['i18n-ally-next', 'i18n-ally', 'vue-i18n-ally']
+
+/** `i18n-ally-next.*`, `i18n-ally.*` and legacy `vue-i18n-ally.*` keys from `.vscode/settings.json` and `*.code-workspace` files. */
 async function readSettings(root: string): Promise<{ settings: Map<string, unknown>, keys: string[] }> {
   const settings = new Map<string, unknown>()
+  const ranks = new Map<string, number>()
   const keys: string[] = []
   const sources: unknown[] = []
   const vscode = await readText(join(root, '.vscode/settings.json'))
@@ -122,10 +135,14 @@ async function readSettings(root: string): Promise<{ settings: Map<string, unkno
     if (!isRecord(source))
       continue
     for (const [key, value] of Object.entries(source)) {
-      const match = /^(?:vue-)?i18n-ally\.(.+)$/.exec(key)
-      if (match && !settings.has(match[1]!)) {
-        settings.set(match[1]!, value)
-        keys.push(key)
+      const match = /^(i18n-ally-next|i18n-ally|vue-i18n-ally)\.(.+)$/.exec(key)
+      if (!match)
+        continue
+      keys.push(key)
+      const rank = settingPrefixes.indexOf(match[1]!)
+      if (rank < (ranks.get(match[2]!) ?? Infinity)) {
+        settings.set(match[2]!, value)
+        ranks.set(match[2]!, rank)
       }
     }
   }
@@ -333,7 +350,8 @@ export interface I18nAllyConfig {
   readonly notes: readonly string[]
   /** The `i18n-ally.*` settings keys that were read. */
   readonly keys: readonly string[]
-  readonly customFramework: boolean
+  /** Path of the custom framework file that was read. */
+  readonly customFramework: string | undefined
 }
 
 /** The x18n config that a project's i18n-ally settings and custom framework mean, or undefined without any. */
@@ -343,7 +361,8 @@ export async function readI18nAllyConfig(root: string): Promise<I18nAllyConfig |
 }
 
 async function configOf(root: string, settings: Settings, keys: readonly string[]): Promise<I18nAllyConfig | undefined> {
-  const customText = await readText(join(root, '.vscode/i18n-ally-custom-framework.yml'))
+  const custom = await readFirst(root, ['.vscode/i18n-ally-next-custom-framework.yml', '.vscode/i18n-ally-custom-framework.yml'])
+  const customText = custom?.text
   if (keys.length === 0 && customText === undefined)
     return undefined
   const notes: string[] = []
@@ -363,7 +382,7 @@ async function configOf(root: string, settings: Settings, keys: readonly string[
         ...Object.keys(parts.localeInfo).length ? { localeInfo: parts.localeInfo } : {},
       }
     : undefined
-  return { config, plugin, notes, keys, customFramework: customText !== undefined }
+  return { config, plugin, notes, keys, customFramework: custom?.path }
 }
 
 /** Converts i18n-ally settings, custom framework and reviews into x18n files. Never deletes i18n-ally files. */
@@ -374,7 +393,7 @@ export async function migrateI18nAlly(root: string, options: MigrateOptions = {}
     return { files: [], notes: ['No i18n-ally settings found.'], removable: [] }
   const { config, plugin } = found
   const notes = [...found.notes]
-  const reviews = await readText(join(root, '.vscode/i18n-ally-reviews.yml'))
+  const reviews = (await readFirst(root, ['.vscode/i18n-ally-next-reviews.yml', '.vscode/i18n-ally-reviews.yml']))?.text
   const files: MigrationFile[] = []
   const needsPlugin = plugin !== undefined
   const finalConfig: SerializableConfig = needsPlugin ? { ...config, plugins: ['./x18n/custom.x18n-plugin.yml'] } : config
@@ -400,5 +419,5 @@ export async function migrateI18nAlly(root: string, options: MigrateOptions = {}
     files.push({ path: '.x18n/reviews.yml', content: reviews })
     notes.push('Reviews were copied to `.x18n/reviews.yml`; x18n reads them once reviews ship (1.x).')
   }
-  return { files, notes, removable: [...keys, ...found.customFramework ? ['.vscode/i18n-ally-custom-framework.yml'] : []] }
+  return { files, notes, removable: [...keys, ...found.customFramework ? [found.customFramework] : []] }
 }

@@ -1,6 +1,6 @@
 # Migrate from i18n-ally
 
-Use this when a project has i18n-ally settings: `i18n-ally.*` (or legacy `vue-i18n-ally.*`) keys in `.vscode/settings.json` or a `*.code-workspace` file, or a `.vscode/i18n-ally-custom-framework.yml`. `x18n migrate i18n-ally` converts them. It never deletes i18n-ally files.
+Use this when a project has i18n-ally settings: `i18n-ally.*`, legacy `vue-i18n-ally.*` or i18n-ally-next `i18n-ally-next.*` keys in `.vscode/settings.json` or a `*.code-workspace` file, or a `.vscode/i18n-ally-custom-framework.yml` (i18n-ally-next: `i18n-ally-next-custom-framework.yml`). `x18n migrate i18n-ally` converts them. It never deletes i18n-ally files.
 
 ## Steps
 
@@ -17,11 +17,11 @@ Use this when a project has i18n-ally settings: `i18n-ally.*` (or legacy `vue-i1
    - `x18n.config.ts` (or `.yml`, `.json`) from the project settings
    - `x18n/custom.x18n-plugin.yml`, when there are custom regexes, a custom framework, refactor templates or `localeCountryMap` flags
    - editor settings in `.vscode/settings.json`: `x18n.displayLocale`, `x18n.inPlace`, `x18n.annotations`, `x18n.annotationMaxLength`
-   - `.x18n/reviews.yml`, when `.vscode/i18n-ally-reviews.yml` exists
+   - `.x18n/reviews.yml`, when `.vscode/i18n-ally-reviews.yml` or `.vscode/i18n-ally-next-reviews.yml` exists
 
    **Done when** the command exits with code 0 and `data.files` lists the files above that apply.
 5. Verify: run `x18n doctor --json`, `x18n status --json` and `x18n keys --unused --json`, and compare them with the baseline of step 1. The locales and keys must match. The unused keys may shrink, because `keysInUse` and the derived-key rules now apply. **Done when** every difference is explained to the user.
-6. Clean up, after the user agrees: the command's `data.removable` lists the i18n-ally settings that x18n no longer needs. Remove them from `.vscode/settings.json`, delete `.vscode/i18n-ally-custom-framework.yml` if listed, and suggest the VS Code extension `antfu.x18n` in place of `lokalise.i18n-ally`.
+6. Clean up, after the user agrees: the command's `data.removable` lists the i18n-ally settings that x18n no longer needs. Remove them from `.vscode/settings.json`, delete the custom framework file if listed, and suggest the VS Code extension `antfu.x18n` in place of `lokalise.i18n-ally` or `lydanne.i18n-ally-next`.
 
 In VS Code, the extension offers the same migration when it finds i18n-ally settings and no x18n config: the command **x18n: Migrate from i18n-ally** previews the files and writes them on confirmation.
 

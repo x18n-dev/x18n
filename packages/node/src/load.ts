@@ -55,7 +55,7 @@ function findI18nAllyRoot(cwd: string, upward: boolean): string | undefined {
   let dir = resolve(cwd)
   while (true) {
     const settings = join(dir, '.vscode/settings.json')
-    if (existsSync(settings) && /"(?:vue-)?i18n-ally\./.test(readFileSync(settings, 'utf8')))
+    if (existsSync(settings) && /"(?:i18n-ally-next|i18n-ally|vue-i18n-ally)\./.test(readFileSync(settings, 'utf8')))
       return dir
     const parent = dirname(dir)
     if (!upward || parent === dir || existsSync(join(dir, '.git')))

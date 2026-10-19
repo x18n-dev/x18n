@@ -1,4 +1,4 @@
-import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -68,6 +68,22 @@ describe('migrate i18n-ally', () => {
     expect(files.find(f => f.path === 'x18n/custom.x18n-plugin.yml')!.content).toContain('- php')
     expect(project.usages().map(m => m.usage.key)).toEqual(['welcome'])
     expect(project.analyze().unused).toEqual(['bye'])
+  })
+
+  it('reads the settings and files of the i18n-ally-next fork first', async () => {
+    const dir = await fixture('custom')
+    await rename(join(dir, '.vscode/i18n-ally-custom-framework.yml'), join(dir, '.vscode/i18n-ally-next-custom-framework.yml'))
+    await writeFile(join(dir, '.vscode/settings.json'), JSON.stringify({
+      'i18n-ally.sourceLanguage': 'de',
+      'i18n-ally-next.localesPaths': 'i18n',
+      'i18n-ally-next.sourceLanguage': 'en',
+    }))
+    const { files, removable, project } = await migrateAndLoad(dir)
+    const config = JSON.parse(files.find(f => f.path === 'x18n.config.json')!.content)
+    expect(config.sourceLocale).toBe('en')
+    expect(config.presets).toEqual([])
+    expect(removable).toEqual(['i18n-ally.sourceLanguage', 'i18n-ally-next.localesPaths', 'i18n-ally-next.sourceLanguage', '.vscode/i18n-ally-next-custom-framework.yml'])
+    expect(project.usages().map(m => m.usage.key)).toEqual(['welcome'])
   })
 
   it('reports when there is nothing to migrate', async () => {
