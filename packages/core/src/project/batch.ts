@@ -1,4 +1,4 @@
-import type { EditOp, JsonValue, KeyString, LocaleCode, MessageLeaf } from '../types/model'
+import type { EditOp, JsonValue, KeyString, LocaleCode, MessageLeaf, Placeholder } from '../types/model'
 import type { PlaceholderSyntax } from '../types/plugin'
 import type { Project } from '../types/project'
 import { X18nError } from '../errors'
@@ -38,8 +38,15 @@ export function parseMessageBatch(project: Project, data: JsonValue): EditOp[] {
  * The placeholders a target value lacks or adds compared with its source. Key references (`@:key`) are
  * not parameters, and implicit names (vue-i18n `{n}` in plural messages) may be left out.
  */
-export function comparePlaceholders(syntaxes: readonly PlaceholderSyntax[], source: string, target: string): { readonly missing: string[], readonly extra: string[] } {
-  const names = (text: string): string[] => syntaxes.filter(s => !s.reference).flatMap(s => s.find(text)).map(p => p.name).sort()
+export function comparePlaceholders(
+  syntaxes: readonly PlaceholderSyntax[],
+  source: string,
+  target: string,
+  /** A cached lookup of every syntax's placeholders, as checks get it. */
+  find: (value: string) => readonly Placeholder[] = value => syntaxes.flatMap(s => s.find(value)),
+): { readonly missing: string[], readonly extra: string[] } {
+  const references = new Set(syntaxes.filter(s => s.reference).map(s => s.id))
+  const names = (text: string): string[] => find(text).filter(p => !references.has(p.syntax)).map(p => p.name).sort()
   const implicit = new Set(syntaxes.flatMap(s => s.implicit ?? []))
   const expected = names(source)
   const actual = names(target)

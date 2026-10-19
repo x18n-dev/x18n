@@ -955,7 +955,7 @@ export declare class X18nError extends Error {
 export declare function applyMessageOps(_: MessageTree, _: readonly MessageOp[]): MessageTree;
 export declare function applyTextEdits(_: string, _: readonly TextEdit[]): string;
 export declare function buildTree(_: Iterable<TreeLeaf>): MessageTree;
-export declare function comparePlaceholders(_: readonly PlaceholderSyntax[], _: string, _: string): {
+export declare function comparePlaceholders(_: readonly PlaceholderSyntax[], _: string, _: string, _?: (_: string) => readonly Placeholder[]): {
   readonly missing: string[];
   readonly extra: string[];
 };

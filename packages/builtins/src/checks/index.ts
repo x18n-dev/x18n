@@ -146,7 +146,7 @@ export const placeholderMismatch: Check = {
         const target = ctx.message(key, locale)
         if (typeof target?.value !== 'string' || target.value === '')
           continue
-        const { missing, extra } = comparePlaceholders(ctx.placeholderSyntaxes, source.value, target.value)
+        const { missing, extra } = comparePlaceholders(ctx.placeholderSyntaxes, source.value, target.value, ctx.placeholders)
         if (missing.length || extra.length) {
           const parts = [
             missing.length ? `missing ${list(missing)}` : '',
