@@ -67,12 +67,15 @@ async function measureLsp(): Promise<{ rescan: number, memory: number }> {
   const memory = (process.memoryUsage().rss - before) / 1024 / 1024
   const path = 'src/features/f1/module1.ts'
   const samples: number[] = []
-  for (let i = 0; i < 10; i++) {
+  // The first steps compile the code paths; then many samples, so the median of a ~30 ms step is stable enough for a 20% gate.
+  const warmup = 10
+  for (let i = 0; i < warmup + 40; i++) {
     await writeFile(join(root, path), `import { useI18n } from 'vue-i18n'\nconst { t } = useI18n()\nt('section1.group1.item${i}')\n`)
     const start = performance.now()
     await project.update([{ type: 'change', path }])
     project.analyze()
-    samples.push(performance.now() - start)
+    if (i >= warmup)
+      samples.push(performance.now() - start)
   }
   samples.sort((a, b) => a - b)
   return { rescan: samples[Math.floor(samples.length / 2)]!, memory }

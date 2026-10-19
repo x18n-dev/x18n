@@ -931,6 +931,10 @@ export type MessageOp = {
   readonly type: "delete";
   readonly path: readonly string[];
 };
+export type PlaceholderComparer = (_: string, _: string) => {
+  readonly missing: string[];
+  readonly extra: string[];
+};
 export type PluginOption = Plugin | Preset | PluginSpecifier | false | undefined;
 export type PluginSpecifier = string | readonly [string, JsonObject];
 export type PresetFactory = (_?: JsonObject) => Preset;
@@ -955,13 +959,10 @@ export declare class X18nError extends Error {
 export declare function applyMessageOps(_: MessageTree, _: readonly MessageOp[]): MessageTree;
 export declare function applyTextEdits(_: string, _: readonly TextEdit[]): string;
 export declare function buildTree(_: Iterable<TreeLeaf>): MessageTree;
-export declare function comparePlaceholders(_: readonly PlaceholderSyntax[], _: string, _: string, _?: (_: string) => readonly Placeholder[]): {
-  readonly missing: string[];
-  readonly extra: string[];
-};
 export declare function createLineIndex(_: string): LineIndex;
 export declare function createMemoryHost(_?: Readonly<Record<string, string>>, _?: string): MemoryHost;
 export declare function createOverlayHost(_: Host): OverlayHost;
+export declare function createPlaceholderComparer(_: readonly PlaceholderSyntax[], _?: (_: string) => readonly Placeholder[]): PlaceholderComparer;
 export declare function createProject(_: CreateProjectOptions): Project;
 export declare function createRegistry(_: readonly Plugin[], _: Pick<ResolvedConfig, "formats">): PluginRegistry;
 export declare function defineConfig(_: UserConfig & { readonly [K in keyof PluginConfigs]?: PluginConfigs[K]; }): UserConfig;

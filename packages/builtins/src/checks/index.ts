@@ -1,5 +1,5 @@
 import type { Check, DiagnosticInput, GlossaryEntry, KeyString, Plugin } from '@x18n/core'
-import { comparePlaceholders, localeSpellingKey } from '@x18n/core'
+import { createPlaceholderComparer, localeSpellingKey } from '@x18n/core'
 import { shouldExtract } from '../extractors'
 
 function list(items: readonly string[]): string {
@@ -136,6 +136,7 @@ export const placeholderMismatch: Check = {
   defaultSeverity: 'error',
   description: 'Target value placeholders differ from the source value.',
   * run(ctx) {
+    const compare = createPlaceholderComparer(ctx.placeholderSyntaxes, ctx.placeholders)
     for (const key of ctx.keys()) {
       const source = ctx.message(key, ctx.sourceLocale)
       if (typeof source?.value !== 'string')
@@ -146,7 +147,7 @@ export const placeholderMismatch: Check = {
         const target = ctx.message(key, locale)
         if (typeof target?.value !== 'string' || target.value === '')
           continue
-        const { missing, extra } = comparePlaceholders(ctx.placeholderSyntaxes, source.value, target.value, ctx.placeholders)
+        const { missing, extra } = compare(source.value, target.value)
         if (missing.length || extra.length) {
           const parts = [
             missing.length ? `missing ${list(missing)}` : '',

@@ -34,36 +34,47 @@ export function parseMessageBatch(project: Project, data: JsonValue): EditOp[] {
 }
 
 /** Set ops whose value drops or adds placeholders compared to the source value. */
+export type PlaceholderComparer = (source: string, target: string) => { readonly missing: string[], readonly extra: string[] }
+
 /**
- * The placeholders a target value lacks or adds compared with its source. Key references (`@:key`) are
- * not parameters, and implicit names (vue-i18n `{n}` in plural messages) may be left out.
+ * Compares the placeholders of a target value with its source. Key references (`@:key`) are not
+ * parameters, and implicit names (vue-i18n `{n}` in plural messages) may be left out. Build it once per run.
  */
-export function comparePlaceholders(
+export function createPlaceholderComparer(
   syntaxes: readonly PlaceholderSyntax[],
-  source: string,
-  target: string,
   /** A cached lookup of every syntax's placeholders, as checks get it. */
   find: (value: string) => readonly Placeholder[] = value => syntaxes.flatMap(s => s.find(value)),
-): { readonly missing: string[], readonly extra: string[] } {
+): PlaceholderComparer {
   const references = new Set(syntaxes.filter(s => s.reference).map(s => s.id))
-  const names = (text: string): string[] => find(text).filter(p => !references.has(p.syntax)).map(p => p.name).sort()
   const implicit = new Set(syntaxes.flatMap(s => s.implicit ?? []))
-  const expected = names(source)
-  const actual = names(target)
-  return {
-    missing: expected.filter(name => !actual.includes(name) && !implicit.has(name)),
-    extra: actual.filter(name => !expected.includes(name) && !implicit.has(name)),
+  const seen = new Map<string, Set<string>>()
+  const names = (text: string): Set<string> => {
+    let found = seen.get(text)
+    if (!found) {
+      found = new Set(find(text).filter(p => !references.has(p.syntax) && !implicit.has(p.name)).map(p => p.name))
+      seen.set(text, found)
+    }
+    return found
+  }
+  return (source, target) => {
+    const expected = names(source)
+    const actual = names(target)
+    return {
+      missing: [...expected].filter(name => !actual.has(name)).sort(),
+      extra: [...actual].filter(name => !expected.has(name)).sort(),
+    }
   }
 }
 
 export function placeholderProblems(project: Project, ops: readonly EditOp[]): PlaceholderProblem[] {
+  const compare = createPlaceholderComparer(project.placeholderSyntaxes)
   return ops.flatMap((op) => {
     if (op.type !== 'set' || op.locale === project.sourceLocale || typeof op.value !== 'string')
       return []
     const source = project.message(op.key, project.sourceLocale)?.value
     if (typeof source !== 'string')
       return []
-    const { missing, extra } = comparePlaceholders(project.placeholderSyntaxes, source, op.value)
+    const { missing, extra } = compare(source, op.value)
     return missing.length || extra.length ? [{ key: op.key, locale: op.locale, missing, extra }] : []
   })
 }

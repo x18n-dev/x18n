@@ -16,10 +16,10 @@ export class X18nError extends Error {
 export function applyMessageOps(_, _) {}
 export function applyTextEdits(_, _) {}
 export function buildTree(_) {}
-export function comparePlaceholders(_, _, _, _) {}
 export function createLineIndex(_) {}
 export function createMemoryHost(_, _) {}
 export function createOverlayHost(_) {}
+export function createPlaceholderComparer(_, _) {}
 export function createProject(_) {}
 export function createRegistry(_, _) {}
 export function defineConfig(_) {}
