@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { compileYamlPlugin } from '@x18n/builtins/yaml-plugin'
 import { isX18nError, PluginFileSchema, validate, X18nError } from '@x18n/core'
 import { createJiti } from 'jiti'
+import { glob } from 'tinyglobby'
 import { parse as parseYaml } from 'yaml'
 
 export const configFileNames: readonly string[] = [
@@ -124,15 +125,31 @@ export function createPluginLoader(dir: string): (specifier: string, options: Js
   }
 }
 
-/** Paths from `root` up to the git root, relative to `root` (`..`, `../..`), whose manifests count for detection. */
-export function manifestRootsOf(root: string, gitRoot: string | undefined): string[] {
+/** Workspace package directories of `root`, from `pnpm-workspace.yaml` or the `workspaces` field of `package.json`. */
+async function workspacePackages(root: string): Promise<string[]> {
+  const pnpm: unknown = parseYaml(await readFile(join(root, 'pnpm-workspace.yaml'), 'utf8').catch(() => '') || '{}')
+  const manifest: unknown = JSON.parse(await readFile(join(root, 'package.json'), 'utf8').catch(() => '{}'))
+  const field = (value: unknown, key: string): unknown => typeof value === 'object' && value !== null && key in value ? new Map(Object.entries(value)).get(key) : undefined
+  const workspaces = field(manifest, 'workspaces')
+  const patterns = [field(pnpm, 'packages'), workspaces, field(workspaces, 'packages')]
+    .flatMap(list => Array.isArray(list) ? list.filter((item): item is string => typeof item === 'string') : [])
+  if (patterns.length === 0)
+    return []
+  const manifests = await glob(patterns.filter(p => !p.startsWith('!')).map(p => `${p.replace(/\/$/, '')}/package.json`), { cwd: root, ignore: ['**/node_modules/**', ...patterns.filter(p => p.startsWith('!')).map(p => p.slice(1))] })
+  return manifests.map(file => dirname(file)).sort()
+}
+
+/**
+ * Directories, relative to `root`, whose manifests count for preset detection: the parents up to the
+ * git root (`..`, `../..`), and the workspace packages of a monorepo root, where the i18n library is often listed.
+ */
+export async function manifestRootsOf(root: string, gitRoot: string | undefined): Promise<string[]> {
   const out: string[] = []
-  if (!gitRoot)
-    return out
+  const top = gitRoot ?? resolve(root)
   let dir = resolve(root)
-  while (dir !== gitRoot && dir.startsWith(gitRoot)) {
+  while (dir !== top && dir.startsWith(top)) {
     dir = dirname(dir)
     out.push(relative(root, dir).replace(/\\/g, '/'))
   }
-  return out
+  return [...out, ...await workspacePackages(root)]
 }

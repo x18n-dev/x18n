@@ -1,11 +1,14 @@
-import type { Builtins, Host, Project, UserConfig } from '@x18n/core'
+import type { Builtins, ConfigDraft, Host, Plugin, Project, SerializableConfig, UserConfig } from '@x18n/core'
 import type { NodeHost } from './host'
-import { dirname, relative, resolve } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, join, relative, resolve } from 'node:path'
 import { createBuiltins } from '@x18n/builtins'
+import { compileYamlPlugin } from '@x18n/builtins/yaml-plugin'
 import { createProject, resolveConfig, X18nError } from '@x18n/core'
 import { glob } from 'tinyglobby'
 import { createPluginLoader, findConfigFile, findConfigUpward, loadConfigFile, manifestRootsOf } from './config'
 import { createNodeHost, findGitRoot } from './host'
+import { readI18nAllyConfig } from './migrate'
 
 export interface LoadOptions {
   /** Where to look for a config file (upward). Default: the process cwd. */
@@ -47,7 +50,75 @@ interface ProjectSpec {
   readonly configFile: string | undefined
 }
 
-async function projectSpecs(rootConfigFile: string | undefined, cwd: string): Promise<{ root: string, specs: ProjectSpec[] }> {
+/** The nearest directory at or above `cwd`, up to the git root, whose `.vscode/settings.json` has i18n-ally settings. */
+function findI18nAllyRoot(cwd: string, upward: boolean): string | undefined {
+  let dir = resolve(cwd)
+  while (true) {
+    const settings = join(dir, '.vscode/settings.json')
+    if (existsSync(settings) && /"(?:vue-)?i18n-ally\./.test(readFileSync(settings, 'utf8')))
+      return dir
+    const parent = dirname(dir)
+    if (!upward || parent === dir || existsSync(join(dir, '.git')))
+      return undefined
+    dir = parent
+  }
+}
+
+/**
+ * Without an x18n config, the project's i18n-ally settings act as defaults, so an i18n-ally project
+ * works as it did in the editor. A plugin applies them, so detection and the locale guess still fill gaps.
+ */
+async function i18nAllyFallback(root: string): Promise<UserConfig | undefined> {
+  const found = await readI18nAllyConfig(root)
+  if (!found)
+    return undefined
+  const { presets, plugins: _plugins, ...defaults } = found.config // plugins point at files migrate would write
+  const settingsPlugin: Plugin = {
+    name: 'x18n:i18n-ally-settings',
+    config: draft => applyDefaults(draft, defaults),
+  }
+  return { ...presets ? { presets } : {}, plugins: [settingsPlugin, ...found.plugin ? [compileYamlPlugin(found.plugin)] : []] }
+}
+
+function applyDefaults(draft: ConfigDraft, config: SerializableConfig): void {
+  if (config.sourceLocale)
+    draft.sourceLocale = config.sourceLocale
+  if (config.ignoreLocales)
+    draft.ignoreLocales = [...draft.ignoreLocales, ...config.ignoreLocales]
+  if (config.resources)
+    draft.resources = [...draft.resources, ...config.resources]
+  if (config.formats)
+    draft.formats = { ...draft.formats, ...config.formats }
+  if (config.keyStyle)
+    draft.keyStyle = config.keyStyle
+  if (config.namespace?.default)
+    draft.namespace = { ...draft.namespace, default: config.namespace.default }
+  if (config.usage) {
+    draft.usage = {
+      ...draft.usage,
+      keysInUse: [...draft.usage.keysInUse, ...config.usage.keysInUse ?? []],
+      derivedKeys: [...draft.usage.derivedKeys, ...config.usage.derivedKeys ?? []],
+      exclude: [...draft.usage.exclude, ...config.usage.exclude ?? []],
+    }
+  }
+  if (config.write) {
+    draft.write = {
+      sort: config.write.sort ?? draft.write.sort,
+      indent: config.write.indent ?? draft.write.indent,
+      keepFilled: config.write.keepFilled ?? draft.write.keepFilled,
+    }
+  }
+  if (config.extract)
+    draft.extract = { ...draft.extract, ...config.extract }
+}
+
+async function projectSpecs(rootConfigFile: string | undefined, cwd: string, upward: boolean): Promise<{ root: string, specs: ProjectSpec[] }> {
+  if (!rootConfigFile) {
+    const settingsRoot = findI18nAllyRoot(cwd, upward)
+    const fallback = settingsRoot && await i18nAllyFallback(settingsRoot)
+    if (settingsRoot && fallback)
+      return { root: settingsRoot, specs: [{ root: settingsRoot, config: fallback, parent: undefined, configFile: join(settingsRoot, '.vscode/settings.json') }] }
+  }
   const configDir = rootConfigFile ? dirname(rootConfigFile) : resolve(cwd)
   const rootConfig = rootConfigFile ? await loadConfigFile(rootConfigFile) : {}
   const root = resolve(configDir, rootConfig.root ?? '.')
@@ -70,7 +141,7 @@ export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
   const configFile = options.configFile
     ? resolve(options.cwd, options.configFile)
     : options.upward === false ? findConfigFile(resolve(options.cwd)) : findConfigUpward(options.cwd)
-  const { root, specs } = await projectSpecs(configFile, options.cwd)
+  const { root, specs } = await projectSpecs(configFile, options.cwd, options.upward !== false)
   const builtins = options.builtins ?? createBuiltins()
   const gitRoot = findGitRoot(root)
   const loaded: LoadedProject[] = []
@@ -88,7 +159,7 @@ export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
       name,
       runtime: 'node',
       loadPlugin: createPluginLoader(spec.configFile ? dirname(spec.configFile) : spec.root),
-      manifestRoots: manifestRootsOf(spec.root, gitRoot),
+      manifestRoots: await manifestRootsOf(spec.root, gitRoot),
     })
     const project = createProject({ host: projectHost, setup })
     await project.ready

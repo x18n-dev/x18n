@@ -325,36 +325,62 @@ function mapConfig(settings: Settings, parts: PluginParts, notes: string[]): Ser
   }
 }
 
-/** Converts i18n-ally settings, custom framework and reviews into x18n files. Never deletes i18n-ally files. */
-export async function migrateI18nAlly(root: string, options: MigrateOptions = {}): Promise<MigrationResult> {
-  const { settings, keys } = await readSettings(root)
-  const customText = await readText(join(root, '.vscode/i18n-ally-custom-framework.yml'))
-  const reviews = await readText(join(root, '.vscode/i18n-ally-reviews.yml'))
-  const notes: string[] = []
-  if (keys.length === 0 && customText === undefined)
-    return { files: [], notes: ['No i18n-ally settings found.'], removable: [] }
+export interface I18nAllyConfig {
+  /** The x18n config the settings mean. */
+  readonly config: SerializableConfig
+  /** Custom regexes, scopes, templates and flags, as a YAML plugin. */
+  readonly plugin: PluginFile | undefined
+  readonly notes: readonly string[]
+  /** The `i18n-ally.*` settings keys that were read. */
+  readonly keys: readonly string[]
+  readonly customFramework: boolean
+}
 
+/** The x18n config that a project's i18n-ally settings and custom framework mean, or undefined without any. */
+export async function readI18nAllyConfig(root: string): Promise<I18nAllyConfig | undefined> {
+  const { settings, keys } = await readSettings(root)
+  return configOf(root, settings, keys)
+}
+
+async function configOf(root: string, settings: Settings, keys: readonly string[]): Promise<I18nAllyConfig | undefined> {
+  const customText = await readText(join(root, '.vscode/i18n-ally-custom-framework.yml'))
+  if (keys.length === 0 && customText === undefined)
+    return undefined
+  const notes: string[] = []
   const parts: PluginParts = { regex: [], scopes: undefined, templates: [], localeInfo: {}, exclusive: false }
   if (customText !== undefined)
     customFramework(parseYaml(customText), parts)
   const config = mapConfig(settings, parts, notes)
-  const files: MigrationFile[] = []
-
-  const plugin: PluginFile = {
-    $schema: '../node_modules/@x18n/core/schema/plugin.json',
-    name: 'custom',
-    ...parts.regex.length ? { scanners: { regex: parts.regex } } : {},
-    ...parts.scopes ? { scopes: { regex: parts.scopes } } : {},
-    ...parts.templates.length ? { extract: { templates: parts.templates } } : {},
-    ...Object.keys(parts.localeInfo).length ? { localeInfo: parts.localeInfo } : {},
-  }
+  if (parts.exclusive)
+    notes.push('The custom framework was exclusive (`monopoly`), so built-in presets are turned off (`presets: []`).')
   const needsPlugin = parts.regex.length > 0 || parts.scopes !== undefined || parts.templates.length > 0 || Object.keys(parts.localeInfo).length > 0
+  const plugin: PluginFile | undefined = needsPlugin
+    ? {
+        name: 'custom',
+        ...parts.regex.length ? { scanners: { regex: parts.regex } } : {},
+        ...parts.scopes ? { scopes: { regex: parts.scopes } } : {},
+        ...parts.templates.length ? { extract: { templates: parts.templates } } : {},
+        ...Object.keys(parts.localeInfo).length ? { localeInfo: parts.localeInfo } : {},
+      }
+    : undefined
+  return { config, plugin, notes, keys, customFramework: customText !== undefined }
+}
+
+/** Converts i18n-ally settings, custom framework and reviews into x18n files. Never deletes i18n-ally files. */
+export async function migrateI18nAlly(root: string, options: MigrateOptions = {}): Promise<MigrationResult> {
+  const { settings, keys } = await readSettings(root)
+  const found = await configOf(root, settings, keys)
+  if (!found)
+    return { files: [], notes: ['No i18n-ally settings found.'], removable: [] }
+  const { config, plugin } = found
+  const notes = [...found.notes]
+  const reviews = await readText(join(root, '.vscode/i18n-ally-reviews.yml'))
+  const files: MigrationFile[] = []
+  const needsPlugin = plugin !== undefined
   const finalConfig: SerializableConfig = needsPlugin ? { ...config, plugins: ['./x18n/custom.x18n-plugin.yml'] } : config
   files.push(configFile(finalConfig, options.format ?? 'ts'))
-  if (needsPlugin) {
-    const { $schema, ...rest } = plugin
-    files.push({ path: 'x18n/custom.x18n-plugin.yml', content: `# yaml-language-server: $schema=${$schema}\n${stringifyYaml(rest)}` })
-  }
+  if (plugin)
+    files.push({ path: 'x18n/custom.x18n-plugin.yml', content: `# yaml-language-server: $schema=../node_modules/@x18n/core/schema/plugin.json\n${stringifyYaml(plugin)}` })
 
   // Editor UX settings stay in VS Code; they never override the config.
   const vscodePath = join(root, '.vscode/settings.json')
@@ -374,7 +400,5 @@ export async function migrateI18nAlly(root: string, options: MigrateOptions = {}
     files.push({ path: '.x18n/reviews.yml', content: reviews })
     notes.push('Reviews were copied to `.x18n/reviews.yml`; x18n reads them once reviews ship (1.x).')
   }
-  if (parts.exclusive)
-    notes.push('The custom framework was exclusive (`monopoly`), so built-in presets are turned off (`presets: []`).')
-  return { files, notes, removable: [...keys, ...customText !== undefined ? ['.vscode/i18n-ally-custom-framework.yml'] : []] }
+  return { files, notes, removable: [...keys, ...found.customFramework ? ['.vscode/i18n-ally-custom-framework.yml'] : []] }
 }

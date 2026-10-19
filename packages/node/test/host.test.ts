@@ -109,4 +109,44 @@ describe('loadWorkspace', () => {
     const [loaded] = (await loadWorkspace({ cwd: root, cache: false })).projects
     expect(loaded!.project.sourceLocale).toBe('de')
   })
+
+  it('detects presets from the workspace packages of a monorepo', async () => {
+    await write({
+      'pnpm-workspace.yaml': 'packages:\n  - packages/*\n',
+      'packages/app/package.json': '{"dependencies":{"vue-i18n":"11"}}',
+      'packages/app/locales/en.json': '{"a":"A"}',
+      'packages/app/src/App.vue': '<template>{{ $t(\'a\') }}</template>',
+    })
+    const [loaded] = (await loadWorkspace({ cwd: root, cache: false })).projects
+    expect(loaded!.project.explain().presets.find(p => p.name === 'vue-i18n')?.reason).toBe('detected')
+    expect(loaded!.project.analyze().unused).toEqual([])
+  })
+
+  it('falls back to i18n-ally settings without a config', async () => {
+    await write({
+      '.vscode/settings.json': '{\n  // comments are fine\n  "i18n-ally.localesPaths": ["lang"],\n  "i18n-ally.sourceLanguage": "de",\n  "i18n-ally.keysInUse": ["runtime.*"],\n  "i18n-ally.enabledFrameworks": ["vue"],\n}\n',
+      'lang/de.json': '{"a":"A","runtime":{"x":"X"}}',
+      'lang/index.ts': 'export {}',
+      'src/a.ts': 't(\'a\')',
+    })
+    const workspace = await loadWorkspace({ cwd: join(root, 'src'), cache: false })
+    const project = workspace.projects[0]!.project
+    expect(workspace.configFile).toBeUndefined()
+    expect(workspace.projects[0]!.configFile).toBe(join(root, '.vscode/settings.json'))
+    expect(project.sourceLocale).toBe('de')
+    expect(project.locales).toEqual(['de'])
+    expect(project.analyze().unused).toEqual([])
+  })
+
+  it('guesses locale files when the i18n-ally paths are stale, and prefers a config file', async () => {
+    await write({
+      '.vscode/settings.json': '{ "i18n-ally.localesPaths": ["app/i18n"] }',
+      'packages/app/src/i18n/locales/en.json': '{"a":"A"}',
+    })
+    expect((await loadWorkspace({ cwd: root, cache: false })).projects[0]!.project.keys()).toEqual(['a'])
+    await write({ 'x18n.config.json': '{ "resources": [{ "pattern": "packages/app/src/i18n/locales/{locale}.json" }], "sourceLocale": "fr" }' })
+    const [loaded] = (await loadWorkspace({ cwd: root, cache: false })).projects
+    expect(loaded!.configFile).toBe(join(root, 'x18n.config.json'))
+    expect(loaded!.project.sourceLocale).toBe('fr')
+  })
 })
