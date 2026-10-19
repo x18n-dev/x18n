@@ -63,7 +63,7 @@ function defaultDraft(): ConfigDraft {
     resources: [],
     formats: {},
     keyStyle: 'auto',
-    namespace: { separator: '.', default: undefined },
+    namespace: { separator: '.', default: undefined, fromPath: 'dot' },
     usage: {
       include: ['**/*'],
       exclude: defaultExclude,
@@ -121,6 +121,7 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
     draft.namespace = {
       separator: layer.namespace.separator ?? draft.namespace.separator,
       default: layer.namespace.default ?? draft.namespace.default,
+      fromPath: layer.namespace.fromPath ?? draft.namespace.fromPath,
     }
     mark('namespace')
   }

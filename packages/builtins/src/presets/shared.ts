@@ -1,4 +1,4 @@
-import type { CallSpec, ConfigContext, ConfigDraft, DetectContext, ExtractTemplate, LocaleFinder, Plugin, RegexScannerSpec, ResourceSpec, ResourceTransform } from '@x18n/core'
+import type { CallSpec, ConfigContext, ConfigDraft, DetectContext, ExtractTemplate, LocaleFinder, NamespaceFromPath, Plugin, RegexScannerSpec, ResourceSpec, ResourceTransform } from '@x18n/core'
 
 export interface LibraryOptions {
   readonly name: string
@@ -6,7 +6,7 @@ export interface LibraryOptions {
   /** i18n-ally style `usageMatchRegex` patterns, for languages without an AST scanner. */
   readonly regex?: readonly RegexScannerSpec[]
   readonly derivedKeys?: readonly string[]
-  readonly namespace?: { readonly separator: string, readonly default?: string }
+  readonly namespace?: { readonly separator?: string, readonly default?: string, readonly fromPath?: NamespaceFromPath }
   /** Default resource patterns (i18n-ally `preferredLocalePaths` + `pathMatcher`). */
   readonly resources?: readonly ResourceSpec[]
   readonly keyStyle?: 'nested' | 'flat'
@@ -25,8 +25,9 @@ export function library(options: LibraryOptions): Plugin {
     async config(draft, ctx) {
       if (options.namespace) {
         draft.namespace = {
-          separator: options.namespace.separator,
+          separator: options.namespace.separator ?? draft.namespace.separator,
           default: draft.namespace.default ?? options.namespace.default,
+          fromPath: options.namespace.fromPath ?? draft.namespace.fromPath,
         }
       }
       // Defaults of every detected library add up; a user `resources` replaces them all.

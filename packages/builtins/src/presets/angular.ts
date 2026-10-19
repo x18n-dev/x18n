@@ -41,6 +41,8 @@ export function transloco(): Preset {
     plugins: [
       library({
         name: 'transloco',
+        // The scope folder `todos-page` is the key prefix `todosPage.`.
+        namespace: { fromPath: 'camel' },
         calls: [{ callee: ['translate', 'translocoService.translate', 'transloco.translate', 'translocoService.selectTranslate', 'transloco.selectTranslate'] }],
         regex: [{
           extensions: templates,

@@ -1,5 +1,5 @@
 // Adapted from i18n-ally (MIT), src/utils/PathMatcher.ts and src/core/loaders/LocaleLoader.ts
-import type { FinderContext, LocaleFinder, Plugin, ResourceCandidate, ResourceSpec } from '@x18n/core'
+import type { FinderContext, LocaleFinder, NamespaceFromPath, Plugin, ResourceCandidate, ResourceSpec } from '@x18n/core'
 
 const localeLike = /^[a-z]{2,3}(?:[-_][a-z\d]{2,8})*$/i
 
@@ -97,7 +97,7 @@ export function compilePattern(pattern: string, extensions: readonly string[]): 
       const extension = groups.ext ?? path.slice(path.lastIndexOf('.') + 1)
       return {
         locale: groups.locale,
-        namespace: groups.namespace?.replace(/\//g, '.'),
+        namespace: groups.namespace,
         ext: extension,
       }
     },
@@ -134,6 +134,15 @@ export async function guessResources(ctx: FinderContext): Promise<ResourceSpec[]
   return specs
 }
 
+/** A namespace from a path in the style of `namespace.fromPath`. Transloco camelCases scope folders, as its `toCamelCase`. */
+export function namespaceFromPath(path: string, style: NamespaceFromPath): string {
+  if (style === 'slash')
+    return path
+  if (style === 'camel')
+    return path.replace(/[-_/\s]+(.)/g, (_, c: string) => c.toUpperCase()).replace(/^./, c => c.toLowerCase())
+  return path.replace(/\//g, '.')
+}
+
 async function findBySpecs(ctx: FinderContext, specs: readonly ResourceSpec[], strictLocales: boolean): Promise<ResourceCandidate[]> {
   const out: ResourceCandidate[] = []
   for (const spec of specs) {
@@ -149,7 +158,8 @@ async function findBySpecs(ctx: FinderContext, specs: readonly ResourceSpec[], s
       // A `{locale}` the user did not write must look like a locale code, so `locales/index.ts` is not a resource.
       if (!locale || (strictLocales && !isLocaleCode(locale)))
         continue
-      out.push({ path, locale, namespace: spec.namespace ?? matched.namespace, format: spec.format, readonly: spec.execute === true })
+      const namespace = spec.namespace ?? (matched.namespace === undefined ? undefined : namespaceFromPath(matched.namespace, ctx.config.namespace.fromPath))
+      out.push({ path, locale, namespace, format: spec.format, readonly: spec.execute === true })
     }
   }
   return out
@@ -158,14 +168,16 @@ async function findBySpecs(ctx: FinderContext, specs: readonly ResourceSpec[], s
 export const patternFinder: LocaleFinder = {
   id: 'pattern',
   resolveNew(target, ctx) {
+    const style = ctx.config.namespace.fromPath
     for (const spec of ctx.config.resources) {
       const wantsNamespace = /\{namespaces?\}/.test(spec.pattern)
-      if (wantsNamespace !== (target.namespace !== undefined) || spec.execute || !spec.pattern.includes('{locale'))
+      // A camelCased namespace has lost its folder name; the planner mirrors a sibling's path instead.
+      if (wantsNamespace !== (target.namespace !== undefined) || (wantsNamespace && style === 'camel') || spec.execute || !spec.pattern.includes('{locale'))
         continue
       const path = spec.pattern
         .replace(/^\.\//, '')
         .replace(/\{locale\??\}/g, target.locale)
-        .replace('{namespaces}', (target.namespace ?? '').replace(/\./g, '/'))
+        .replace('{namespaces}', style === 'slash' ? target.namespace ?? '' : (target.namespace ?? '').replace(/\./g, '/'))
         .replace('{namespace}', target.namespace ?? '')
         .replace('{ext}', spec.format === 'yaml' ? 'yml' : spec.format ?? 'json')
       if (!/[*?{}[\]]/.test(path))

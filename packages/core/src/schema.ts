@@ -5,6 +5,7 @@ import type {
   ExtractOptions,
   ExtractTemplate,
   GlossaryEntry,
+  NamespaceOptions,
   RegexScannerSpec,
   ResourceSpec,
   SerializableConfig,
@@ -94,7 +95,8 @@ const checkSetting = v.union([level, v.tuple([level, jsonObject])]) satisfies v.
 const namespaceOptions = v.strictObject({
   separator: v.optional(v.string()),
   default: v.optional(v.string()),
-})
+  fromPath: v.optional(v.picklist(['dot', 'slash', 'camel'])),
+}) satisfies v.GenericSchema<NamespaceOptions>
 
 const configSchema = v.strictObject({
   $schema: v.optional(v.string()),
@@ -147,7 +149,7 @@ export interface PluginFile {
     readonly sourceLocale?: string | undefined
     readonly locales?: readonly string[] | undefined
     readonly resources?: readonly ResourceSpec[] | undefined
-    readonly namespace?: { readonly separator?: string | undefined, readonly default?: string | undefined } | undefined
+    readonly namespace?: NamespaceOptions | undefined
     readonly keyStyle?: 'auto' | 'nested' | 'flat' | undefined
   } | undefined
   readonly scanners?: {

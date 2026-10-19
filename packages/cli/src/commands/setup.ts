@@ -1,9 +1,10 @@
-import type { PluginFile } from '@x18n/core'
+import type { NamespaceFromPath, PluginFile } from '@x18n/core'
 import type { GlobalOptions } from '../context'
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { join, resolve } from 'node:path'
+import { namespaceFromPath } from '@x18n/builtins/finders'
 import { PluginFileSchema, validate, X18nError } from '@x18n/core'
 import { configFileNames, findConfigFile, loadWorkspace } from '@x18n/node'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
@@ -23,11 +24,23 @@ export async function schema(name: string | undefined, options: GlobalOptions): 
 
 const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+/** The folders and file name that name `namespace`, in the style of `namespace.fromPath`. */
+function namespaceSpan(parts: readonly string[], namespace: string, fromPath: NamespaceFromPath): { start: number, end: number } | undefined {
+  for (let start = 0; start < parts.length; start++) {
+    for (let end = start + 1; end <= parts.length; end++) {
+      if (namespaceFromPath(parts.slice(start, end).join('/'), fromPath) === namespace)
+        return { start, end }
+    }
+  }
+}
+
 /** The resource pattern that matches a found file: `public/locales/en/common.json` → `public/locales/{locale}/{namespaces}.{ext}`. */
-function patternOf(resource: { readonly path: string, readonly locale: string, readonly namespace: string | undefined }): string {
-  let pattern = resource.path.replace(/\.[^./]+$/, '.{ext}')
-  if (resource.namespace !== undefined)
-    pattern = pattern.replace(new RegExp(`(^|/)${escapeRegExp(resource.namespace.replace(/\./g, '/'))}(?=\.\{ext\}$|/)`), '$1{namespaces}')
+function patternOf(resource: { readonly path: string, readonly locale: string, readonly namespace: string | undefined }, fromPath: NamespaceFromPath): string {
+  const parts = resource.path.replace(/\.[^./]+$/, '').split('/')
+  const span = resource.namespace === undefined ? undefined : namespaceSpan(parts, resource.namespace, fromPath)
+  if (span)
+    parts.splice(span.start, span.end - span.start, '{namespaces}')
+  const pattern = `${parts.join('/')}.{ext}`
   return pattern.replace(new RegExp(`(^|[/._-])${escapeRegExp(resource.locale)}(?=[/._-])`), '$1{locale}')
 }
 
@@ -42,7 +55,7 @@ export async function init(options: GlobalOptions & { readonly format?: string |
   const explanation = project.explain()
   const detected = explanation.presets.filter(p => p.reason === 'detected' && p.name !== 'general').map(p => p.name)
   // Patterns of the files found, not every default of the detected presets.
-  const resources = [...new Set(project.resources.filter(r => !r.block).map(patternOf))]
+  const resources = [...new Set(project.resources.filter(r => !r.block).map(r => patternOf(r, project.config.namespace.fromPath)))]
   const config = { sourceLocale: project.sourceLocale, resources: resources.map(pattern => ({ pattern })) }
   const format = options.format ?? 'ts'
   let file: string

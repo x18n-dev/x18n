@@ -80,6 +80,57 @@ describe('tier 1 presets', () => {
   })
 })
 
+// Cases that i18n-ally-next fixed after the fork of i18n-ally.
+describe('namespaces', () => {
+  it('react-i18next: folders, keyPrefix and flat dotted keys', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('react-i18next', 'i18next'),
+      'locales/en/translation.json': json({ 'common.stackTrace': 'Stack', 'title': 'T' }),
+      'locales/en/errors.json': json({ notFound: 'Not found' }),
+      'locales/en/pages/home.json': json({ title: 'Home', foo: { bar: { baz: 'B' } } }),
+      'src/A.tsx': [
+        `function A() { const { t } = useTranslation(); return t('common.stackTrace') + t('errors:notFound') }`,
+        `function B() { const { t } = useTranslation('pages/home', { keyPrefix: 'foo.bar' }); return t('baz') + t('translation:title') }`,
+        `function C() { const { t } = useTranslation('pages/home'); return t('title') + t('pages/home:foo.bar.baz') }`,
+      ].join('\n'),
+    }, { resources: [{ pattern: 'locales/{locale}/{namespaces}.json' }], keyStyle: 'flat' })
+    expect(project.usages().map(m => m.usage.key)).toEqual([
+      'translation:common.stackTrace',
+      'errors:notFound',
+      'pages/home:foo.bar.baz',
+      'translation:title',
+      'pages/home:title',
+      'pages/home:foo.bar.baz',
+    ])
+    expect(project.analyze().undefinedUsages).toEqual([])
+  })
+
+  it('i18next: a configured default namespace and explicit ones', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('i18next'),
+      'locales/en/translation.json': json({ a: 'A' }),
+      'locales/en/errors.json': json({ x: 'X' }),
+      'src/a.ts': `i18next.t('x'); i18next.t('errors:x'); i18next.t('translation:a')`,
+    }, { resources: [{ pattern: 'locales/{locale}/{namespace}.json' }], namespace: { default: 'errors' } })
+    expect(project.usages().map(m => m.usage.key)).toEqual(['errors:x', 'errors:x', 'translation:a'])
+    expect(project.analyze().undefinedUsages).toEqual([])
+  })
+
+  it('transloco: a kebab-case scope folder is a camelCase key prefix', async () => {
+    const { project, files } = await createTestProject({
+      'package.json': pkg('@jsverse/transloco'),
+      'src/assets/i18n/en.json': json({ hello: 'Hello' }),
+      'src/assets/i18n/todos-page/en.json': json({ title: 'Todos' }),
+      'src/assets/i18n/de.json': json({ hello: 'Hallo' }),
+      'src/app/todos.component.html': `<h1>{{ 'todosPage.title' | transloco }}</h1><p>{{ 'hello' | transloco }}</p>`,
+    })
+    expect(project.keys()).toEqual(['hello', 'todosPage.title'])
+    expect(project.analyze().undefinedUsages).toEqual([])
+    await project.apply(project.plan([{ type: 'set', key: 'todosPage.title', locale: 'de', value: 'Aufgaben' }]))
+    expect(JSON.parse(files.get('src/assets/i18n/todos-page/de.json')!)).toEqual({ title: 'Aufgaben' })
+  })
+})
+
 describe('glossary check', () => {
   it('matches terms as whole words', async () => {
     const { project } = await createTestProject({

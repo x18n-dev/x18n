@@ -53,7 +53,7 @@ Project settings live only in the config file. Editors have UX settings only and
 | `resources` | ResourceSpec[] | from presets | `{ pattern, format?, namespace?, execute? }`. Feeds the `pattern` finder. `execute: true` runs matching JS/TS files in Node and makes them read-only ([05-builtins.md](./05-builtins.md)). |
 | `formats` | `Record<ext, formatId>` | by extension | Explicit format per extension. |
 | `keyStyle` | `'auto' \| 'nested' \| 'flat'` | `'auto'` | `'auto'` keeps what each file uses. New files use the style of most files. |
-| `namespace` | `{ separator?, default?, fromPath? }` | from presets | |
+| `namespace` | `{ separator?, default?, fromPath? }` | from presets | `fromPath` names a namespace from `{namespaces}` folders: `dot` (default, `pages.home`), `slash` (i18next, `pages/home`), `camel` (Transloco, `todos-page` is `todosPage`) |
 | `usage.include` / `usage.exclude` | string[] | `**/*` / gitignore + build dirs | Source files to scan. |
 | `usage.calls` | CallSpec[] | from presets | Extra callee names, factories, wrappers, typed params ([03-plugins.md](./03-plugins.md)). |
 | `usage.ignoreCallees` | string[] | `[]` | Callee names never counted, for false positives of name matching. |

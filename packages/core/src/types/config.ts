@@ -111,7 +111,11 @@ export interface NamespaceOptions {
   readonly separator?: string | undefined
   /** Namespace of keys written without one. */
   readonly default?: string | undefined
+  /** How `{namespaces}` folders name a namespace: `dot` makes `pages/home` into `pages.home`, `slash` keeps `pages/home`, `camel` makes `todos-page` into `todosPage`. Default `dot`. */
+  readonly fromPath?: 'dot' | 'slash' | 'camel' | undefined
 }
+
+export type NamespaceFromPath = NonNullable<NamespaceOptions['fromPath']>
 
 export type PluginSpecifier = string | readonly [string, JsonObject]
 
@@ -178,7 +182,7 @@ export interface ResolvedConfig {
   readonly resources: readonly ResourceSpec[]
   readonly formats: { readonly [extension: string]: string }
   readonly keyStyle: 'auto' | 'nested' | 'flat'
-  readonly namespace: { readonly separator: string, readonly default: string | undefined }
+  readonly namespace: { readonly separator: string, readonly default: string | undefined, readonly fromPath: NamespaceFromPath }
   readonly usage: {
     readonly include: readonly string[]
     readonly exclude: readonly string[]

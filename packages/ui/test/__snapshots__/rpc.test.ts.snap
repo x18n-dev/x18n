@@ -851,6 +851,7 @@ exports[`rpc functions > explains the project 1`] = `
         "keyStyle": "auto",
         "name": "vue-i18n",
         "namespace": {
+          "fromPath": "dot",
           "separator": ".",
         },
         "origins": {

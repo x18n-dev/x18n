@@ -322,6 +322,7 @@ export interface MessageTree {
 export interface NamespaceOptions {
   readonly separator?: string | undefined;
   readonly default?: string | undefined;
+  readonly fromPath?: "dot" | "slash" | "camel" | undefined;
 }
 export interface NodeRange {
   readonly key: TextRange;
@@ -401,10 +402,7 @@ export interface PluginFile {
     readonly sourceLocale?: string | undefined;
     readonly locales?: readonly string[] | undefined;
     readonly resources?: readonly ResourceSpec[] | undefined;
-    readonly namespace?: {
-      readonly separator?: string | undefined;
-      readonly default?: string | undefined;
-    } | undefined;
+    readonly namespace?: NamespaceOptions | undefined;
     readonly keyStyle?: "auto" | "nested" | "flat" | undefined;
   } | undefined;
   readonly scanners?: {
@@ -633,6 +631,7 @@ export interface ResolvedConfig {
   readonly namespace: {
     readonly separator: string;
     readonly default: string | undefined;
+    readonly fromPath: NamespaceFromPath;
   };
   readonly usage: {
     readonly include: readonly string[];
@@ -931,6 +930,7 @@ export type MessageOp = {
   readonly type: "delete";
   readonly path: readonly string[];
 };
+export type NamespaceFromPath = NonNullable<NamespaceOptions["fromPath"]>;
 export type PlaceholderComparer = (_: string, _: string) => {
   readonly missing: string[];
   readonly extra: string[];

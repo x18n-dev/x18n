@@ -228,6 +228,14 @@ exports[`schemas > config schema 1`] = `
         "default": {
           "type": "string",
         },
+        "fromPath": {
+          "enum": [
+            "dot",
+            "slash",
+            "camel",
+          ],
+          "type": "string",
+        },
         "separator": {
           "type": "string",
         },
@@ -560,6 +568,14 @@ exports[`schemas > plugin schema 1`] = `
           "additionalProperties": false,
           "properties": {
             "default": {
+              "type": "string",
+            },
+            "fromPath": {
+              "enum": [
+                "dot",
+                "slash",
+                "camel",
+              ],
               "type": "string",
             },
             "separator": {

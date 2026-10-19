@@ -64,7 +64,8 @@ async function findDefaultNamespace(host: ConfigContext['host']): Promise<string
 
 const i18nextPlugin = library({
   name: 'i18next',
-  namespace: { separator: ':', default: 'translation' },
+  // i18next names a namespace in a folder by its path: `useTranslation('pages/home')`.
+  namespace: { separator: ':', default: 'translation', fromPath: 'slash' },
   extra: async (draft, ctx) => {
     const found = ctx.user.namespace?.default ? undefined : await findDefaultNamespace(ctx.host)
     if (found)

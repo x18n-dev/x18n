@@ -71,7 +71,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | --- | --- | --- | --- |
 | `vue-i18n` | vue-i18n, vuex-i18n, @intlify/*, petite-vue-i18n | `$t`, `t`, `tc`, `te`, `d`, `n`, `v-t`, `<i18n-t>`, `useI18n` factory, linked messages `@:key`, `sfc-blocks` | 1 |
 | `nuxt-i18n` | @nuxtjs/i18n | `vue-i18n` + Nuxt `langDir` from `nuxt.config` when static, `i18n/locales` default | 1 |
-| `i18next` | i18next | `t`, the selector form `t($ => $.a.b)`, namespaces `ns:key`, plural and context suffixes, `{{x}}` placeholders | 1 |
+| `i18next` | i18next | `t`, the selector form `t($ => $.a.b)`, namespaces `ns:key` (folder namespaces keep `/`), plural and context suffixes, `{{x}}` placeholders | 1 |
 | `react-i18next` | react-i18next, next-i18next | `i18next` + `useTranslation(ns)` factory, `<Trans i18nKey>`, `keyPrefix` | 1 |
 | `next-intl` | next-intl | `useTranslations(ns)` / `getTranslations` factories, `t.rich`, `t.markup`, `t.raw`, ICU placeholders | 1 |
 | `react-intl` | react-intl, @formatjs/* | `formatMessage({ id })`, `<FormattedMessage id>`, `defineMessages`, ICU | 1 |
@@ -82,7 +82,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `next-international` | next-international | `useI18n`, `useScopedI18n(scope)` | 2 |
 | `next-translate` | next-translate | `{locale}/{namespace}.json`, `ns:key` | 2 |
 | `ngx-translate` | @ngx-translate/core | `translate` pipe, `instant`, `get`, `[translate]` | 2 |
-| `transloco` | @jsverse/transloco, @ngneat/transloco | pipe, directive, `*transloco="let t; read: 'scope'"` scopes | 2 |
+| `transloco` | @jsverse/transloco, @ngneat/transloco | pipe, directive, `*transloco="let t; read: 'scope'"` scopes, camelCase scope folders as key prefixes | 2 |
 | `lingui` | @lingui/core | `po` format, `{locale}/messages.po`, `t` macro, `<Trans>` | 2 |
 | `fluent-vue` | fluent-vue | `ftl` format, `$t`, `<fluent>` blocks | 2 |
 | `paraglide` | @inlang/paraglide-js | `messages/{locale}.json`, `m.key()` accessor calls | 2 |
