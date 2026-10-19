@@ -85,6 +85,25 @@ describe('extraction per preset', () => {
     expect(JSON.parse(files.get('locales/en/translation.json')!)).toEqual({ closeDialog: 'Close dialog', helloThere: 'Hello there', signedInAs: 'Signed in as {{name}}' })
   })
 
+  it('escapes source-text keys for the quotes of each template', async () => {
+    const { project: react } = await createTestProject({
+      'locales/en/translation.json': json({}),
+      'src/App.tsx': 'export function A() {\n  const label = "Don\'t stop now"\n  return <p>Say "hi" there</p>\n}\n',
+    }, { presets: [reactI18next()], resources: [{ pattern: 'locales/{locale}/{namespace}.json' }], extract: { keygen: 'source' } })
+    expect(findCandidates(react).map(c => c.replacement)).toEqual([
+      'i18next.t(\'Don\\\'t stop now\')',
+      '<Trans i18nKey="Say &quot;hi&quot; there" />',
+    ])
+    const { project: vue } = await createTestProject({
+      'src/locales/en.json': json({}),
+      'src/App.vue': '<template>\n  <p title="It\'s here now">Don\'t stop now</p>\n</template>\n',
+    }, { presets: [vueI18n()], extract: { keygen: 'source' } })
+    expect(findCandidates(vue).map(c => c.replacement)).toEqual([
+      ':title="$t(\'It\\\'s here now\')"',
+      '{{ $t(\'Don\\\'t stop now\') }}',
+    ])
+  })
+
   it('react-intl: FormattedMessage and formatMessage', async () => {
     const { project, files } = await createTestProject({
       'lang/en.json': json({}),

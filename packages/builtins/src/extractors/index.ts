@@ -205,6 +205,24 @@ function rawKeyFor(project: Project, key: KeyString): string {
   return project.namespaced && ns && key.startsWith(`${ns}:`) ? key.slice(ns.length + 1) : key
 }
 
+/**
+ * Escapes a key for the quotes around `{key}` in a template, since `keygen: 'source'` keys hold any text:
+ * backslashes inside a JS string, entities inside a double-quoted attribute (`:title="$t('{key}')"`).
+ */
+function quoteKey(before: string, key: string): string {
+  const quote = before.at(-1)
+  const inAttribute = /="[^"]*$/.test(before)
+  let out = key
+  if (quote === '\'' || quote === '`' || (quote === '"' && !inAttribute))
+    out = out.replace(quote === '`' ? /[\\`]|\$\{/g : new RegExp(`[\\\\${quote}]`, 'g'), c => `\\${c}`)
+  return inAttribute ? out.replace(/&/g, '&amp;').replace(/"/g, '&quot;') : out
+}
+
+function fillTemplate(template: string, values: { readonly key: string, readonly attr: string, readonly args: string }): string {
+  return template.replace(/\{(key|attr|args)\}/g, (_, name: 'key' | 'attr' | 'args', at: number) =>
+    name === 'key' ? quoteKey(template.slice(0, at), values.key) : values[name])
+}
+
 /** Hard strings worth extracting, with proposed keys, values and replacements. */
 export function findCandidates(project: Project, options: FindOptions = {}): ExtractCandidate[] {
   const inFiles = options.files?.length ? pathMatcher(options.files) : undefined
@@ -236,7 +254,7 @@ export function findCandidates(project: Project, options: FindOptions = {}): Ext
       key,
       reused,
       value,
-      replacement: chosen.replace('{key}', rawKeyFor(project, key)).replace('{attr}', hard.attribute ?? '').replace('{args}', args),
+      replacement: fillTemplate(chosen, { key: rawKeyFor(project, key), attr: hard.attribute ?? '', args }),
       imports: template?.imports ?? [],
       alternatives: templates.slice(1),
     })
