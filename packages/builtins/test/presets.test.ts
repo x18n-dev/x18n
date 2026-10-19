@@ -93,3 +93,18 @@ describe('glossary check', () => {
     expect(project.analyze().diagnostics.filter(d => d.code === 'glossary').map(d => d.key)).toEqual(['a'])
   })
 })
+
+describe('placeholder-mismatch', () => {
+  it('skips linked messages and the implicit plural names of vue-i18n', async () => {
+    const { project } = await createTestProject({
+      'package.json': json({ dependencies: { 'vue-i18n': '*' } }),
+      'locales/en.json': json({ follow: 'Follow back', you: 'Follows you', days: 'in 0 days|tomorrow|in {n} days', hi: 'Hi {name}' }),
+      'locales/fr.json': json({ follow: 'Suivre', you: '@:follow', days: 'dans {v} jours', hi: 'Salut' }),
+    }, { resources: [{ pattern: 'locales/{locale}.json' }] })
+    const problems = project.analyze().diagnostics.filter(d => d.code === 'placeholder-mismatch').map(d => d.message)
+    expect(problems).toEqual([
+      '"days" in fr has different placeholders than en: unexpected v.',
+      '"hi" in fr has different placeholders than en: missing name.',
+    ])
+  })
+})

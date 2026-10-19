@@ -70,6 +70,7 @@ export interface CheckContext {
   readonly unused: () => readonly KeyString[];
   readonly undefinedUsages: () => readonly Usage[];
   readonly placeholders: (_: string) => readonly Placeholder[];
+  readonly placeholderSyntaxes: readonly PlaceholderSyntax[];
   readonly syntaxErrors: (_: string) => readonly string[];
   readonly localeInfo: (_: LocaleCode) => LocaleInfo;
   readonly text: (_: string) => string | undefined;
@@ -353,6 +354,7 @@ export interface PlaceholderSyntax {
   readonly validate?: ((_: string) => readonly string[]) | undefined;
   readonly example?: string | undefined;
   readonly reference?: boolean | undefined;
+  readonly implicit?: readonly string[] | undefined;
 }
 export interface Plan {
   readonly id: string;
@@ -953,6 +955,10 @@ export declare class X18nError extends Error {
 export declare function applyMessageOps(_: MessageTree, _: readonly MessageOp[]): MessageTree;
 export declare function applyTextEdits(_: string, _: readonly TextEdit[]): string;
 export declare function buildTree(_: Iterable<TreeLeaf>): MessageTree;
+export declare function comparePlaceholders(_: readonly PlaceholderSyntax[], _: string, _: string): {
+  readonly missing: string[];
+  readonly extra: string[];
+};
 export declare function createLineIndex(_: string): LineIndex;
 export declare function createMemoryHost(_?: Readonly<Record<string, string>>, _?: string): MemoryHost;
 export declare function createOverlayHost(_: Host): OverlayHost;

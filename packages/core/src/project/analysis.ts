@@ -215,6 +215,7 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
       unused: () => unused,
       undefinedUsages: () => undefinedUsages,
       placeholders,
+      placeholderSyntaxes: registry.placeholders,
       syntaxErrors: value => registry.placeholders.flatMap(syntax => syntax.validate?.(value) ?? []),
       localeInfo: options.localeInfo,
       text: options.text,

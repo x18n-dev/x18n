@@ -1,5 +1,5 @@
 import type { Check, DiagnosticInput, GlossaryEntry, KeyString, Plugin } from '@x18n/core'
-import { localeSpellingKey } from '@x18n/core'
+import { comparePlaceholders, localeSpellingKey } from '@x18n/core'
 import { shouldExtract } from '../extractors'
 
 function list(items: readonly string[]): string {
@@ -131,10 +131,6 @@ export const unusedKey: Check = {
   },
 }
 
-function placeholderNames(ctx: Parameters<Check['run']>[0], value: string): string[] {
-  return ctx.placeholders(value).map(p => p.name).sort()
-}
-
 export const placeholderMismatch: Check = {
   id: 'placeholder-mismatch',
   defaultSeverity: 'error',
@@ -144,16 +140,13 @@ export const placeholderMismatch: Check = {
       const source = ctx.message(key, ctx.sourceLocale)
       if (typeof source?.value !== 'string')
         continue
-      const expected = placeholderNames(ctx, source.value)
       for (const locale of ctx.locales) {
         if (locale === ctx.sourceLocale)
           continue
         const target = ctx.message(key, locale)
         if (typeof target?.value !== 'string' || target.value === '')
           continue
-        const actual = placeholderNames(ctx, target.value)
-        const missing = expected.filter(name => !actual.includes(name))
-        const extra = actual.filter(name => !expected.includes(name))
+        const { missing, extra } = comparePlaceholders(ctx.placeholderSyntaxes, source.value, target.value)
         if (missing.length || extra.length) {
           const parts = [
             missing.length ? `missing ${list(missing)}` : '',

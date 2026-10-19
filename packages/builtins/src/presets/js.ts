@@ -25,7 +25,8 @@ export function vueI18n(): Preset {
           { template: 't(\'{key}\'{args})', kinds: ['js-string', 'js-template'], files: ['**/*.vue'], imports: ['import { useI18n } from \'vue-i18n\'', 'const { t } = useI18n()'] },
         ],
       }),
-      placeholders(braces, linked),
+      // vue-i18n passes `n` and `count` to plural messages.
+      placeholders({ ...braces, implicit: ['n', 'count'] }, linked),
       sfcBlocks(),
     ],
   }

@@ -199,6 +199,7 @@ export interface CheckContext {
   /** Usages whose key is not defined in the source locale. */
   readonly undefinedUsages: () => readonly Usage[]
   readonly placeholders: (value: string) => readonly Placeholder[]
+  readonly placeholderSyntaxes: readonly PlaceholderSyntax[]
   /** Errors reported by the `validate` of every placeholder syntax. */
   readonly syntaxErrors: (value: string) => readonly string[]
   readonly localeInfo: (code: LocaleCode) => LocaleInfo
@@ -252,6 +253,8 @@ export interface PlaceholderSyntax {
   readonly example?: string | undefined
   /** The placeholder name is another key (vue-i18n `@:key`, i18next `$t(key)`), which then counts as used. */
   readonly reference?: boolean | undefined
+  /** Names the library always passes, which a translation may leave out or add (vue-i18n `n` and `count`). */
+  readonly implicit?: readonly string[] | undefined
 }
 
 export interface KeyContext {
