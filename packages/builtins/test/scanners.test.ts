@@ -96,13 +96,15 @@ describe('project usages', () => {
         '  <p>{{ $t(\'b\') }}</p>',
         '  <p v-t="\'block\'" />',
         '  <i18n-t keypath="missing.key" />',
+        '  <CommonLocalizedNumber keypath="b" :count="1" />',
+        '  <i18n-t :keypath="ok ? \'a\' : \'block\'" />',
         '  <p>{{ $t(`pages.${x}`) }}</p>', // eslint-disable-line no-template-curly-in-string
         '</template>',
         '<i18n lang="json">{ "en": { "local": "L" } }</i18n>',
       ].join('\n'),
     }, { presets: [vueI18n()] })
     const analysis = project.analyze()
-    expect(project.usages().map(m => m.usage.key)).toEqual(['a', 'b', 'block', 'missing.key', 'pages.'])
+    expect(project.usages().map(m => m.usage.key)).toEqual(['a', 'b', 'block', 'missing.key', 'b', 'a', 'block', 'pages.'])
     expect(analysis.unused).toEqual(['local', 'unused'])
     expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['missing.key'])
     const missing = analysis.diagnostics.find(d => d.code === 'missing-key')!

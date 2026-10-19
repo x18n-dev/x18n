@@ -17,7 +17,10 @@ const SIMPLE_EXPRESSION = 4
 const INTERPOLATION = 5
 const ATTRIBUTE = 6
 
-const keyPathComponents = new Map([['i18n-t', 'keypath'], ['I18nT', 'keypath'], ['i18n', 'path'], ['i18n-d', 'path']])
+/** `keypath` is the vue-i18n prop for a key, on `<i18n-t>` and on the app's own wrappers of it; `path` on the legacy components. */
+function isKeyAttribute(tag: string, name: string): boolean {
+  return name === 'keypath' || (name === 'path' && (tag === 'i18n' || tag === 'i18n-d'))
+}
 const ignoredAttributes = new Set(['class', 'style', 'key', 'ref', 'id', 'name', 'type', 'href', 'src', 'to', 'for', 'role', 'lang', 'target', 'rel', 'is', 'slot'])
 
 interface Collected {
@@ -48,6 +51,15 @@ class TemplateScan {
     }
   }
 
+  /** `:keypath="cond ? 'a' : 'b'"`: the expression is read as the key argument of a translate call. */
+  keyExpression(content: string, offset: number): void {
+    const callee = '__x18nKey('
+    try {
+      merge(this.out, scanSource(this.parse, `${callee}${content})`, { calls: [{ callee: '__x18nKey' }], offset: offset - callee.length, filename: 'template.ts', hardStrings: false }))
+    }
+    catch {}
+  }
+
   /** `v-t="'key'"` and `v-t="{ path: 'key' }"`. */
   vt(dir: DirectiveNode): void {
     const exp = dir.exp
@@ -69,7 +81,7 @@ class TemplateScan {
       if (!value)
         return
       const range = { start: value.loc.start.offset + 1, end: value.loc.end.offset - 1 }
-      if (keyPathComponents.get(element.tag) === prop.name) {
+      if (isKeyAttribute(element.tag, prop.name)) {
         this.out.usages.push({ raw: value.content, range, kind: 'call', dynamic: false })
         this.out.keySlots.push(range)
       }
@@ -84,14 +96,11 @@ class TemplateScan {
     }
     const exp = prop.exp
     if (exp && 'content' in exp) {
-      const isKeyPath = prop.name === 'bind' && prop.arg && 'content' in prop.arg && keyPathComponents.get(element.tag) === prop.arg.content
-      if (isKeyPath && /^\s*(['"`]).*\1\s*$/.test(exp.content)) {
-        const start = exp.loc.start.offset + exp.content.search(/['"`]/) + 1
-        const raw = exp.content.trim().slice(1, -1)
-        this.out.usages.push({ raw, range: { start, end: start + raw.length }, kind: 'call', dynamic: false })
-        return
-      }
-      this.expression(exp.content, exp.loc.start.offset)
+      const isKeyPath = prop.name === 'bind' && prop.arg && 'content' in prop.arg && isKeyAttribute(element.tag, prop.arg.content)
+      if (isKeyPath)
+        this.keyExpression(exp.content, exp.loc.start.offset)
+      else
+        this.expression(exp.content, exp.loc.start.offset)
     }
   }
 
