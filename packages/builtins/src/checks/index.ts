@@ -1,4 +1,4 @@
-import type { Check, DiagnosticInput, GlossaryEntry, KeyString, Plugin } from '@x18n/core'
+import type { Check, DiagnosticInput, GlossaryEntry, KeyString, MessageChange, Plugin } from '@x18n/core'
 import { createPlaceholderComparer, localeSpellingKey } from '@x18n/core'
 import { shouldExtract } from '../extractors'
 
@@ -48,6 +48,30 @@ export const missingTranslation: Check = {
           { title: `Add empty values in ${list(locales)}`, ops: locales.map(locale => ({ type: 'set' as const, key, locale, value: '' })) },
           ...source ? [{ title: 'Copy the source value', ops: locales.map(locale => ({ type: 'set' as const, key, locale, value: source.value })) }] : [],
         ],
+      }
+    }
+  },
+}
+
+function changed(change: MessageChange): string {
+  if (!Number.isFinite(change.updatedAt))
+    return 'changed locally'
+  const revision = change.revision ? ` in ${change.revision.slice(0, 7)}` : ''
+  return `changed ${new Date(change.updatedAt).toISOString().slice(0, 10)}${revision}`
+}
+
+export const staleTranslation: Check = {
+  id: 'stale-translation',
+  defaultSeverity: 'warning',
+  description: 'A translation that last changed before its source message, by the history providers (git).',
+  * run(ctx) {
+    for (const coverage of ctx.coverage()) {
+      for (const key of coverage.outdated) {
+        yield {
+          key,
+          locale: coverage.locale,
+          message: `"${key}" in ${coverage.locale} is older than ${ctx.sourceLocale} (source ${changed(ctx.history(key, ctx.sourceLocale)!)}).`,
+        }
       }
     }
   },
@@ -283,6 +307,7 @@ export const allChecks: readonly Check[] = [
   placeholderMismatch,
   keyConflict,
   missingTranslation,
+  staleTranslation,
   emptyTranslation,
   unusedKey,
   localeCodeConflict,

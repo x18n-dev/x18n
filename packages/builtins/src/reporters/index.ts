@@ -72,7 +72,7 @@ export const jsonReporter: Reporter = {
   id: 'json',
   report(inputs) {
     const diagnostics = inputs.flatMap(input => input.diagnostics.map(d => toWireDiagnostic(input.project, d, input.text)))
-    const data = { projects: inputs.map(input => ({ name: input.project, summary: input.summary, coverage: input.coverage.map(c => ({ locale: c.locale, total: c.total, translated: c.translated, missing: c.missing.length, empty: c.empty.length })) })) }
+    const data = { projects: inputs.map(input => ({ name: input.project, summary: input.summary, coverage: input.coverage.map(c => ({ locale: c.locale, total: c.total, translated: c.translated, missing: c.missing.length, empty: c.empty.length, outdated: c.outdated.length })) })) }
     return `${JSON.stringify(envelope('check', data, diagnostics), null, 2)}\n`
   },
 }

@@ -19,5 +19,6 @@ export var localeCodeConflict /* const */
 export var missingKey /* const */
 export var missingTranslation /* const */
 export var placeholderMismatch /* const */
+export var staleTranslation /* const */
 export var unusedKey /* const */
 // #endregion
