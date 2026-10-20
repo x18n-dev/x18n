@@ -43,9 +43,8 @@ export async function status(options: GlobalOptions): Promise<void> {
     out(`${loaded.name} (${displayPath(loaded.root, '')})`)
     out(`  ${project.resources.length} resources, ${project.keys().length} keys, ${project.usages().length} usages`)
     for (const c of project.analyze().coverage) {
-      const info = project.localeInfo(c.locale)
       const label = `${c.locale}${c.locale === project.sourceLocale ? ' (source)' : ''}`
-      out(`  ${info.flag ?? '  '} ${label.padEnd(16)} ${String(percent(c)).padStart(5)}%  ${c.translated}/${c.total}${c.missing.length ? `, ${c.missing.length} missing` : ''}${c.empty.length ? `, ${c.empty.length} empty` : ''}`)
+      out(`  ${label.padEnd(16)} ${String(percent(c)).padStart(5)}%  ${c.translated}/${c.total}${c.missing.length ? `, ${c.missing.length} missing` : ''}${c.empty.length ? `, ${c.empty.length} empty` : ''}`)
     }
     out(`  ${summary.errors} errors, ${summary.warnings} warnings`)
   }
@@ -176,7 +175,7 @@ export async function locales(options: GlobalOptions): Promise<void> {
   }
   for (const p of projects) {
     for (const l of p.locales)
-      out(`${l.flag ?? '  '} ${l.code.padEnd(10)} ${(l.displayName ?? '').padEnd(28)} ${l.resources.join(', ')}`)
+      out(`${l.code.padEnd(10)} ${(l.displayName ?? '').padEnd(28)} ${l.resources.join(', ')}`)
   }
 }
 
