@@ -59,14 +59,14 @@ function showInGrid(): void {
     <UiSection v-if="missing.length" index="01" :title="t('locale.missing', { count: missing.length })">
       <NuxtLink v-for="row in missing" :key="row.key" :to="`/keys/${encodeURIComponent(row.key)}`" class="focus-ring grid grid-cols-[minmax(0,20rem)_1fr] items-baseline gap-4 border-b border-base px-4 py-1.5 transition-colors last:border-b-0 hover:bg-hover">
         <span class="truncate font-mono text-xs">{{ row.key }}</span>
-        <span class="truncate color-muted"><MessageText :value="row.values[currentProject?.sourceLocale ?? '']" /></span>
+        <span class="truncate color-muted"><MessageText :value="row.values[currentProject?.sourceLocale ?? '']" inline /></span>
       </NuxtLink>
     </UiSection>
 
     <UiSection v-if="empty.length" index="02" :title="t('locale.empty', { count: empty.length })">
       <NuxtLink v-for="row in empty" :key="row.key" :to="`/keys/${encodeURIComponent(row.key)}`" class="focus-ring grid grid-cols-[minmax(0,20rem)_1fr] items-baseline gap-4 border-b border-base px-4 py-1.5 transition-colors last:border-b-0 hover:bg-hover">
         <span class="truncate font-mono text-xs">{{ row.key }}</span>
-        <span class="truncate color-muted"><MessageText :value="row.values[currentProject?.sourceLocale ?? '']" /></span>
+        <span class="truncate color-muted"><MessageText :value="row.values[currentProject?.sourceLocale ?? '']" inline /></span>
       </NuxtLink>
     </UiSection>
 

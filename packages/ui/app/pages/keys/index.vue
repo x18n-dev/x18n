@@ -265,7 +265,7 @@ function onEditorKey(event: KeyboardEvent): void {
               @keydown="onEditorKey"
               @blur="commit()"
             >
-            <span v-else class="truncate" :title="String(row.values[locale] ?? '')"><MessageText :value="row.values[locale]" /></span>
+            <span v-else class="truncate" :title="String(row.values[locale] ?? '')"><MessageText :value="row.values[locale]" inline /></span>
           </div>
         </div>
       </div>
