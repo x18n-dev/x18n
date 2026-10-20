@@ -152,14 +152,14 @@
       "source": "vuejs-ai/skills",
       "sourceType": "github",
       "skillPath": "skills/vue-best-practices/SKILL.md",
-      "computedHash": "3df585ad31aec78fe55c56c1411262737e6b231677a3153dec512a882fde80cd",
+      "computedHash": "70a50d6ee12edf24e0be9a79f59ea55a581961e8a38de2a20b96c7ae766ce3ef",
       "via": "@antfu/skills"
     },
     "vue-debug-guides": {
       "source": "vuejs-ai/skills",
       "sourceType": "github",
       "skillPath": "skills/vue-debug-guides/SKILL.md",
-      "computedHash": "fa7b31c32a6717ae47cd2ea208773e27536225ad053a564effe656bf927fe9ef",
+      "computedHash": "29e3785d80245a64ead02602062d859f6e6553b506614ac75a1ead7f1e1529da",
       "via": "@antfu/skills"
     },
     "vue-pinia-best-practices": {
@@ -195,7 +195,7 @@
       "sourceType": "node_modules",
       "skillPath": "skills/x18n/SKILL.md",
       "version": "0.0.3",
-      "computedHash": "82534c6b7b817592c3dfd98e869b677cd83f159b1c9f29fca0d14519b5eab766"
+      "computedHash": "9603a7739e4c4cc516f42fa93c01460c600aaeefed8956410be7c5de578c8a51"
     }
   }
 }

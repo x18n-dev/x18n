@@ -145,6 +145,20 @@ describe('glossary check', () => {
     })
     expect(project.analyze().diagnostics.filter(d => d.code === 'glossary').map(d => d.key)).toEqual(['a'])
   })
+
+  it('matches terms inside text written without spaces', async () => {
+    const { project } = await createTestProject({
+      'locales/ja.json': json({ a: 'ふりがなをフォントに内蔵。', b: 'ふりがなを表示する' }),
+      'locales/en.json': json({ a: 'Furigana built into the font.', b: 'Show furigana' }),
+      'locales/zh.json': json({ a: '字体内置注音。', b: '显示拼音' }),
+    }, {
+      resources: [{ pattern: 'locales/{locale}.json' }],
+      sourceLocale: 'ja',
+      glossary: [{ term: 'ふりがな', translations: { en: 'Furigana', zh: '注音' } }],
+      checks: { glossary: 'warning' },
+    })
+    expect(project.analyze().diagnostics.filter(d => d.code === 'glossary').map(d => [d.key, d.locale])).toEqual([['b', 'zh']])
+  })
 })
 
 describe('placeholder-mismatch', () => {

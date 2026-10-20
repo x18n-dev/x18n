@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run x18n Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode",
+        "${workspaceFolder}"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/packages/vscode/dist/**/*.cjs"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/packages/vscode/dist/**"
+      ],
+      "preLaunchTask": "x18n: dev"
+    }
+  ]
+}

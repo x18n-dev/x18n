@@ -1,6 +1,6 @@
 ---
 name: x18n
-description: Set up and run x18n (`@x18n/cli`) to check and manage a project's translations. Use when the task touches locale files or translation keys - adding, renaming or deleting keys, finding missing or unused keys, translating missing messages, extracting hard-coded strings, keeping a glossary of terms - or when setting up x18n or migrating from i18n-ally.
+description: Manage a project's translations with x18n (`@x18n/cli`). Use when the task touches locale files or translation keys - adding, renaming or deleting keys, finding missing or unused keys, translating missing messages, reviewing translations, extracting hard-coded strings, keeping a glossary of terms.
 ---
 
 # x18n
@@ -17,7 +17,6 @@ You do the legwork; the user makes the **decisions** that shape the product. Bef
 - tone and formality per locale (German *du* or *Sie*, French *tu* or *vous*)
 - deleting keys that look unused, since keys built at runtime look unused too
 - renames that touch many files or move keys between namespaces
-- turning on checks, and making warnings fail CI with `--strict`
 
 Batch the questions into one message. Routine work needs no question: adding a key you use, translating a missing message, fixing a placeholder.
 
@@ -28,14 +27,51 @@ Batch the questions into one message. Routine work needs no question: adding a k
 - Keep every placeholder of the source message (`{name}`, `{{count}}`, `%{name}`, `:name`, `%s`, `@:key`).
 - Pass `--json` and read the envelope `{ "x18n": 1, "command", "data", "diagnostics", "errors" }`.
 - Run renames and deletes with `--dry-run` first, and read the plan.
+- Write every key as a full string literal. Do not build keys at runtime (see below).
 
-## Set up x18n
+## Avoid composed keys
 
-1. Run `npx @x18n/cli doctor` in the project root. Without a config, x18n uses the project's i18n-ally settings if it has any, and detects the i18n library and the locale files. Check the detected presets, the locale files and the source locale. **Done when** the doctor output names the library the project uses and lists every locale file.
-2. If the project has i18n-ally settings (`i18n-ally.*` keys in `.vscode/settings.json`), follow [references/migrate-i18n-ally.md](references/migrate-i18n-ally.md) instead of step 3.
-3. If detection is wrong or incomplete, run `x18n init` to write `x18n.config.ts`, then fix `resources`, `sourceLocale` or `presets` in it. `x18n init --format yml` writes YAML for projects without Node.js tooling. **Done when** `x18n doctor` shows the right result.
-4. Install the CLI as a dev dependency with the project's package manager (`pnpm add -D @x18n/cli`), and add a script such as `"i18n:check": "x18n check"`. Ask the user before you add it to CI.
-5. Run `x18n check --json` and report the summary to the user. **Done when** the user has the counts of errors and warnings per check, and has decided what to fix first.
+Do not build a key from parts, such as `` t(`foo.bar.${name}`) `` or `t('foo.bar.' + name)`. x18n and the compiler cannot see the full key, so:
+
+- `x18n keys --unused` reports the key as unused, and `x18n delete` can remove a message that the code needs
+- `x18n rename` does not update the usage
+- `x18n check` cannot find a missing message until the user hits it at runtime
+- translators cannot see the full key in context
+
+Write each key out in full and map the value to it:
+
+```ts
+// Avoid
+t(`status.${status}`)
+
+// Prefer: a lookup of full literal keys
+const labels = {
+  active: t('status.active'),
+  paused: t('status.paused'),
+} as const
+labels[status]
+```
+
+```ts
+// Avoid
+t(`plans.${plan}.title`)
+
+// Prefer: a switch, or a record of functions when the call must be lazy
+const planTitle = {
+  free: () => t('plans.free.title'),
+  pro: () => t('plans.pro.title'),
+}
+planTitle[plan]()
+```
+
+When the variable part is only a word inside a sentence, use a placeholder instead of a key part: `t('greeting', { name })` with the message `Hello, {name}`. When the text differs by count, use the library's plural syntax, not `t(count === 1 ? 'item.one' : 'item.many')`.
+
+If the user's code already composes keys, do not rewrite it unasked. Tell the user which keys are affected, and treat those keys as used when you clean up.
+
+## Set up and check
+
+- To set up x18n, or migrate from i18n-ally, use the `x18n-setup` skill.
+- To run `x18n check` and fix what it reports, use the `x18n-check` skill.
 
 Commands below use `x18n`; without the dev dependency, run them as `npx @x18n/cli <command>`.
 
@@ -64,13 +100,6 @@ Maintain it while you work:
 - Add the entries the user approves, then run `x18n check --only glossary --json` and fix the messages it reports.
 
 ## Loops
-
-### Check the project
-
-```sh
-x18n check --json
-x18n status --json
-```
 
 ### Add a key while coding
 
