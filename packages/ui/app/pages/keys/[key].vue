@@ -7,6 +7,7 @@ import { useRoute } from '#imports'
 import CodeSnippet from '../../components/CodeSnippet.vue'
 import CopyPrompt from '../../components/CopyPrompt.vue'
 import FilePath from '../../components/FilePath.vue'
+import LocaleFlag from '../../components/LocaleFlag.vue'
 import MessageText from '../../components/MessageText.vue'
 import UiPage from '../../components/ui/UiPage.vue'
 import UiSection from '../../components/ui/UiSection.vue'
@@ -80,6 +81,7 @@ function openUsage(usage: UsageView): void {
         </p>
         <div v-for="row in rows" :key="row.locale" class="grid grid-cols-[7rem_1fr_auto] items-start gap-4 border-b border-base px-4 py-3 last:border-b-0" :data-locale="row.locale">
           <span class="flex items-center gap-2 pt-0.5 font-mono">
+            <LocaleFlag :code="row.locale" />
             {{ row.locale }}
             <span v-if="row.locale === currentProject?.sourceLocale" class="badge">{{ t('overview.source') }}</span>
           </span>

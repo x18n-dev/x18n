@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { NuxtLink, NuxtPage } from '#components'
 import { pendingAuth, useBackend } from './backend'
 import LocaleBar from './components/LocaleBar.vue'
+import LocaleFlag from './components/LocaleFlag.vue'
+import { showFlags } from './flags'
 import { endonym, pickUiLocale, setupI18n, t, uiLocale, uiLocales } from './i18n'
 import { backend, projectList, projectName, recentKeys, revision } from './state'
 import { setupTheme } from './theme'
@@ -81,7 +83,8 @@ onMounted(async () => {
           </select>
         </label>
         <label class="flex items-center gap-2">
-          <span class="i-ph-translate color-muted" aria-hidden="true" />
+          <LocaleFlag v-if="showFlags" :code="uiLocale" />
+          <span v-else class="i-ph-translate color-muted" aria-hidden="true" />
           <select v-model="language" class="input text-xs" :aria-label="t('app.language')">
             <option v-for="option in uiLocales" :key="option" :value="option" :lang="option">
               {{ endonym(option) }}

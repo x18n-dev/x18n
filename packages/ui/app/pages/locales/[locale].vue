@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { NuxtLink } from '#components'
 import { useRoute } from '#imports'
 import CopyPrompt from '../../components/CopyPrompt.vue'
+import LocaleFlag from '../../components/LocaleFlag.vue'
 import MessageText from '../../components/MessageText.vue'
 import UiPage from '../../components/ui/UiPage.vue'
 import UiSection from '../../components/ui/UiSection.vue'
@@ -33,7 +34,8 @@ function showInGrid(): void {
       <div class="flex items-end gap-3">
         <div class="grid gap-1">
           <span class="label">{{ t('locale.label') }}</span>
-          <h1 class="font-mono text-2xl font-medium">
+          <h1 class="flex items-center gap-3 font-mono text-2xl font-medium">
+            <LocaleFlag :code="code" />
             {{ code }}
           </h1>
         </div>

@@ -3,6 +3,7 @@ import type { KeyRow } from '../../../src/node/types'
 import { useVirtualList } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from '#imports'
+import LocaleFlag from '../../components/LocaleFlag.vue'
 import MessageText from '../../components/MessageText.vue'
 import UiToggle from '../../components/ui/UiToggle.vue'
 import { describeProblem, setMessage } from '../../edit'
@@ -219,6 +220,7 @@ function onEditorKey(event: KeyboardEvent): void {
           {{ t('keys.key') }}
         </div>
         <div v-for="locale in locales" :key="locale" class="flex items-center gap-2 border-l border-base px-3" role="columnheader">
+          <LocaleFlag :code="locale" />
           <span class="label color-base">{{ locale }}</span>
           <span v-if="locale === currentProject?.sourceLocale" class="badge">{{ t('overview.source') }}</span>
         </div>

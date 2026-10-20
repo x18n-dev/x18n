@@ -80,7 +80,10 @@
     "showAll": "全部顯示",
     "shown": "已顯示 {shown} / {total}",
     "title": "語系",
-    "toggle": "顯示或隱藏 {locale}"
+    "toggle": "顯示或隱藏 {locale}",
+    "resetOrder": "重設順序",
+    "flags": "顯示旗幟",
+    "reorder": "拖曳或按 Alt 加方向鍵以調整順序。"
   },
   "nav": {
     "extract": "擷取",

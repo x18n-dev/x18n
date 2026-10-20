@@ -43,6 +43,7 @@
   "devDependencies": {
     "@devframes/vite": "catalog:deps",
     "@iconify-json/catppuccin": "catalog:frontend",
+    "@iconify-json/circle-flags": "catalog:frontend",
     "@iconify-json/ph": "catalog:frontend",
     "@playwright/test": "catalog:testing",
     "@unocss/nuxt": "catalog:frontend",

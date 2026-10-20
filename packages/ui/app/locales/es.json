@@ -80,7 +80,10 @@
     "showAll": "Mostrar todos",
     "shown": "{shown} de {total} visibles",
     "title": "Idiomas",
-    "toggle": "Mostrar u ocultar {locale}"
+    "toggle": "Mostrar u ocultar {locale}",
+    "resetOrder": "Restablecer orden",
+    "flags": "Mostrar banderas",
+    "reorder": "Arrastra, o pulsa Alt y una flecha, para reordenar."
   },
   "nav": {
     "extract": "Extraer",

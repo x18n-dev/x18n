@@ -80,7 +80,10 @@
     "showAll": "すべて表示",
     "shown": "{shown} / {total} 表示中",
     "title": "ロケール",
-    "toggle": "{locale} の表示を切り替え"
+    "toggle": "{locale} の表示を切り替え",
+    "resetOrder": "順序をリセット",
+    "flags": "国旗を表示",
+    "reorder": "ドラッグ、または Alt と矢印キーで並べ替え。"
   },
   "nav": {
     "extract": "抽出",

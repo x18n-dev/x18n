@@ -29,7 +29,10 @@
     "toggle": "Show or hide {locale}",
     "shown": "{shown} of {total} shown",
     "showAll": "Show all",
-    "noneShown": "Every locale is hidden. Pick one in the bar above."
+    "noneShown": "Every locale is hidden. Pick one in the bar above.",
+    "resetOrder": "Reset order",
+    "flags": "Show flags",
+    "reorder": "Drag, or press Alt and an arrow key, to reorder."
   },
   "overview": {
     "keys": "Keys",

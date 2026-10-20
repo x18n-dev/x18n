@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { NuxtLink } from '#components'
+import LocaleFlag from '../components/LocaleFlag.vue'
 import UiPage from '../components/ui/UiPage.vue'
 import UiSection from '../components/ui/UiSection.vue'
 import UiStat from '../components/ui/UiStat.vue'
@@ -34,6 +35,7 @@ const stats = computed(() => project.value && [
         class="focus-ring grid grid-cols-[7rem_1fr_4.5rem_10rem] items-center gap-4 border-b border-base px-4 py-2 transition-colors last:border-b-0 hover:bg-hover"
       >
         <span class="flex items-center gap-2 font-mono">
+          <LocaleFlag :code="locale.code" />
           {{ locale.code }}
           <span v-if="locale.code === project.sourceLocale" class="badge">{{ t('overview.source') }}</span>
         </span>

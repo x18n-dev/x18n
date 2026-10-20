@@ -74,6 +74,30 @@ test('the locale bar hides a locale in every view and remembers it', async ({ pa
   }
 })
 
+test('locales reorder by dragging and flags can be turned off', async ({ page }) => {
+  const { root, dispose } = await fixture()
+  const outDir = join(root, '.x18n/report')
+  await buildReport(root, outDir)
+  const server = await serveStatic(outDir)
+  try {
+    await page.goto(`${server.url}#/keys`)
+    const headers = page.getByRole('columnheader')
+    await expect(headers).toHaveText(['Key', /^en/, /^de/])
+    await page.locator('[data-locale-toggle="de"]').dragTo(page.locator('[data-locale-toggle="en"]'), { targetPosition: { x: 2, y: 2 } })
+    await expect(headers).toHaveText(['Key', /^de/, /^en/])
+    await page.reload()
+    await expect(headers).toHaveText(['Key', /^de/, /^en/])
+
+    await expect(page.locator('[role="columnheader"] [data-flag]')).toHaveCount(2)
+    await page.getByTitle('Show flags').click()
+    await expect(page.locator('[data-flag]')).toHaveCount(0)
+  }
+  finally {
+    server.close()
+    await dispose()
+  }
+})
+
 test('the UI speaks the requested language and remembers a picked one', async ({ page }) => {
   const { root, dispose } = await fixture()
   const outDir = join(root, '.x18n/report')

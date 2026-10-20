@@ -14,13 +14,39 @@ export const recentKeys = shallowRef<readonly string[]>([])
 export const currentProject = computed<ProjectSummary | undefined>(() =>
   projectList.value?.projects.find(p => p.name === projectName.value))
 
-/** Every locale of the current project, the source first. */
+// Per project, from dragging the locale bar; locales it does not list keep their default place after it.
+const order = useLocalStorage<Record<string, string[]>>('x18n:locale-order', {})
+
+/** Every locale of the current project in the user's order; by default the source first. */
 export const locales = computed<readonly LocaleSummary[]>(() => {
   const project = currentProject.value
   if (!project)
     return []
-  return [...project.locales.filter(l => l.code === project.sourceLocale), ...project.locales.filter(l => l.code !== project.sourceLocale)]
+  const byDefault = [...project.locales.filter(l => l.code === project.sourceLocale), ...project.locales.filter(l => l.code !== project.sourceLocale)]
+  const picked = order.value[project.name] ?? []
+  const rank = (code: string): number => {
+    const at = picked.indexOf(code)
+    return at === -1 ? picked.length : at
+  }
+  return byDefault.map((locale, i) => ({ locale, i })).sort((a, b) => rank(a.locale.code) - rank(b.locale.code) || a.i - b.i).map(({ locale }) => locale)
 })
+
+export const isLocaleOrderCustom = computed(() => Boolean(order.value[projectName.value ?? '']))
+
+/** Moves a locale to `index` in `locales`. */
+export function moveLocale(code: string, index: number): void {
+  const project = projectName.value
+  if (!project)
+    return
+  const codes = locales.value.map(l => l.code).filter(c => c !== code)
+  codes.splice(Math.max(0, Math.min(index, codes.length)), 0, code)
+  order.value = { ...order.value, [project]: codes }
+}
+
+export function resetLocaleOrder(): void {
+  const { [projectName.value ?? '']: _, ...rest } = order.value
+  order.value = rest
+}
 
 // Hidden rather than shown, per project, so a locale added later shows up.
 const hidden = useLocalStorage<Record<string, string[]>>('x18n:hidden-locales', {})

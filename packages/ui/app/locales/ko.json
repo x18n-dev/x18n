@@ -80,7 +80,10 @@
     "showAll": "모두 표시",
     "shown": "{total}개 중 {shown}개 표시",
     "title": "로케일",
-    "toggle": "{locale} 표시/숨기기"
+    "toggle": "{locale} 표시/숨기기",
+    "resetOrder": "순서 초기화",
+    "flags": "국기 표시",
+    "reorder": "드래그하거나 Alt와 화살표 키를 눌러 순서를 바꿉니다."
   },
   "nav": {
     "extract": "추출",

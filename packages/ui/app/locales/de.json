@@ -80,7 +80,10 @@
     "showAll": "Alle anzeigen",
     "shown": "{shown} von {total} angezeigt",
     "title": "Sprachen",
-    "toggle": "{locale} ein- oder ausblenden"
+    "toggle": "{locale} ein- oder ausblenden",
+    "resetOrder": "Reihenfolge zurücksetzen",
+    "flags": "Flaggen anzeigen",
+    "reorder": "Zum Umsortieren ziehen oder Alt und eine Pfeiltaste drücken."
   },
   "nav": {
     "extract": "Extrahieren",
