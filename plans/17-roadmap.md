@@ -163,7 +163,7 @@ Packages and the extension share one version (`bumpp -r`). Every release needs e
 
 | Milestone | Content |
 | --- | --- |
-| M12 Reviews | YAML review store, CLI `review *`, LSP, VS Code comments and Reviews view, UI threads ([12-reviews.md](./12-reviews.md)) |
+| M12 Reviews | YAML review store, CLI `review *`, LSP, VS Code comments and Reviews view, UI threads, stale translations ([12-reviews.md](./12-reviews.md)) |
 | M13 Typegen | `x18n typegen`, preset augmentations, typed params, LSP regeneration, `typegen-stale` check ([18-typegen.md](./18-typegen.md)) |
 | M14 In-browser workspace | Browser host, worker, WASM scanners, `local` backend, docs `/play` and `/demo` |
 | M15 Tier 2 and 3 | Presets and formats from [05-builtins.md](./05-builtins.md) that i18n-ally never had (paraglide, typesafe-i18n, ARB, XLIFF, Android XML, Apple strings, resx), accessor scanners (`m.*`, `LL.*`). Every i18n-ally framework already ships (D34). |

@@ -27,7 +27,21 @@ threads:
 - When a key is renamed through x18n, its threads move with it in the same plan. When a key is deleted, its threads are removed in the same plan.
 - When a message value changes after an approval, the approval is marked `stale: true`, so reviewers see it needs another look.
 
-## Interface
+## Stale translations
+
+A translation is stale when its source message changed after the translation was written. i18n-ally-next keeps one source snapshot per key, so any source edit marks every locale stale until the snapshot is refreshed. x18n keeps the source per target message:
+
+```yaml
+sources:
+  'auth:login.title':
+    de: 9f2c1a # hash of the source value when de was last written
+```
+
+- Every x18n write of a target value (`set`, `apply`, an accepted suggestion, a translate prompt batch) records the hash of the current source value for that key and locale, in the same plan.
+- The check `stale-translation` (warning) reports a target message whose recorded hash differs from the hash of the current source value. A message with no record is never stale, so adopting x18n reports nothing until values are written through it.
+- `x18n prompt translate --stale` adds stale messages to the batch, with the old and new source text, so an agent can update them; `x18n review mark-fresh <key> [--locale]` records the current hash without a change.
+- Renames and deletes move or drop the records with the threads.
+
 
 ```ts
 interface ReviewStore {

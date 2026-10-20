@@ -200,7 +200,6 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 - Decided: formats get only `set` and `delete` ops. When a rename changes only the last segment of a key in the same file, the planner replaces the key text in place, which keeps the entry's position, comments and layout; other renames become delete plus set.
 - Why: in-place key edits are format independent for plain segments, so formats stay small.
 
-
 ## D34 - Every i18n-ally framework is a built-in preset
 
 - Decided: the presets cover every framework i18n-ally supports, detected the same way (`package.json`, `composer.json`, `pubspec.yaml`, `Gemfile`; `manifest.json` with `default_locale` for Chrome extensions). `php-gettext` applies only when listed, as in i18n-ally. JS libraries use call specs for the AST scanners; other languages (PHP, Ruby, Dart, Handlebars, Liquid, XML) use i18n-ally's regexes. The po, properties, ftl, ini, php and static JS/TS formats ship with them.
@@ -213,3 +212,14 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 - Decided: when a project has no x18n config, x18n reads its i18n-ally settings (`.vscode/settings.json`, `*.code-workspace`, the custom framework file), with the same mapping as `x18n migrate i18n-ally`, and applies them as a plugin. They work like preset defaults: detection fills what they leave out, and stale locale paths fall back to the locale guess. Patterns that the user did not write only match locale-like names.
 - Considered: requiring `x18n migrate i18n-ally` first.
 - Why: an i18n-ally project should work in the CLI, CI and editor the moment x18n is installed. The real-world tests (furifont, pulls.review, elk) are all i18n-ally projects; one has stale paths.
+
+## D36 - Namespaces from folders follow the library
+
+- Decided: `namespace.fromPath` names a namespace taken from `{namespaces}` folders. `dot` (default) gives `pages.home`, `slash` keeps `pages/home` (i18next, so `useTranslation('pages/home')` matches), `camel` gives `todosPage` for `todos-page` (Transloco scopes). Presets set it; usages are not rewritten.
+- A `camel` namespace cannot give back its folder, so a new locale file copies the path of a sibling resource. A Transloco alias is a resource with a fixed `namespace`.
+- Why: i18n-ally-next fixed these cases by rewriting keys in each framework; naming the resource once keeps one canonical key for usages, edits and renames.
+
+## D37 - Stale translations compare per target message
+
+- Decided: reviews (1.x) record the hash of the source value each time x18n writes a target value, per key and locale. `stale-translation` reports a mismatch; messages without a record are never stale.
+- Why: i18n-ally-next keeps one source snapshot per key, so one source edit marks all locales stale until someone refreshes it. Per-target records stay right when locales are updated at different times.

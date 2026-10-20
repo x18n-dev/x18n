@@ -105,6 +105,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `invalid-syntax` | error | Message syntax errors (ICU, vue-i18n linked messages, i18next nesting). |
 | `placeholder-mismatch` | error | Target value placeholders differ from the source value. |
 | `key-conflict` | error | A key is both a leaf and a parent (`a` and `a.b`), or is duplicated across files of the same locale and namespace. |
+| `stale-translation` | warning | 1.x, with reviews: a target message whose source changed after it was written ([12-reviews.md](./12-reviews.md#stale-translations)). |
 | `missing-translation` | warning | Untranslated: a source-locale key that target locales lack. One diagnostic per key, at the source entry, listing the missing locales. |
 | `empty-translation` | warning | Untranslated: an empty string value. |
 | `unused-key` | warning | A key with no usage, after `keysInUse`, derived keys and dynamic prefixes. Skipped when the project has no scanners. |
