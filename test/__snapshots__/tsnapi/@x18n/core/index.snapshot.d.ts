@@ -514,6 +514,7 @@ export interface Project {
     readonly watch?: boolean | undefined;
   }) => Promise<void>;
   readonly history: (_: KeyString, _: LocaleCode) => MessageChange | undefined;
+  readonly valueAt: (_: KeyString, _: LocaleCode, _: number) => MessageLeaf | undefined;
   readonly prompt: (_: "translate" | "review", _: LocaleCode, _?: PromptOptions) => PromptData;
   readonly explain: () => ProjectExplanation;
   readonly localeInfo: (_: LocaleCode) => LocaleInfo;

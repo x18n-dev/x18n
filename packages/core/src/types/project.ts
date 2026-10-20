@@ -11,6 +11,7 @@ import type {
   LocaleCode,
   LocaleInfo,
   Message,
+  MessageLeaf,
   NodeRange,
   Resource,
   TextEdit,
@@ -177,6 +178,8 @@ export interface Project {
   readonly loadHistory: (options?: { readonly watch?: boolean | undefined }) => Promise<void>
   /** When a message last changed. Undefined until history is loaded, and for messages without history. */
   readonly history: (key: KeyString, locale: LocaleCode) => MessageChange | undefined
+  /** The value a message had at a time (ms), from the provider that knows the message. */
+  readonly valueAt: (key: KeyString, locale: LocaleCode, at: number) => MessageLeaf | undefined
   /** Parts of a translate or review prompt for an agent or LLM; render with `renderPrompt`. */
   readonly prompt: (kind: 'translate' | 'review', locale: LocaleCode, options?: PromptOptions) => PromptData
   readonly explain: () => ProjectExplanation

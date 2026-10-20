@@ -73,7 +73,6 @@ function contextOf(project: Project, key: KeyString): UsageContext[] {
 export interface PromptHooks {
   readonly config: ResolvedConfig
   readonly hooks: readonly ((draft: PromptDraft, ctx: PromptContext) => void)[]
-  readonly valueAt: (key: KeyString, locale: LocaleCode, at: number) => MessageLeaf | undefined
 }
 
 /** Builds the parts of a translate or review prompt from project state. */
@@ -126,7 +125,7 @@ export function buildPrompt(project: Project, kind: 'translate' | 'review', to: 
   const items = page.map((key): PromptItem => {
     const source = text(project.message(key, from)?.value) ?? ''
     const translated = project.history(key, to)
-    const previous = translated && stale(key) ? text(extra.valueAt(key, from, translated.updatedAt)) : undefined
+    const previous = translated && stale(key) ? text(project.valueAt(key, from, translated.updatedAt)) : undefined
     return {
       key,
       source,

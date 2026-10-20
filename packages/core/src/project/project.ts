@@ -741,10 +741,10 @@ export function createProject(options: CreateProjectOptions): Project {
       await history.load(historyOptions)
     },
     history: history.get,
+    valueAt: history.valueAt,
     prompt: (kind, locale, promptOptions = {}) => buildPrompt(project, kind, locale, promptOptions, {
       config,
       hooks: registry.plugins.flatMap(plugin => plugin.translatePrompt ? [plugin.translatePrompt] : []),
-      valueAt: history.valueAt,
     }),
     explain,
     localeInfo,
