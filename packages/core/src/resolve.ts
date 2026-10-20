@@ -79,13 +79,17 @@ function defaultDraft(): ConfigDraft {
     strict: false,
     ignoreKeys: [],
     glossary: [],
+    history: { providers: [] },
     pluginConfigs: {},
   }
 }
 
 function serializablePart(config: UserConfig): SerializableConfig {
-  const { presets, plugins, pluginConfigs, ...rest } = config
-  return rest
+  const { presets, plugins, pluginConfigs, history, ...rest } = config
+  if (typeof history !== 'object')
+    return { ...rest, history }
+  const { providers, ...options } = history
+  return { ...rest, history: options }
 }
 
 /** Applies a user config layer: scalars replace, lists of rules append. */
@@ -169,6 +173,15 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
   if (layer.glossary !== undefined) {
     draft.glossary = [...draft.glossary, ...layer.glossary]
     mark('glossary')
+  }
+  if (layer.history !== undefined) {
+    const previous = draft.history || { providers: [] }
+    draft.history = layer.history === false
+      ? false
+      : layer.history === true
+        ? previous
+        : { ...previous, ...layer.history, providers: [...previous.providers, ...layer.history.providers ?? []] }
+    mark('history')
   }
   if (layer.pluginConfigs !== undefined) {
     draft.pluginConfigs = { ...draft.pluginConfigs, ...layer.pluginConfigs }

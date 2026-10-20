@@ -77,6 +77,7 @@ export interface CheckContext {
   readonly hardStrings: () => Iterable<HardString & {
     readonly path: string;
   }>;
+  readonly history: (_: KeyString, _: LocaleCode) => MessageChange | undefined;
 }
 export interface CheckIds {}
 export interface ConfigContext {
@@ -222,6 +223,21 @@ export interface HardString {
   }[] | undefined;
   readonly attribute?: string | undefined;
 }
+export interface HistoryConfigs {}
+export interface HistoryContext {
+  readonly host: Host;
+  readonly config: ResolvedConfig;
+  readonly resources: readonly Resource[];
+  readonly messagesIn: (_: Resource, _: string) => ReadonlyMap<KeyString, MessageLeaf> | undefined;
+}
+export interface HistoryProvider {
+  readonly id: string;
+  readonly load: (_: HistoryContext) => Promise<MessageHistory | undefined>;
+  readonly watch?: ((_: HistoryContext, _: () => void) => Disposable) | undefined;
+}
+export interface HistorySettings extends HistoryOptions {
+  readonly providers: readonly HistoryProvider[];
+}
 export interface Host {
   readonly root: string;
   readonly readFile: (_: string) => Promise<string | undefined>;
@@ -273,6 +289,7 @@ export interface LocaleCoverage {
   readonly translated: number;
   readonly missing: readonly KeyString[];
   readonly empty: readonly KeyString[];
+  readonly outdated: readonly KeyString[];
 }
 export interface LocaleFinder {
   readonly id: string;
@@ -315,6 +332,16 @@ export interface Message {
   readonly resource: ResourceId;
   readonly storedPath: readonly string[];
   readonly range: NodeRange | undefined;
+}
+export interface MessageChange {
+  readonly updatedAt: number;
+  readonly revision?: string | undefined;
+  readonly author?: string | undefined;
+  readonly value?: MessageLeaf | undefined;
+}
+export interface MessageHistory {
+  readonly changes: ReadonlyMap<KeyString, ReadonlyMap<LocaleCode, MessageChange>>;
+  readonly valueAt?: ((_: KeyString, _: LocaleCode, _: number) => MessageLeaf | undefined) | undefined;
 }
 export interface MessageTree {
   readonly [segment: string]: MessageLeaf | MessageTree;
@@ -380,6 +407,7 @@ export interface Plugin {
   readonly checks?: readonly Check[] | undefined;
   readonly reporters?: readonly Reporter[] | undefined;
   readonly placeholders?: readonly PlaceholderSyntax[] | undefined;
+  readonly histories?: readonly HistoryProvider[] | undefined;
   readonly normalizeKey?: ((_: string, _: KeyContext) => string | undefined) | undefined;
   readonly derivedKeys?: readonly string[] | undefined;
   readonly transformResource?: ResourceTransform | undefined;
@@ -440,6 +468,7 @@ export interface PluginRegistry {
   readonly placeholders: readonly PlaceholderSyntax[];
   readonly manifests: readonly ManifestReader[];
   readonly extractors: readonly Extractor[];
+  readonly histories: readonly HistoryProvider[];
   readonly conflicts: readonly CapabilityConflict[];
   readonly formatFor: (_: string, _?: string) => Format | undefined;
   readonly formatById: (_: string) => Format | undefined;
@@ -481,6 +510,10 @@ export interface Project {
     readonly path: string;
   })[];
   readonly analyze: () => Analysis;
+  readonly loadHistory: (_?: {
+    readonly watch?: boolean | undefined;
+  }) => Promise<void>;
+  readonly history: (_: KeyString, _: LocaleCode) => MessageChange | undefined;
   readonly prompt: (_: "translate" | "review", _: LocaleCode, _?: PromptOptions) => PromptData;
   readonly explain: () => ProjectExplanation;
   readonly localeInfo: (_: LocaleCode) => LocaleInfo;
@@ -573,6 +606,7 @@ export interface PromptItem {
   readonly source: string;
   readonly placeholders: readonly string[];
   readonly existing: string | undefined;
+  readonly previousSource?: string | undefined;
   readonly context: readonly UsageContext[];
 }
 export interface PromptOptions {
@@ -581,6 +615,7 @@ export interface PromptOptions {
   readonly limit?: number | undefined;
   readonly cursor?: string | undefined;
   readonly context?: boolean | undefined;
+  readonly stale?: boolean | undefined;
 }
 export interface RegexScannerSpec {
   readonly extensions: readonly string[];
@@ -654,6 +689,7 @@ export interface ResolvedConfig {
   readonly strict: boolean;
   readonly ignoreKeys: readonly string[];
   readonly glossary: readonly GlossaryEntry[];
+  readonly history: false | HistorySettings;
   readonly pluginConfigs: Partial<PluginConfigs>;
   readonly origins: {
     readonly [key: string]: ConfigOrigin;
@@ -755,6 +791,7 @@ export interface SerializableConfig {
   readonly strict?: boolean | undefined;
   readonly ignoreKeys?: readonly string[] | undefined;
   readonly glossary?: readonly GlossaryEntry[] | undefined;
+  readonly history?: boolean | HistoryOptions | undefined;
   readonly projects?: readonly string[] | undefined;
 }
 export interface Setup {
@@ -827,8 +864,11 @@ export interface UsageQuery {
   readonly prefix?: KeyString | undefined;
   readonly path?: string | undefined;
 }
-export interface UserConfig extends Omit<SerializableConfig, "presets" | "plugins" | "checks"> {
+export interface UserConfig extends Omit<SerializableConfig, "presets" | "plugins" | "checks" | "history"> {
   readonly presets?: "auto" | readonly PresetOption[] | undefined;
+  readonly history?: boolean | (HistoryOptions & {
+    readonly providers?: readonly HistoryProvider[] | undefined;
+  }) | undefined;
   readonly plugins?: readonly PluginOption[] | undefined;
   readonly checks?: { readonly [K in keyof CheckIds]?: CheckSetting; } & {
     readonly [checkId: string]: CheckSetting;
@@ -905,6 +945,7 @@ export type FileChange = {
   readonly type: "delete";
   readonly path: string;
 };
+export type HistoryOptions = Partial<HistoryConfigs>;
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | readonly JsonValue[] | JsonObject;
 export type KeyString = string;

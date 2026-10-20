@@ -1,5 +1,5 @@
 import type { CallSpec, ConfigDraft, ExtractTemplate, ResolvedConfig, SerializableConfig } from './config'
-import type { Host } from './host'
+import type { Disposable, Host } from './host'
 import type {
   Diagnostic,
   Fix,
@@ -177,6 +177,41 @@ export interface LocaleCoverage {
   readonly translated: number
   readonly missing: readonly KeyString[]
   readonly empty: readonly KeyString[]
+  /** Translated keys whose message last changed before the source message. */
+  readonly outdated: readonly KeyString[]
+}
+
+/** When a message last changed, as a history provider knows it. */
+export interface MessageChange {
+  /** Milliseconds since the epoch. `Infinity` for a change not yet known to the provider. */
+  readonly updatedAt: number
+  /** A provider revision, such as a commit sha. */
+  readonly revision?: string | undefined
+  readonly author?: string | undefined
+  /** The value the provider knows. A different current value is a local change. */
+  readonly value?: MessageLeaf | undefined
+}
+
+export interface MessageHistory {
+  readonly changes: ReadonlyMap<KeyString, ReadonlyMap<LocaleCode, MessageChange>>
+  /** The value a message had at a time, for translate prompts of stale messages. */
+  readonly valueAt?: ((key: KeyString, locale: LocaleCode, at: number) => MessageLeaf | undefined) | undefined
+}
+
+export interface HistoryContext {
+  readonly host: Host
+  readonly config: ResolvedConfig
+  readonly resources: readonly Resource[]
+  /** Messages of a resource in another version of its file, read like the current file. Undefined for embedded resources and parse errors. */
+  readonly messagesIn: (resource: Resource, text: string) => ReadonlyMap<KeyString, MessageLeaf> | undefined
+}
+
+export interface HistoryProvider {
+  readonly id: string
+  /** Reads when each message last changed. Undefined when the provider has nothing for this project. */
+  readonly load: (ctx: HistoryContext) => Promise<MessageHistory | undefined>
+  /** Calls `onChange` when the history changes outside resource files, for example on a commit. */
+  readonly watch?: ((ctx: HistoryContext, onChange: () => void) => Disposable) | undefined
 }
 
 export interface CheckContext {
@@ -205,6 +240,8 @@ export interface CheckContext {
   readonly localeInfo: (code: LocaleCode) => LocaleInfo
   readonly text: (path: string) => string | undefined
   readonly hardStrings: () => Iterable<HardString & { readonly path: string }>
+  /** When a message last changed, from the history providers. Undefined until history is loaded. */
+  readonly history: (key: KeyString, locale: LocaleCode) => MessageChange | undefined
 }
 
 export interface Check {
@@ -309,6 +346,7 @@ export interface Plugin {
   readonly checks?: readonly Check[] | undefined
   readonly reporters?: readonly Reporter[] | undefined
   readonly placeholders?: readonly PlaceholderSyntax[] | undefined
+  readonly histories?: readonly HistoryProvider[] | undefined
 
   /** Turns raw key text into canonical form. The first plugin that returns a value wins. */
   readonly normalizeKey?: ((raw: string, ctx: KeyContext) => string | undefined) | undefined

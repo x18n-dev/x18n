@@ -846,6 +846,9 @@ exports[`rpc functions > explains the project 1`] = `
         "extract": {},
         "formats": {},
         "glossary": [],
+        "history": {
+          "providers": [],
+        },
         "ignoreKeys": [],
         "ignoreLocales": [],
         "keyStyle": "auto",

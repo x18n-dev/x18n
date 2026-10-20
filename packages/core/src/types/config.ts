@@ -1,5 +1,5 @@
 import type { JsonObject, Severity } from './model'
-import type { Plugin, Preset } from './plugin'
+import type { HistoryProvider, Plugin, Preset } from './plugin'
 
 /** Where a value comes from: an argument, or a property of an object argument. */
 export interface ArgSource {
@@ -148,6 +148,8 @@ export interface SerializableConfig {
   /** Keys (globs) excluded from all checks. */
   readonly ignoreKeys?: readonly string[] | undefined
   readonly glossary?: readonly GlossaryEntry[] | undefined
+  /** History providers for stale translations. `false` turns every provider off. Options of a provider sit under its key, such as `git: { maxDepth, since }` (or `git: false`). */
+  readonly history?: boolean | HistoryOptions | undefined
   /** Monorepo: directories (globs) that are projects inheriting this config. */
   readonly projects?: readonly string[] | undefined
 }
@@ -160,12 +162,25 @@ export interface CheckIds {}
 
 export interface PluginConfigs {}
 
+/** Options of history providers under their own key, such as `git`. Providers add theirs through declaration merging. */
+
+export interface HistoryConfigs {}
+
+export type HistoryOptions = Partial<HistoryConfigs>
+
+export interface HistorySettings extends HistoryOptions {
+  /** Providers asked before those of plugins. */
+  readonly providers: readonly HistoryProvider[]
+}
+
 export type PresetOption = Preset | PluginSpecifier | false | undefined
 export type PluginOption = Plugin | Preset | PluginSpecifier | false | undefined
 
 /** The config accepted by `defineConfig`: the serializable part plus plugin objects. */
-export interface UserConfig extends Omit<SerializableConfig, 'presets' | 'plugins' | 'checks'> {
+export interface UserConfig extends Omit<SerializableConfig, 'presets' | 'plugins' | 'checks' | 'history'> {
   readonly presets?: 'auto' | readonly PresetOption[] | undefined
+  /** History providers for stale translations: `false` turns them off; provider options such as `git` sit under their key; `providers` adds providers asked first. */
+  readonly history?: boolean | (HistoryOptions & { readonly providers?: readonly HistoryProvider[] | undefined }) | undefined
   readonly plugins?: readonly PluginOption[] | undefined
   readonly checks?: { readonly [K in keyof CheckIds]?: CheckSetting } & { readonly [checkId: string]: CheckSetting } | undefined
   readonly pluginConfigs?: Partial<PluginConfigs> | undefined
@@ -198,6 +213,7 @@ export interface ResolvedConfig {
   readonly strict: boolean
   readonly ignoreKeys: readonly string[]
   readonly glossary: readonly GlossaryEntry[]
+  readonly history: false | HistorySettings
   readonly pluginConfigs: Partial<PluginConfigs>
   /** Origin of each top-level value, for `explain()`. */
   readonly origins: { readonly [key: string]: ConfigOrigin }

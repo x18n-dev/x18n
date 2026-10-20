@@ -1,17 +1,18 @@
 import type { Setup } from '../resolve'
 import type { FileEvent, Host } from '../types/host'
-import type { KeyString, LocaleCode, LocaleInfo, Message, MessageTree, Resource, TextRange, Usage } from '../types/model'
-import type { HardString, ScanResult, SourceFile } from '../types/plugin'
+import type { KeyString, LocaleCode, LocaleInfo, Message, MessageLeaf, MessageTree, Resource, TextRange, Usage } from '../types/model'
+import type { HardString, HistoryContext, ScanResult, SourceFile } from '../types/plugin'
 import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, ResourceNode, UsageMatch } from '../types/project'
 import type { ResourceState } from './analysis'
 import type { UsageResolver } from './usages'
 import { isX18nError, X18nError } from '../errors'
 import { isKeyUnder, joinKey, keyMatcher, pathMatcher } from '../keys'
 import { parseLocaleInfo } from '../locale'
-import { isMessageLeaf, isMessageTree, pathId } from '../message-tree'
+import { isMessageLeaf, isMessageTree, pathId, walkLeaves } from '../message-tree'
 import { extensionOf } from '../plugins'
 import { hashText, rangeContains } from '../text'
 import { createAnalyzer } from './analysis'
+import { createHistory } from './history'
 import { createPlanner } from './planner'
 import { buildPrompt } from './prompt'
 import { createUsageResolver, derivedBase, prefixMatches, suppressedRanges } from './usages'
@@ -181,6 +182,16 @@ export function createProject(options: CreateProjectOptions): Project {
       const coded = isX18nError(error) ? error : new X18nError('X18N2002', `${candidate.path}: ${error instanceof Error ? error.message : String(error)}`)
       return { ...base, tree: {}, rawTree: {}, ranges: new Map(), error: coded }
     }
+  }
+
+  function messagesIn(resource: Resource, text: string): ReadonlyMap<KeyString, MessageLeaf> | undefined {
+    if (resource.block)
+      return undefined
+    const format = resource.format === 'unknown' ? undefined : resource.format
+    const state = parseResource({ ...resource, format, block: undefined }, text)
+    if (state.error)
+      return undefined
+    return new Map([...walkLeaves(state.tree)].map(leaf => [keyFor(state.resource, leaf.path), leaf.value]))
   }
 
   async function loadResources(candidates: readonly Candidate[], reread: ReadonlySet<string> | 'all'): Promise<void> {
@@ -419,6 +430,17 @@ export function createProject(options: CreateProjectOptions): Project {
     return idx().messages.get(key)?.get(locale)?.[0]
   }
 
+  const history = createHistory({
+    providers: config.history === false ? [] : [...config.history.providers, ...registry.histories],
+    context: (): HistoryContext => ({ host, config, resources: [...resourceStates.values()].map(state => state.resource), messagesIn }),
+    current: (key, locale) => message(key, locale)?.value,
+    onLoad() {
+      revision++
+      emit({ revision, paths: [], keys: [] })
+    },
+    logger: host.logger,
+  })
+
   function usageMatches(query: { key?: KeyString | undefined, prefix?: KeyString | undefined, path?: string | undefined } = {}): UsageMatch[] {
     const { usages, usagesByKey, prefixUsages } = idx()
     const inPath = (usage: Usage): boolean => query.path === undefined || usage.path === query.path
@@ -459,6 +481,7 @@ export function createProject(options: CreateProjectOptions): Project {
       prefixUsages: idx().prefixUsages,
       derived: idx().derived,
       files,
+      history: history.get,
     }),
     baseOf,
     localeInfo,
@@ -713,9 +736,15 @@ export function createProject(options: CreateProjectOptions): Project {
     keySlots: path => files.get(path)?.result.keySlots ?? [],
     hardStrings: path => [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).filter(([p]) => path === undefined || p === path).flatMap(([p, state]) => (state.result.hardStrings ?? []).map(h => ({ ...h, path: p }))),
     analyze: (): Analysis => analyzer.analyze(),
+    async loadHistory(historyOptions = {}) {
+      await ready
+      await history.load(historyOptions)
+    },
+    history: history.get,
     prompt: (kind, locale, promptOptions = {}) => buildPrompt(project, kind, locale, promptOptions, {
       config,
       hooks: registry.plugins.flatMap(plugin => plugin.translatePrompt ? [plugin.translatePrompt] : []),
+      valueAt: history.valueAt,
     }),
     explain,
     localeInfo,
@@ -737,6 +766,7 @@ export function createProject(options: CreateProjectOptions): Project {
     },
     dispose() {
       watcher?.dispose()
+      history.dispose()
       listeners.clear()
     },
   }

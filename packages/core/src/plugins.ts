@@ -3,6 +3,7 @@ import type {
   Check,
   Extractor,
   Format,
+  HistoryProvider,
   LocaleFinder,
   ManifestReader,
   PlaceholderSyntax,
@@ -35,6 +36,7 @@ export interface PluginRegistry {
   readonly placeholders: readonly PlaceholderSyntax[]
   readonly manifests: readonly ManifestReader[]
   readonly extractors: readonly Extractor[]
+  readonly histories: readonly HistoryProvider[]
   readonly conflicts: readonly CapabilityConflict[]
   /** Format for a file path: config `formats` first, then the first format that claims the extension. */
   readonly formatFor: (path: string, hint?: string) => Format | undefined
@@ -96,6 +98,7 @@ export function createRegistry(input: readonly Plugin[], config: Pick<ResolvedCo
     placeholders: plugins.flatMap(plugin => plugin.placeholders ?? []),
     manifests: plugins.flatMap(plugin => plugin.manifests ?? []),
     extractors: plugins.flatMap(plugin => plugin.extractors ?? []),
+    histories: plugins.flatMap(plugin => plugin.histories ?? []),
     conflicts,
     formatById,
     formatFor(path, hint) {

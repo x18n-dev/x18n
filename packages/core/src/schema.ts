@@ -130,6 +130,8 @@ const configSchema = v.strictObject({
   strict: v.optional(v.boolean()),
   ignoreKeys: v.optional(strings),
   glossary: v.optional(v.array(glossaryEntry)),
+  // Provider options are typed by each provider; core only knows they are keyed by provider.
+  history: v.optional(v.union([v.boolean(), v.record(v.string(), v.union([v.literal(false), v.looseObject({})]))])),
   projects: v.optional(strings),
 })
 

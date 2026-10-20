@@ -2,9 +2,10 @@ import type { X18nError } from '../errors'
 import type { PluginRegistry } from '../plugins'
 import type { CheckSetting, ResolvedConfig } from '../types/config'
 import type { Diagnostic, JsonObject, KeyString, LocaleCode, LocaleInfo, Message, MessageTree, NodeRange, Placeholder, Resource, Severity, Usage } from '../types/model'
-import type { Check, CheckContext, DiagnosticInput, HardString, LocaleCoverage, ScanResult } from '../types/plugin'
+import type { Check, CheckContext, DiagnosticInput, HardString, LocaleCoverage, MessageChange, ScanResult } from '../types/plugin'
 import type { Analysis } from '../types/project'
 import { keyMatcher } from '../keys'
+import { isOutdated } from './history'
 
 export interface ResourceState {
   readonly resource: Resource
@@ -37,6 +38,7 @@ interface AnalyzerState {
   readonly prefixUsages: readonly Usage[]
   readonly derived: ReadonlyMap<KeyString, readonly KeyString[]>
   readonly files: ReadonlyMap<string, { readonly result: ScanResult }>
+  readonly history: (key: KeyString, locale: LocaleCode) => MessageChange | undefined
 }
 
 export interface AnalyzerOptions {
@@ -56,18 +58,22 @@ function levelOf(setting: CheckSetting | undefined): { level: Severity | 'off', 
   return { level: setting[0], options: setting[1] }
 }
 
-function computeCoverage(messages: AnalyzerState['messages'], locales: readonly LocaleCode[], reference: readonly KeyString[]): LocaleCoverage[] {
-  return locales.map((locale) => {
+function computeCoverage(state: AnalyzerState, reference: readonly KeyString[]): LocaleCoverage[] {
+  const { messages, sourceLocale } = state
+  return state.locales.map((locale) => {
     const missing: KeyString[] = []
     const empty: KeyString[] = []
+    const outdated: KeyString[] = []
     for (const key of reference) {
       const value = messages.get(key)?.get(locale)?.[0]?.value
       if (value === undefined)
         missing.push(key)
       else if (value === '')
         empty.push(key)
+      else if (locale !== sourceLocale && isOutdated(state.history(key, sourceLocale), state.history(key, locale)))
+        outdated.push(key)
     }
-    return { locale, total: reference.length, translated: reference.length - missing.length - empty.length, missing, empty }
+    return { locale, total: reference.length, translated: reference.length - missing.length - empty.length, missing, empty, outdated }
   })
 }
 
@@ -150,7 +156,7 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
     const allKeys = [...messages.keys()].sort()
     const reference = sourceKeys.length > 0 ? sourceKeys : allKeys
 
-    const coverage = computeCoverage(messages, locales, reference)
+    const coverage = computeCoverage(state, reference)
 
     const isDefined = (key: KeyString): boolean =>
       messages.get(key)?.has(sourceLocale) === true
@@ -219,6 +225,7 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
       syntaxErrors: value => registry.placeholders.flatMap(syntax => syntax.validate?.(value) ?? []),
       localeInfo: options.localeInfo,
       text: options.text,
+      history: state.history,
       * hardStrings(): Generator<HardString & { readonly path: string }> {
         for (const [path, file] of state.files) {
           for (const hard of file.result.hardStrings ?? [])
