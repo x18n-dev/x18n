@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "x18n: dev",
+      "type": "shell",
+      "command": "pnpm --filter x18n-vscode dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "tsdown",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "(Build complete|Rebuilt|built in)"
+        }
+      },
+      "presentation": { "reveal": "silent" }
+    }
+  ]
+}

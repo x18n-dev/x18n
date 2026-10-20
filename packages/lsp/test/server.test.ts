@@ -84,6 +84,7 @@ describe('language server', () => {
       context: { includeDeclaration: true },
     })
     expect(result.map(relativeOf)).toContain('src/App.vue')
+    expect(result.map(relativeOf).filter(path => path.includes('locales/'))).toEqual([])
   })
 
   it('returns null from prepareRename outside keys', async () => {

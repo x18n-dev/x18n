@@ -44,20 +44,31 @@ export function findConfigUpward(cwd: string): string | undefined {
   }
 }
 
-const core = fileURLToPath(import.meta.resolve('@x18n/core'))
-const presets = fileURLToPath(import.meta.resolve('@x18n/builtins/presets'))
+// Bundled to CJS (the VS Code extension), `import.meta` is empty: there the aliases are skipped
+// and configs resolve x18n's packages from the project, like any other dependency.
+function resolveOwn(specifier: string): string | undefined {
+  try {
+    return fileURLToPath(import.meta.resolve(specifier))
+  }
+  catch {}
+}
+
+const core = resolveOwn('@x18n/core')
+const presets = resolveOwn('@x18n/builtins/presets')
 
 // Configs and plugins import x18n's own packages; resolve them to the copies x18n runs from,
 // so a project needs no install of its own (`npx @x18n/cli`, a config written by `x18n init`).
-const jiti = createJiti(import.meta.url, {
+const jiti = createJiti(import.meta.url ?? pathToFileURL(__filename).href, {
   moduleCache: false,
   interopDefault: true,
-  alias: {
-    '@x18n/core': core,
-    '@x18n/cli/presets': presets,
-    '@x18n/cli': core,
-    '@x18n/builtins/presets': presets,
-  },
+  alias: core && presets
+    ? {
+        '@x18n/core': core,
+        '@x18n/cli/presets': presets,
+        '@x18n/cli': core,
+        '@x18n/builtins/presets': presets,
+      }
+    : {},
 })
 
 /** Imports a JS or TS module (config, plugin, executed resource). */

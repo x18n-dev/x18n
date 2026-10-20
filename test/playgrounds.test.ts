@@ -187,8 +187,6 @@ describe('the language server on the playgrounds', () => {
       const fromResource = await client.at('src/locales/en.json', '"pages"')
       expect(client.where(await client.connection.sendRequest('textDocument/references', { ...fromResource, context: { includeDeclaration: true } }))).toEqual([
         'src/App.vue:23',
-        'src/locales/en.json:17',
-        'src/locales/de.json:16',
       ])
       const edit: { documentChanges: { textDocument: { uri: string } }[] } = await client.connection.sendRequest('textDocument/rename', { ...await client.at('src/App.vue', 'nav.home'), newName: 'nav.start' })
       expect(edit.documentChanges.map(change => client.path(change.textDocument.uri)).sort()).toEqual(['src/App.vue', 'src/locales/de.json', 'src/locales/en.json', 'src/locales/ja.yml'])

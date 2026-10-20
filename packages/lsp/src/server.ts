@@ -304,11 +304,8 @@ class Server {
       return null
     const { project } = at.entry
     const matches = target.type === 'subtree' ? project.usages({ prefix: target.key }) : project.usages({ key: target.key })
-    const usages = matches.map(m => this.location(at.entry, m.usage.path, m.usage.range))
-    const entries = params.context.includeDeclaration || target.source === 'usage'
-      ? project.locations(target.key).map(node => this.entryLocation(at.entry, node))
-      : []
-    return [...usages, ...entries]
+    // Locale entries are implementations, not references: siblings stay out of this list.
+    return matches.map(m => this.location(at.entry, m.usage.path, m.usage.range))
   }
 
   async prepareRename(params: TextDocumentPositionParams): Promise<{ range: Range, placeholder: string } | null> {
