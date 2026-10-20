@@ -48,6 +48,6 @@ All gates MUST pass:
 pnpm lint && pnpm knip && pnpm test && pnpm typecheck && pnpm build
 ```
 
-CI also runs `x18n check` (the repo checks its own messages) and a docs check, so run `pnpm ci` to match it.
+CI also runs `x18n check --strict` (the repo checks its own messages) and a docs check, so run `pnpm ci` to match it. The pre-commit hook only checks the lockfile and lints the staged files.
 
 Commit messages and PR titles follow [Conventional Commits](https://www.conventionalcommits.org/), for example `fix(node): load configs when bundled to CJS`. Keep a PR to one change, and describe what you ran to verify it.
