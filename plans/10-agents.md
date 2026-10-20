@@ -1,6 +1,6 @@
 # 10 - Agents
 
-Agents are first-class users. They get three things: a CLI with stable JSON, prompts that describe work, and an MCP server. A skill shipped in the `x18n` package teaches the workflow.
+Agents are first-class users. They get three things: a CLI with stable JSON, prompts that describe work, and an MCP server. Skills shipped in the `@x18n/cli` package teach the workflow.
 
 ## Principles
 
@@ -61,9 +61,15 @@ Tools are the RPC functions marked `agent` in [09-ui.md](./09-ui.md), with descr
 
 MCP prompts: `translate`, `review`, `extract`.
 
-## Shipped skill
+## Shipped skills
 
-`packages/cli/skills/x18n/SKILL.md`, shipped in the `@x18n/cli` npm package (like devframe ships its skill), discoverable by `skills-npm`. Content:
+The source is the root `skills/` directory, so `skills add antfu/x18n` finds it on GitHub. The `@x18n/cli` build copies it into the package (like devframe ships its skill), where `skills-npm` discovers it at the installed CLI's version. Three skills, each with its own trigger, with no text shared between them:
+
+- `x18n-setup`: `x18n doctor`, `x18n init` only when detection needs help, the dev dependency and script, and the first `x18n check` summary. Holds `references/migrate-i18n-ally.md`.
+- `x18n-check`: run `x18n check --json`, fix diagnostics per check id, and bring unused-key deletes, glossary terms, check severities and `--strict` to the user.
+- `x18n`: the day-to-day skill, below.
+
+`x18n` content:
 
 - When to use x18n instead of editing locale files.
 - The loops: "add a key while coding" (`x18n set` in source locale, then `x18n keys --missing`), "translate missing" (prompt, apply, check), "clean up" (`x18n keys --unused`, `x18n delete --dry-run`), "extract strings" (list, plan, apply).
