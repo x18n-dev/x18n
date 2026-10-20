@@ -81,6 +81,8 @@ async function trust(rpc: DevframeRpcClient): Promise<void> {
     return
   if (rpc.isTrusted || await rpc.requestTrust())
     return
+  // The server prints the code only on request; `x18n ui` already printed one at startup, and it prints each code once.
+  await rpc.requestAuthCode()
   await new Promise<void>((resolve) => {
     pendingAuth.value = async (typed) => {
       const ok = await rpc.requestTrustWithCode(typed)

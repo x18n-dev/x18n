@@ -26,7 +26,7 @@
   },
   "scripts": {
     "build": "nuxt build && tsdown",
-    "dev": "nuxt dev --host",
+    "dev": "nuxt dev",
     "codegen": "nuxt prepare",
     "typecheck": "nuxt typecheck && tsc -p tsconfig.node.json",
     "test:e2e": "playwright test",
@@ -41,6 +41,7 @@
     "valibot": "catalog:deps"
   },
   "devDependencies": {
+    "@devframes/vite": "catalog:deps",
     "@iconify-json/catppuccin": "catalog:frontend",
     "@iconify-json/ph": "catalog:frontend",
     "@playwright/test": "catalog:testing",

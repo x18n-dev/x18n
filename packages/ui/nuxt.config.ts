@@ -1,3 +1,5 @@
+import type { Connect, Plugin, ViteDevServer } from 'vite'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 const strict = {
@@ -11,6 +13,30 @@ const source = (path: string): string => fileURLToPath(new URL(`../${path}`, imp
 
 // Moves a magic-link code out of the fragment before the hash router reads it; `app/backend.ts` exchanges it.
 const stashOtp = `{const p=new URLSearchParams(location.hash.slice(1)),c=p.get('devframe_otp');if(c){sessionStorage.setItem('x18n:otp',c);history.replaceState(null,'',location.pathname+location.search+'#'+(p.get('route')||'/'))}}`
+
+// `nuxt dev` has no devframe server of its own; bridge one in so the SPA finds `__connection.json` and the RPC socket.
+async function devBridge(): Promise<Plugin[]> {
+  if (process.env.NODE_ENV === 'production' || process.argv.some(arg => arg === 'build' || arg === 'generate' || arg === 'prepare' || arg === 'typecheck'))
+    return []
+  const [{ devframeViteBridge }, { loadWorkspace, stderrLogger }, { createX18nDevframe }] = await Promise.all([
+    import('@devframes/vite/single'),
+    import('@x18n/node'),
+    import('./src/node/index'),
+  ])
+  const workspace = await loadWorkspace({ cwd: process.cwd(), upward: true, cache: true, logger: stderrLogger })
+  workspace.projects.forEach(p => p.project.watch())
+  const bridge = devframeViteBridge(createX18nDevframe(workspace.projects), { base: './' }) as Omit<Plugin, 'configureServer'> & { configureServer: (server: ViteDevServer) => Promise<void> }
+  // Mounted at `/`, the bridge answers every other request with a 404; let those fall through to Nuxt.
+  const routes = /^\/(?:__connection\.json|__ws|__sse|__mcp)(?:[/?]|$)/
+  return [{
+    ...bridge,
+    configureServer: server => bridge.configureServer(new Proxy(server, {
+      get: (target, key) => key === 'middlewares'
+        ? { use: (handler: Connect.NextHandleFunction) => target.middlewares.use((req, res, next) => routes.test(req.url ?? '') ? handler(req, res, next) : next()) }
+        : Reflect.get(target, key),
+    })),
+  }]
+}
 
 export default defineNuxtConfig({
   ssr: false,
@@ -58,6 +84,7 @@ export default defineNuxtConfig({
 
   vite: {
     base: './',
+    plugins: await devBridge(),
   },
 
   typescript: {

@@ -7,9 +7,7 @@ blockExoticSubdeps: false
 minimumReleaseAgeExcludePrune: true
 minimumReleaseAgeExclude:
   - '@antfu/skills@0.1.0'
-  - devframe@1.2.5
   - '@devframes/agentic@1.2.5'
-  - playwright-core@1.64.1
 
 trustPolicy: no-downgrade
 # Older releases of Nuxt and comark-docs dependencies predate provenance publishing;
@@ -97,6 +95,7 @@ catalogs:
     vite: ^8.3.1
   deps:
     '@devframes/agentic': 1.2.5
+    '@devframes/vite': 1.2.5
     '@valibot/to-json-schema': ^1.8.0
     '@vue/compiler-core': ^3.5.44
     '@vue/compiler-sfc': ^3.5.44
