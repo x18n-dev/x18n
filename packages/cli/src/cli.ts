@@ -129,6 +129,7 @@ export function createCli(): CAC {
     .option('--cursor <cursor>', 'Continue from `nextCursor`')
     .option('--format <format>', 'markdown (default) or json')
     .option('--no-context', 'Leave out code around usages')
+    .option('--stale', 'Also translate stale translations (needs git history)')
     .action(run('prompt', prompt))
 
   cli.command('ui', 'Start the UI: browse and edit messages in the browser, with HTTP MCP at /__mcp')

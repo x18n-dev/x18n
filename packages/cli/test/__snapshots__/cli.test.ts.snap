@@ -20,14 +20,16 @@ exports[`x18n binary > keeps the JSON contract of every read command > check 1`]
             "total": 8,
             "translated": 8,
             "missing": 0,
-            "empty": 0
+            "empty": 0,
+            "outdated": 0
           },
           {
             "locale": "de",
             "total": 8,
             "translated": 6,
             "missing": 1,
-            "empty": 1
+            "empty": 1,
+            "outdated": 0
           }
         ]
       }

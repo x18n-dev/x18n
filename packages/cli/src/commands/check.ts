@@ -51,6 +51,14 @@ function reportInputs(workspace: Workspace, options: CheckOptions): ReportInput[
   })
 }
 
+/** History costs a git walk, so it loads only when `stale-translation` runs. */
+function needsHistory(loaded: LoadedProject, options: CheckOptions): boolean {
+  const setting = loaded.project.config.checks['stale-translation']
+  const level = typeof setting === 'string' ? setting : setting?.[0]
+  const only = list(options.only)
+  return level !== 'off' && (only.length === 0 || only.includes('stale-translation')) && !list(options.skip).includes('stale-translation')
+}
+
 async function report(workspace: Workspace, options: CheckOptions): Promise<number> {
   const inputs = reportInputs(workspace, options)
   const reporterIds = list(options.reporter)
@@ -79,6 +87,10 @@ async function report(workspace: Workspace, options: CheckOptions): Promise<numb
 
 export async function check(options: CheckOptions): Promise<number> {
   const workspace = await openWorkspace(options)
+  await Promise.all(workspace.projects.filter(loaded => needsHistory(loaded, options)).map(async (loaded) => {
+    await loaded.project.loadHistory({ watch: options.watch })
+    await loaded.host.flush()
+  }))
   const code = await report(workspace, options)
   if (!options.watch)
     return code

@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { version } from '../package.json' with { type: 'json' }
 
+// Git hooks set GIT_DIR and friends; they would point every git call here at the repo running the hook.
+for (const name of Object.keys(process.env).filter(name => name.startsWith('GIT_')))
+  delete process.env[name]
+
 const bin = fileURLToPath(new URL('../bin.mjs', import.meta.url))
 const fixtures = fileURLToPath(new URL('../../../test/fixtures/', import.meta.url))
 let work: string
@@ -154,6 +158,27 @@ describe('x18n binary', () => {
     const result = await x18n(dir, ['status'])
     expect(result.code).toBe(2)
     expect(result.stderr).toContain('error X18N0001')
+  })
+
+  it('reports stale translations from git history', async () => {
+    const dir = await fixture('vue-i18n')
+    const git = (args: string[], date: string): Promise<void> => new Promise((resolve, reject) => {
+      const env = { ...process.env, GIT_AUTHOR_NAME: 'Ada', GIT_AUTHOR_EMAIL: 'ada@example.com', GIT_COMMITTER_NAME: 'Ada', GIT_COMMITTER_EMAIL: 'ada@example.com', GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date }
+      execFile('git', ['-c', 'commit.gpgsign=false', ...args], { cwd: dir, env }, error => error ? reject(error) : resolve())
+    })
+    await git(['init', '-q'], '')
+    await git(['add', '-A'], '')
+    await git(['commit', '-q', '-m', 'first'], '2026-01-01T00:00:00Z')
+    const en = JSON.parse(await readFile(join(dir, 'src/locales/en.json'), 'utf8'))
+    await writeFile(join(dir, 'src/locales/en.json'), JSON.stringify({ ...en, app: { ...en.app, title: 'My Great App' } }, null, 2))
+    await git(['commit', '-q', '-am', 'second'], '2026-02-01T00:00:00Z')
+
+    const check = json(await x18n(dir, ['check', '--only', 'stale-translation', '--json']))
+    expect(check.diagnostics).toMatchObject([{ code: 'stale-translation', key: 'app.title', locale: 'de', file: 'src/locales/de.json' }])
+    expect(check.diagnostics[0].message).toMatch(/^"app.title" in de is older than en \(source changed 2026-02-01 in [0-9a-f]{7}\)\.$/)
+    expect(check.data.projects[0].coverage.find((c: any) => c.locale === 'de').outdated).toBe(1)
+    const prompt = json(await x18n(dir, ['prompt', 'translate', '--to', 'de', '--stale', '--json']))
+    expect(prompt.data.items.find((item: any) => item.key === 'app.title')).toMatchObject({ source: 'My Great App', previousSource: 'My App' })
   })
 
   it('keeps the JSON contract of every read command', async () => {
