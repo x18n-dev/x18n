@@ -1,5 +1,5 @@
 import type { ExtractCandidate } from '@x18n/builtins/extractors'
-import type { EditOp, FileChange, KeyString, OverlayHost, Plan, Project, ResourceNode, TextRange, Diagnostic as X18nDiagnostic } from '@x18n/core'
+import type { EditOp, FileChange, KeyString, MessageChange, OverlayHost, Plan, Project, ResourceNode, TextRange, Diagnostic as X18nDiagnostic } from '@x18n/core'
 import type { NodeHost } from '@x18n/node'
 import type {
   CodeAction,
@@ -74,6 +74,17 @@ function truncate(text: string, max: number): string {
 
 function display(value: unknown): string | undefined {
   return value === undefined ? undefined : typeof value === 'string' ? value : JSON.stringify(value)
+}
+
+const timeUnits = [['year', 31_536e6], ['month', 2_592e6], ['week', 6_048e5], ['day', 864e5], ['hour', 36e5], ['minute', 6e4]] as const
+
+function changedAt(change: MessageChange): string {
+  if (!Number.isFinite(change.updatedAt))
+    return 'changed locally'
+  const diff = change.updatedAt - Date.now()
+  const [unit, size] = timeUnits.find(([, size]) => Math.abs(diff) >= size) ?? ['minute', 6e4]
+  const when = new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(Math.round(diff / size), unit)
+  return [when, change.revision?.slice(0, 7), change.author].filter(Boolean).join(' · ')
 }
 
 const posix = (path: string): string => sep === '\\' ? path.replace(/\\/g, '/') : path
@@ -168,6 +179,7 @@ class Server {
         void this.connection.sendNotification(methods.changed, { project: entry.name, revision: change.revision, keys: change.keys } satisfies P.ChangedParams)
         this.publishDiagnostics()
       })
+      void entry.project.loadHistory({ watch: true })
     }
   }
 
@@ -378,11 +390,16 @@ class Server {
     const { project } = at.entry
     const lines = [`**x18n** \`${target.key}\``, '']
     if (target.type === 'key') {
-      lines.push('| | |', '| --- | --- |')
-      for (const locale of project.locales) {
+      const changes = project.locales.map(locale => project.history(target.key, locale))
+      const dated = changes.some(Boolean)
+      const outdated = new Set(project.analyze().coverage.filter(c => c.outdated.includes(target.key)).map(c => c.locale))
+      lines.push(dated ? '| | | |' : '| | |', dated ? '| --- | --- | --- |' : '| --- | --- |')
+      project.locales.forEach((locale, i) => {
         const value = display(project.lookup(target.key, locale)?.value)
-        lines.push(`| ${project.localeInfo(locale).flag ?? ''} ${locale} | ${value === undefined ? '_missing_' : value === '' ? '_empty_' : value.replace(/\|/g, '\\|').replace(/\n/g, ' ')} |`)
-      }
+        const change = changes[i]
+        const changed = dated ? ` ${change ? changedAt(change).replace(/\|/g, '\\|') : ''}${outdated.has(locale) ? ' · **outdated**' : ''} |` : ''
+        lines.push(`| ${project.localeInfo(locale).flag ?? ''} ${locale} | ${value === undefined ? '_missing_' : value === '' ? '_empty_' : value.replace(/\|/g, '\\|').replace(/\n/g, ' ')} |${changed}`)
+      })
     }
     const usages = target.type === 'subtree' ? project.usages({ prefix: target.key }) : project.usages({ key: target.key })
     const args = encodeURIComponent(JSON.stringify([{ project: at.entry.name, key: target.key }]))
