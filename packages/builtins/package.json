@@ -35,7 +35,7 @@
     "build": "tsdown",
     "dev": "tsdown --watch",
     "typecheck": "tsc --noEmit",
-    "prepack": "cp ../../THIRD-PARTY-NOTICES.md ."
+    "prepack": "pnpm build && cp ../../THIRD-PARTY-NOTICES.md ."
   },
   "dependencies": {
     "@vue/compiler-sfc": "catalog:deps",

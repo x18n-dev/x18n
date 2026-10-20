@@ -29,7 +29,8 @@
     "dev": "nuxt dev --host",
     "codegen": "nuxt prepare",
     "typecheck": "nuxt typecheck && tsc -p tsconfig.node.json",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "prepack": "pnpm build"
   },
   "dependencies": {
     "@devframes/agentic": "catalog:deps",
