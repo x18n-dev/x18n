@@ -3,8 +3,9 @@ import type { CallSpec, ConfigContext, Preset } from '@x18n/core'
 import { defaultTemplates } from '../extractors'
 import { sfcBlocks } from '../finders/sfc-blocks'
 import { braces, doubleBraces, icu, linked, nesting, placeholders } from '../placeholders'
+import { regexScopes } from '../scanners/regex'
 import { nlsFinder } from './nls'
-import { dependsOn, library } from './shared'
+import { dependsOn, library, scriptExtensions } from './shared'
 
 const vueI18nCalls: CallSpec[] = [
   { callee: ['$t', 't', 'tc', '$tc', 'te', '$te', 'tm', '$tm', 'i18n.t', 'i18n.global.t', '$i18n.t', 'i18n.tc', 'i18n.te'] },
@@ -112,6 +113,8 @@ export function reactI18next(): Preset {
           { template: '{attr}={i18next.t(\'{key}\'{args})}', kinds: ['jsx-attribute'], imports: ['import i18next from \'i18next\''] },
         ],
       }),
+      // `withTranslation('ns')(Component)` passes `t` through props, usually below the component.
+      regexScopes('\\bwithTranslation\\(\\s*\\[?\\s*[\'"`]([^\'"`]+)[\'"`]', 'react-i18next-hoc', { wholeFile: true, extensions: scriptExtensions }),
     ],
   }
 }

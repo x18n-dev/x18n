@@ -60,9 +60,9 @@ export function regex(specs: readonly RegexScannerSpec[] = [], id = 'regex'): Pl
 
 /**
  * Regions after each match of `pattern` (group 1 = namespace, or key prefix with `as: 'keyPrefix'`),
- * up to the next match: i18n-ally `scopeRangeRegex`.
+ * up to the next match: i18n-ally `scopeRangeRegex`. With `wholeFile`, the first match scopes the whole file.
  */
-export function regexScopes(pattern: string, id = 'scopes', options: { readonly as?: 'namespace' | 'keyPrefix', readonly extensions?: readonly string[] } = {}): Plugin {
+export function regexScopes(pattern: string, id = 'scopes', options: { readonly as?: 'namespace' | 'keyPrefix', readonly extensions?: readonly string[], readonly wholeFile?: boolean } = {}): Plugin {
   const re = new RegExp(pattern, 'g')
   return {
     name: `x18n:scanner-${id}`,
@@ -71,8 +71,10 @@ export function regexScopes(pattern: string, id = 'scopes', options: { readonly 
       extensions: options.extensions ?? ['*'],
       scan(file) {
         const matches = [...file.text.matchAll(re)]
+        if (options.wholeFile)
+          matches.splice(1)
         const scopes: Scope[] = matches.map((match, i) => ({
-          range: { start: match.index + match[0].length, end: matches[i + 1]?.index ?? file.text.length },
+          range: options.wholeFile ? { start: 0, end: file.text.length } : { start: match.index + match[0].length, end: matches[i + 1]?.index ?? file.text.length },
           ...options.as === 'keyPrefix' ? { keyPrefix: match[1] } : { namespace: match[1] },
         }))
         return { usages: [], scopes }

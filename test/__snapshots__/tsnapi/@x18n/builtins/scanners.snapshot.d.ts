@@ -21,6 +21,7 @@ export declare function regex(_?: readonly RegexScannerSpec[], _?: string): Plug
 export declare function regexScopes(_: string, _?: string, _?: {
   readonly as?: "namespace" | "keyPrefix";
   readonly extensions?: readonly string[];
+  readonly wholeFile?: boolean;
 }): Plugin;
 export declare function scanSource(_: ParseSync, _: string, _: ScanSourceOptions): ScanResult;
 export declare function scanWithRegex(_: string, _: readonly RegExp[]): UsageCandidate[];
