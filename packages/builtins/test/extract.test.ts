@@ -1,6 +1,6 @@
 import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
-import { extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
+import { extractItems, findCandidates, isExtractableFile, shouldExtract, slugify } from '../src/extractors'
 import { reactI18next, reactIntl, vueI18n } from '../src/presets'
 import { createTestProject, json } from './_utils'
 
@@ -24,6 +24,22 @@ describe('extraction rules', () => {
     expect(shouldExtract('some-class-name', 'jsx-attribute')).toBe(false)
     expect(shouldExtract('你好', 'js-string')).toBe(true)
     expect(shouldExtract('SCREAMING_CASE', 'jsx-text')).toBe(false)
+  })
+
+  it('skips class lists, SVG paths and text-free markup', () => {
+    expect(shouldExtract('!color-base underline underline-offset-6', 'js-string')).toBe(false)
+    expect(shouldExtract('flex items-center gap-2 hover:bg-gray/10', 'js-string')).toBe(false)
+    expect(shouldExtract('M5.5 0v11M0 5.5h11', 'js-string')).toBe(false)
+    expect(shouldExtract('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {0} {1}">{2}</svg>', 'js-template')).toBe(false)
+    expect(shouldExtract('<b>Save</b> your changes', 'js-string')).toBe(true)
+    expect(shouldExtract('well-known issue', 'js-string')).toBe(true)
+    expect(shouldExtract('Move to trash', 'js-string')).toBe(true)
+  })
+
+  it('skips tests, configs, stories and declarations', () => {
+    for (const path of ['src/a.test.ts', 'src/a.spec.tsx', 'vite.config.ts', 'src/Button.stories.vue', 'src/env.d.ts', 'src/__tests__/a.ts'])
+      expect(isExtractableFile(path)).toBe(false)
+    expect(isExtractableFile('src/configure.ts')).toBe(true)
   })
 })
 

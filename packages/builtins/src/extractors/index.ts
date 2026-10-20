@@ -18,7 +18,14 @@ export const rules: readonly ExtractionRule[] = [
   { id: 'url', test: text => /^(?:[a-z][\w+.-]*:\/\/|mailto:|#|\/\/)/i.test(text.trim()) ? 'must-exclude' : 'none' },
   { id: 'path', test: text => /^(?:\.{0,2}\/|~\/|@\/)[\w./@-]*$/.test(text.trim()) || /^[\w-]+\.[a-z]{2,4}$/i.test(text.trim()) ? 'must-exclude' : 'none' },
   { id: 'translate-call', test: text => /\$?t\(['"`]/.test(text) || text.includes('{{') ? 'must-exclude' : 'none' },
-  { id: 'markup', test: text => /^<[^>]+>$/.test(text.trim()) ? 'must-exclude' : 'none' },
+  // `<svg viewBox="0 0 {0} {1}">{2}</svg>`: markup whose only letters sit inside tags.
+  { id: 'markup', test: text => /^<.*>$/s.test(text.trim()) && !/\p{L}/u.test(text.replace(/<[^>]*>|\{\d+\}/g, '')) ? 'must-exclude' : 'none' },
+  { id: 'svg-path', test: text => /^\s*M\s*-?[\d.]/i.test(text) && /^[MLHVCSQTAZ\d\s.,-]+$/i.test(text) ? 'must-exclude' : 'none' },
+  // `!color-base underline underline-offset-6`: utility class lists, where most tokens carry a `-`, `:`, `!`, `/`, `[` or digit.
+  { id: 'class-list', test: (text) => {
+    const tokens = text.trim().split(/\s+/)
+    return tokens.every(t => /^!?[a-z][\w:/[\].#%!-]*$/.test(t)) && tokens.filter(t => /[-:!/[\d]/.test(t)).length * 2 > tokens.length ? 'must-exclude' : 'none'
+  } },
   { id: 'non-ascii', test: text => /\P{ASCII}/u.test(text) && /\p{L}/u.test(text) ? 'must-include' : 'none' },
   { id: 'sentence', test: text => /\p{L}\s+\p{L}/u.test(text) ? 'should-include' : 'none' },
   { id: 'text-node', test: (text, kind) => textKinds.has(kind) || kind.endsWith('attribute') ? 'should-include' : 'none' },
@@ -27,6 +34,13 @@ export const rules: readonly ExtractionRule[] = [
   { id: 'attribute-token', test: (text, kind) => kind.endsWith('attribute') && /^[a-z][\w-]*$/.test(text.trim()) ? 'must-exclude' : 'none' },
   { id: 'identifier', test: text => /^[a-z]+(?:[A-Z][a-z\d]*)+$/.test(text) || /^[A-Z\d]+(?:_[A-Z\d]+)+$/.test(text) || /^[a-z\d]+(?:[-_.:][a-z\d]+)+$/.test(text) ? 'should-exclude' : 'none' },
 ]
+
+const nonUiFile = /(?:^|\/)(?:__tests__|__mocks__)\/|\.(?:test|spec|config|stories|story)\.\w+$|\.d\.[cm]?ts$/
+
+/** Tests, configs, stories and declarations hold strings users never see. */
+export function isExtractableFile(path: string): boolean {
+  return !nonUiFile.test(path)
+}
 
 /** Folds rule scores the i18n-ally way (`shouldExtract`). */
 export function shouldExtract(text: string, kind: string, list: readonly ExtractionRule[] = rules): boolean {
@@ -230,7 +244,7 @@ export function findCandidates(project: Project, options: FindOptions = {}): Ext
   const shape = placeholderShape(project)
   const out: ExtractCandidate[] = []
   for (const hard of project.hardStrings()) {
-    if (inFiles && !inFiles(hard.path))
+    if ((inFiles && !inFiles(hard.path)) || !isExtractableFile(hard.path))
       continue
     const text = project.text(hard.path)
     if (text === undefined || !shouldExtract(hard.text, hard.kind) || isIgnored(project, hard, text))

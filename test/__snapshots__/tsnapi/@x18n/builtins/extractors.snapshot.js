@@ -4,6 +4,7 @@
 // #region Functions
 export function extractItems(_, _) {}
 export function findCandidates(_, _) {}
+export function isExtractableFile(_) {}
 export function shouldExtract(_, _, _) {}
 export function slugify(_, _, _) {}
 export function toPlanFile(_, _) {}
