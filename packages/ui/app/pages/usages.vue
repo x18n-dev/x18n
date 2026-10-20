@@ -3,6 +3,9 @@ import type { UsageView } from '../../src/node/types'
 import { computed, ref } from 'vue'
 import { NuxtLink } from '#components'
 import CodeSnippet from '../components/CodeSnippet.vue'
+import FilePath from '../components/FilePath.vue'
+import UiPage from '../components/ui/UiPage.vue'
+import UiSegmented from '../components/ui/UiSegmented.vue'
 import { t } from '../i18n'
 import { useLive } from '../state'
 
@@ -25,59 +28,64 @@ const dynamic = computed(() => (usages.value ?? []).filter(u => u.dynamic !== fa
 const all = computed(() => (usages.value ?? []).filter(u => !filter.value || u.path.includes(filter.value) || (u.key ?? u.raw).includes(filter.value)))
 
 const tabs = computed(() => [
-  { id: 'missing' as const, label: t('usages.missing', { count: undefinedByKey.value.length }) },
-  { id: 'unused' as const, label: t('usages.unused', { count: analysis.value?.unused.length ?? 0 }) },
-  { id: 'dynamic' as const, label: t('usages.dynamic', { count: dynamic.value.length }) },
-  { id: 'all' as const, label: t('usages.all', { count: usages.value?.length ?? 0 }) },
+  { value: 'missing' as const, label: t('usages.missing', { count: undefinedByKey.value.length }) },
+  { value: 'unused' as const, label: t('usages.unused', { count: analysis.value?.unused.length ?? 0 }) },
+  { value: 'dynamic' as const, label: t('usages.dynamic', { count: dynamic.value.length }) },
+  { value: 'all' as const, label: t('usages.all', { count: usages.value?.length ?? 0 }) },
 ])
 </script>
 
 <template>
-  <div class="p-4 grid gap-3 max-w-5xl">
-    <div class="flex gap-1" role="tablist">
-      <button v-for="item in tabs" :key="item.id" role="tab" :aria-selected="tab === item.id" class="btn-action-sm" :class="tab === item.id ? 'btn-action-active' : ''" @click="tab = item.id">
-        {{ item.label }}
-      </button>
+  <UiPage>
+    <div class="flex flex-wrap items-center gap-3 border-b border-base px-4 py-3">
+      <UiSegmented v-model="tab" :options="tabs" :label="t('nav.usages')" />
+      <input v-if="tab === 'all'" v-model="filter" class="input w-72" :placeholder="t('usages.filter')" :aria-label="t('usages.filter')">
     </div>
 
     <template v-if="tab === 'missing'">
-      <p class="op-fade">
+      <p class="border-b border-base px-4 py-2 text-xs color-muted">
         {{ t('usages.missingHint') }}
       </p>
-      <div v-for="[key, list] in undefinedByKey" :key="key" class="border border-base rounded p-2 grid gap-1">
-        <span class="font-mono font-semibold">{{ key }}</span>
-        <CodeSnippet v-for="(usage, i) in list" :key="i" :usage="usage" />
+      <div v-for="[key, list] in undefinedByKey" :key="key" class="grid gap-2 border-b border-base px-4 py-3">
+        <span class="font-mono font-medium color-error">{{ key }}</span>
+        <div v-for="(usage, i) in list" :key="i" class="grid gap-1">
+          <FilePath :path="usage.path" :line="usage.line" :column="usage.column" />
+          <CodeSnippet :usage="usage" />
+        </div>
       </div>
     </template>
 
     <template v-else-if="tab === 'unused'">
-      <p class="op-fade">
+      <p class="border-b border-base px-4 py-2 text-xs color-muted">
         {{ t('usages.unusedHint') }}
       </p>
-      <NuxtLink v-for="key in analysis?.unused" :key="key" :to="`/keys/${encodeURIComponent(key)}`" class="font-mono hover:bg-hover px-2 py-0.5 rounded">
+      <NuxtLink v-for="key in analysis?.unused" :key="key" :to="`/keys/${encodeURIComponent(key)}`" class="focus-ring flex items-center gap-2 border-b border-base px-4 py-1.5 font-mono text-xs transition-colors hover:bg-hover">
+        <span class="i-ph-ghost color-faint" />
         {{ key }}
       </NuxtLink>
     </template>
 
     <template v-else-if="tab === 'dynamic'">
-      <p class="op-fade">
+      <p class="border-b border-base px-4 py-2 text-xs color-muted">
         {{ t('usages.dynamicHint') }}
       </p>
-      <div v-for="(usage, i) in dynamic" :key="i" class="grid gap-1">
-        <span class="font-mono text-mini op-fade">{{ usage.path }}:{{ usage.line }} · {{ usage.raw }}</span>
+      <div v-for="(usage, i) in dynamic" :key="i" class="grid gap-1 border-b border-base px-4 py-3">
+        <div class="flex items-center gap-2">
+          <FilePath :path="usage.path" :line="usage.line" />
+          <code class="font-mono text-xs color-info">{{ usage.raw }}</code>
+        </div>
         <CodeSnippet :usage="usage" />
       </div>
     </template>
 
     <template v-else>
-      <input v-model="filter" class="input-base w-72" :placeholder="t('usages.filter')" :aria-label="t('usages.filter')">
-      <div v-for="(usage, i) in all" :key="i" class="flex gap-3 font-mono text-mini px-2 py-0.5 hover:bg-hover">
-        <span class="op-fade w-72 truncate" :title="usage.path">{{ usage.path }}:{{ usage.line }}</span>
-        <NuxtLink v-if="usage.key" :to="`/keys/${encodeURIComponent(usage.key)}`">
+      <div v-for="(usage, i) in all" :key="i" class="grid grid-cols-[minmax(0,22rem)_1fr] items-center gap-4 border-b border-base px-4 py-1 transition-colors hover:bg-hover">
+        <FilePath :path="usage.path" :line="usage.line" />
+        <NuxtLink v-if="usage.key" :to="`/keys/${encodeURIComponent(usage.key)}`" class="truncate font-mono text-xs hover:underline">
           {{ usage.key }}
         </NuxtLink>
-        <span v-else class="op-fade">{{ usage.raw }}</span>
+        <span v-else class="truncate font-mono text-xs color-muted">{{ usage.raw }}</span>
       </div>
     </template>
-  </div>
+  </UiPage>
 </template>

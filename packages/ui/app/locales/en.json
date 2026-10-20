@@ -8,6 +8,7 @@
     "staticHint": "A snapshot built with `x18n build`. Run `x18n ui` to edit."
   },
   "auth": {
+    "label": "Authentication",
     "title": "Connect to x18n",
     "hint": "Enter the 6-digit code that `x18n ui` printed in the terminal.",
     "code": "Auth code",
@@ -20,6 +21,14 @@
     "usages": "Usages",
     "extract": "Extract",
     "project": "Project"
+  },
+  "localeBar": {
+    "title": "Locales",
+    "bar": "Locales to show",
+    "toggle": "Show or hide {locale}",
+    "shown": "{shown} of {total} shown",
+    "showAll": "Show all",
+    "noneShown": "Every locale is hidden. Pick one in the bar above."
   },
   "overview": {
     "keys": "Keys",
@@ -71,6 +80,7 @@
     "dismiss": "Dismiss"
   },
   "detail": {
+    "label": "Key",
     "back": "Back to keys",
     "notFound": "This key is not defined.",
     "values": "Values",
@@ -87,11 +97,14 @@
     "hint": "Copy a prompt for an LLM or agent that translates the missing messages"
   },
   "locale": {
+    "label": "Locale",
     "openInGrid": "Show in the grid",
     "progress": "{translated} of {total} translated ({percent}%)",
     "missing": "Missing ({count})",
     "empty": "Empty ({count})",
-    "problems": "Placeholder and syntax problems ({count})"
+    "problems": "Placeholder and syntax problems ({count})",
+    "notFound": "This project has no such locale.",
+    "complete": "Every key is translated."
   },
   "usages": {
     "missing": "Not defined ({count})",
@@ -108,7 +121,8 @@
     "none": "No hard-coded strings found.",
     "key": "Key",
     "apply": "Extract {count} strings",
-    "done": "Extracted {count} keys, changed {files} files."
+    "done": "Extracted {count} keys, changed {files} files.",
+    "strings": "{count} strings"
   },
   "project": {
     "presets": "Presets",

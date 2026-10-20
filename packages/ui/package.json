@@ -41,14 +41,13 @@
     "valibot": "catalog:deps"
   },
   "devDependencies": {
-    "@antfu/design": "catalog:frontend",
+    "@iconify-json/catppuccin": "catalog:frontend",
     "@iconify-json/ph": "catalog:frontend",
     "@playwright/test": "catalog:testing",
     "@unocss/nuxt": "catalog:frontend",
     "@unocss/reset": "catalog:frontend",
     "@vueuse/core": "catalog:frontend",
     "@x18n/node": "workspace:*",
-    "colorjs.io": "catalog:frontend",
     "nuxt": "catalog:build",
     "unocss": "catalog:frontend",
     "vue-tsc": "catalog:build"

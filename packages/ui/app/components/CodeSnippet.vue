@@ -5,10 +5,10 @@ defineProps<{ usage: UsageView }>()
 </script>
 
 <template>
-  <pre class="bg-code rounded p-2 text-mini font-mono of-x-auto"><code><span
+  <pre class="of-x-auto border border-base py-1 font-mono text-xs leading-5"><code><span
     v-for="(text, i) in usage.snippet.lines"
     :key="i"
-    class="block"
-    :class="usage.snippet.line + i === usage.line ? 'bg-active' : 'op-fade'"
-  ><span class="inline-block w-8 text-right pr-3 op-mute select-none tabular-nums">{{ usage.snippet.line + i }}</span>{{ text }}</span></code></pre>
+    class="block pr-3"
+    :class="usage.snippet.line + i === usage.line ? 'bg-hover color-base' : 'color-muted'"
+  ><span class="inline-block w-10 select-none pr-3 text-right tabular-nums color-faint" :class="usage.snippet.line + i === usage.line && 'shadow-[inset_2px_0_var(--x-fg)]'">{{ usage.snippet.line + i }}</span>{{ text }}</span></code></pre>
 </template>

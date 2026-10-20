@@ -15,8 +15,8 @@ async function copy(): Promise<void> {
 </script>
 
 <template>
-  <button v-if="backend?.capabilities.prompts" class="btn-action-sm" :title="t('prompt.hint')" @click="copy">
-    <span :class="copied ? 'i-ph-check' : 'i-ph-clipboard-text-duotone'" />
+  <button v-if="backend?.capabilities.prompts" class="btn-outline h-7" :title="t('prompt.hint')" @click="copy">
+    <span :class="copied ? 'i-ph-check' : 'i-ph-clipboard-text'" />
     {{ copied ? t('prompt.copied') : label ?? t('prompt.copy') }}
   </button>
 </template>

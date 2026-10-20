@@ -46,6 +46,34 @@ test('refuses unauthenticated clients', async ({ page, request }) => {
   }
 })
 
+test('the locale bar hides a locale in every view and remembers it', async ({ page }) => {
+  const { root, dispose } = await fixture()
+  const outDir = join(root, '.x18n/report')
+  await buildReport(root, outDir)
+  const server = await serveStatic(outDir)
+  try {
+    await page.goto(`${server.url}#/keys`)
+    const de = page.locator('[data-key="nav.home"] [data-locale="de"]')
+    await expect(de).toContainText('Start')
+    await page.locator('[data-locale-toggle="de"]').click()
+    await expect(page.locator('[data-locale-toggle="de"]')).toHaveAttribute('aria-pressed', 'false')
+    await expect(de).toHaveCount(0)
+    await expect(page.locator('[data-key="nav.home"] [data-locale="en"]')).toContainText('Home')
+
+    await page.goto(`${server.url}#/keys/nav.home`)
+    await page.reload()
+    await expect(page.locator('[data-locale="en"]')).toContainText('Home')
+    await expect(page.locator('[data-locale="de"]')).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Show all' }).click()
+    await expect(page.locator('[data-locale="de"]')).toContainText('Start')
+  }
+  finally {
+    server.close()
+    await dispose()
+  }
+})
+
 test('the static report renders keys without edit controls', async ({ page }) => {
   const { root, dispose } = await fixture()
   const outDir = join(root, '.x18n/report')

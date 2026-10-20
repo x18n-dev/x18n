@@ -110,7 +110,7 @@ Each milestone is one or a few PRs. A milestone is done when its exit criteria p
 
 ## M7 - UI
 
-- Nuxt SPA with `@antfu/design`, and a `UiBackend` with `server` and `static` adapters.
+- Nuxt SPA with its own UnoCSS tokens, and a `UiBackend` with `server` and `static` adapters.
 - Pages: overview, keys grid, key detail, locale, usages, extraction (wired in M9), project.
 - `x18n ui` with auth always on: one-click magic link, bearer token for HTTP MCP, `--no-auth` for CI only. `x18n build`.
 - The LSP hosts the UI server through `x18n/openUi`.
