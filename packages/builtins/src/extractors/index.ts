@@ -1,5 +1,5 @@
 // Rules and key generation adapted from i18n-ally (MIT), src/extraction/* and src/core/Extract.ts
-import type { ExtractItem, ExtractTemplate, HardString, KeyString, Project, TextRange } from '@x18n/core'
+import type { ExtractItem, ExtractOptions, ExtractTemplate, HardString, KeyString, Project, TextRange } from '@x18n/core'
 import { createLineIndex, pathMatcher, X18nError } from '@x18n/core'
 
 export type Score = 'must-include' | 'should-include' | 'none' | 'should-exclude' | 'must-exclude'
@@ -35,11 +35,21 @@ export const rules: readonly ExtractionRule[] = [
   { id: 'identifier', test: text => /^[a-z]+(?:[A-Z][a-z\d]*)+$/.test(text) || /^[A-Z\d]+(?:_[A-Z\d]+)+$/.test(text) || /^[a-z\d]+(?:[-_.:][a-z\d]+)+$/.test(text) ? 'should-exclude' : 'none' },
 ]
 
-const nonUiFile = /(?:^|\/)(?:__tests__|__mocks__)\/|\.(?:test|spec|config|stories|story)\.\w+$|\.d\.[cm]?ts$/
+/** Files whose strings users never see, by the naming conventions of common languages and test runners. */
+const nonUiFiles: readonly RegExp[] = [
+  // test/, tests/, spec/, src/test/java/, e2e/, cypress/, fixtures/, mocks/, testdata/, __tests__/, __snapshots__/
+  /(?:^|\/)(?:tests?|specs?|e2e|cypress|fixtures?|mocks?|testdata|__(?:tests|mocks|snapshots|fixtures)__)\//i,
+  // a.test.ts, a_test.go, a_test.py, a_spec.rb, a-spec.js, a.cy.ts, a.e2e.ts, a.stories.tsx, vite.config.ts, nginx.conf.js
+  /[._-](?:tests?|specs?|e2e|cy|stories|story|config|conf)\.\w+$/i,
+  // test_a.py, test_a.c, tests.py, conftest.py, spec.rb, config.ts
+  /(?:^|\/)(?:test_[^/]+|(?:tests?|specs?|conftest|config)\.\w+)$/i,
+  // FooTest.java, FooTests.cs, FooSpec.scala, FooIT.java, FooTest.php, FooTests.swift
+  /[a-z\d](?:Tests?|Spec|IT)\.(?:java|kt|kts|scala|groovy|cs|fs|vb|php|swift|m|mm)$/,
+  /\.d\.[cm]?ts$/,
+]
 
-/** Tests, configs, stories and declarations hold strings users never see. */
-export function isExtractableFile(path: string): boolean {
-  return !nonUiFile.test(path)
+function isExtractableFile(path: string): boolean {
+  return !nonUiFiles.some(pattern => pattern.test(path))
 }
 
 /** Folds rule scores the i18n-ally way (`shouldExtract`). */
@@ -183,8 +193,7 @@ class KeyAllocator {
   }
 }
 
-function isIgnored(project: Project, hard: HardString & { path: string }, text: string): boolean {
-  const options = project.config.extract
+function ignoredByConfig(options: ExtractOptions, hard: HardString & { path: string }): boolean {
   const matches = (rule: string): boolean => {
     const regex = /^\/(.+)\/([a-z]*)$/.exec(rule)
     return regex ? new RegExp(regex[1]!, regex[2]).test(hard.text) : rule === hard.text
@@ -195,11 +204,47 @@ function isIgnored(project: Project, hard: HardString & { path: string }, text: 
     if (pathMatcher([glob])(hard.path) && list.some(matches))
       return true
   }
-  if (hard.attribute && options.ignoreAttributes?.includes(hard.attribute))
-    return true
+  return hard.attribute !== undefined && options.ignoreAttributes?.includes(hard.attribute) === true
+}
+
+const ignoreLine = /x18n-ignore(?![-\w])/
+
+/**
+ * Offsets silenced by control comments: `x18n-ignore-file` anywhere, inside `x18n-ignore-start` ... `x18n-ignore-end`
+ * (to the end of the file when unclosed), or on the line of, or the line after, `x18n-ignore`.
+ */
+function commentIgnores(text: string): (offset: number) => boolean {
+  if (text.includes('x18n-ignore-file'))
+    return () => true
+  const regions = [...text.matchAll(/x18n-ignore-start[\s\S]*?(?:x18n-ignore-end|$)/g)].map(m => [m.index, m.index + m[0].length] as const)
   const index = createLineIndex(text)
-  const line = index.position(hard.range.start).line
-  return index.line(line).includes('x18n-ignore') || (line > 0 && index.line(line - 1).includes('x18n-ignore'))
+  return (offset) => {
+    if (regions.some(([start, end]) => offset >= start && offset < end))
+      return true
+    const line = index.position(offset).line
+    return ignoreLine.test(index.line(line)) || (line > 0 && ignoreLine.test(index.line(line - 1)))
+  }
+}
+
+/** Hard strings worth extracting: they pass the rules and no non-UI file, config ignore or control comment skips them. */
+export function* extractableHardStrings(
+  options: ExtractOptions,
+  hardStrings: Iterable<HardString & { readonly path: string }>,
+  textOf: (path: string) => string | undefined,
+): Generator<HardString & { readonly path: string }> {
+  const ignores = new Map<string, (offset: number) => boolean>()
+  for (const hard of hardStrings) {
+    if (!isExtractableFile(hard.path) || !shouldExtract(hard.text, hard.kind) || ignoredByConfig(options, hard))
+      continue
+    let ignored = ignores.get(hard.path)
+    if (!ignored) {
+      const text = textOf(hard.path)
+      ignored = text === undefined ? () => true : commentIgnores(text)
+      ignores.set(hard.path, ignored)
+    }
+    if (!ignored(hard.range.start))
+      yield hard
+  }
 }
 
 /** Placeholder shape of the project's first placeholder syntax, `{name}` by default. */
@@ -243,11 +288,10 @@ export function findCandidates(project: Project, options: FindOptions = {}): Ext
   const keys = new KeyAllocator(project)
   const shape = placeholderShape(project)
   const out: ExtractCandidate[] = []
-  for (const hard of project.hardStrings()) {
-    if ((inFiles && !inFiles(hard.path)) || !isExtractableFile(hard.path))
-      continue
+  const inScope = [...project.hardStrings()].filter(hard => !inFiles || inFiles(hard.path))
+  for (const hard of extractableHardStrings(project.config.extract, inScope, path => project.text(path))) {
     const text = project.text(hard.path)
-    if (text === undefined || !shouldExtract(hard.text, hard.kind) || isIgnored(project, hard, text))
+    if (text === undefined)
       continue
     const value = hard.kind === 'js-template'
       ? hard.text.replace(/\{(\d+)\}/g, (_, i: string) => shape(hard.args?.[Number(i)]?.name ?? `arg${i}`))

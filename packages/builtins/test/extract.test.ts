@@ -1,6 +1,6 @@
 import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
-import { extractItems, findCandidates, isExtractableFile, shouldExtract, slugify } from '../src/extractors'
+import { extractableHardStrings, extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
 import { reactI18next, reactIntl, vueI18n } from '../src/presets'
 import { createTestProject, json } from './_utils'
 
@@ -35,11 +35,59 @@ describe('extraction rules', () => {
     expect(shouldExtract('well-known issue', 'js-string')).toBe(true)
     expect(shouldExtract('Move to trash', 'js-string')).toBe(true)
   })
+})
 
-  it('skips tests, configs, stories and declarations', () => {
-    for (const path of ['src/a.test.ts', 'src/a.spec.tsx', 'vite.config.ts', 'src/Button.stories.vue', 'src/env.d.ts', 'src/__tests__/a.ts'])
-      expect(isExtractableFile(path)).toBe(false)
-    expect(isExtractableFile('src/configure.ts')).toBe(true)
+describe('skipped files and control comments', () => {
+  const line = 'export const a = \'Hello there\''
+
+  it('skips tests, fixtures, stories, configs and declarations in any language', () => {
+    const skipped = [
+      'src/a.test.ts',
+      'src/a.spec.tsx',
+      'src/__tests__/a.ts',
+      'src/Button.stories.vue',
+      'e2e/login.ts',
+      'cypress/support/a.js',
+      'src/env.d.ts',
+      'vite.config.ts',
+      'src/config.ts',
+      'handler_test.go',
+      'testdata/a.go',
+      'tests/test_views.py',
+      'app/test_views.py',
+      'app/tests.py',
+      'conftest.py',
+      'spec/models/user_spec.rb',
+      'test/user_test.exs',
+      'src/test/java/app/UserTest.java',
+      'app/src/main/java/app/UserIT.java',
+      'Tests/UserTests.swift',
+      'tests/Feature/LoginTest.php',
+      'lib/widget_test.dart',
+    ]
+    const kept = ['src/App.vue', 'src/configure.ts', 'src/Latest.vue', 'app/views.py', 'app/Contest.java', 'src/protest.ts', 'lib/spectrum.dart']
+    const hard = [...skipped, ...kept].map(path => ({ path, text: 'Hello there', kind: 'js-string', range: { start: 0, end: 13 } }))
+    expect([...extractableHardStrings({}, hard, () => '')].map(h => h.path)).toEqual(kept)
+  })
+
+  it('honours x18n-ignore-file, x18n-ignore-start/end and x18n-ignore', async () => {
+    const { project } = await createTestProject({
+      'locales/en.json': json({}),
+      'src/whole.ts': `// x18n-ignore-file\n${line}`,
+      'src/parts.ts': [
+        'export const a = \'Kept first\'',
+        '// x18n-ignore-start',
+        'export const b = \'Skipped region\'',
+        'export const c = \'Skipped too\'',
+        '// x18n-ignore-end',
+        'export const d = \'Kept after end\'',
+        'export const e = \'Skipped line\' // x18n-ignore',
+        '// x18n-ignore',
+        'export const f = \'Skipped next\'',
+        'export const g = \'Kept last\'',
+      ].join('\n'),
+    })
+    expect(findCandidates(project).map(c => c.text)).toEqual(['Kept first', 'Kept after end', 'Kept last'])
   })
 })
 

@@ -37,9 +37,13 @@ export type Score = "must-include" | "should-include" | "none" | "should-exclude
 // #endregion
 
 // #region Functions
+export declare function extractableHardStrings(_: ExtractOptions, _: Iterable<HardString & {
+  readonly path: string;
+}>, _: (_: string) => string | undefined): Generator<HardString & {
+  readonly path: string;
+}>;
 export declare function extractItems(_: Project, _: readonly Pick<ExtractCandidate, "path" | "range" | "original" | "key" | "value" | "replacement" | "imports">[]): ExtractItem[];
 export declare function findCandidates(_: Project, _?: FindOptions): ExtractCandidate[];
-export declare function isExtractableFile(_: string): boolean;
 export declare function shouldExtract(_: string, _: string, _?: readonly ExtractionRule[]): boolean;
 export declare function slugify(_: string, _?: KeyCase, _?: number): string;
 export declare function toPlanFile(_: Project, _: readonly ExtractCandidate[]): ExtractPlanFile;

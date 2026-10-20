@@ -1,6 +1,6 @@
 import type { Check, DiagnosticInput, GlossaryEntry, KeyString, Plugin } from '@x18n/core'
 import { createPlaceholderComparer, localeSpellingKey } from '@x18n/core'
-import { isExtractableFile, shouldExtract } from '../extractors'
+import { extractableHardStrings } from '../extractors'
 
 function list(items: readonly string[]): string {
   return items.join(', ')
@@ -238,10 +238,8 @@ export const hardString: Check = {
   * run(ctx) {
     if (!ctx.config.extract.autoDetect && ctx.config.checks['hard-string'] === undefined)
       return
-    for (const hard of ctx.hardStrings()) {
-      if (isExtractableFile(hard.path) && shouldExtract(hard.text, hard.kind))
-        yield { location: { path: hard.path, range: hard.range }, message: `Hard-coded string "${hard.text}".` }
-    }
+    for (const hard of extractableHardStrings(ctx.config.extract, ctx.hardStrings(), ctx.text))
+      yield { location: { path: hard.path, range: hard.range }, message: `Hard-coded string "${hard.text}".` }
   },
 }
 

@@ -163,6 +163,16 @@ x18n extract --apply extract-plan.json --json
 
 Edit the keys in the plan file before you apply it. The proposed keys follow the project's style; ask the user when there is none yet.
 
+Tests, fixtures, mocks, stories, configs and type declarations are never scanned, in any language (`*.test.ts`, `*_test.go`, `test_*.py`, `*_spec.rb`, `*Test.java`, `vite.config.ts`, `tests/`, `spec/`, `e2e/`, ...). To keep strings that are not UI text out of the plan, drop them from the plan file, or add a control comment to the code:
+
+| Comment | Skips |
+| --- | --- |
+| `x18n-ignore-file` | the whole file, wherever the comment is |
+| `x18n-ignore-start` ... `x18n-ignore-end` | everything between them (to the end of the file when unclosed) |
+| `x18n-ignore` | strings on its line and on the next line |
+
+Use any comment syntax: `// x18n-ignore-file`, `<!-- x18n-ignore -->`. For strings that recur across files, use `extract.ignore` in the config instead.
+
 ## Output
 
 Exit codes:
