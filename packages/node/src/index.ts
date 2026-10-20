@@ -1,4 +1,5 @@
 export { configFileNames, createPluginLoader, findConfigFile, findConfigUpward, importModule, loadConfigFile, loadYamlPlugin } from './config'
+export type { GitHistoryOptions } from './git-history'
 export { createNodeHost, findGitRoot, stderrLogger } from './host'
 export type { NodeHost, NodeHostOptions } from './host'
 export { loadWorkspace } from './load'
