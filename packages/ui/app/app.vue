@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { NuxtLink, NuxtPage } from '#components'
 import { pendingAuth, useBackend } from './backend'
 import LocaleBar from './components/LocaleBar.vue'
-import { t } from './i18n'
+import { endonym, pickUiLocale, setupI18n, t, uiLocale, uiLocales } from './i18n'
 import { backend, projectList, projectName, recentKeys, revision } from './state'
 import { setupTheme } from './theme'
 
-const nav = [
+const nav = computed(() => [
   { to: '/', label: t('nav.overview') },
   { to: '/keys', label: t('nav.keys') },
   { to: '/usages', label: t('nav.usages') },
   { to: '/extract', label: t('nav.extract') },
   { to: '/project', label: t('nav.project') },
-]
+])
 
 const error = ref<string>()
 const code = ref('')
@@ -31,6 +31,8 @@ async function refreshProjects(): Promise<void> {
 }
 
 setupTheme()
+setupI18n()
+const language = computed({ get: () => uiLocale.value, set: pickUiLocale })
 onMounted(async () => {
   try {
     const b = await useBackend()
@@ -75,6 +77,14 @@ onMounted(async () => {
           <select v-model="projectName" class="input font-mono text-xs">
             <option v-for="p in projectList?.projects" :key="p.name" :value="p.name">
               {{ p.name }}
+            </option>
+          </select>
+        </label>
+        <label class="flex items-center gap-2">
+          <span class="i-ph-translate color-muted" aria-hidden="true" />
+          <select v-model="language" class="input text-xs" :aria-label="t('app.language')">
+            <option v-for="option in uiLocales" :key="option" :value="option" :lang="option">
+              {{ endonym(option) }}
             </option>
           </select>
         </label>

@@ -25,6 +25,13 @@ export default antfu(
       'sonarjs/cognitive-complexity': ['error', 25],
     },
   },
+  {
+    // French typography puts a no-break space before `:`, `?`, `!` and `%`.
+    files: ['packages/ui/app/locales/*.json'],
+    rules: {
+      'no-irregular-whitespace': 'off',
+    },
+  },
   // Layer rules (plans/01-architecture.md): core runs anywhere and names no library or format;
   // builtins use only the public core API and no Node APIs.
   {

@@ -6,7 +6,7 @@ import CopyPrompt from '../../components/CopyPrompt.vue'
 import MessageText from '../../components/MessageText.vue'
 import UiPage from '../../components/ui/UiPage.vue'
 import UiSection from '../../components/ui/UiSection.vue'
-import { t } from '../../i18n'
+import { formatPercent, languageName, t } from '../../i18n'
 import { currentProject, isLocaleVisible, projectName, toggleLocale, useLive } from '../../state'
 
 const route = useRoute()
@@ -37,7 +37,7 @@ function showInGrid(): void {
             {{ code }}
           </h1>
         </div>
-        <span v-if="summary?.displayName" class="pb-1 color-muted">{{ summary.displayName }}</span>
+        <span v-if="summary" class="pb-1 color-muted">{{ languageName(code) ?? summary.displayName }}</span>
         <span v-if="isSource" class="badge mb-1.5">{{ t('overview.source') }}</span>
         <span class="flex-auto" />
         <NuxtLink :to="{ path: '/keys', query: { missing: code } }" class="btn-outline" @click="showInGrid">
@@ -49,7 +49,7 @@ function showInGrid(): void {
         <span class="h-2 border border-strong">
           <span class="block h-full bg-inverse" :style="{ width: `${summary.percent}%` }" />
         </span>
-        <span class="font-mono text-xs color-muted tabular-nums">{{ t('locale.progress', { translated: summary.translated, total: summary.total, percent: summary.percent }) }}</span>
+        <span class="font-mono text-xs color-muted tabular-nums">{{ t('locale.progress', { translated: summary.translated, total: summary.total, percent: formatPercent(summary.percent) }) }}</span>
       </div>
       <p v-else-if="currentProject" class="color-muted">
         {{ t('locale.notFound') }}

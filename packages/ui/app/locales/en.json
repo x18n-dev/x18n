@@ -5,7 +5,8 @@
     "error": "Could not connect: {message}",
     "project": "Project",
     "static": "Read-only report",
-    "staticHint": "A snapshot built with `x18n build`. Run `x18n ui` to edit."
+    "staticHint": "A snapshot built with `x18n build`. Run `x18n ui` to edit.",
+    "language": "Language"
   },
   "auth": {
     "label": "Authentication",
@@ -39,8 +40,8 @@
     "source": "source",
     "missing": "{missing} missing, {empty} empty",
     "diagnostics": "Diagnostics",
-    "errors": "{count} errors",
-    "warnings": "{count} warnings",
+    "errors": "Errors: {count}",
+    "warnings": "Warnings: {count}",
     "clean": "No problems found.",
     "presets": "Presets",
     "noPresets": "No preset detected.",
@@ -99,7 +100,7 @@
   "locale": {
     "label": "Locale",
     "openInGrid": "Show in the grid",
-    "progress": "{translated} of {total} translated ({percent}%)",
+    "progress": "{translated} of {total} translated ({percent})",
     "missing": "Missing ({count})",
     "empty": "Empty ({count})",
     "problems": "Placeholder and syntax problems ({count})",
@@ -120,17 +121,17 @@
     "hint": "Hard-coded strings with a proposed key. Edit keys, untick strings to skip, then apply.",
     "none": "No hard-coded strings found.",
     "key": "Key",
-    "apply": "Extract {count} strings",
-    "done": "Extracted {count} keys, changed {files} files.",
-    "strings": "{count} strings"
+    "apply": "Extract ({count})",
+    "done": "Extracted keys: {count}. Changed files: {files}.",
+    "strings": "Strings: {count}"
   },
   "project": {
     "presets": "Presets",
     "finders": "Locale finders",
-    "resources": "{count} resources",
+    "resources": "Resources: {count}",
     "formats": "Formats",
     "scanners": "Scanners",
-    "files": "{count} files",
+    "files": "Files: {count}",
     "problems": "Problems",
     "conflict": ".{extension}: {winner} wins over {loser}",
     "config": "Config and where each value comes from"

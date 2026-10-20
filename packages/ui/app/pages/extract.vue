@@ -25,7 +25,7 @@ const byFile = computed(() => {
   return [...groups]
 })
 const picked = computed(() => drafts.value.filter(d => d.picked))
-const result = ref<string>()
+const result = ref<{ count: number, files: number }>()
 
 async function apply(): Promise<void> {
   const items = picked.value.map(({ candidate: c, key }) => ({
@@ -38,7 +38,7 @@ async function apply(): Promise<void> {
     imports: c.imports,
   }))
   const applied = await backend.value!.extractApply({ project: projectName.value, items })
-  result.value = t('extract.done', { count: applied.keys.length, files: applied.changes.length })
+  result.value = { count: applied.keys.length, files: applied.changes.length }
 }
 </script>
 
@@ -48,7 +48,7 @@ async function apply(): Promise<void> {
       <p class="flex-auto color-muted">
         {{ t('extract.hint') }}
       </p>
-      <span v-if="result" class="color-ok">{{ result }}</span>
+      <span v-if="result" class="color-ok">{{ t('extract.done', result) }}</span>
       <button v-if="backend?.capabilities.write" class="btn-solid" :disabled="!picked.length" @click="apply">
         {{ t('extract.apply', { count: picked.length }) }}
       </button>

@@ -74,6 +74,29 @@ test('the locale bar hides a locale in every view and remembers it', async ({ pa
   }
 })
 
+test('the UI speaks the requested language and remembers a picked one', async ({ page }) => {
+  const { root, dispose } = await fixture()
+  const outDir = join(root, '.x18n/report')
+  await buildReport(root, outDir)
+  const server = await serveStatic(outDir)
+  try {
+    // The VS Code panel passes `vscode.env.language`, which writes regions in lower case.
+    await page.goto(`${server.url}?lang=zh-tw`)
+    await expect(page.getByRole('link', { name: '鍵', exact: true })).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'zh-Hant')
+
+    await page.goto(server.url)
+    await page.getByLabel('Language').selectOption('de')
+    await expect(page.getByRole('link', { name: 'Schlüssel', exact: true })).toBeVisible()
+    await page.reload()
+    await expect(page.getByRole('link', { name: 'Schlüssel', exact: true })).toBeVisible()
+  }
+  finally {
+    server.close()
+    await dispose()
+  }
+})
+
 test('the static report renders keys without edit controls', async ({ page }) => {
   const { root, dispose } = await fixture()
   const outDir = join(root, '.x18n/report')

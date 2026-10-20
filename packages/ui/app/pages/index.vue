@@ -4,7 +4,7 @@ import { NuxtLink } from '#components'
 import UiPage from '../components/ui/UiPage.vue'
 import UiSection from '../components/ui/UiSection.vue'
 import UiStat from '../components/ui/UiStat.vue'
-import { t } from '../i18n'
+import { formatPercent, languageName, t } from '../i18n'
 import { currentProject as project, recentKeys, visibleLocales } from '../state'
 
 const stats = computed(() => project.value && [
@@ -37,10 +37,10 @@ const stats = computed(() => project.value && [
           {{ locale.code }}
           <span v-if="locale.code === project.sourceLocale" class="badge">{{ t('overview.source') }}</span>
         </span>
-        <span class="h-1.5 border border-strong" :title="locale.displayName">
+        <span class="h-1.5 border border-strong" :title="languageName(locale.code)">
           <span class="block h-full bg-inverse" :style="{ width: `${locale.percent}%` }" />
         </span>
-        <span class="text-right font-mono tabular-nums" :class="locale.percent >= 100 && 'color-ok'">{{ locale.percent }}%</span>
+        <span class="text-right font-mono tabular-nums" :class="locale.percent >= 100 && 'color-ok'">{{ formatPercent(locale.percent) }}</span>
         <span class="text-xs color-muted tabular-nums">{{ t('overview.missing', { missing: locale.missing, empty: locale.empty }) }}</span>
       </NuxtLink>
     </UiSection>

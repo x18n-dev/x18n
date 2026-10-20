@@ -6,13 +6,14 @@ export function uiTheme(kind: number): UiTheme {
 }
 
 /**
- * The iframe URL. The token goes in the fragment as devframe's magic link (`devframe_otp`), so it never reaches
+ * The iframe URL, with the editor's theme and display language. The token goes in the fragment as devframe's magic link (`devframe_otp`), so it never reaches
  * requests or logs. A fragment can hold only URL params for devframe to strip the code and keep the rest, so the
  * key route rides along as `route=/keys/<key>`.
  */
-export function frameUrl(base: string, options: { token: string, theme: UiTheme, key?: string | undefined }): string {
+export function frameUrl(base: string, options: { token: string, theme: UiTheme, lang: string, key?: string | undefined }): string {
   const url = new URL(base)
   url.searchParams.set('theme', options.theme)
+  url.searchParams.set('lang', options.lang)
   const fragment = new URLSearchParams({ devframe_otp: options.token })
   if (options.key !== undefined)
     fragment.set('route', `/keys/${encodeURIComponent(options.key)}`)
