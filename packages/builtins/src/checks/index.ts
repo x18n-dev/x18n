@@ -245,9 +245,17 @@ export const hardString: Check = {
   },
 }
 
-/** A term as a whole word, so "Home" does not match "Homepage". */
+// Scripts written without spaces between words (or, for Hangul, with particles attached),
+// where letters next to a term do not mean it is part of a longer word.
+const unspaced = '\\p{scx=Han}\\p{scx=Hiragana}\\p{scx=Katakana}\\p{scx=Hangul}\\p{scx=Thai}\\p{scx=Lao}\\p{scx=Khmer}\\p{scx=Myanmar}'
+const startsUnspaced = new RegExp(`^[${unspaced}]`, 'u')
+const endsUnspaced = new RegExp(`[${unspaced}]$`, 'u')
+
+/** A term as a whole word, so "Home" does not match "Homepage"; a plain substring at edges in unspaced scripts. */
 function wordPattern(term: string): RegExp {
-  return new RegExp(`(?<![\\p{L}\\p{N}])${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}\\p{N}])`, 'iu')
+  const before = startsUnspaced.test(term) ? '' : '(?<![\\p{L}\\p{N}])'
+  const after = endsUnspaced.test(term) ? '' : '(?![\\p{L}\\p{N}])'
+  return new RegExp(`${before}${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${after}`, 'iu')
 }
 
 function* glossaryDiagnostics(ctx: Parameters<Check['run']>[0], entry: GlossaryEntry): Generator<DiagnosticInput> {
