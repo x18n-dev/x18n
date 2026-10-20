@@ -28,6 +28,7 @@ interface Plugin {
   readonly checks?: readonly Check[]
   readonly reporters?: readonly Reporter[]
   readonly placeholders?: readonly PlaceholderSyntax[]
+  readonly histories?: readonly HistoryProvider[]
   readonly reviewStore?: ReviewStoreFactory
 
   readonly normalizeKey?: (raw: string, ctx: KeyContext) => string | undefined

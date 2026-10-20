@@ -221,5 +221,11 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 
 ## D37 - Stale translations compare per target message
 
-- Decided: reviews (1.x) record the hash of the source value each time x18n writes a target value, per key and locale. `stale-translation` reports a mismatch; messages without a record are never stale.
-- Why: i18n-ally-next keeps one source snapshot per key, so one source edit marks all locales stale until someone refreshes it. Per-target records stay right when locales are updated at different times.
+- Decided: a target message is stale when it last changed before its source message, per key and locale. History providers report the times (D38). Review records (1.x) of the source hash at each x18n write are one more provider, ahead of git. Messages without history are never stale.
+- Why: i18n-ally-next keeps one source snapshot per key, so one source edit marks all locales stale until someone refreshes it. Per-target times stay right when locales are updated at different times.
+
+## D38 - History providers report times, core decides staleness
+
+- Decided: the `histories` capability returns when each message last changed (`updatedAt`, revision, author, value). Core applies one stale rule for every provider; the first provider with an entry for a message wins. The git provider lives in `@x18n/node`, is on inside a git repo, compares parsed messages per commit (not line blame), and treats a shallow clone as no history.
+- Considered: line blame of the message range; providers that return stale or fresh verdicts; only hash records written by x18n.
+- Why: hash records report nothing until values are written through x18n, while git history exists on day one. Parsed messages ignore reformatting, sorting and moves that break blame. Times from any source (meta file, translation service) fit one rule.

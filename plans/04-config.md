@@ -66,6 +66,7 @@ Project settings live only in the config file. Editors have UX settings only and
 | `checks` | `Record<checkId, Severity \| 'off' \| [Severity, options]>` | `recommended` | ESLint-like overrides on top of the `recommended` set. |
 | `strict` | boolean | `false` | Turn every warning into an error (also `x18n check --strict`). |
 | `ignoreKeys` | string[] (globs) | `[]` | Keys excluded from all checks. |
+| `history` | `boolean` or `{ providers?, git? }` | `true` | History providers for stale translations ([19-history.md](./19-history.md)). |
 | `glossary` | `{ term, translations?, note?, doNotTranslate? }[]` or path | `[]` | Used by translate prompts and the optional `glossary` check. |
 | `projects` | string[] (globs) | - | Monorepo, see below. |
 | `typegen` | `boolean \| { output? }` | `false` | 1.x, TS projects only ([18-typegen.md](./18-typegen.md)). |

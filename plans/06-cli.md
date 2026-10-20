@@ -70,7 +70,7 @@ All write commands support `--dry-run`, which prints the plan (files and edits) 
 
 | Command | Does |
 | --- | --- |
-| `x18n prompt translate --to <locale>` | Prints a translation prompt ([10-agents.md](./10-agents.md)). `--keys <glob>`, `--limit <n>`, `--format markdown\|json`. |
+| `x18n prompt translate --to <locale>` | Prints a translation prompt ([10-agents.md](./10-agents.md)). `--keys <glob>`, `--limit <n>`, `--format markdown\|json`, `--stale` (add stale translations, [19-history.md](./19-history.md)). |
 | `x18n prompt review --locale <l>` | Prompt to review existing translations against source and glossary. |
 | `x18n mcp` | MCP server over stdio ([10-agents.md](./10-agents.md)). |
 

@@ -32,6 +32,7 @@ These documents are the plan. Each document owns one area. Where code and plan d
 | 16 | [Docs site](./16-docs.md) | comark-docs site and hosted playground |
 | 17 | [Roadmap](./17-roadmap.md) | Milestones, order, exit criteria |
 | 18 | [Typegen](./18-typegen.md) | Generated TS key types (1.x) |
+| 19 | [History](./19-history.md) | History providers, git history, stale translations |
 | -- | [Decisions](./decisions.md) | Decision log with reasons |
 | -- | [Glossary](./glossary.md) | Canonical names |
 
@@ -56,5 +57,6 @@ These documents are the plan. Each document owns one area. Where code and plan d
 | M14 | In-browser workspace and docs playground | 1.x | TODO |
 | M15 | Tier 2 and 3 presets and formats | 1.x | TODO |
 | M16 | Other editors (Neovim, Zed, Helix) | 1.x | TODO |
+| M17 | History providers and stale translations | 1.x | DONE |
 
 Status values: TODO, IN PROGRESS, DONE, BLOCKED (with reason). The full breakdown is in [17-roadmap.md](./17-roadmap.md).
