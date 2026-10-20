@@ -50,6 +50,7 @@
     "@unocss/reset": "catalog:frontend",
     "@vueuse/core": "catalog:frontend",
     "@x18n/node": "workspace:*",
+    "jiti": "catalog:deps",
     "nuxt": "catalog:build",
     "unocss": "catalog:frontend",
     "vue-tsc": "catalog:build"
