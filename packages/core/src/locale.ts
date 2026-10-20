@@ -67,7 +67,8 @@ export function parseLocaleInfo(code: LocaleCode): LocaleInfo {
   // CLDR order; Node versions disagree on the order `resolvedOptions` returns.
   const found = language ? safe(() => new Intl.PluralRules(tag).resolvedOptions().pluralCategories) : undefined
   const pluralCategories = found ? pluralOrder.filter(category => found.includes(category)) : ['other' as const]
-  const flagRegion = region ?? (language ? defaultRegions[language] : undefined)
+  // Traditional Chinese is written mostly in Taiwan, Hong Kong and Macau; a bare `zh-Hant` is not China's.
+  const flagRegion = region ?? (language === 'zh' && script === 'Hant' ? 'TW' : language ? defaultRegions[language] : undefined)
   return {
     code,
     language,

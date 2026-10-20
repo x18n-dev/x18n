@@ -104,13 +104,13 @@ Each milestone is one or a few PRs. A milestone is done when its exit criteria p
 - Translate and review prompt builders, the `translatePrompt` hook, glossary.
 - CLI `prompt translate`, `prompt review`, paging with cursors.
 - devframe definition in the `@x18n/ui` node side, and `x18n mcp`.
-- Skill `packages/cli/skills/x18n/SKILL.md`, with a test that every command in the skill exists.
+- Skills `x18n`, `x18n-setup` and `x18n-check` in the root `skills/` directory, shipped in `@x18n/cli`, with a test that every command in the skills exists.
 
 **Exit:** a scripted agent loop on a fixture (prompt, apply generated JSON, check) ends with zero missing translations.
 
 ## M7 - UI
 
-- Nuxt SPA with `@antfu/design`, and a `UiBackend` with `server` and `static` adapters.
+- Nuxt SPA with its own UnoCSS tokens, and a `UiBackend` with `server` and `static` adapters.
 - Pages: overview, keys grid, key detail, locale, usages, extraction (wired in M9), project.
 - `x18n ui` with auth always on: one-click magic link, bearer token for HTTP MCP, `--no-auth` for CI only. `x18n build`.
 - The LSP hosts the UI server through `x18n/openUi`.

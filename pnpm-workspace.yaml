@@ -7,10 +7,7 @@ blockExoticSubdeps: false
 minimumReleaseAgeExcludePrune: true
 minimumReleaseAgeExclude:
   - '@antfu/skills@0.1.0'
-  - devframe@1.2.5
   - '@devframes/agentic@1.2.5'
-  - playwright-core@1.64.1
-  - playwright@1.64.1
 
 trustPolicy: no-downgrade
 # Older releases of Nuxt and comark-docs dependencies predate provenance publishing;
@@ -98,6 +95,7 @@ catalogs:
     vite: ^8.3.1
   deps:
     '@devframes/agentic': 1.2.5
+    '@devframes/vite': 1.2.5
     '@valibot/to-json-schema': ^1.8.0
     '@vue/compiler-core': ^3.5.44
     '@vue/compiler-sfc': ^3.5.44
@@ -119,12 +117,12 @@ catalogs:
     comark-docs: github:comarkdown/comark-docs#f97dc864b0aa702d54c600f868589b7a2c185b3a
     satori: ^0.35.0
   frontend:
-    '@antfu/design': ^0.6.0
+    '@iconify-json/catppuccin': ^1.2.17
+    '@iconify-json/circle-flags': ^1.2.12
     '@iconify-json/ph': ^1.2.2
     '@unocss/nuxt': ^66.11.0
     '@unocss/reset': ^66.11.0
     '@vueuse/core': ^15.0.0
-    colorjs.io: ^0.6.0
     unocss: ^66.11.0
   inlined:
     '@antfu/utils': ^9.3.0

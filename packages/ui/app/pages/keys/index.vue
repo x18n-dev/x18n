@@ -3,13 +3,15 @@ import type { KeyRow } from '../../../src/node/types'
 import { useVirtualList } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from '#imports'
+import LocaleFlag from '../../components/LocaleFlag.vue'
 import MessageText from '../../components/MessageText.vue'
+import UiToggle from '../../components/ui/UiToggle.vue'
 import { describeProblem, setMessage } from '../../edit'
 import { fuzzyScore } from '../../fuzzy'
 import { t } from '../../i18n'
-import { backend, useLive } from '../../state'
+import { backend, currentProject, useLive, visibleLocales } from '../../state'
 
-const ROW_HEIGHT = 30
+const ROW_HEIGHT = 32
 
 const route = useRoute()
 const router = useRouter()
@@ -21,18 +23,14 @@ const missingIn = ref(typeof route.query.missing === 'string' ? route.query.miss
 const unusedOnly = ref(false)
 const withDiagnostics = ref(false)
 
-const locales = computed(() => {
-  const all = table.value?.locales ?? []
-  const source = table.value?.sourceLocale
-  return [...all.filter(l => l === source), ...all.filter(l => l !== source)]
-})
+const locales = computed(() => visibleLocales.value.map(l => l.code))
 const namespaces = computed(() => [...new Set((table.value?.rows ?? []).flatMap(r => r.namespace ?? []))].sort())
 
 const rows = computed<KeyRow[]>(() => {
   const query = search.value.trim()
   const filtered = (table.value?.rows ?? []).filter(row =>
     (!namespace.value || row.namespace === namespace.value)
-    && (!missingIn.value || row.missing.includes(missingIn.value))
+    && (!missingIn.value || !locales.value.includes(missingIn.value) || row.missing.includes(missingIn.value))
     && (!unusedOnly.value || row.unused)
     && (!withDiagnostics.value || row.diagnostics > 0))
   if (!query)
@@ -57,7 +55,7 @@ watch(rows, () => {
   active.value = { row: Math.min(active.value.row, Math.max(rows.value.length - 1, 0)), col: active.value.col }
 })
 
-const columns = computed(() => `minmax(16rem, 1.2fr) repeat(${locales.value.length}, minmax(12rem, 1fr))`)
+const columns = computed(() => locales.value.length ? `minmax(16rem, 1.2fr) repeat(${locales.value.length}, minmax(12rem, 1fr))` : '1fr')
 
 function move(row: number, col: number): void {
   const next = { row: Math.max(0, Math.min(rows.value.length - 1, row)), col: Math.max(0, Math.min(locales.value.length, col)) }
@@ -165,12 +163,13 @@ function onEditorKey(event: KeyboardEvent): void {
 
 <template>
   <div class="h-full flex flex-col">
-    <div class="shrink-0 flex flex-wrap items-center gap-2 px-3 py-2 border-b border-base">
-      <label class="flex items-center gap-1 input-base w-72">
-        <span class="i-ph-magnifying-glass op-mute" />
-        <input ref="searchInput" v-model="search" class="bg-transparent outline-none flex-auto" :placeholder="t('keys.search')" :aria-label="t('keys.search')" @keydown.escape="containerProps.ref.value?.focus()" @keydown.enter="containerProps.ref.value?.focus()">
+    <div class="shrink-0 flex flex-wrap items-center gap-3 border-b border-base px-4 py-2">
+      <label class="input w-80 flex items-center gap-2 focus-within:border-inverse">
+        <span class="i-ph-magnifying-glass color-faint" />
+        <input ref="searchInput" v-model="search" class="flex-auto bg-transparent outline-none" :placeholder="t('keys.search')" :aria-label="t('keys.search')" @keydown.escape="containerProps.ref.value?.focus()" @keydown.enter="containerProps.ref.value?.focus()">
+        <kbd class="badge">/</kbd>
       </label>
-      <select v-if="namespaces.length" v-model="namespace" class="input-base" :aria-label="t('keys.namespace')">
+      <select v-if="namespaces.length" v-model="namespace" class="input text-xs" :aria-label="t('keys.namespace')">
         <option value="">
           {{ t('keys.allNamespaces') }}
         </option>
@@ -178,7 +177,7 @@ function onEditorKey(event: KeyboardEvent): void {
           {{ ns }}
         </option>
       </select>
-      <select v-model="missingIn" class="input-base" :aria-label="t('keys.missingIn')">
+      <select v-model="missingIn" class="input text-xs" :aria-label="t('keys.missingIn')">
         <option value="">
           {{ t('keys.anyLocale') }}
         </option>
@@ -186,19 +185,23 @@ function onEditorKey(event: KeyboardEvent): void {
           {{ t('keys.missingInLocale', { locale }) }}
         </option>
       </select>
-      <label class="flex items-center gap-1 select-none"><input v-model="unusedOnly" type="checkbox"> {{ t('keys.unused') }}</label>
-      <label class="flex items-center gap-1 select-none"><input v-model="withDiagnostics" type="checkbox"> {{ t('keys.withDiagnostics') }}</label>
+      <UiToggle v-model="unusedOnly">
+        {{ t('keys.unused') }}
+      </UiToggle>
+      <UiToggle v-model="withDiagnostics">
+        {{ t('keys.withDiagnostics') }}
+      </UiToggle>
       <div class="flex-auto" />
-      <span class="op-fade tabular-nums">{{ t('keys.count', { shown: rows.length, total: table?.rows.length ?? 0 }) }}</span>
+      <span class="font-mono text-xs color-muted tabular-nums">{{ t('keys.count', { shown: rows.length, total: table?.rows.length ?? 0 }) }}</span>
     </div>
 
-    <div v-if="problem" class="shrink-0 flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border-b border-base" role="alert">
-      <span class="i-ph-warning-duotone color-amber-500" />
-      <span>{{ t('edit.rejected', { key: problem.key, locale: problem.locale, message: problem.message }) }}</span>
-      <button class="btn-action-sm" @click="forceSave">
+    <div v-if="problem" class="shrink-0 flex items-center gap-2 border-b border-base px-4 py-1.5 color-warn" role="alert">
+      <span class="i-ph-warning" />
+      <span class="color-base">{{ t('edit.rejected', { key: problem.key, locale: problem.locale, message: problem.message }) }}</span>
+      <button class="btn-outline h-7" @click="forceSave">
         {{ t('edit.saveAnyway') }}
       </button>
-      <button class="btn-text text-sm" @click="problem = undefined">
+      <button class="btn-ghost h-7" @click="problem = undefined">
         {{ t('edit.dismiss') }}
       </button>
     </div>
@@ -212,20 +215,21 @@ function onEditorKey(event: KeyboardEvent): void {
       :aria-rowcount="rows.length"
       @keydown="onKey"
     >
-      <div class="sticky top-0 z-grid-head grid bg-base border-b border-base font-semibold text-mini uppercase tracking-wide" :style="{ gridTemplateColumns: columns, height: `${ROW_HEIGHT}px` }" role="row">
-        <div class="px-3 flex items-center" role="columnheader">
+      <div class="sticky top-0 z-20 grid border-b border-strong bg-base" :style="{ gridTemplateColumns: columns, height: `${ROW_HEIGHT}px` }" role="row">
+        <div class="label flex items-center px-4" role="columnheader">
           {{ t('keys.key') }}
         </div>
-        <div v-for="locale in locales" :key="locale" class="px-3 flex items-center gap-1 border-l border-base font-mono" role="columnheader">
-          {{ locale }}
-          <span v-if="locale === table?.sourceLocale" class="badge-muted normal-case">{{ t('overview.source') }}</span>
+        <div v-for="locale in locales" :key="locale" class="flex items-center gap-2 border-l border-base px-3" role="columnheader">
+          <LocaleFlag :code="locale" />
+          <span class="label color-base">{{ locale }}</span>
+          <span v-if="locale === currentProject?.sourceLocale" class="badge">{{ t('overview.source') }}</span>
         </div>
       </div>
       <div v-bind="wrapperProps">
         <div
           v-for="{ data: row, index } in list"
           :key="row.key"
-          class="grid border-b border-mute"
+          class="grid border-b border-base"
           :class="index === active.row ? 'bg-hover' : ''"
           :style="{ gridTemplateColumns: columns, height: `${ROW_HEIGHT}px` }"
           role="row"
@@ -233,22 +237,22 @@ function onEditorKey(event: KeyboardEvent): void {
           :data-key="row.key"
         >
           <div
-            class="px-3 flex items-center gap-1 font-mono truncate cursor-pointer"
-            :class="index === active.row && active.col === 0 ? 'outline outline-1 outline-primary-500 -outline-offset-1' : ''"
+            class="flex min-w-0 cursor-pointer items-center gap-1.5 px-4 font-mono text-xs"
+            :class="index === active.row && active.col === 0 ? 'outline outline-1 outline-[var(--x-fg)] -outline-offset-1' : ''"
             role="gridcell"
             :title="row.key"
             @click="move(index, 0)"
             @dblclick="open(row)"
           >
             <span class="truncate">{{ row.key }}</span>
-            <span v-if="row.unused" class="i-ph-ghost-duotone op-mute shrink-0" :title="t('keys.unusedHint')" />
-            <span v-if="row.diagnostics" class="badge bg-red-500/10 color-red-500 shrink-0" :title="t('keys.diagnosticsHint')">{{ row.diagnostics }}</span>
+            <span v-if="row.unused" class="i-ph-ghost shrink-0 color-faint" :title="t('keys.unusedHint')" />
+            <span v-if="row.diagnostics" class="badge shrink-0 border-current color-error" :title="t('keys.diagnosticsHint')">{{ row.diagnostics }}</span>
           </div>
           <div
             v-for="(locale, col) in locales"
             :key="locale"
-            class="px-3 flex items-center border-l border-mute min-w-0"
-            :class="index === active.row && active.col === col + 1 ? 'outline outline-1 outline-primary-500 -outline-offset-1' : ''"
+            class="flex min-w-0 items-center border-l border-base px-3"
+            :class="index === active.row && active.col === col + 1 ? 'outline outline-1 outline-[var(--x-fg)] -outline-offset-1' : ''"
             role="gridcell"
             :data-locale="locale"
             @click="move(index, col + 1)"
@@ -263,16 +267,16 @@ function onEditorKey(event: KeyboardEvent): void {
               @keydown="onEditorKey"
               @blur="commit()"
             >
-            <span v-else class="truncate" :title="String(row.values[locale] ?? '')"><MessageText :value="row.values[locale]" /></span>
+            <span v-else class="truncate" :title="String(row.values[locale] ?? '')"><MessageText :value="row.values[locale]" inline /></span>
           </div>
         </div>
       </div>
-      <p v-if="table && !rows.length" class="p-4 op-fade">
+      <p v-if="table && !rows.length" class="p-4 color-muted">
         {{ t('keys.empty') }}
       </p>
     </div>
 
-    <div class="shrink-0 px-3 py-1 border-t border-base text-mini op-fade flex gap-3">
+    <div class="shrink-0 flex gap-4 border-t border-base px-4 py-1.5 font-mono text-[11px] color-muted">
       <span>{{ t('keys.helpMove') }}</span>
       <span v-if="backend?.capabilities.write">{{ t('keys.helpEdit') }}</span>
       <span>{{ t('keys.helpOpen') }}</span>

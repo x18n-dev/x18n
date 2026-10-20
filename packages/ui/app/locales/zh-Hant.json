@@ -1,0 +1,142 @@
+{
+  "app": {
+    "error": "無法連線：{message}",
+    "language": "語言",
+    "loading": "正在載入專案…",
+    "name": "x18n",
+    "project": "專案",
+    "static": "唯讀報告",
+    "staticHint": "以 `x18n build` 建置的快照。執行 `x18n ui` 即可編輯。"
+  },
+  "auth": {
+    "code": "驗證碼",
+    "hint": "請輸入 `x18n ui` 在終端機中顯示的 6 位數驗證碼。",
+    "label": "身分驗證",
+    "rejected": "驗證碼無效。請查看終端機中目前的驗證碼。",
+    "submit": "連線",
+    "title": "連線至 x18n"
+  },
+  "detail": {
+    "back": "返回鍵列表",
+    "diagnostics": "問題",
+    "edit": "編輯",
+    "label": "鍵",
+    "noUsages": "沒有程式碼使用此鍵。",
+    "notFound": "此鍵未定義。",
+    "openInEditor": "在編輯器中開啟",
+    "possible": "可能",
+    "usages": "使用處（{count}）",
+    "values": "值"
+  },
+  "edit": {
+    "dismiss": "關閉",
+    "placeholdersExtra": "多出的佔位符 {names}",
+    "placeholdersMissing": "缺少佔位符 {names}",
+    "rejected": "未儲存：{key}（{locale}）：{message}。",
+    "saveAnyway": "仍要儲存"
+  },
+  "extract": {
+    "apply": "擷取（{count}）",
+    "done": "已擷取鍵：{count}。已變更檔案：{files}。",
+    "hint": "已附建議鍵的寫死字串。可編輯鍵、取消勾選要略過的字串，然後套用。",
+    "key": "鍵",
+    "none": "找不到寫死的字串。",
+    "strings": "字串：{count}"
+  },
+  "keys": {
+    "allNamespaces": "所有命名空間",
+    "anyLocale": "任何語系",
+    "count": "{shown} / {total} 個鍵",
+    "diagnosticsHint": "此鍵的問題",
+    "editValue": "{key} 在 {locale} 的值",
+    "empty": "沒有符合的鍵。",
+    "grid": "各語系的鍵與值",
+    "helpEdit": "Enter 編輯，Esc 取消",
+    "helpMove": "方向鍵或 j/k 移動",
+    "helpOpen": "o 開啟鍵",
+    "helpSearch": "/ 搜尋",
+    "key": "鍵",
+    "missingIn": "缺少於",
+    "missingInLocale": "{locale} 中缺少",
+    "namespace": "命名空間",
+    "search": "搜尋鍵與值",
+    "unused": "未使用",
+    "unusedHint": "沒有程式碼使用此鍵",
+    "withDiagnostics": "有問題"
+  },
+  "locale": {
+    "complete": "所有鍵皆已翻譯。",
+    "empty": "空白（{count}）",
+    "label": "語系",
+    "missing": "缺少（{count}）",
+    "notFound": "此專案沒有這個語系。",
+    "openInGrid": "在表格中顯示",
+    "problems": "佔位符與語法問題（{count}）",
+    "progress": "已翻譯 {translated} / {total}（{percent}）"
+  },
+  "localeBar": {
+    "bar": "要顯示的語系",
+    "noneShown": "所有語系皆已隱藏。請在上方列中選擇一個。",
+    "showAll": "全部顯示",
+    "shown": "已顯示 {shown} / {total}",
+    "title": "語系",
+    "toggle": "顯示或隱藏 {locale}",
+    "resetOrder": "重設順序",
+    "flags": "顯示旗幟",
+    "reorder": "拖曳或按 Alt 加方向鍵以調整順序。"
+  },
+  "nav": {
+    "extract": "擷取",
+    "keys": "鍵",
+    "overview": "總覽",
+    "project": "專案",
+    "usages": "使用處"
+  },
+  "overview": {
+    "clean": "未發現問題。",
+    "coverage": "涵蓋率",
+    "diagnostics": "診斷",
+    "errors": "錯誤：{count}",
+    "keys": "鍵",
+    "locales": "語系",
+    "missing": "缺少 {missing}，空白 {empty}",
+    "noPresets": "未偵測到預設集。",
+    "noRecent": "開啟頁面後沒有任何變更。",
+    "presets": "預設集",
+    "recent": "最近變更",
+    "resources": "資源",
+    "source": "來源",
+    "usages": "使用處",
+    "warnings": "警告：{count}"
+  },
+  "project": {
+    "config": "設定及各值來源",
+    "conflict": ".{extension}：{winner} 優先於 {loser}",
+    "files": "檔案：{count}",
+    "finders": "語系搜尋器",
+    "formats": "格式",
+    "presets": "預設集",
+    "problems": "問題",
+    "resources": "資源：{count}",
+    "scanners": "掃描器"
+  },
+  "prompt": {
+    "copied": "已複製",
+    "copy": "複製翻譯提示詞",
+    "hint": "複製提示詞，讓 LLM 或代理程式翻譯缺少的訊息"
+  },
+  "usages": {
+    "all": "全部（{count}）",
+    "dynamic": "動態（{count}）",
+    "dynamicHint": "使用計算鍵的使用處。其前綴下的鍵皆視為已使用。",
+    "filter": "依檔案或鍵篩選",
+    "missing": "未定義（{count}）",
+    "missingHint": "程式碼中使用、但未在來源語系中定義的鍵。",
+    "unused": "未使用（{count}）",
+    "unusedHint": "已在來源語系中定義、但沒有程式碼使用的鍵。"
+  },
+  "value": {
+    "empty": "空白",
+    "missing": "缺少"
+  }
+}

@@ -50,6 +50,7 @@ describe('locale info', () => {
   it('parses codes leniently without changing them', () => {
     expect(parseLocaleInfo('pt-BR')).toMatchObject({ code: 'pt-BR', language: 'pt', region: 'BR', displayName: 'Brazilian Portuguese' })
     expect(parseLocaleInfo('de').flag).toBe('🇩🇪')
+    expect([parseLocaleInfo('zh-Hans').flag, parseLocaleInfo('zh-Hant').flag]).toEqual(['🇨🇳', '🇹🇼'])
     expect(parseLocaleInfo('ru').pluralCategories).toEqual(['one', 'few', 'many', 'other'])
     expect(parseLocaleInfo('not a code')).toMatchObject({ code: 'not a code', language: undefined })
   })

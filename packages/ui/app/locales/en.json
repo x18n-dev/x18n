@@ -5,9 +5,11 @@
     "error": "Could not connect: {message}",
     "project": "Project",
     "static": "Read-only report",
-    "staticHint": "A snapshot built with `x18n build`. Run `x18n ui` to edit."
+    "staticHint": "A snapshot built with `x18n build`. Run `x18n ui` to edit.",
+    "language": "Language"
   },
   "auth": {
+    "label": "Authentication",
     "title": "Connect to x18n",
     "hint": "Enter the 6-digit code that `x18n ui` printed in the terminal.",
     "code": "Auth code",
@@ -21,6 +23,17 @@
     "extract": "Extract",
     "project": "Project"
   },
+  "localeBar": {
+    "title": "Locales",
+    "bar": "Locales to show",
+    "toggle": "Show or hide {locale}",
+    "shown": "{shown} of {total} shown",
+    "showAll": "Show all",
+    "noneShown": "Every locale is hidden. Pick one in the bar above.",
+    "resetOrder": "Reset order",
+    "flags": "Show flags",
+    "reorder": "Drag, or press Alt and an arrow key, to reorder."
+  },
   "overview": {
     "keys": "Keys",
     "resources": "Resources",
@@ -30,8 +43,8 @@
     "source": "source",
     "missing": "{missing} missing, {empty} empty",
     "diagnostics": "Diagnostics",
-    "errors": "{count} errors",
-    "warnings": "{count} warnings",
+    "errors": "Errors: {count}",
+    "warnings": "Warnings: {count}",
     "clean": "No problems found.",
     "presets": "Presets",
     "noPresets": "No preset detected.",
@@ -71,6 +84,7 @@
     "dismiss": "Dismiss"
   },
   "detail": {
+    "label": "Key",
     "back": "Back to keys",
     "notFound": "This key is not defined.",
     "values": "Values",
@@ -87,11 +101,14 @@
     "hint": "Copy a prompt for an LLM or agent that translates the missing messages"
   },
   "locale": {
+    "label": "Locale",
     "openInGrid": "Show in the grid",
-    "progress": "{translated} of {total} translated ({percent}%)",
+    "progress": "{translated} of {total} translated ({percent})",
     "missing": "Missing ({count})",
     "empty": "Empty ({count})",
-    "problems": "Placeholder and syntax problems ({count})"
+    "problems": "Placeholder and syntax problems ({count})",
+    "notFound": "This project has no such locale.",
+    "complete": "Every key is translated."
   },
   "usages": {
     "missing": "Not defined ({count})",
@@ -107,16 +124,17 @@
     "hint": "Hard-coded strings with a proposed key. Edit keys, untick strings to skip, then apply.",
     "none": "No hard-coded strings found.",
     "key": "Key",
-    "apply": "Extract {count} strings",
-    "done": "Extracted {count} keys, changed {files} files."
+    "apply": "Extract ({count})",
+    "done": "Extracted keys: {count}. Changed files: {files}.",
+    "strings": "Strings: {count}"
   },
   "project": {
     "presets": "Presets",
     "finders": "Locale finders",
-    "resources": "{count} resources",
+    "resources": "Resources: {count}",
     "formats": "Formats",
     "scanners": "Scanners",
-    "files": "{count} files",
+    "files": "Files: {count}",
     "problems": "Problems",
     "conflict": ".{extension}: {winner} wins over {loser}",
     "config": "Config and where each value comes from"

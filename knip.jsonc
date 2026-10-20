@@ -10,9 +10,9 @@
     },
     "packages/ui": {
       // `@unocss/reset` is loaded through the `css` option of `nuxt.config.ts`;
-      // `vue-tsc` is run by `nuxt typecheck`; `@iconify-json/ph` is read by
-      // `presetIcons` for `i-ph-*` classes. None is imported.
-      "ignoreDependencies": ["@unocss/reset", "vue-tsc", "@iconify-json/ph"]
+      // `vue-tsc` is run by `nuxt typecheck`; `@iconify-json/*` are read by
+      // `presetIcons` for `i-ph-*` and `i-catppuccin:*` classes. None is imported.
+      "ignoreDependencies": ["@unocss/reset", "vue-tsc", "@iconify-json/ph", "@iconify-json/catppuccin"]
     }
   }
 }

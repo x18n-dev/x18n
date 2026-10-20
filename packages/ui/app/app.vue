@@ -1,18 +1,21 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { NuxtLink, NuxtPage } from '#components'
 import { pendingAuth, useBackend } from './backend'
-import { t } from './i18n'
+import LocaleBar from './components/LocaleBar.vue'
+import LocaleFlag from './components/LocaleFlag.vue'
+import { showFlags } from './flags'
+import { endonym, pickUiLocale, setupI18n, t, uiLocale, uiLocales } from './i18n'
 import { backend, projectList, projectName, recentKeys, revision } from './state'
 import { setupTheme } from './theme'
 
-const nav = [
-  { to: '/', label: t('nav.overview'), icon: 'i-ph-gauge-duotone' },
-  { to: '/keys', label: t('nav.keys'), icon: 'i-ph-rows-duotone' },
-  { to: '/usages', label: t('nav.usages'), icon: 'i-ph-code-duotone' },
-  { to: '/extract', label: t('nav.extract'), icon: 'i-ph-magic-wand-duotone' },
-  { to: '/project', label: t('nav.project'), icon: 'i-ph-info-duotone' },
-]
+const nav = computed(() => [
+  { to: '/', label: t('nav.overview') },
+  { to: '/keys', label: t('nav.keys') },
+  { to: '/usages', label: t('nav.usages') },
+  { to: '/extract', label: t('nav.extract') },
+  { to: '/project', label: t('nav.project') },
+])
 
 const error = ref<string>()
 const code = ref('')
@@ -30,6 +33,8 @@ async function refreshProjects(): Promise<void> {
 }
 
 setupTheme()
+setupI18n()
+const language = computed({ get: () => uiLocale.value, set: pickUiLocale })
 onMounted(async () => {
   try {
     const b = await useBackend()
@@ -48,59 +53,69 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col bg-base color-base font-sans text-compact">
-    <header class="h-10 shrink-0 flex items-center gap-1 px-2 border-b border-base">
-      <span class="font-semibold px2 flex items-center gap-1">
-        <span class="i-ph-translate-duotone color-active" />
-        {{ t('app.name') }}
-      </span>
-      <nav class="flex items-center gap-1">
-        <NuxtLink
-          v-for="item in nav"
-          :key="item.to"
-          :to="item.to"
-          class="btn-text text-sm"
-          :active-class="item.to === '/' ? '' : 'btn-action-active'"
-          exact-active-class="btn-action-active"
-        >
-          <span :class="item.icon" />
-          {{ item.label }}
+  <div class="h-full flex flex-col bg-base color-base font-sans text-sm">
+    <header class="shrink-0 border-b border-base">
+      <div class="h-12 flex items-center gap-6 border-b border-base px-4">
+        <NuxtLink to="/" class="focus-ring flex items-center gap-2.5 font-mono text-sm font-medium">
+          <span class="size-6 grid place-items-center bg-inverse color-inverse" aria-hidden="true"><span class="i-ph-translate-bold text-sm" /></span>
+          {{ t('app.name') }}
         </NuxtLink>
-      </nav>
-      <div class="flex-auto" />
-      <span v-if="backend?.mode === 'static'" class="badge-muted" :title="t('app.staticHint')">{{ t('app.static') }}</span>
-      <select
-        v-if="(projectList?.projects.length ?? 0) > 1"
-        v-model="projectName"
-        class="input-base text-sm font-mono"
-        :aria-label="t('app.project')"
-      >
-        <option v-for="p in projectList?.projects" :key="p.name" :value="p.name">
-          {{ p.name }}
-        </option>
-      </select>
+        <nav class="flex items-center gap-1">
+          <NuxtLink
+            v-for="item in nav"
+            :key="item.to"
+            :to="item.to"
+            class="focus-ring whitespace-nowrap px-2 py-1 font-mono text-xs uppercase tracking-[0.12em] color-muted transition-colors hover:color-base"
+            :active-class="item.to === '/' ? '' : '!color-base underline underline-offset-6'"
+            exact-active-class="!color-base underline underline-offset-6"
+          >
+            {{ item.label }}
+          </NuxtLink>
+        </nav>
+        <div class="flex-auto" />
+        <span v-if="backend?.mode === 'static'" class="badge" :title="t('app.staticHint')">{{ t('app.static') }}</span>
+        <label v-if="(projectList?.projects.length ?? 0) > 1" class="flex items-center gap-2">
+          <span class="label">{{ t('app.project') }}</span>
+          <select v-model="projectName" class="input font-mono text-xs">
+            <option v-for="p in projectList?.projects" :key="p.name" :value="p.name">
+              {{ p.name }}
+            </option>
+          </select>
+        </label>
+        <label class="flex items-center gap-2">
+          <LocaleFlag v-if="showFlags" :code="uiLocale" />
+          <span v-else class="i-ph-translate color-muted" aria-hidden="true" />
+          <select v-model="language" class="input text-xs" :aria-label="t('app.language')">
+            <option v-for="option in uiLocales" :key="option" :value="option" :lang="option">
+              {{ endonym(option) }}
+            </option>
+          </select>
+        </label>
+      </div>
+      <LocaleBar v-if="projectName && !pendingAuth" />
     </header>
 
     <main class="flex-auto min-h-0 of-auto">
-      <form v-if="pendingAuth" class="max-w-sm mx-auto mt-20 flex flex-col gap-3" @submit.prevent="submitCode">
-        <h1 class="text-lg font-semibold">
+      <form v-if="pendingAuth" class="max-w-sm mx-auto mt-20 flex flex-col gap-4" @submit.prevent="submitCode">
+        <span class="label">{{ t('auth.label') }}</span>
+        <h1 class="text-2xl font-semibold tracking-tight">
           {{ t('auth.title') }}
         </h1>
-        <p class="op-fade">
+        <p class="color-muted">
           {{ t('auth.hint') }}
         </p>
-        <input v-model="code" class="input-base font-mono text-lg tracking-widest" inputmode="numeric" autocomplete="one-time-code" :aria-label="t('auth.code')" autofocus>
-        <p v-if="codeRejected" class="color-red">
+        <input v-model="code" class="input h-11 font-mono text-lg tracking-[0.4em]" inputmode="numeric" autocomplete="one-time-code" :aria-label="t('auth.code')" autofocus>
+        <p v-if="codeRejected" class="color-error">
           {{ t('auth.rejected') }}
         </p>
-        <button class="btn-primary self-start" type="submit">
+        <button class="btn-solid self-start" type="submit">
           {{ t('auth.submit') }}
         </button>
       </form>
-      <p v-else-if="error" class="p-4 color-red">
+      <p v-else-if="error" class="p-4 color-error">
         {{ t('app.error', { message: error }) }}
       </p>
-      <p v-else-if="!projectName" class="p-4 op-fade">
+      <p v-else-if="!projectName" class="p-4 label">
         {{ t('app.loading') }}
       </p>
       <NuxtPage v-else />

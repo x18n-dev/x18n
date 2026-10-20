@@ -57,6 +57,7 @@ On by default, like i18n-ally:
 
 - The webview sets a CSP that allows `frame-src` of the external URI only.
 - Theme: the iframe URL carries `?theme=dark|light|high-contrast`, and the webview script forwards VS Code theme changes to the iframe with `postMessage`. The UI accepts only messages from its parent with the expected shape.
+- Language: the iframe URL carries `?lang=` with `vscode.env.language` (such as `zh-tw`), which the UI matches to its closest locale.
 - In Remote, Codespaces and WSL, `asExternalUri` forwards the port. The server binds to loopback only.
 - Auth: the token from `x18n/openUi` is passed in the URL fragment, which devframe reads as a magic link, so it never appears in requests or logs.
 

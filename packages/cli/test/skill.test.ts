@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import { glob, readdir, readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
@@ -19,21 +19,38 @@ function commandsIn(text: string): { command: string, flags: string[] }[] {
   })
 }
 
-describe('shipped skill and prompts', () => {
+const skillsDir = new URL('../../../skills/', import.meta.url)
+
+/** Every markdown file of every skill, as `[url, text]`. */
+async function skillFiles(): Promise<[URL, string][]> {
+  const names = await Array.fromAsync(glob('*/**/*.md', { cwd: fileURLToPath(skillsDir) }))
+  return Promise.all(names.map(async (name): Promise<[URL, string]> => {
+    const url = new URL(name, skillsDir)
+    return [url, await readFile(url, 'utf8')]
+  }))
+}
+
+describe('shipped skills and prompts', () => {
+  it('names each skill after its directory', async () => {
+    const dirs = (await readdir(skillsDir, { withFileTypes: true })).filter(d => d.isDirectory()).map(d => d.name).sort()
+    expect(dirs).toEqual(['x18n', 'x18n-check', 'x18n-setup'])
+    for (const dir of dirs) {
+      const skill = await readFile(new URL(`${dir}/SKILL.md`, skillsDir), 'utf8')
+      expect(skill).toMatch(new RegExp(`^---\\nname: ${dir}\\ndescription: .+\\n---\\n`))
+    }
+  })
+
   it('links only to files that exist', async () => {
-    const dir = new URL('../skills/x18n/', import.meta.url)
-    const skill = await readFile(new URL('SKILL.md', dir), 'utf8')
-    for (const [, target] of skill.matchAll(/\]\((?!https?:)([^)#]+)\)/g))
-      await expect(readFile(new URL(target!, dir), 'utf8'), target).resolves.toBeTruthy()
+    for (const [url, text] of await skillFiles()) {
+      for (const [, target] of text.matchAll(/\]\((?!https?:)([^)#]+)\)/g))
+        await expect(readFile(new URL(target!, url), 'utf8'), target).resolves.toBeTruthy()
+    }
   })
 
   it('only names commands and flags that exist', async () => {
-    const skill = [
-      await readFile(fileURLToPath(new URL('../skills/x18n/SKILL.md', import.meta.url)), 'utf8'),
-      await readFile(fileURLToPath(new URL('../skills/x18n/references/migrate-i18n-ally.md', import.meta.url)), 'utf8'),
-    ].join('\n')
+    const skills = (await skillFiles()).map(([, text]) => text).join('\n')
     const prompt = await readFile(fileURLToPath(new URL('../../core/src/project/prompt.ts', import.meta.url)), 'utf8')
-    const all = [...commandsIn(skill), ...commandsIn(prompt)]
+    const all = [...commandsIn(skills), ...commandsIn(prompt)]
     expect(all.length).toBeGreaterThan(10)
     const helps = new Map<string, string>()
     for (const { command, flags } of all) {

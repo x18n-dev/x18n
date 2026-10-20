@@ -16,7 +16,7 @@ export function useUiPanel(x18n: X18nClient): { open: (ref?: KeyRef) => Promise<
   async function open(ref?: KeyRef): Promise<void> {
     const { url, token } = await x18n.request('x18n/openUi', { project: ref?.project })
     const external = await env.asExternalUri(Uri.parse(url))
-    const src = frameUrl(external.toString(true), { token, theme: uiTheme(window.activeColorTheme.kind), key: ref?.key })
+    const src = frameUrl(external.toString(true), { token, theme: uiTheme(window.activeColorTheme.kind), lang: env.language, key: ref?.key })
     if (!panel) {
       panel = window.createWebviewPanel('x18n.ui', 'x18n', ViewColumn.Active, { enableScripts: true, retainContextWhenHidden: true })
       panel.onDidDispose(() => panel = undefined)

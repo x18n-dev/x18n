@@ -46,6 +46,81 @@ test('refuses unauthenticated clients', async ({ page, request }) => {
   }
 })
 
+test('the locale bar hides a locale in every view and remembers it', async ({ page }) => {
+  const { root, dispose } = await fixture()
+  const outDir = join(root, '.x18n/report')
+  await buildReport(root, outDir)
+  const server = await serveStatic(outDir)
+  try {
+    await page.goto(`${server.url}#/keys`)
+    const de = page.locator('[data-key="nav.home"] [data-locale="de"]')
+    await expect(de).toContainText('Start')
+    await page.locator('[data-locale-toggle="de"]').click()
+    await expect(page.locator('[data-locale-toggle="de"]')).toHaveAttribute('aria-pressed', 'false')
+    await expect(de).toHaveCount(0)
+    await expect(page.locator('[data-key="nav.home"] [data-locale="en"]')).toContainText('Home')
+
+    await page.goto(`${server.url}#/keys/nav.home`)
+    await page.reload()
+    await expect(page.locator('[data-locale="en"]')).toContainText('Home')
+    await expect(page.locator('[data-locale="de"]')).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Show all' }).click()
+    await expect(page.locator('[data-locale="de"]')).toContainText('Start')
+  }
+  finally {
+    server.close()
+    await dispose()
+  }
+})
+
+test('locales reorder by dragging and flags can be turned off', async ({ page }) => {
+  const { root, dispose } = await fixture()
+  const outDir = join(root, '.x18n/report')
+  await buildReport(root, outDir)
+  const server = await serveStatic(outDir)
+  try {
+    await page.goto(`${server.url}#/keys`)
+    const headers = page.getByRole('columnheader')
+    await expect(headers).toHaveText(['Key', /^en/, /^de/])
+    await page.locator('[data-locale-toggle="de"]').dragTo(page.locator('[data-locale-toggle="en"]'), { targetPosition: { x: 2, y: 2 } })
+    await expect(headers).toHaveText(['Key', /^de/, /^en/])
+    await page.reload()
+    await expect(headers).toHaveText(['Key', /^de/, /^en/])
+
+    await expect(page.locator('[role="columnheader"] [data-flag]')).toHaveCount(2)
+    await page.getByTitle('Show flags').click()
+    await expect(page.locator('[data-flag]')).toHaveCount(0)
+  }
+  finally {
+    server.close()
+    await dispose()
+  }
+})
+
+test('the UI speaks the requested language and remembers a picked one', async ({ page }) => {
+  const { root, dispose } = await fixture()
+  const outDir = join(root, '.x18n/report')
+  await buildReport(root, outDir)
+  const server = await serveStatic(outDir)
+  try {
+    // The VS Code panel passes `vscode.env.language`, which writes regions in lower case.
+    await page.goto(`${server.url}?lang=zh-tw`)
+    await expect(page.getByRole('link', { name: '鍵', exact: true })).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'zh-Hant')
+
+    await page.goto(server.url)
+    await page.getByLabel('Language').selectOption('de')
+    await expect(page.getByRole('link', { name: 'Schlüssel', exact: true })).toBeVisible()
+    await page.reload()
+    await expect(page.getByRole('link', { name: 'Schlüssel', exact: true })).toBeVisible()
+  }
+  finally {
+    server.close()
+    await dispose()
+  }
+})
+
 test('the static report renders keys without edit controls', async ({ page }) => {
   const { root, dispose } = await fixture()
   const outDir = join(root, '.x18n/report')

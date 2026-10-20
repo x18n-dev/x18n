@@ -27,7 +27,7 @@
     "release": "bumpp -r",
     "test": "pnpm run build && vitest",
     "typecheck": "turbo run typecheck && tsc",
-    "ci": "pnpm run lint && pnpm run typecheck && pnpm run knip && pnpm run test --run && x18n check && pnpm -C docs run generate --check",
+    "ci": "pnpm run lint && pnpm run typecheck && pnpm run knip && pnpm run test --run && x18n check --strict && pnpm -C docs run generate --check",
     "postinstall": "turbo run codegen",
     "prepare": "git config core.hooksPath .githooks && simple-git-hooks && skills experimental_sync -y",
     "bench": "tsx scripts/bench.ts",
@@ -76,7 +76,7 @@
     "vscode-jsonrpc": "catalog:testing"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm i --frozen-lockfile --ignore-scripts --offline && pnpm run ci && pnpx nano-staged"
+    "pre-commit": "pnpm i --frozen-lockfile --ignore-scripts --offline && pnpx nano-staged"
   },
   "nano-staged": {
     "*.{js,ts,tsx,json,css,md,yaml,vue}": "eslint --fix --no-warn-ignored"

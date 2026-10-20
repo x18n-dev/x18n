@@ -1,0 +1,142 @@
+{
+  "app": {
+    "error": "接続できませんでした: {message}",
+    "language": "言語",
+    "loading": "プロジェクトを読み込み中…",
+    "name": "x18n",
+    "project": "プロジェクト",
+    "static": "読み取り専用レポート",
+    "staticHint": "`x18n build` で作成したスナップショットです。編集するには `x18n ui` を実行してください。"
+  },
+  "auth": {
+    "code": "認証コード",
+    "hint": "`x18n ui` がターミナルに表示した 6 桁のコードを入力してください。",
+    "label": "認証",
+    "rejected": "このコードは無効です。ターミナルで最新のコードを確認してください。",
+    "submit": "接続",
+    "title": "x18n に接続"
+  },
+  "detail": {
+    "back": "キー一覧に戻る",
+    "diagnostics": "問題",
+    "edit": "編集",
+    "label": "キー",
+    "noUsages": "このキーを使用しているコードはありません。",
+    "notFound": "このキーは定義されていません。",
+    "openInEditor": "エディタで開く",
+    "possible": "推定",
+    "usages": "使用箇所 ({count})",
+    "values": "値"
+  },
+  "edit": {
+    "dismiss": "閉じる",
+    "placeholdersExtra": "想定外のプレースホルダー {names}",
+    "placeholdersMissing": "不足しているプレースホルダー {names}",
+    "rejected": "保存されませんでした: {locale} の {key}: {message}。",
+    "saveAnyway": "このまま保存"
+  },
+  "extract": {
+    "apply": "抽出 ({count})",
+    "done": "抽出したキー: {count}。変更したファイル: {files}。",
+    "hint": "ハードコードされた文字列と提案キーの一覧です。キーを編集し、スキップする文字列のチェックを外してから適用してください。",
+    "key": "キー",
+    "none": "ハードコードされた文字列は見つかりませんでした。",
+    "strings": "文字列: {count}"
+  },
+  "keys": {
+    "allNamespaces": "すべての名前空間",
+    "anyLocale": "すべてのロケール",
+    "count": "{shown} / {total} キー",
+    "diagnosticsHint": "このキーの問題",
+    "editValue": "{locale} の {key} の値",
+    "empty": "一致するキーはありません。",
+    "grid": "ロケールごとのキーと値",
+    "helpEdit": "Enter で編集、Esc でキャンセル",
+    "helpMove": "矢印キーまたは j/k で移動",
+    "helpOpen": "o でキーを開く",
+    "helpSearch": "/ で検索",
+    "key": "キー",
+    "missingIn": "未翻訳のロケール",
+    "missingInLocale": "{locale} で未翻訳",
+    "namespace": "名前空間",
+    "search": "キーと値を検索",
+    "unused": "未使用",
+    "unusedHint": "このキーを使用しているコードはありません",
+    "withDiagnostics": "問題あり"
+  },
+  "locale": {
+    "complete": "すべてのキーが翻訳済みです。",
+    "empty": "空 ({count})",
+    "label": "ロケール",
+    "missing": "未翻訳 ({count})",
+    "notFound": "このプロジェクトにそのロケールはありません。",
+    "openInGrid": "グリッドで表示",
+    "problems": "プレースホルダーと構文の問題 ({count})",
+    "progress": "{total} 件中 {translated} 件翻訳済み ({percent})"
+  },
+  "localeBar": {
+    "bar": "表示するロケール",
+    "noneShown": "すべてのロケールが非表示です。上のバーで選択してください。",
+    "showAll": "すべて表示",
+    "shown": "{shown} / {total} 表示中",
+    "title": "ロケール",
+    "toggle": "{locale} の表示を切り替え",
+    "resetOrder": "順序をリセット",
+    "flags": "国旗を表示",
+    "reorder": "ドラッグ、または Alt と矢印キーで並べ替え。"
+  },
+  "nav": {
+    "extract": "抽出",
+    "keys": "キー",
+    "overview": "概要",
+    "project": "プロジェクト",
+    "usages": "使用箇所"
+  },
+  "overview": {
+    "clean": "問題は見つかりませんでした。",
+    "coverage": "カバレッジ",
+    "diagnostics": "診断",
+    "errors": "エラー: {count}",
+    "keys": "キー",
+    "locales": "ロケール",
+    "missing": "未翻訳 {missing}、空 {empty}",
+    "noPresets": "プリセットは検出されませんでした。",
+    "noRecent": "ページを開いてから変更はありません。",
+    "presets": "プリセット",
+    "recent": "最近の変更",
+    "resources": "リソース",
+    "source": "ソース",
+    "usages": "使用箇所",
+    "warnings": "警告: {count}"
+  },
+  "project": {
+    "config": "設定と各値の由来",
+    "conflict": ".{extension}: {winner} が {loser} より優先",
+    "files": "ファイル: {count}",
+    "finders": "ロケールファインダー",
+    "formats": "フォーマット",
+    "presets": "プリセット",
+    "problems": "問題",
+    "resources": "リソース: {count}",
+    "scanners": "スキャナー"
+  },
+  "prompt": {
+    "copied": "コピーしました",
+    "copy": "翻訳プロンプトをコピー",
+    "hint": "未翻訳のメッセージを翻訳させる LLM またはエージェント向けのプロンプトをコピー"
+  },
+  "usages": {
+    "all": "すべて ({count})",
+    "dynamic": "動的 ({count})",
+    "dynamicHint": "キーが動的に計算される使用箇所です。そのプレフィックス配下のキーは使用中とみなされます。",
+    "filter": "ファイルまたはキーで絞り込み",
+    "missing": "未定義 ({count})",
+    "missingHint": "コードで使用されているが、ソースロケールに定義されていないキーです。",
+    "unused": "未使用 ({count})",
+    "unusedHint": "ソースロケールに定義されているが、どのコードでも使用されていないキーです。"
+  },
+  "value": {
+    "empty": "空",
+    "missing": "未翻訳"
+  }
+}

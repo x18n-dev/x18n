@@ -1,0 +1,142 @@
+{
+  "app": {
+    "error": "No se pudo conectar: {message}",
+    "language": "Idioma de la interfaz",
+    "loading": "Cargando el proyecto…",
+    "name": "x18n",
+    "project": "Proyecto",
+    "static": "Informe de solo lectura",
+    "staticHint": "Una instantánea generada con `x18n build`. Ejecuta `x18n ui` para editar."
+  },
+  "auth": {
+    "code": "Código de acceso",
+    "hint": "Introduce el código de 6 dígitos que `x18n ui` mostró en la terminal.",
+    "label": "Autenticación",
+    "rejected": "Ese código no funcionó. Consulta el código actual en la terminal.",
+    "submit": "Conectar",
+    "title": "Conectar con x18n"
+  },
+  "detail": {
+    "back": "Volver a las claves",
+    "diagnostics": "Problemas",
+    "edit": "Editar",
+    "label": "Clave",
+    "noUsages": "Ningún código usa esta clave.",
+    "notFound": "Esta clave no está definida.",
+    "openInEditor": "Abrir en el editor",
+    "possible": "posible",
+    "usages": "Usos ({count})",
+    "values": "Valores"
+  },
+  "edit": {
+    "dismiss": "Descartar",
+    "placeholdersExtra": "marcadores de posición inesperados {names}",
+    "placeholdersMissing": "faltan marcadores de posición {names}",
+    "rejected": "No guardado: {key} en {locale}: {message}.",
+    "saveAnyway": "Guardar de todos modos"
+  },
+  "extract": {
+    "apply": "Extraer ({count})",
+    "done": "Claves extraídas: {count}. Archivos modificados: {files}.",
+    "hint": "Cadenas fijas en el código con una clave propuesta. Edita las claves, desmarca las cadenas que quieras omitir y aplica.",
+    "key": "Clave",
+    "none": "No se encontraron cadenas fijas en el código.",
+    "strings": "Cadenas: {count}"
+  },
+  "keys": {
+    "allNamespaces": "Todos los espacios de nombres",
+    "anyLocale": "Cualquier idioma",
+    "count": "{shown} de {total} claves",
+    "diagnosticsHint": "Problemas en esta clave",
+    "editValue": "Valor de {key} en {locale}",
+    "empty": "Ninguna clave coincide.",
+    "grid": "Claves y valores por idioma",
+    "helpEdit": "Intro para editar, Esc para cancelar",
+    "helpMove": "Flechas o j/k para moverte",
+    "helpOpen": "o para abrir la clave",
+    "helpSearch": "/ para buscar",
+    "key": "Clave",
+    "missingIn": "Falta en",
+    "missingInLocale": "Falta en {locale}",
+    "namespace": "Espacio de nombres",
+    "search": "Buscar claves y valores",
+    "unused": "Sin usar",
+    "unusedHint": "Ningún código usa esta clave",
+    "withDiagnostics": "Con problemas"
+  },
+  "locale": {
+    "complete": "Todas las claves están traducidas.",
+    "empty": "Vacías ({count})",
+    "label": "Idioma",
+    "missing": "Faltantes ({count})",
+    "notFound": "Este proyecto no tiene ese idioma.",
+    "openInGrid": "Mostrar en la tabla",
+    "problems": "Problemas de marcadores y sintaxis ({count})",
+    "progress": "{translated} de {total} traducidas ({percent})"
+  },
+  "localeBar": {
+    "bar": "Idiomas visibles",
+    "noneShown": "Todos los idiomas están ocultos. Elige uno en la barra superior.",
+    "showAll": "Mostrar todos",
+    "shown": "{shown} de {total} visibles",
+    "title": "Idiomas",
+    "toggle": "Mostrar u ocultar {locale}",
+    "resetOrder": "Restablecer orden",
+    "flags": "Mostrar banderas",
+    "reorder": "Arrastra, o pulsa Alt y una flecha, para reordenar."
+  },
+  "nav": {
+    "extract": "Extraer",
+    "keys": "Claves",
+    "overview": "Resumen",
+    "project": "Proyecto",
+    "usages": "Usos"
+  },
+  "overview": {
+    "clean": "No se encontraron problemas.",
+    "coverage": "Cobertura",
+    "diagnostics": "Diagnósticos",
+    "errors": "Errores: {count}",
+    "keys": "Claves",
+    "locales": "Idiomas",
+    "missing": "{missing} faltantes, {empty} vacías",
+    "noPresets": "No se detectó ningún preset.",
+    "noRecent": "Nada ha cambiado desde que se abrió la página.",
+    "presets": "Presets",
+    "recent": "Cambios recientes",
+    "resources": "Recursos",
+    "source": "origen",
+    "usages": "Usos",
+    "warnings": "Avisos: {count}"
+  },
+  "project": {
+    "config": "Configuración y origen de cada valor",
+    "conflict": ".{extension}: {winner} prevalece sobre {loser}",
+    "files": "Archivos: {count}",
+    "finders": "Buscadores de idiomas",
+    "formats": "Formatos",
+    "presets": "Presets",
+    "problems": "Problemas",
+    "resources": "Recursos: {count}",
+    "scanners": "Escáneres"
+  },
+  "prompt": {
+    "copied": "Copiado",
+    "copy": "Copiar prompt de traducción",
+    "hint": "Copia un prompt para que un LLM o agente traduzca los mensajes que faltan"
+  },
+  "usages": {
+    "all": "Todos ({count})",
+    "dynamic": "Dinámicos ({count})",
+    "dynamicHint": "Usos con una clave calculada. Las claves bajo su prefijo cuentan como usadas.",
+    "filter": "Filtrar por archivo o clave",
+    "missing": "No definidas ({count})",
+    "missingHint": "Claves usadas en el código pero no definidas en el idioma de origen.",
+    "unused": "Sin usar ({count})",
+    "unusedHint": "Claves definidas en el idioma de origen que ningún código usa."
+  },
+  "value": {
+    "empty": "vacío",
+    "missing": "falta"
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "app": {
+    "error": "Verbindung fehlgeschlagen: {message}",
+    "language": "Sprache",
+    "loading": "Projekt wird geladen…",
+    "name": "x18n",
+    "project": "Projekt",
+    "static": "Schreibgeschützter Bericht",
+    "staticHint": "Ein mit `x18n build` erstellter Snapshot. Zum Bearbeiten `x18n ui` ausführen."
+  },
+  "auth": {
+    "code": "Auth-Code",
+    "hint": "Den 6-stelligen Code eingeben, den `x18n ui` im Terminal ausgegeben hat.",
+    "label": "Authentifizierung",
+    "rejected": "Dieser Code ist ungültig. Den aktuellen Code im Terminal prüfen.",
+    "submit": "Verbinden",
+    "title": "Mit x18n verbinden"
+  },
+  "detail": {
+    "back": "Zurück zu den Schlüsseln",
+    "diagnostics": "Probleme",
+    "edit": "Bearbeiten",
+    "label": "Schlüssel",
+    "noUsages": "Kein Code verwendet diesen Schlüssel.",
+    "notFound": "Dieser Schlüssel ist nicht definiert.",
+    "openInEditor": "Im Editor öffnen",
+    "possible": "möglich",
+    "usages": "Verwendungen ({count})",
+    "values": "Werte"
+  },
+  "edit": {
+    "dismiss": "Schließen",
+    "placeholdersExtra": "unerwartete Platzhalter {names}",
+    "placeholdersMissing": "fehlende Platzhalter {names}",
+    "rejected": "Nicht gespeichert: {key} in {locale}: {message}.",
+    "saveAnyway": "Trotzdem speichern"
+  },
+  "extract": {
+    "apply": "Extrahieren ({count})",
+    "done": "Extrahierte Schlüssel: {count}. Geänderte Dateien: {files}.",
+    "hint": "Fest codierte Strings mit vorgeschlagenem Schlüssel. Schlüssel bearbeiten, zu überspringende Strings abwählen, dann anwenden.",
+    "key": "Schlüssel",
+    "none": "Keine fest codierten Strings gefunden.",
+    "strings": "Strings: {count}"
+  },
+  "keys": {
+    "allNamespaces": "Alle Namespaces",
+    "anyLocale": "Beliebige Sprache",
+    "count": "{shown} von {total} Schlüsseln",
+    "diagnosticsHint": "Probleme bei diesem Schlüssel",
+    "editValue": "Wert von {key} in {locale}",
+    "empty": "Keine passenden Schlüssel.",
+    "grid": "Schlüssel und Werte pro Sprache",
+    "helpEdit": "Enter zum Bearbeiten, Esc zum Abbrechen",
+    "helpMove": "Pfeiltasten oder j/k zum Bewegen",
+    "helpOpen": "o öffnet den Schlüssel",
+    "helpSearch": "/ zum Suchen",
+    "key": "Schlüssel",
+    "missingIn": "Fehlt in",
+    "missingInLocale": "Fehlt in {locale}",
+    "namespace": "Namespace",
+    "search": "Schlüssel und Werte durchsuchen",
+    "unused": "Unbenutzt",
+    "unusedHint": "Kein Code verwendet diesen Schlüssel",
+    "withDiagnostics": "Mit Problemen"
+  },
+  "locale": {
+    "complete": "Alle Schlüssel sind übersetzt.",
+    "empty": "Leer ({count})",
+    "label": "Sprache",
+    "missing": "Fehlend ({count})",
+    "notFound": "Diese Sprache gibt es im Projekt nicht.",
+    "openInGrid": "Im Raster anzeigen",
+    "problems": "Platzhalter- und Syntaxprobleme ({count})",
+    "progress": "{translated} von {total} übersetzt ({percent})"
+  },
+  "localeBar": {
+    "bar": "Anzuzeigende Sprachen",
+    "noneShown": "Alle Sprachen sind ausgeblendet. Oben in der Leiste eine auswählen.",
+    "showAll": "Alle anzeigen",
+    "shown": "{shown} von {total} angezeigt",
+    "title": "Sprachen",
+    "toggle": "{locale} ein- oder ausblenden",
+    "resetOrder": "Reihenfolge zurücksetzen",
+    "flags": "Flaggen anzeigen",
+    "reorder": "Zum Umsortieren ziehen oder Alt und eine Pfeiltaste drücken."
+  },
+  "nav": {
+    "extract": "Extrahieren",
+    "keys": "Schlüssel",
+    "overview": "Übersicht",
+    "project": "Projekt",
+    "usages": "Verwendungen"
+  },
+  "overview": {
+    "clean": "Keine Probleme gefunden.",
+    "coverage": "Abdeckung",
+    "diagnostics": "Diagnosen",
+    "errors": "Fehler: {count}",
+    "keys": "Schlüssel",
+    "locales": "Sprachen",
+    "missing": "{missing} fehlend, {empty} leer",
+    "noPresets": "Kein Preset erkannt.",
+    "noRecent": "Seit dem Öffnen der Seite hat sich nichts geändert.",
+    "presets": "Presets",
+    "recent": "Letzte Änderungen",
+    "resources": "Ressourcen",
+    "source": "Quelle",
+    "usages": "Verwendungen",
+    "warnings": "Warnungen: {count}"
+  },
+  "project": {
+    "config": "Konfiguration und Herkunft der Werte",
+    "conflict": ".{extension}: {winner} hat Vorrang vor {loser}",
+    "files": "Dateien: {count}",
+    "finders": "Sprach-Finder",
+    "formats": "Formate",
+    "presets": "Presets",
+    "problems": "Probleme",
+    "resources": "Ressourcen: {count}",
+    "scanners": "Scanner"
+  },
+  "prompt": {
+    "copied": "Kopiert",
+    "copy": "Übersetzungs-Prompt kopieren",
+    "hint": "Einen Prompt für ein LLM oder einen Agenten kopieren, der die fehlenden Texte übersetzt"
+  },
+  "usages": {
+    "all": "Alle ({count})",
+    "dynamic": "Dynamisch ({count})",
+    "dynamicHint": "Verwendungen mit berechnetem Schlüssel. Schlüssel unter ihrem Präfix gelten als verwendet.",
+    "filter": "Nach Datei oder Schlüssel filtern",
+    "missing": "Nicht definiert ({count})",
+    "missingHint": "Schlüssel, die im Code verwendet, aber in der Quellsprache nicht definiert sind.",
+    "unused": "Unbenutzt ({count})",
+    "unusedHint": "In der Quellsprache definierte Schlüssel, die kein Code verwendet."
+  },
+  "value": {
+    "empty": "leer",
+    "missing": "fehlt"
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "app": {
+    "error": "无法连接：{message}",
+    "language": "语言",
+    "loading": "正在加载项目…",
+    "name": "x18n",
+    "project": "项目",
+    "static": "只读报告",
+    "staticHint": "由 `x18n build` 生成的快照。运行 `x18n ui` 进行编辑。"
+  },
+  "auth": {
+    "code": "验证码",
+    "hint": "输入 `x18n ui` 在终端中打印的 6 位验证码。",
+    "label": "身份验证",
+    "rejected": "验证码无效。请在终端中查看当前验证码。",
+    "submit": "连接",
+    "title": "连接到 x18n"
+  },
+  "detail": {
+    "back": "返回键列表",
+    "diagnostics": "问题",
+    "edit": "编辑",
+    "label": "键",
+    "noUsages": "没有代码使用此键。",
+    "notFound": "此键未定义。",
+    "openInEditor": "在编辑器中打开",
+    "possible": "可能",
+    "usages": "引用（{count}）",
+    "values": "值"
+  },
+  "edit": {
+    "dismiss": "关闭",
+    "placeholdersExtra": "多余的占位符 {names}",
+    "placeholdersMissing": "缺少占位符 {names}",
+    "rejected": "未保存：{key}（{locale}）：{message}。",
+    "saveAnyway": "仍然保存"
+  },
+  "extract": {
+    "apply": "提取（{count}）",
+    "done": "已提取键：{count}。已修改文件：{files}。",
+    "hint": "带有建议键的硬编码字符串。可编辑键，取消勾选要跳过的字符串，然后应用。",
+    "key": "键",
+    "none": "未发现硬编码字符串。",
+    "strings": "字符串：{count}"
+  },
+  "keys": {
+    "allNamespaces": "所有命名空间",
+    "anyLocale": "任意语言",
+    "count": "{shown} / {total} 个键",
+    "diagnosticsHint": "此键存在的问题",
+    "editValue": "{key} 在 {locale} 中的值",
+    "empty": "没有匹配的键。",
+    "grid": "各语言的键和值",
+    "helpEdit": "Enter 编辑，Esc 取消",
+    "helpMove": "方向键或 j/k 移动",
+    "helpOpen": "o 打开键",
+    "helpSearch": "/ 搜索",
+    "key": "键",
+    "missingIn": "缺失于",
+    "missingInLocale": "{locale} 中缺失",
+    "namespace": "命名空间",
+    "search": "搜索键和值",
+    "unused": "未使用",
+    "unusedHint": "没有代码使用此键",
+    "withDiagnostics": "有问题"
+  },
+  "locale": {
+    "complete": "所有键均已翻译。",
+    "empty": "空值（{count}）",
+    "label": "语言",
+    "missing": "缺失（{count}）",
+    "notFound": "此项目中没有该语言。",
+    "openInGrid": "在表格中显示",
+    "problems": "占位符和语法问题（{count}）",
+    "progress": "已翻译 {translated} / {total}（{percent}）"
+  },
+  "localeBar": {
+    "bar": "要显示的语言",
+    "noneShown": "所有语言均已隐藏。请在上方栏中选择一个。",
+    "showAll": "全部显示",
+    "shown": "已显示 {shown} / {total}",
+    "title": "语言",
+    "toggle": "显示或隐藏 {locale}",
+    "resetOrder": "重置顺序",
+    "flags": "显示旗帜",
+    "reorder": "拖动或按 Alt 加方向键以调整顺序。"
+  },
+  "nav": {
+    "extract": "提取",
+    "keys": "键",
+    "overview": "概览",
+    "project": "项目",
+    "usages": "引用"
+  },
+  "overview": {
+    "clean": "未发现问题。",
+    "coverage": "覆盖率",
+    "diagnostics": "诊断",
+    "errors": "错误：{count}",
+    "keys": "键",
+    "locales": "语言",
+    "missing": "{missing} 个缺失，{empty} 个为空",
+    "noPresets": "未检测到预设。",
+    "noRecent": "自页面打开以来没有更改。",
+    "presets": "预设",
+    "recent": "最近更改",
+    "resources": "资源",
+    "source": "源",
+    "usages": "引用",
+    "warnings": "警告：{count}"
+  },
+  "project": {
+    "config": "配置及各值来源",
+    "conflict": ".{extension}：{winner} 优先于 {loser}",
+    "files": "文件：{count}",
+    "finders": "语言查找器",
+    "formats": "格式",
+    "presets": "预设",
+    "problems": "问题",
+    "resources": "资源：{count}",
+    "scanners": "扫描器"
+  },
+  "prompt": {
+    "copied": "已复制",
+    "copy": "复制翻译提示词",
+    "hint": "复制一段提示词，供 LLM 或智能体翻译缺失的消息"
+  },
+  "usages": {
+    "all": "全部（{count}）",
+    "dynamic": "动态（{count}）",
+    "dynamicHint": "使用计算键的引用。其前缀下的键均视为已使用。",
+    "filter": "按文件或键筛选",
+    "missing": "未定义（{count}）",
+    "missingHint": "代码中使用但未在源语言中定义的键。",
+    "unused": "未使用（{count}）",
+    "unusedHint": "已在源语言中定义但没有代码使用的键。"
+  },
+  "value": {
+    "empty": "空",
+    "missing": "缺失"
+  }
+}

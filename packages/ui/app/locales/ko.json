@@ -1,0 +1,142 @@
+{
+  "app": {
+    "error": "연결할 수 없습니다: {message}",
+    "language": "언어",
+    "loading": "프로젝트를 불러오는 중…",
+    "name": "x18n",
+    "project": "프로젝트",
+    "static": "읽기 전용 보고서",
+    "staticHint": "`x18n build`로 만든 스냅샷입니다. 편집하려면 `x18n ui`를 실행하세요."
+  },
+  "auth": {
+    "code": "인증 코드",
+    "hint": "`x18n ui`가 터미널에 출력한 6자리 코드를 입력하세요.",
+    "label": "인증",
+    "rejected": "코드가 올바르지 않습니다. 터미널에서 현재 코드를 확인하세요.",
+    "submit": "연결",
+    "title": "x18n에 연결"
+  },
+  "detail": {
+    "back": "키 목록으로 돌아가기",
+    "diagnostics": "문제",
+    "edit": "편집",
+    "label": "키",
+    "noUsages": "이 키를 사용하는 코드가 없습니다.",
+    "notFound": "정의되지 않은 키입니다.",
+    "openInEditor": "에디터에서 열기",
+    "possible": "추정",
+    "usages": "사용처 ({count})",
+    "values": "값"
+  },
+  "edit": {
+    "dismiss": "닫기",
+    "placeholdersExtra": "예상치 못한 플레이스홀더 {names}",
+    "placeholdersMissing": "누락된 플레이스홀더 {names}",
+    "rejected": "저장되지 않음: {locale}의 {key}: {message}.",
+    "saveAnyway": "그래도 저장"
+  },
+  "extract": {
+    "apply": "추출 ({count})",
+    "done": "추출한 키: {count}. 변경된 파일: {files}.",
+    "hint": "제안된 키가 있는 하드코딩된 문자열입니다. 키를 편집하고, 건너뛸 문자열은 선택 해제한 뒤 적용하세요.",
+    "key": "키",
+    "none": "하드코딩된 문자열이 없습니다.",
+    "strings": "문자열: {count}"
+  },
+  "keys": {
+    "allNamespaces": "모든 네임스페이스",
+    "anyLocale": "모든 로케일",
+    "count": "키 {total}개 중 {shown}개",
+    "diagnosticsHint": "이 키의 문제",
+    "editValue": "{locale}의 {key} 값",
+    "empty": "일치하는 키가 없습니다.",
+    "grid": "로케일별 키와 값",
+    "helpEdit": "Enter로 편집, Esc로 취소",
+    "helpMove": "화살표 또는 j/k로 이동",
+    "helpOpen": "o로 키 열기",
+    "helpSearch": "/로 검색",
+    "key": "키",
+    "missingIn": "누락된 로케일",
+    "missingInLocale": "{locale}에 누락",
+    "namespace": "네임스페이스",
+    "search": "키와 값 검색",
+    "unused": "미사용",
+    "unusedHint": "이 키를 사용하는 코드가 없습니다",
+    "withDiagnostics": "문제 있음"
+  },
+  "locale": {
+    "complete": "모든 키가 번역되었습니다.",
+    "empty": "빈 값 ({count})",
+    "label": "로케일",
+    "missing": "누락 ({count})",
+    "notFound": "이 프로젝트에 해당 로케일이 없습니다.",
+    "openInGrid": "그리드에서 보기",
+    "problems": "플레이스홀더 및 구문 문제 ({count})",
+    "progress": "{total}개 중 {translated}개 번역됨 ({percent})"
+  },
+  "localeBar": {
+    "bar": "표시할 로케일",
+    "noneShown": "모든 로케일이 숨겨져 있습니다. 위 막대에서 하나를 선택하세요.",
+    "showAll": "모두 표시",
+    "shown": "{total}개 중 {shown}개 표시",
+    "title": "로케일",
+    "toggle": "{locale} 표시/숨기기",
+    "resetOrder": "순서 초기화",
+    "flags": "국기 표시",
+    "reorder": "드래그하거나 Alt와 화살표 키를 눌러 순서를 바꿉니다."
+  },
+  "nav": {
+    "extract": "추출",
+    "keys": "키",
+    "overview": "개요",
+    "project": "프로젝트",
+    "usages": "사용처"
+  },
+  "overview": {
+    "clean": "문제가 없습니다.",
+    "coverage": "번역률",
+    "diagnostics": "진단",
+    "errors": "오류: {count}",
+    "keys": "키",
+    "locales": "로케일",
+    "missing": "누락 {missing}, 빈 값 {empty}",
+    "noPresets": "감지된 프리셋이 없습니다.",
+    "noRecent": "페이지를 연 뒤로 변경된 내용이 없습니다.",
+    "presets": "프리셋",
+    "recent": "최근 변경",
+    "resources": "리소스",
+    "source": "원본",
+    "usages": "사용처",
+    "warnings": "경고: {count}"
+  },
+  "project": {
+    "config": "설정과 각 값의 출처",
+    "conflict": ".{extension}: {winner}이(가) {loser}보다 우선함",
+    "files": "파일: {count}",
+    "finders": "로케일 파인더",
+    "formats": "형식",
+    "presets": "프리셋",
+    "problems": "문제",
+    "resources": "리소스: {count}",
+    "scanners": "스캐너"
+  },
+  "prompt": {
+    "copied": "복사됨",
+    "copy": "번역 프롬프트 복사",
+    "hint": "누락된 메시지를 번역하는 LLM 또는 에이전트용 프롬프트 복사"
+  },
+  "usages": {
+    "all": "전체 ({count})",
+    "dynamic": "동적 ({count})",
+    "dynamicHint": "계산된 키를 쓰는 사용처입니다. 해당 접두사 아래의 키는 사용된 것으로 간주합니다.",
+    "filter": "파일 또는 키로 필터",
+    "missing": "미정의 ({count})",
+    "missingHint": "코드에서 사용되지만 원본 로케일에 정의되지 않은 키입니다.",
+    "unused": "미사용 ({count})",
+    "unusedHint": "원본 로케일에 정의되어 있지만 코드에서 사용하지 않는 키입니다."
+  },
+  "value": {
+    "empty": "빈 값",
+    "missing": "누락"
+  }
+}

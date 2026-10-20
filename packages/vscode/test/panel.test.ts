@@ -3,9 +3,10 @@ import { hasI18nAllySettings, parseMigrationResult } from '../src/model/migratio
 import { frameUrl, panelHtml, uiTheme } from '../src/model/panel'
 
 describe('frameUrl', () => {
-  it('passes the theme in the query and the token as a devframe magic link', () => {
-    const url = new URL(frameUrl('http://127.0.0.1:5173/', { token: '123456', theme: 'dark', key: 'app.title' }))
+  it('passes the theme and language in the query and the token as a devframe magic link', () => {
+    const url = new URL(frameUrl('http://127.0.0.1:5173/', { token: '123456', theme: 'dark', lang: 'zh-tw', key: 'app.title' }))
     expect(url.searchParams.get('theme')).toBe('dark')
+    expect(url.searchParams.get('lang')).toBe('zh-tw')
     const fragment = new URLSearchParams(url.hash.slice(1))
     expect(fragment.get('devframe_otp')).toBe('123456')
     expect(fragment.get('route')).toBe('/keys/app.title')

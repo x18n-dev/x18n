@@ -6,16 +6,20 @@ import { NuxtLink } from '#components'
 import { useRoute } from '#imports'
 import CodeSnippet from '../../components/CodeSnippet.vue'
 import CopyPrompt from '../../components/CopyPrompt.vue'
+import FilePath from '../../components/FilePath.vue'
+import LocaleFlag from '../../components/LocaleFlag.vue'
 import MessageText from '../../components/MessageText.vue'
+import UiPage from '../../components/ui/UiPage.vue'
+import UiSection from '../../components/ui/UiSection.vue'
 import { applyEdit, describeProblem, setMessage } from '../../edit'
 import { t } from '../../i18n'
-import { backend, currentProject, projectName, useLive } from '../../state'
+import { backend, currentProject, projectName, useLive, visibleLocales } from '../../state'
 
 const route = useRoute()
 const key = computed(() => String(route.params.key))
 const detail = useLive((b, project) => b.key(project, key.value))
 
-const rows = computed(() => (currentProject.value?.locales ?? []).map(locale => ({
+const rows = computed(() => visibleLocales.value.map(locale => ({
   locale: locale.code,
   message: detail.value?.messages.find(m => m.locale === locale.code),
 })))
@@ -52,86 +56,87 @@ function openUsage(usage: UsageView): void {
 </script>
 
 <template>
-  <div class="p-4 grid gap-4 max-w-5xl">
-    <header class="flex items-center gap-2">
-      <NuxtLink to="/keys" class="btn-icon-compact" :aria-label="t('detail.back')">
+  <UiPage>
+    <header class="flex items-center gap-3 border-b border-base px-4 py-4">
+      <NuxtLink to="/keys" class="btn-icon" :aria-label="t('detail.back')">
         <span class="i-ph-arrow-left" />
       </NuxtLink>
-      <h1 class="text-lg font-mono font-semibold break-all">
-        {{ key }}
-      </h1>
-      <span v-if="detail?.namespace" class="badge-muted font-mono">{{ detail.namespace }}</span>
+      <div class="grid gap-1">
+        <span class="label">{{ t('detail.label') }}</span>
+        <h1 class="break-all font-mono text-xl font-medium">
+          {{ key }}
+        </h1>
+      </div>
+      <span v-if="detail?.namespace" class="badge self-end">{{ detail.namespace }}</span>
     </header>
 
-    <p v-if="detail === null" class="op-fade">
+    <p v-if="detail === null" class="px-4 py-3 color-muted">
       {{ t('detail.notFound') }}
     </p>
 
     <template v-else-if="detail">
-      <section class="border border-base rounded">
-        <h2 class="px-3 py-2 border-b border-base font-semibold">
-          {{ t('detail.values') }}
-        </h2>
-        <div v-for="row in rows" :key="row.locale" class="grid grid-cols-[6rem_1fr_auto] gap-3 px-3 py-2 border-b border-mute items-start">
-          <span class="font-mono">{{ row.locale }}</span>
-          <div v-if="editing?.locale === row.locale" class="grid gap-1">
-            <textarea v-model="editing.draft" class="input-base font-mono" rows="2" :aria-label="t('keys.editValue', { key, locale: row.locale })" @keydown.enter.exact.prevent="save()" @keydown.escape="editing = undefined" />
-            <p v-if="problem" class="color-amber-500 flex gap-2 items-center">
+      <UiSection index="01" :title="t('detail.values')">
+        <p v-if="!rows.length" class="px-4 py-3 color-muted">
+          {{ t('localeBar.noneShown') }}
+        </p>
+        <div v-for="row in rows" :key="row.locale" class="grid grid-cols-[7rem_1fr_auto] items-start gap-4 border-b border-base px-4 py-3 last:border-b-0" :data-locale="row.locale">
+          <span class="flex items-center gap-2 pt-0.5 font-mono">
+            <LocaleFlag :code="row.locale" />
+            {{ row.locale }}
+            <span v-if="row.locale === currentProject?.sourceLocale" class="badge">{{ t('overview.source') }}</span>
+          </span>
+          <div v-if="editing?.locale === row.locale" class="grid gap-2">
+            <textarea v-model="editing.draft" class="input h-auto py-1.5 font-mono" rows="2" :aria-label="t('keys.editValue', { key, locale: row.locale })" @keydown.enter.exact.prevent="save()" @keydown.escape="editing = undefined" />
+            <p v-if="problem" class="flex items-center gap-2 color-warn">
+              <span class="i-ph-warning" />
               {{ problem }}
-              <button class="btn-action-sm" @click="save(true)">
+              <button class="btn-outline h-7" @click="save(true)">
                 {{ t('edit.saveAnyway') }}
               </button>
             </p>
           </div>
-          <div v-else>
+          <div v-else class="grid min-w-0 gap-1">
             <MessageText :value="row.message?.value" :placeholders="row.message?.placeholders ?? []" />
-            <div v-if="row.message" class="text-mini op-mute font-mono">
-              {{ row.message.path }}:{{ row.message.line }}
-            </div>
+            <FilePath v-if="row.message" :path="row.message.path" :line="row.message.line" class="color-muted" />
           </div>
           <div class="flex gap-1">
-            <button v-if="backend?.capabilities.write && editing?.locale !== row.locale" class="btn-icon-compact" :title="t('detail.edit')" @click="edit(row.locale, row.message?.value)">
+            <button v-if="backend?.capabilities.write && editing?.locale !== row.locale" class="btn-icon h-7 w-7" :title="t('detail.edit')" @click="edit(row.locale, row.message?.value)">
               <span class="i-ph-pencil-simple" />
             </button>
             <CopyPrompt v-if="row.locale !== currentProject?.sourceLocale" :query="{ project: projectName, locale: row.locale, keys: [key] }" />
           </div>
         </div>
-      </section>
+      </UiSection>
 
-      <section v-if="detail.diagnostics.length" class="border border-base rounded">
-        <h2 class="px-3 py-2 border-b border-base font-semibold">
-          {{ t('detail.diagnostics') }}
-        </h2>
-        <div v-for="(d, i) in detail.diagnostics" :key="i" class="px-3 py-2 border-b border-mute flex items-center gap-2">
-          <span :class="d.severity === 'error' ? 'i-ph-x-circle-duotone color-red-500' : 'i-ph-warning-duotone color-amber-500'" />
-          <span class="font-mono op-fade">{{ d.code }}</span>
+      <UiSection v-if="detail.diagnostics.length" index="02" :title="t('detail.diagnostics')">
+        <div v-for="(d, i) in detail.diagnostics" :key="i" class="flex items-center gap-2 border-b border-base px-4 py-2 last:border-b-0">
+          <span :class="d.severity === 'error' ? 'i-ph-x-circle color-error' : 'i-ph-warning color-warn'" />
+          <span class="font-mono text-xs color-muted">{{ d.code }}</span>
           <span class="flex-auto">{{ d.message }}</span>
           <template v-if="backend?.capabilities.write">
-            <button v-for="fix in d.fixes.filter(f => f.ops.every(isUiOp))" :key="fix.title" class="btn-action-sm" @click="applyEdit(fix.ops.filter(isUiOp))">
+            <button v-for="fix in d.fixes.filter(f => f.ops.every(isUiOp))" :key="fix.title" class="btn-outline h-7" @click="applyEdit(fix.ops.filter(isUiOp))">
               {{ fix.title }}
             </button>
           </template>
         </div>
-      </section>
+      </UiSection>
 
-      <section class="border border-base rounded">
-        <h2 class="px-3 py-2 border-b border-base font-semibold">
-          {{ t('detail.usages', { count: detail.usages.length }) }}
-        </h2>
-        <p v-if="!detail.usages.length" class="px-3 py-2 op-fade">
+      <UiSection index="03" :title="t('detail.usages', { count: detail.usages.length })">
+        <p v-if="!detail.usages.length" class="px-4 py-3 color-muted">
           {{ t('detail.noUsages') }}
         </p>
-        <div v-for="(usage, i) in detail.usages" :key="i" class="px-3 py-2 border-b border-mute grid gap-1">
-          <div class="flex items-center gap-2 font-mono text-mini">
-            <span class="op-fade">{{ usage.path }}:{{ usage.line }}:{{ usage.column }}</span>
-            <span v-if="usage.possible" class="badge-muted">{{ t('detail.possible') }}</span>
-            <button v-if="backend?.capabilities.openInEditor" class="btn-text text-mini" @click="openUsage(usage)">
+        <div v-for="(usage, i) in detail.usages" :key="i" class="grid gap-2 border-b border-base px-4 py-3 last:border-b-0">
+          <div class="flex items-center gap-2">
+            <FilePath :path="usage.path" :line="usage.line" :column="usage.column" />
+            <span v-if="usage.possible" class="badge">{{ t('detail.possible') }}</span>
+            <span class="flex-auto" />
+            <button v-if="backend?.capabilities.openInEditor" class="btn-ghost h-7" @click="openUsage(usage)">
               <span class="i-ph-arrow-square-out" /> {{ t('detail.openInEditor') }}
             </button>
           </div>
           <CodeSnippet :usage="usage" />
         </div>
-      </section>
+      </UiSection>
     </template>
-  </div>
+  </UiPage>
 </template>

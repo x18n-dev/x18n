@@ -1,0 +1,142 @@
+{
+  "app": {
+    "error": "Connexion impossible : {message}",
+    "language": "Langue",
+    "loading": "Chargement du projet…",
+    "name": "x18n",
+    "project": "Projet",
+    "static": "Rapport en lecture seule",
+    "staticHint": "Instantané généré avec `x18n build`. Lancez `x18n ui` pour modifier."
+  },
+  "auth": {
+    "code": "Code d’authentification",
+    "hint": "Saisissez le code à 6 chiffres affiché par `x18n ui` dans le terminal.",
+    "label": "Authentification",
+    "rejected": "Ce code n’a pas fonctionné. Consultez le terminal pour obtenir le code actuel.",
+    "submit": "Se connecter",
+    "title": "Se connecter à x18n"
+  },
+  "detail": {
+    "back": "Retour aux clés",
+    "diagnostics": "Problèmes",
+    "edit": "Modifier",
+    "label": "Clé",
+    "noUsages": "Aucun code n’utilise cette clé.",
+    "notFound": "Cette clé n’est pas définie.",
+    "openInEditor": "Ouvrir dans l’éditeur",
+    "possible": "possible",
+    "usages": "Utilisations ({count})",
+    "values": "Valeurs"
+  },
+  "edit": {
+    "dismiss": "Ignorer",
+    "placeholdersExtra": "espaces réservés inattendus {names}",
+    "placeholdersMissing": "espaces réservés manquants {names}",
+    "rejected": "Non enregistré : {key} en {locale} : {message}.",
+    "saveAnyway": "Enregistrer quand même"
+  },
+  "extract": {
+    "apply": "Extraire ({count})",
+    "done": "Clés extraites : {count}. Fichiers modifiés : {files}.",
+    "hint": "Chaînes codées en dur avec une clé proposée. Modifiez les clés, décochez les chaînes à ignorer, puis appliquez.",
+    "key": "Clé",
+    "none": "Aucune chaîne codée en dur trouvée.",
+    "strings": "Chaînes : {count}"
+  },
+  "keys": {
+    "allNamespaces": "Tous les espaces de noms",
+    "anyLocale": "Toute langue",
+    "count": "{shown} clés sur {total}",
+    "diagnosticsHint": "Problèmes sur cette clé",
+    "editValue": "Valeur de {key} en {locale}",
+    "empty": "Aucune clé ne correspond.",
+    "grid": "Clés et valeurs par langue",
+    "helpEdit": "Entrée pour modifier, Échap pour annuler",
+    "helpMove": "Flèches ou j/k pour se déplacer",
+    "helpOpen": "o pour ouvrir la clé",
+    "helpSearch": "/ pour rechercher",
+    "key": "Clé",
+    "missingIn": "Manquante en",
+    "missingInLocale": "Manquante en {locale}",
+    "namespace": "Espace de noms",
+    "search": "Rechercher clés et valeurs",
+    "unused": "Inutilisées",
+    "unusedHint": "Aucun code n’utilise cette clé",
+    "withDiagnostics": "Avec problèmes"
+  },
+  "locale": {
+    "complete": "Toutes les clés sont traduites.",
+    "empty": "Vides ({count})",
+    "label": "Langue",
+    "missing": "Manquantes ({count})",
+    "notFound": "Ce projet ne contient pas cette langue.",
+    "openInGrid": "Afficher dans la grille",
+    "problems": "Problèmes d’espaces réservés et de syntaxe ({count})",
+    "progress": "{translated} sur {total} traduites ({percent})"
+  },
+  "localeBar": {
+    "bar": "Langues à afficher",
+    "noneShown": "Toutes les langues sont masquées. Choisissez-en une dans la barre ci-dessus.",
+    "showAll": "Tout afficher",
+    "shown": "{shown} sur {total} affichées",
+    "title": "Langues",
+    "toggle": "Afficher ou masquer {locale}",
+    "resetOrder": "Réinitialiser l’ordre",
+    "flags": "Afficher les drapeaux",
+    "reorder": "Faites glisser, ou appuyez sur Alt et une flèche, pour réordonner."
+  },
+  "nav": {
+    "extract": "Extraire",
+    "keys": "Clés",
+    "overview": "Aperçu",
+    "project": "Projet",
+    "usages": "Utilisations"
+  },
+  "overview": {
+    "clean": "Aucun problème détecté.",
+    "coverage": "Couverture",
+    "diagnostics": "Diagnostics",
+    "errors": "Erreurs : {count}",
+    "keys": "Clés",
+    "locales": "Langues",
+    "missing": "{missing} manquantes, {empty} vides",
+    "noPresets": "Aucun preset détecté.",
+    "noRecent": "Aucune modification depuis l’ouverture de la page.",
+    "presets": "Presets",
+    "recent": "Modifications récentes",
+    "resources": "Ressources",
+    "source": "source",
+    "usages": "Utilisations",
+    "warnings": "Avertissements : {count}"
+  },
+  "project": {
+    "config": "Configuration et origine de chaque valeur",
+    "conflict": ".{extension} : {winner} l’emporte sur {loser}",
+    "files": "Fichiers : {count}",
+    "finders": "Détecteurs de langues",
+    "formats": "Formats",
+    "presets": "Presets",
+    "problems": "Problèmes",
+    "resources": "Ressources : {count}",
+    "scanners": "Scanners"
+  },
+  "prompt": {
+    "copied": "Copié",
+    "copy": "Copier le prompt de traduction",
+    "hint": "Copier un prompt pour un LLM ou un agent qui traduit les messages manquants"
+  },
+  "usages": {
+    "all": "Toutes ({count})",
+    "dynamic": "Dynamiques ({count})",
+    "dynamicHint": "Utilisations avec une clé calculée. Les clés sous leur préfixe comptent comme utilisées.",
+    "filter": "Filtrer par fichier ou clé",
+    "missing": "Non définies ({count})",
+    "missingHint": "Clés utilisées dans le code mais non définies dans la langue source.",
+    "unused": "Inutilisées ({count})",
+    "unusedHint": "Clés définies dans la langue source qu’aucun code n’utilise."
+  },
+  "value": {
+    "empty": "vide",
+    "missing": "manquant"
+  }
+}

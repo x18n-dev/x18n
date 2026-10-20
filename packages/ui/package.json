@@ -26,7 +26,7 @@
   },
   "scripts": {
     "build": "nuxt build && tsdown",
-    "dev": "nuxt dev --host",
+    "dev": "nuxt dev",
     "codegen": "nuxt prepare",
     "typecheck": "nuxt typecheck && tsc -p tsconfig.node.json",
     "test:e2e": "playwright test",
@@ -41,14 +41,16 @@
     "valibot": "catalog:deps"
   },
   "devDependencies": {
-    "@antfu/design": "catalog:frontend",
+    "@devframes/vite": "catalog:deps",
+    "@iconify-json/catppuccin": "catalog:frontend",
+    "@iconify-json/circle-flags": "catalog:frontend",
     "@iconify-json/ph": "catalog:frontend",
     "@playwright/test": "catalog:testing",
     "@unocss/nuxt": "catalog:frontend",
     "@unocss/reset": "catalog:frontend",
     "@vueuse/core": "catalog:frontend",
     "@x18n/node": "workspace:*",
-    "colorjs.io": "catalog:frontend",
+    "jiti": "catalog:deps",
     "nuxt": "catalog:build",
     "unocss": "catalog:frontend",
     "vue-tsc": "catalog:build"

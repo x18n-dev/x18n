@@ -22,7 +22,7 @@ Package `@x18n/lsp`, binary `x18n-lsp` (`--stdio`, `--node-ipc`, `--socket=<port
 | --- | --- |
 | `textDocument/definition` | The key's entry in the **source locale** resource: one location, like a TS import. On a parent node, the node in the source locale. |
 | `textDocument/implementation` | The key's entry in **every locale's** resource, source first. |
-| `textDocument/references` | All usages in code, plus the entries in every locale. It works from a usage or from any resource entry. For a parent node, it returns usages of every key under it. Prefix usages (`t(`pages.${id}.title`)`) are included and labelled "possible" in the label or detail where the client allows it. |
+| `textDocument/references` | All usages in code. Locale entries are not references; `textDocument/implementation` lists them. It works from a usage or from any resource entry. For a parent node, it returns usages of every key under it. Prefix usages (`t(`pages.${id}.title`)`) are included and labelled "possible" in the label or detail where the client allows it. |
 | `textDocument/prepareRename` | The key range when the position is on a key or a resource node, else `null` so other providers keep working. |
 | `textDocument/rename` | One `WorkspaceEdit` from the edit planner, following the rename rules in [02-core.md](./02-core.md): all locales, usages, dynamic prefixes and review threads, re-nesting with cleanup, namespace moves with file creation, refusal on conflict (error message lists the files), warnings for dynamic usages it cannot update. |
 
