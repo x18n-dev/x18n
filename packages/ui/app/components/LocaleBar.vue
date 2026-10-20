@@ -50,7 +50,7 @@ function onDragEnd(): void {
         :key="locale.code"
         type="button"
         draggable="true"
-        class="focus-ring relative h-7 flex cursor-grab items-center gap-2 border px-2 font-mono text-xs transition-colors active:cursor-grabbing"
+        class="focus-ring h-7 flex cursor-grab items-center gap-1.5 border px-2 font-mono text-xs transition-colors active:cursor-grabbing"
         :class="[
           isLocaleVisible(locale.code) ? 'border-strong color-base hover:border-inverse' : 'border-dashed border-base color-faint hover:color-muted',
           dragged === locale.code && 'op-40',
@@ -58,7 +58,11 @@ function onDragEnd(): void {
           dropAt === index + 1 && index === locales.length - 1 && 'shadow-[3px_0_0_var(--x-fg)]',
         ]"
         :aria-pressed="isLocaleVisible(locale.code)"
-        :title="`${t('localeBar.toggle', { locale: languageName(locale.code) ?? locale.code })}\n${t('localeBar.reorder')}`"
+        :title="[
+          t('localeBar.toggle', { locale: languageName(locale.code) ?? locale.code }),
+          locale.code === currentProject?.sourceLocale ? t('overview.source') : formatPercent(locale.percent),
+          t('localeBar.reorder'),
+        ].join('\n')"
         :data-locale-toggle="locale.code"
         @click="toggleLocale(locale.code)"
         @keydown.alt.left.prevent="moveLocale(locale.code, index - 1)"
@@ -68,12 +72,9 @@ function onDragEnd(): void {
         @drop.prevent="onDrop"
         @dragend="onDragEnd"
       >
-        <span :class="isLocaleVisible(locale.code) ? 'i-ph-eye' : 'i-ph-eye-slash'" class="text-[13px] op-70" aria-hidden="true" />
-        <LocaleFlag :code="locale.code" :class="!isLocaleVisible(locale.code) && 'grayscale op-50'" />
+        <LocaleFlag v-if="showFlags" :code="locale.code" :class="!isLocaleVisible(locale.code) && 'grayscale op-50'" />
+        <span v-else :class="isLocaleVisible(locale.code) ? 'i-ph-eye' : 'i-ph-eye-slash'" class="text-[13px] op-70" aria-hidden="true" />
         {{ locale.code }}
-        <span v-if="locale.code === currentProject?.sourceLocale" class="badge">{{ t('overview.source') }}</span>
-        <span v-else class="tabular-nums text-[10px]" :class="isLocaleVisible(locale.code) && (locale.percent >= 100 ? 'color-ok' : 'color-muted')">{{ formatPercent(locale.percent) }}</span>
-        <span v-if="isLocaleVisible(locale.code)" class="absolute bottom-0 left-0 h-[2px] bg-[var(--x-fg)] op-40" :style="{ width: `${locale.percent}%` }" aria-hidden="true" />
       </button>
     </div>
     <div class="flex-auto" />
@@ -85,7 +86,7 @@ function onDragEnd(): void {
       {{ t('localeBar.resetOrder') }}
     </button>
     <button type="button" class="btn-icon h-7 w-7" :aria-pressed="showFlags" :title="t('localeBar.flags')" @click="showFlags = !showFlags">
-      <span :class="showFlags ? 'i-ph-flag' : 'i-ph-flag-slash'" />
+      <span :class="showFlags ? 'i-ph-flag-fill' : 'i-ph-flag'" />
     </button>
   </div>
 </template>
