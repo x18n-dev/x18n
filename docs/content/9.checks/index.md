@@ -30,6 +30,7 @@ A severity is `error`, `warning`, `info`, `hint` or `off`. `strict: true` (or `x
 | [placeholder-mismatch](/checks/placeholder-mismatch) | `error` | Target value placeholders differ from the source value. |
 | [key-conflict](/checks/key-conflict) | `error` | A key that is both a leaf and a parent, or is duplicated across files of one locale. |
 | [missing-translation](/checks/missing-translation) | `warning` | A source-locale key that target locales lack. One diagnostic per key, at the source entry. |
+| [stale-translation](/checks/stale-translation) | `warning` | A translation that last changed before its source message, by the history providers (git). |
 | [empty-translation](/checks/empty-translation) | `warning` | A message with an empty string value. |
 | [unused-key](/checks/unused-key) | `warning` | A key with no usage, after keysInUse, derived keys and dynamic prefixes. |
 | [locale-code-conflict](/checks/locale-code-conflict) | `warning` | Locale codes that differ only in spelling, such as zh_CN and zh-CN. |

@@ -149,6 +149,9 @@ export default defineConfig({
 - \`pattern\`: a regular expression that the whole key must match.`,
   'hard-string': 'The check is on when `extract.autoDetect` is `true`, or when you set a severity for it in `checks`. Run `x18n extract` to turn the reported strings into keys.',
   'glossary': 'The check reads the `glossary` config. For each term in a source value, it expects the target value to hold the translation of the term, or the term itself when `doNotTranslate` is `true`.',
+  'stale-translation': `A translation is stale when it last changed before its source message did. Inside a git repo, x18n reads the commits that touched the locale files and compares the parsed messages, so reformatting, sorting and moving keys between files do not count. Uncommitted edits count as changed now. A message without history is never stale.
+
+In CI, fetch the full history: a shallow clone (the \`actions/checkout\` default) reports nothing. Set \`fetch-depth: 0\`. Limit the walk with \`history: { git: { maxDepth, since } }\`, or turn history off with \`history: false\`. \`x18n prompt translate --to <locale> --stale\` adds stale translations to the prompt, with the source text from when they last changed.`,
   'dynamic-key': 'A fully dynamic key, such as `t(key)`, has no static prefix. No check can follow it. Turn this check on to find such usages.',
 }
 

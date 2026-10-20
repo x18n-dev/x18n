@@ -159,6 +159,7 @@ const configDefaults: { readonly [path: string]: string } = {
   root: 'the directory of the config file',
   presets: '`\'auto\'`',
   plugins: '`[]`',
+  history: '`true`',
 }
 
 function valueAt(value: unknown, path: readonly string[]): unknown {
