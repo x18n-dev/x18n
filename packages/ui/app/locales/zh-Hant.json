@@ -62,7 +62,11 @@
     "search": "搜尋鍵與值",
     "unused": "未使用",
     "unusedHint": "沒有程式碼使用此鍵",
-    "withDiagnostics": "有問題"
+    "withDiagnostics": "有問題",
+    "outdated": "過時",
+    "sort": "排序",
+    "sortKey": "鍵",
+    "sortRecent": "最近變更"
   },
   "locale": {
     "complete": "所有鍵皆已翻譯。",
@@ -72,7 +76,8 @@
     "notFound": "此專案沒有這個語系。",
     "openInGrid": "在表格中顯示",
     "problems": "佔位符與語法問題（{count}）",
-    "progress": "已翻譯 {translated} / {total}（{percent}）"
+    "progress": "已翻譯 {translated} / {total}（{percent}）",
+    "outdated": "過時（{count}）"
   },
   "localeBar": {
     "bar": "要顯示的語系",
@@ -107,7 +112,8 @@
     "resources": "資源",
     "source": "來源",
     "usages": "使用處",
-    "warnings": "警告：{count}"
+    "warnings": "警告：{count}",
+    "outdated": "{count} 則過時"
   },
   "project": {
     "config": "設定及各值來源",
@@ -123,7 +129,9 @@
   "prompt": {
     "copied": "已複製",
     "copy": "複製翻譯提示詞",
-    "hint": "複製提示詞，讓 LLM 或代理程式翻譯缺少的訊息"
+    "hint": "複製提示詞，讓 LLM 或代理程式翻譯缺少的訊息",
+    "copyStale": "複製包含過時翻譯的提示詞",
+    "staleHint": "複製提示詞，供 LLM 或代理程式翻譯缺少的訊息並更新過時的翻譯"
   },
   "usages": {
     "all": "全部（{count}）",
@@ -138,5 +146,13 @@
   "value": {
     "empty": "空白",
     "missing": "缺少"
+  },
+  "history": {
+    "title": "歷史",
+    "local": "本機已變更",
+    "outdated": "過時",
+    "outdatedHint": "此翻譯之後來源訊息已變更",
+    "sourceThen": "當時的來源",
+    "sourceNow": "目前的來源"
   }
 }

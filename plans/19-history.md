@@ -42,7 +42,7 @@ interface MessageChange {
 
 - Providers are asked in order: inline `history.providers` first, then those of plugins in plugin order. For each message the first provider with an entry wins.
 - `messagesIn` runs the resource's format and transforms, so providers never parse files. Embedded resources (Vue `<i18n>` blocks) have no history: their block position in old file versions is unknown.
-- History loads asynchronously, apart from `ready`: `await project.loadHistory({ watch? })`, then `project.history(key, locale)` and `CheckContext.history(key, locale)` read it synchronously. Loading bumps `revision`, so analysis runs again. Surfaces load it only when they show it.
+- History loads asynchronously, apart from `ready`: `await project.loadHistory({ watch? })`, then `project.history(key, locale)`, `project.valueAt(key, locale, at)` and `CheckContext.history(key, locale)` read it synchronously. Loading bumps `revision`, so analysis runs again. Surfaces load it only when they show it.
 - A current value that differs from the provider's `value` changed locally: `history()` returns `updatedAt: Infinity` for it. Editing a source message flags its translations right away, and editing a translation clears the flag, without reloading history.
 
 ## Stale rule
@@ -78,4 +78,4 @@ export default defineConfig({
 | --- | --- |
 | CLI | `x18n check` loads history unless `stale-translation` is off or filtered out. `x18n prompt translate --stale` adds stale messages, with the source text from when the translation last changed. |
 | LSP | Loads and watches history. The hover adds when each locale's message changed, its revision, author and an outdated mark. |
-| UI | Later. |
+| UI | Loads and watches history. The overview splits coverage bars into fresh and outdated and lists the latest changes; the grid flags outdated cells, filters them and sorts by last change; a key shows when each locale changed and, for an outdated translation, the source text then and now; a locale lists its outdated keys and copies a prompt that updates them. |

@@ -24,17 +24,23 @@ export function createX18nDevframe(projects: readonly UiProject[], options: RpcO
     clientAssets: fileURLToPath(new URL('./public', import.meta.url)),
     async setup(ctx) {
       registerRpc(ctx, projects, options)
-      if (ctx.mode !== 'dev')
+      // A static report is dumped once, so it waits for history; the live UI updates when history arrives.
+      if (ctx.mode !== 'dev') {
+        await Promise.all(projects.map(p => p.project.loadHistory()))
         return
+      }
       registerAgentTools(ctx, projects)
       const state = await ctx.scope('x18n').rpc.sharedState('state', { initialValue: { revision: 0, changedKeys: [] } satisfies X18nState })
       for (const p of projects) {
         p.project.onChange((change) => {
           state.mutate((draft) => {
             draft.revision += 1
-            draft.changedKeys = [...change.keys]
+            // A history reload changes no message; keep the last edited keys.
+            if (change.keys.length)
+              draft.changedKeys = [...change.keys]
           })
         })
+        void p.project.loadHistory({ watch: true })
       }
     },
   })

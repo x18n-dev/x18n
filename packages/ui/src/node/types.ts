@@ -43,6 +43,8 @@ export interface PromptQuery extends ProjectQuery {
   readonly namespace?: string | undefined
   readonly limit?: number | undefined
   readonly cursor?: string | undefined
+  /** Also translate stale translations. */
+  readonly stale?: boolean | undefined
 }
 
 /** Edit ops the UI and agents send; extraction has its own functions. */
@@ -117,6 +119,15 @@ export interface AgentDeleteQuery extends ProjectQuery, Confirmable {
 }
 
 /** ---- Outputs ---- */
+/** When a message last changed, from the history providers (git). */
+export interface HistoryView {
+  /** Milliseconds since the epoch; null for a local change the provider does not know yet. */
+  readonly at: number | null
+  /** Commit sha or another provider revision. */
+  readonly revision: string | undefined
+  readonly author: string | undefined
+}
+
 export interface LocaleSummary {
   readonly code: LocaleCode
   readonly displayName: string | undefined
@@ -125,6 +136,8 @@ export interface LocaleSummary {
   readonly translated: number
   readonly missing: number
   readonly empty: number
+  /** Translations older than their source message. */
+  readonly outdated: number
   /** One decimal, rounded down. */
   readonly percent: number
 }
@@ -148,6 +161,8 @@ export interface ProjectSummary {
   readonly diagnostics: DiagnosticCounts
   /** Presets that are listed in the config or detected. */
   readonly presets: readonly string[]
+  /** The latest message changes in history, local changes first. */
+  readonly changes: readonly (HistoryView & { readonly key: KeyString, readonly locale: LocaleCode })[]
 }
 
 export interface ProjectList {
@@ -164,6 +179,10 @@ export interface KeyRow {
   readonly missing: readonly LocaleCode[]
   readonly unused: boolean
   readonly diagnostics: number
+  /** Locales whose translation is older than the source message. */
+  readonly outdated: readonly LocaleCode[]
+  /** The latest change in any locale (ms); local changes count as now. */
+  readonly changedAt: number | undefined
 }
 
 export interface KeyTable {
@@ -202,6 +221,11 @@ export interface MessageView {
   readonly line: number
   /** Placeholders in a string value, with offsets in the value. */
   readonly placeholders: readonly ({ readonly text: string } & TextRange)[]
+  readonly changed: HistoryView | undefined
+  /** Older than the source message. */
+  readonly outdated: boolean
+  /** For an outdated translation: the source value when it last changed, when known. */
+  readonly sourceThen: string | undefined
 }
 
 export interface KeyDetail {

@@ -168,4 +168,4 @@ Packages and the extension share one version (`bumpp -r`). Every release needs e
 | M14 In-browser workspace | Browser host, worker, WASM scanners, `local` backend, docs `/play` and `/demo` |
 | M15 Tier 2 and 3 | Presets and formats from [05-builtins.md](./05-builtins.md) that i18n-ally never had (paraglide, typesafe-i18n, ARB, XLIFF, Android XML, Apple strings, resx), accessor scanners (`m.*`, `LL.*`). Every i18n-ally framework already ships (D34). |
 | M16 Other editors | Tested setups and docs for Neovim, Zed, Helix |
-| M17 History | History provider capability, git provider, `stale-translation`, `prompt translate --stale`, LSP hover dates ([19-history.md](./19-history.md)). UI later. |
+| M17 History | History provider capability, git provider, `stale-translation`, `prompt translate --stale`, LSP hover dates, UI ([19-history.md](./19-history.md)). |

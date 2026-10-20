@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { t } from '../i18n'
 import { backend } from '../state'
 
-const props = defineProps<{ query: PromptQuery, label?: string }>()
+const props = defineProps<{ query: PromptQuery, label?: string | undefined }>()
 const copied = ref(false)
 
 async function copy(): Promise<void> {
@@ -15,7 +15,7 @@ async function copy(): Promise<void> {
 </script>
 
 <template>
-  <button v-if="backend?.capabilities.prompts" class="btn-outline h-7" :title="t('prompt.hint')" @click="copy">
+  <button v-if="backend?.capabilities.prompts" class="btn-outline h-7" :title="query.stale ? t('prompt.staleHint') : t('prompt.hint')" @click="copy">
     <span :class="copied ? 'i-ph-check' : 'i-ph-clipboard-text'" />
     {{ copied ? t('prompt.copied') : label ?? t('prompt.copy') }}
   </button>

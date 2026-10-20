@@ -5,6 +5,7 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from '#imports'
 import LocaleFlag from '../../components/LocaleFlag.vue'
 import MessageText from '../../components/MessageText.vue'
+import UiSegmented from '../../components/ui/UiSegmented.vue'
 import UiToggle from '../../components/ui/UiToggle.vue'
 import { describeProblem, setMessage } from '../../edit'
 import { fuzzyScore } from '../../fuzzy'
@@ -22,6 +23,10 @@ const namespace = ref('')
 const missingIn = ref(typeof route.query.missing === 'string' ? route.query.missing : '')
 const unusedOnly = ref(false)
 const withDiagnostics = ref(false)
+const outdatedOnly = ref(route.query.outdated !== undefined)
+const sort = ref<'key' | 'recent'>('key')
+const sorts = computed(() => [{ value: 'key' as const, label: t('keys.sortKey') }, { value: 'recent' as const, label: t('keys.sortRecent') }])
+const hasHistory = computed(() => (table.value?.rows ?? []).some(row => row.changedAt !== undefined))
 
 const locales = computed(() => visibleLocales.value.map(l => l.code))
 const namespaces = computed(() => [...new Set((table.value?.rows ?? []).flatMap(r => r.namespace ?? []))].sort())
@@ -32,9 +37,10 @@ const rows = computed<KeyRow[]>(() => {
     (!namespace.value || row.namespace === namespace.value)
     && (!missingIn.value || !locales.value.includes(missingIn.value) || row.missing.includes(missingIn.value))
     && (!unusedOnly.value || row.unused)
-    && (!withDiagnostics.value || row.diagnostics > 0))
+    && (!withDiagnostics.value || row.diagnostics > 0)
+    && (!outdatedOnly.value || row.outdated.some(locale => locales.value.includes(locale))))
   if (!query)
-    return filtered
+    return sort.value === 'recent' ? [...filtered].sort((a, b) => (b.changedAt ?? 0) - (a.changedAt ?? 0)) : filtered
   const scored = filtered.map((row) => {
     const values = Object.values(row.values).map(v => fuzzyScore(query, String(v)) / 2)
     return { row, score: Math.max(fuzzyScore(query, row.key), ...values) }
@@ -191,6 +197,12 @@ function onEditorKey(event: KeyboardEvent): void {
       <UiToggle v-model="withDiagnostics">
         {{ t('keys.withDiagnostics') }}
       </UiToggle>
+      <template v-if="hasHistory">
+        <UiToggle v-model="outdatedOnly">
+          {{ t('keys.outdated') }}
+        </UiToggle>
+        <UiSegmented v-model="sort" :options="sorts" :label="t('keys.sort')" />
+      </template>
       <div class="flex-auto" />
       <span class="font-mono text-xs color-muted tabular-nums">{{ t('keys.count', { shown: rows.length, total: table?.rows.length ?? 0 }) }}</span>
     </div>
@@ -267,7 +279,10 @@ function onEditorKey(event: KeyboardEvent): void {
               @keydown="onEditorKey"
               @blur="commit()"
             >
-            <span v-else class="truncate" :title="String(row.values[locale] ?? '')"><MessageText :value="row.values[locale]" inline /></span>
+            <template v-else>
+              <span class="truncate" :title="String(row.values[locale] ?? '')"><MessageText :value="row.values[locale]" inline /></span>
+              <span v-if="row.outdated.includes(locale)" class="ml-auto shrink-0 pl-2 color-warn" :title="t('history.outdatedHint')"><span class="i-ph-clock-counter-clockwise block" /></span>
+            </template>
           </div>
         </div>
       </div>

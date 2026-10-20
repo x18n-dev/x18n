@@ -93,3 +93,12 @@ export function languageName(code: string): string | undefined {
     return undefined
   }
 }
+
+const timeUnits = [['year', 31_536e6], ['month', 2_592e6], ['week', 6_048e5], ['day', 864e5], ['hour', 36e5], ['minute', 6e4]] as const
+
+/** "3 weeks ago" in the UI language. */
+export function formatAgo(at: number): string {
+  const diff = at - Date.now()
+  const [unit, size] = timeUnits.find(([, size]) => Math.abs(diff) >= size) ?? ['second', 1000]
+  return new Intl.RelativeTimeFormat(uiLocale.value, { numeric: 'auto' }).format(Math.round(diff / size), unit)
+}

@@ -62,7 +62,11 @@
     "search": "搜索键和值",
     "unused": "未使用",
     "unusedHint": "没有代码使用此键",
-    "withDiagnostics": "有问题"
+    "withDiagnostics": "有问题",
+    "outdated": "过时",
+    "sort": "排序",
+    "sortKey": "键",
+    "sortRecent": "最近更改"
   },
   "locale": {
     "complete": "所有键均已翻译。",
@@ -72,7 +76,8 @@
     "notFound": "此项目中没有该语言。",
     "openInGrid": "在表格中显示",
     "problems": "占位符和语法问题（{count}）",
-    "progress": "已翻译 {translated} / {total}（{percent}）"
+    "progress": "已翻译 {translated} / {total}（{percent}）",
+    "outdated": "过时（{count}）"
   },
   "localeBar": {
     "bar": "要显示的语言",
@@ -107,7 +112,8 @@
     "resources": "资源",
     "source": "源",
     "usages": "引用",
-    "warnings": "警告：{count}"
+    "warnings": "警告：{count}",
+    "outdated": "{count} 条过时"
   },
   "project": {
     "config": "配置及各值来源",
@@ -123,7 +129,9 @@
   "prompt": {
     "copied": "已复制",
     "copy": "复制翻译提示词",
-    "hint": "复制一段提示词，供 LLM 或智能体翻译缺失的消息"
+    "hint": "复制一段提示词，供 LLM 或智能体翻译缺失的消息",
+    "copyStale": "复制包含过时翻译的提示词",
+    "staleHint": "复制提示词，供 LLM 或智能体翻译缺失的消息并更新过时的翻译"
   },
   "usages": {
     "all": "全部（{count}）",
@@ -138,5 +146,13 @@
   "value": {
     "empty": "空",
     "missing": "缺失"
+  },
+  "history": {
+    "title": "历史",
+    "local": "本地已更改",
+    "outdated": "过时",
+    "outdatedHint": "此翻译之后源消息发生了更改",
+    "sourceThen": "当时的源文本",
+    "sourceNow": "现在的源文本"
   }
 }

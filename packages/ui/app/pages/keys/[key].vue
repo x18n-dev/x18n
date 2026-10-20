@@ -4,6 +4,7 @@ import type { UiEditOp, UsageView } from '../../../src/node/types'
 import { computed, ref } from 'vue'
 import { NuxtLink } from '#components'
 import { useRoute } from '#imports'
+import ChangeInfo from '../../components/ChangeInfo.vue'
 import CodeSnippet from '../../components/CodeSnippet.vue'
 import CopyPrompt from '../../components/CopyPrompt.vue'
 import FilePath from '../../components/FilePath.vue'
@@ -23,6 +24,7 @@ const rows = computed(() => visibleLocales.value.map(locale => ({
   locale: locale.code,
   message: detail.value?.messages.find(m => m.locale === locale.code),
 })))
+const sourceValue = computed(() => detail.value?.messages.find(m => m.locale === currentProject.value?.sourceLocale)?.value)
 
 const editing = ref<{ locale: string, draft: string }>()
 const problem = ref<string>()
@@ -84,6 +86,7 @@ function openUsage(usage: UsageView): void {
             <LocaleFlag :code="row.locale" />
             {{ row.locale }}
             <span v-if="row.locale === currentProject?.sourceLocale" class="badge">{{ t('overview.source') }}</span>
+            <span v-if="row.message?.outdated" class="badge border-current color-warn" :title="t('history.outdatedHint')">{{ t('history.outdated') }}</span>
           </span>
           <div v-if="editing?.locale === row.locale" class="grid gap-2">
             <textarea v-model="editing.draft" class="input h-auto py-1.5 font-mono" rows="2" :aria-label="t('keys.editValue', { key, locale: row.locale })" @keydown.enter.exact.prevent="save()" @keydown.escape="editing = undefined" />
@@ -97,7 +100,22 @@ function openUsage(usage: UsageView): void {
           </div>
           <div v-else class="grid min-w-0 gap-1">
             <MessageText :value="row.message?.value" :placeholders="row.message?.placeholders ?? []" />
-            <FilePath v-if="row.message" :path="row.message.path" :line="row.message.line" class="color-muted" />
+            <dl v-if="row.message?.sourceThen !== undefined" class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 border-l-2 border-[var(--x-warn)] py-0.5 pl-3 text-xs">
+              <dt class="label">
+                {{ t('history.sourceThen') }}
+              </dt>
+              <dd class="color-muted line-through decoration-[var(--x-faint)]">
+                <MessageText :value="row.message.sourceThen" />
+              </dd>
+              <dt class="label">
+                {{ t('history.sourceNow') }}
+              </dt>
+              <dd><MessageText :value="sourceValue" /></dd>
+            </dl>
+            <div v-if="row.message" class="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <FilePath :path="row.message.path" :line="row.message.line" class="color-muted" />
+              <ChangeInfo v-if="row.message.changed" :change="row.message.changed" />
+            </div>
           </div>
           <div class="flex gap-1">
             <button v-if="backend?.capabilities.write && editing?.locale !== row.locale" class="btn-icon h-7 w-7" :title="t('detail.edit')" @click="edit(row.locale, row.message?.value)">

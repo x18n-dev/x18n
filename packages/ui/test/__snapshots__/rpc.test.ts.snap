@@ -192,6 +192,10 @@ exports[`agent tools > names the tools for MCP 1`] = `
           "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
           "type": "string",
         },
+        "stale": {
+          "description": "Also translate stale translations: those older than their source message.",
+          "type": "boolean",
+        },
       },
       "required": [
         "locale",
@@ -473,6 +477,7 @@ exports[`agent tools > reports status, keys, check and the translate prompt 1`] 
 {
   "projects": [
     {
+      "changes": [],
       "diagnostics": {
         "byCode": [
           {
@@ -508,6 +513,7 @@ exports[`agent tools > reports status, keys, check and the translate prompt 1`] 
           "empty": 0,
           "flag": "🇺🇸",
           "missing": 0,
+          "outdated": 0,
           "percent": 100,
           "total": 8,
           "translated": 8,
@@ -518,6 +524,7 @@ exports[`agent tools > reports status, keys, check and the translate prompt 1`] 
           "empty": 1,
           "flag": "🇩🇪",
           "missing": 1,
+          "outdated": 0,
           "percent": 75,
           "total": 8,
           "translated": 6,
@@ -647,6 +654,7 @@ exports[`agent tools > reports status, keys, check and the translate prompt 5`] 
     {
       "line": 7,
       "locale": "en",
+      "outdated": false,
       "path": "src/locales/en.json",
       "placeholders": [],
       "value": "Home",
@@ -654,6 +662,7 @@ exports[`agent tools > reports status, keys, check and the translate prompt 5`] 
     {
       "line": 7,
       "locale": "de",
+      "outdated": false,
       "path": "src/locales/de.json",
       "placeholders": [],
       "value": "Start",
@@ -792,6 +801,7 @@ exports[`rpc functions > details one key with usages and diagnostics 1`] = `
     {
       "line": 4,
       "locale": "en",
+      "outdated": false,
       "path": "src/locales/en.json",
       "placeholders": [
         {
@@ -805,6 +815,7 @@ exports[`rpc functions > details one key with usages and diagnostics 1`] = `
     {
       "line": 4,
       "locale": "de",
+      "outdated": false,
       "path": "src/locales/de.json",
       "placeholders": [],
       "value": "Hallo",
@@ -1228,6 +1239,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "diagnostics": 1,
       "key": "app.greeting",
       "missing": [],
+      "outdated": [],
       "unused": false,
       "values": {
         "de": "Hallo",
@@ -1238,6 +1250,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "diagnostics": 0,
       "key": "app.title",
       "missing": [],
+      "outdated": [],
       "unused": false,
       "values": {
         "de": "Meine App",
@@ -1248,6 +1261,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "diagnostics": 1,
       "key": "linked",
       "missing": [],
+      "outdated": [],
       "unused": true,
       "values": {
         "de": "@:app.title!",
@@ -1260,6 +1274,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "missing": [
         "de",
       ],
+      "outdated": [],
       "unused": false,
       "values": {
         "de": "",
@@ -1270,6 +1285,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "diagnostics": 0,
       "key": "nav.home",
       "missing": [],
+      "outdated": [],
       "unused": false,
       "values": {
         "de": "Start",
@@ -1282,6 +1298,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "missing": [
         "de",
       ],
+      "outdated": [],
       "unused": false,
       "values": {
         "en": "About us",
@@ -1291,6 +1308,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "diagnostics": 0,
       "key": "pages.home.title",
       "missing": [],
+      "outdated": [],
       "unused": false,
       "values": {
         "de": "Willkommen",
@@ -1301,6 +1319,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "diagnostics": 1,
       "key": "unused",
       "missing": [],
+      "outdated": [],
       "unused": true,
       "values": {
         "de": "Niemand",
@@ -1660,6 +1679,7 @@ exports[`rpc functions > summarizes projects 1`] = `
   "openInEditor": false,
   "projects": [
     {
+      "changes": [],
       "diagnostics": {
         "byCode": [
           {
@@ -1700,6 +1720,7 @@ exports[`rpc functions > summarizes projects 1`] = `
           "empty": 0,
           "flag": "🇺🇸",
           "missing": 0,
+          "outdated": 0,
           "percent": 100,
           "total": 8,
           "translated": 8,
@@ -1710,6 +1731,7 @@ exports[`rpc functions > summarizes projects 1`] = `
           "empty": 1,
           "flag": "🇩🇪",
           "missing": 1,
+          "outdated": 0,
           "percent": 75,
           "total": 8,
           "translated": 6,

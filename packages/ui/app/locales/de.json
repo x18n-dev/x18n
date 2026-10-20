@@ -62,7 +62,11 @@
     "search": "Schlüssel und Werte durchsuchen",
     "unused": "Unbenutzt",
     "unusedHint": "Kein Code verwendet diesen Schlüssel",
-    "withDiagnostics": "Mit Problemen"
+    "withDiagnostics": "Mit Problemen",
+    "outdated": "Veraltet",
+    "sort": "Sortierung",
+    "sortKey": "Schlüssel",
+    "sortRecent": "Zuletzt geändert"
   },
   "locale": {
     "complete": "Alle Schlüssel sind übersetzt.",
@@ -72,7 +76,8 @@
     "notFound": "Diese Sprache gibt es im Projekt nicht.",
     "openInGrid": "Im Raster anzeigen",
     "problems": "Platzhalter- und Syntaxprobleme ({count})",
-    "progress": "{translated} von {total} übersetzt ({percent})"
+    "progress": "{translated} von {total} übersetzt ({percent})",
+    "outdated": "Veraltet ({count})"
   },
   "localeBar": {
     "bar": "Anzuzeigende Sprachen",
@@ -107,7 +112,8 @@
     "resources": "Ressourcen",
     "source": "Quelle",
     "usages": "Verwendungen",
-    "warnings": "Warnungen: {count}"
+    "warnings": "Warnungen: {count}",
+    "outdated": "{count} veraltet"
   },
   "project": {
     "config": "Konfiguration und Herkunft der Werte",
@@ -123,7 +129,9 @@
   "prompt": {
     "copied": "Kopiert",
     "copy": "Übersetzungs-Prompt kopieren",
-    "hint": "Einen Prompt für ein LLM oder einen Agenten kopieren, der die fehlenden Texte übersetzt"
+    "hint": "Einen Prompt für ein LLM oder einen Agenten kopieren, der die fehlenden Texte übersetzt",
+    "copyStale": "Prompt mit veralteten kopieren",
+    "staleHint": "Prompt für ein LLM oder einen Agenten kopieren, der fehlende Nachrichten übersetzt und veraltete aktualisiert"
   },
   "usages": {
     "all": "Alle ({count})",
@@ -138,5 +146,13 @@
   "value": {
     "empty": "leer",
     "missing": "fehlt"
+  },
+  "history": {
+    "title": "Verlauf",
+    "local": "lokal geändert",
+    "outdated": "veraltet",
+    "outdatedHint": "Die Quellnachricht hat sich nach dieser Übersetzung geändert",
+    "sourceThen": "Quelle damals",
+    "sourceNow": "Quelle jetzt"
   }
 }

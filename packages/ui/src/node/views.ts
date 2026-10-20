@@ -1,5 +1,5 @@
-import type { Answers, Diagnostic, EditOp, KeyString, LineIndex, LocaleCoverage, Plan, Usage, UsageMatch, WireDiagnostic } from '@x18n/core'
-import type { AnalysisView, ApplyView, ExplainView, KeyDetail, KeyTable, PlanView, ProjectSummary, Snippet, UiProject, UsageView } from './types'
+import type { Answers, Diagnostic, EditOp, KeyString, LineIndex, LocaleCode, LocaleCoverage, MessageChange, Plan, Usage, UsageMatch, WireDiagnostic } from '@x18n/core'
+import type { AnalysisView, ApplyView, ExplainView, HistoryView, KeyDetail, KeyTable, PlanView, ProjectSummary, Snippet, UiProject, UsageView } from './types'
 import { createLineIndex, placeholderProblems, toWireDiagnostic, X18nError } from '@x18n/core'
 
 /** The named project, or the only one. */
@@ -16,6 +16,22 @@ function percent(coverage: LocaleCoverage): number {
   return coverage.total === 0 ? 100 : Math.floor((coverage.translated / coverage.total) * 1000) / 10
 }
 
+function historyView(change: MessageChange): HistoryView {
+  return { at: Number.isFinite(change.updatedAt) ? change.updatedAt : null, revision: change.revision, author: change.author }
+}
+
+/** Locales with an outdated translation, per key. */
+function outdatedByKey(coverage: readonly LocaleCoverage[]): Map<KeyString, LocaleCode[]> {
+  const out = new Map<KeyString, LocaleCode[]>()
+  for (const c of coverage) {
+    for (const key of c.outdated)
+      out.set(key, [...out.get(key) ?? [], c.locale])
+  }
+  return out
+}
+
+const recentChanges = 8
+
 export function summarize({ name, project }: UiProject): ProjectSummary {
   const analysis = project.analyze()
   const byCode = new Map<string, ProjectSummary['diagnostics']['byCode'][number]>()
@@ -30,7 +46,7 @@ export function summarize({ name, project }: UiProject): ProjectSummary {
     namespaced: project.namespaced,
     locales: analysis.coverage.map((c) => {
       const info = project.localeInfo(c.locale)
-      return { code: c.locale, displayName: info.displayName, flag: info.flag, total: c.total, translated: c.translated, missing: c.missing.length, empty: c.empty.length, percent: percent(c) }
+      return { code: c.locale, displayName: info.displayName, flag: info.flag, total: c.total, translated: c.translated, missing: c.missing.length, empty: c.empty.length, outdated: c.outdated.length, percent: percent(c) }
     }),
     resources: project.resources.length,
     keys: project.keys().length,
@@ -42,6 +58,14 @@ export function summarize({ name, project }: UiProject): ProjectSummary {
       byCode: [...byCode.values()].sort((a, b) => b.count - a.count || a.code.localeCompare(b.code)),
     },
     presets: project.explain().presets.filter(p => p.reason === 'listed' || p.reason === 'detected').map(p => p.name),
+    changes: project.keys()
+      .flatMap(key => project.locales.flatMap((locale) => {
+        const change = project.history(key, locale)
+        return change ? [{ key, locale, updatedAt: change.updatedAt, view: historyView(change) }] : []
+      }))
+      .sort((a, b) => b.updatedAt === a.updatedAt ? 0 : b.updatedAt > a.updatedAt ? 1 : -1)
+      .slice(0, recentChanges)
+      .map(({ key, locale, view }) => ({ key, locale, ...view })),
   }
 }
 
@@ -61,12 +85,15 @@ export function keyTable({ name, project }: UiProject): KeyTable {
       list.push(c.locale)
     }
   }
+  const outdated = outdatedByKey(analysis.coverage)
+  const now = Date.now()
   return {
     project: name,
     sourceLocale: project.sourceLocale,
     locales: project.locales,
     rows: project.keys().map((key) => {
       const info = project.get(key)
+      const times = project.locales.flatMap(locale => project.history(key, locale)?.updatedAt ?? []).map(at => Math.min(at, now))
       return {
         key,
         namespace: info?.namespace,
@@ -74,6 +101,8 @@ export function keyTable({ name, project }: UiProject): KeyTable {
         missing: missing.get(key) ?? [],
         unused: unused.has(key),
         diagnostics: diagnostics.get(key) ?? 0,
+        outdated: outdated.get(key) ?? [],
+        changedAt: times.length ? Math.max(...times) : undefined,
       }
     }),
   }
@@ -130,11 +159,18 @@ export function keyDetail(p: UiProject, key: KeyString): KeyDetail | null {
   if (!info)
     return null
   const syntaxes = project.placeholderSyntaxes
+  const outdated = new Set(outdatedByKey(project.analyze().coverage).get(info.key))
+  const source = project.message(info.key, project.sourceLocale)?.value
+  const sourceThen = (change: MessageChange | undefined): string | undefined => {
+    const then = change && project.valueAt(info.key, project.sourceLocale, change.updatedAt)
+    return then === undefined || then === source ? undefined : String(then)
+  }
   return {
     project: p.name,
     key: info.key,
     namespace: info.namespace,
     messages: info.messages.map((m) => {
+      const change = project.history(info.key, m.locale)
       const path = project.resources.find(r => r.id === m.resource)?.path ?? m.resource
       return {
         locale: m.locale,
@@ -144,6 +180,9 @@ export function keyDetail(p: UiProject, key: KeyString): KeyDetail | null {
         placeholders: typeof m.value === 'string'
           ? syntaxes.flatMap(s => s.find(String(m.value))).map(ph => ({ text: ph.text, start: ph.range.start, end: ph.range.end })).sort((a, b) => a.start - b.start)
           : [],
+        changed: change && historyView(change),
+        outdated: outdated.has(m.locale),
+        sourceThen: outdated.has(m.locale) ? sourceThen(change) : undefined,
       }
     }),
     missing: info.missing,

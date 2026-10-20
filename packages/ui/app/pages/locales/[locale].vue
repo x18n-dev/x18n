@@ -20,6 +20,8 @@ const analysis = useLive((b, project) => b.analysis(project))
 
 const missing = computed(() => (table.value?.rows ?? []).filter(r => r.missing.includes(code.value) && r.values[code.value] === undefined))
 const empty = computed(() => (table.value?.rows ?? []).filter(r => r.missing.includes(code.value) && r.values[code.value] !== undefined))
+const outdated = computed(() => (table.value?.rows ?? []).filter(r => r.outdated.includes(code.value)))
+const outdatedPercent = computed(() => summary.value && summary.value.total ? (summary.value.outdated / summary.value.total) * 100 : 0)
 const problems = computed(() => (analysis.value?.diagnostics ?? []).filter(d => d.locale === code.value && (d.code === 'placeholder-mismatch' || d.code === 'invalid-syntax')))
 
 function showInGrid(): void {
@@ -45,11 +47,12 @@ function showInGrid(): void {
         <NuxtLink :to="{ path: '/keys', query: { missing: code } }" class="btn-outline" @click="showInGrid">
           <span class="i-ph-table" /> {{ t('locale.openInGrid') }}
         </NuxtLink>
-        <CopyPrompt v-if="!isSource" :query="{ project: projectName, locale: code }" class="h-8" />
+        <CopyPrompt v-if="!isSource" :query="{ project: projectName, locale: code, stale: outdated.length > 0 }" :label="outdated.length ? t('prompt.copyStale') : undefined" class="h-8" />
       </div>
       <div v-if="summary" class="grid gap-1.5">
-        <span class="h-2 border border-strong">
-          <span class="block h-full bg-inverse" :style="{ width: `${summary.percent}%` }" />
+        <span class="h-2 flex border border-strong">
+          <span class="h-full bg-inverse" :style="{ width: `${Math.max(0, summary.percent - outdatedPercent)}%` }" />
+          <span class="h-full bg-[var(--x-warn)]" :style="{ width: `${outdatedPercent}%` }" />
         </span>
         <span class="font-mono text-xs color-muted tabular-nums">{{ t('locale.progress', { translated: summary.translated, total: summary.total, percent: formatPercent(summary.percent) }) }}</span>
       </div>
@@ -72,7 +75,18 @@ function showInGrid(): void {
       </NuxtLink>
     </UiSection>
 
-    <UiSection v-if="problems.length" index="03" :title="t('locale.problems', { count: problems.length })">
+    <UiSection v-if="outdated.length" index="03" :title="t('locale.outdated', { count: outdated.length })">
+      <NuxtLink v-for="row in outdated" :key="row.key" :to="`/keys/${encodeURIComponent(row.key)}`" class="focus-ring grid grid-cols-[minmax(0,20rem)_1fr_1fr] items-center gap-4 border-b border-base px-4 py-1.5 transition-colors last:border-b-0 hover:bg-hover">
+        <span class="flex min-w-0 items-center gap-2 font-mono text-xs">
+          <span class="i-ph-clock-counter-clockwise shrink-0 color-warn" />
+          <span class="truncate">{{ row.key }}</span>
+        </span>
+        <span class="truncate"><MessageText :value="row.values[currentProject?.sourceLocale ?? '']" inline /></span>
+        <span class="truncate color-muted"><MessageText :value="row.values[code]" inline /></span>
+      </NuxtLink>
+    </UiSection>
+
+    <UiSection v-if="problems.length" index="04" :title="t('locale.problems', { count: problems.length })">
       <component
         :is="d.key ? NuxtLink : 'div'"
         v-for="(d, i) in problems"
@@ -88,7 +102,7 @@ function showInGrid(): void {
       </component>
     </UiSection>
 
-    <p v-if="summary && table && !missing.length && !empty.length && !problems.length" class="flex items-center gap-2 px-4 py-3 color-ok">
+    <p v-if="summary && table && !missing.length && !empty.length && !outdated.length && !problems.length" class="flex items-center gap-2 px-4 py-3 color-ok">
       <span class="i-ph-check-circle" /> {{ t('locale.complete') }}
     </p>
   </UiPage>

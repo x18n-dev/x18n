@@ -62,7 +62,11 @@
     "search": "キーと値を検索",
     "unused": "未使用",
     "unusedHint": "このキーを使用しているコードはありません",
-    "withDiagnostics": "問題あり"
+    "withDiagnostics": "問題あり",
+    "outdated": "古い翻訳",
+    "sort": "並び順",
+    "sortKey": "キー",
+    "sortRecent": "最近の変更"
   },
   "locale": {
     "complete": "すべてのキーが翻訳済みです。",
@@ -72,7 +76,8 @@
     "notFound": "このプロジェクトにそのロケールはありません。",
     "openInGrid": "グリッドで表示",
     "problems": "プレースホルダーと構文の問題 ({count})",
-    "progress": "{total} 件中 {translated} 件翻訳済み ({percent})"
+    "progress": "{total} 件中 {translated} 件翻訳済み ({percent})",
+    "outdated": "古い翻訳（{count}）"
   },
   "localeBar": {
     "bar": "表示するロケール",
@@ -107,7 +112,8 @@
     "resources": "リソース",
     "source": "ソース",
     "usages": "使用箇所",
-    "warnings": "警告: {count}"
+    "warnings": "警告: {count}",
+    "outdated": "古い {count} 件"
   },
   "project": {
     "config": "設定と各値の由来",
@@ -123,7 +129,9 @@
   "prompt": {
     "copied": "コピーしました",
     "copy": "翻訳プロンプトをコピー",
-    "hint": "未翻訳のメッセージを翻訳させる LLM またはエージェント向けのプロンプトをコピー"
+    "hint": "未翻訳のメッセージを翻訳させる LLM またはエージェント向けのプロンプトをコピー",
+    "copyStale": "古い翻訳も含めてプロンプトをコピー",
+    "staleHint": "不足しているメッセージを翻訳し、古い翻訳を更新する LLM やエージェント向けのプロンプトをコピー"
   },
   "usages": {
     "all": "すべて ({count})",
@@ -138,5 +146,13 @@
   "value": {
     "empty": "空",
     "missing": "未翻訳"
+  },
+  "history": {
+    "title": "履歴",
+    "local": "ローカルで変更",
+    "outdated": "古い",
+    "outdatedHint": "この翻訳の後にソースメッセージが変更されました",
+    "sourceThen": "当時のソース",
+    "sourceNow": "現在のソース"
   }
 }

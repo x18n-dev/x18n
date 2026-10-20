@@ -62,7 +62,11 @@
     "search": "Rechercher clés et valeurs",
     "unused": "Inutilisées",
     "unusedHint": "Aucun code n’utilise cette clé",
-    "withDiagnostics": "Avec problèmes"
+    "withDiagnostics": "Avec problèmes",
+    "outdated": "Obsolètes",
+    "sort": "Tri",
+    "sortKey": "Clé",
+    "sortRecent": "Modifiées récemment"
   },
   "locale": {
     "complete": "Toutes les clés sont traduites.",
@@ -72,7 +76,8 @@
     "notFound": "Ce projet ne contient pas cette langue.",
     "openInGrid": "Afficher dans la grille",
     "problems": "Problèmes d’espaces réservés et de syntaxe ({count})",
-    "progress": "{translated} sur {total} traduites ({percent})"
+    "progress": "{translated} sur {total} traduites ({percent})",
+    "outdated": "Obsolètes ({count})"
   },
   "localeBar": {
     "bar": "Langues à afficher",
@@ -107,7 +112,8 @@
     "resources": "Ressources",
     "source": "source",
     "usages": "Utilisations",
-    "warnings": "Avertissements : {count}"
+    "warnings": "Avertissements : {count}",
+    "outdated": "{count} obsolètes"
   },
   "project": {
     "config": "Configuration et origine de chaque valeur",
@@ -123,7 +129,9 @@
   "prompt": {
     "copied": "Copié",
     "copy": "Copier le prompt de traduction",
-    "hint": "Copier un prompt pour un LLM ou un agent qui traduit les messages manquants"
+    "hint": "Copier un prompt pour un LLM ou un agent qui traduit les messages manquants",
+    "copyStale": "Copier le prompt avec les obsolètes",
+    "staleHint": "Copier un prompt pour un LLM ou un agent qui traduit les messages manquants et met à jour les obsolètes"
   },
   "usages": {
     "all": "Toutes ({count})",
@@ -138,5 +146,13 @@
   "value": {
     "empty": "vide",
     "missing": "manquant"
+  },
+  "history": {
+    "title": "Historique",
+    "local": "modifié localement",
+    "outdated": "obsolète",
+    "outdatedHint": "Le message source a changé après cette traduction",
+    "sourceThen": "Source alors",
+    "sourceNow": "Source actuelle"
   }
 }

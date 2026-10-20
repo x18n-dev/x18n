@@ -62,7 +62,11 @@
     "search": "Buscar chaves e valores",
     "unused": "Não usadas",
     "unusedHint": "Nenhum código usa esta chave",
-    "withDiagnostics": "Com problemas"
+    "withDiagnostics": "Com problemas",
+    "outdated": "Desatualizadas",
+    "sort": "Ordem",
+    "sortKey": "Chave",
+    "sortRecent": "Alteradas recentemente"
   },
   "locale": {
     "complete": "Todas as chaves estão traduzidas.",
@@ -72,7 +76,8 @@
     "notFound": "Este projeto não tem esse idioma.",
     "openInGrid": "Mostrar na grade",
     "problems": "Problemas de placeholder e sintaxe ({count})",
-    "progress": "{translated} de {total} traduzidas ({percent})"
+    "progress": "{translated} de {total} traduzidas ({percent})",
+    "outdated": "Desatualizadas ({count})"
   },
   "localeBar": {
     "bar": "Idiomas a exibir",
@@ -107,7 +112,8 @@
     "resources": "Recursos",
     "source": "origem",
     "usages": "Usos",
-    "warnings": "Avisos: {count}"
+    "warnings": "Avisos: {count}",
+    "outdated": "{count} desatualizadas"
   },
   "project": {
     "config": "Configuração e a origem de cada valor",
@@ -123,7 +129,9 @@
   "prompt": {
     "copied": "Copiado",
     "copy": "Copiar prompt de tradução",
-    "hint": "Copiar um prompt para um LLM ou agente traduzir as mensagens ausentes"
+    "hint": "Copiar um prompt para um LLM ou agente traduzir as mensagens ausentes",
+    "copyStale": "Copiar prompt com desatualizadas",
+    "staleHint": "Copia um prompt para um LLM ou agente que traduz as mensagens ausentes e atualiza as desatualizadas"
   },
   "usages": {
     "all": "Todos ({count})",
@@ -138,5 +146,13 @@
   "value": {
     "empty": "vazio",
     "missing": "ausente"
+  },
+  "history": {
+    "title": "Histórico",
+    "local": "alterado localmente",
+    "outdated": "desatualizada",
+    "outdatedHint": "A mensagem de origem mudou depois desta tradução",
+    "sourceThen": "Origem na época",
+    "sourceNow": "Origem agora"
   }
 }

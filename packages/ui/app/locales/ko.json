@@ -62,7 +62,11 @@
     "search": "키와 값 검색",
     "unused": "미사용",
     "unusedHint": "이 키를 사용하는 코드가 없습니다",
-    "withDiagnostics": "문제 있음"
+    "withDiagnostics": "문제 있음",
+    "outdated": "오래된 번역",
+    "sort": "정렬",
+    "sortKey": "키",
+    "sortRecent": "최근 변경"
   },
   "locale": {
     "complete": "모든 키가 번역되었습니다.",
@@ -72,7 +76,8 @@
     "notFound": "이 프로젝트에 해당 로케일이 없습니다.",
     "openInGrid": "그리드에서 보기",
     "problems": "플레이스홀더 및 구문 문제 ({count})",
-    "progress": "{total}개 중 {translated}개 번역됨 ({percent})"
+    "progress": "{total}개 중 {translated}개 번역됨 ({percent})",
+    "outdated": "오래된 번역 ({count})"
   },
   "localeBar": {
     "bar": "표시할 로케일",
@@ -107,7 +112,8 @@
     "resources": "리소스",
     "source": "원본",
     "usages": "사용처",
-    "warnings": "경고: {count}"
+    "warnings": "경고: {count}",
+    "outdated": "오래됨 {count}개"
   },
   "project": {
     "config": "설정과 각 값의 출처",
@@ -123,7 +129,9 @@
   "prompt": {
     "copied": "복사됨",
     "copy": "번역 프롬프트 복사",
-    "hint": "누락된 메시지를 번역하는 LLM 또는 에이전트용 프롬프트 복사"
+    "hint": "누락된 메시지를 번역하는 LLM 또는 에이전트용 프롬프트 복사",
+    "copyStale": "오래된 번역 포함 프롬프트 복사",
+    "staleHint": "누락된 메시지를 번역하고 오래된 번역을 갱신하는 LLM 또는 에이전트용 프롬프트를 복사합니다"
   },
   "usages": {
     "all": "전체 ({count})",
@@ -138,5 +146,13 @@
   "value": {
     "empty": "빈 값",
     "missing": "누락"
+  },
+  "history": {
+    "title": "기록",
+    "local": "로컬에서 변경됨",
+    "outdated": "오래됨",
+    "outdatedHint": "이 번역 이후에 원본 메시지가 변경되었습니다",
+    "sourceThen": "당시 원본",
+    "sourceNow": "현재 원본"
   }
 }

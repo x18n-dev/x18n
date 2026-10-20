@@ -62,7 +62,11 @@
     "search": "Buscar claves y valores",
     "unused": "Sin usar",
     "unusedHint": "Ningún código usa esta clave",
-    "withDiagnostics": "Con problemas"
+    "withDiagnostics": "Con problemas",
+    "outdated": "Desactualizadas",
+    "sort": "Orden",
+    "sortKey": "Clave",
+    "sortRecent": "Cambiadas recientemente"
   },
   "locale": {
     "complete": "Todas las claves están traducidas.",
@@ -72,7 +76,8 @@
     "notFound": "Este proyecto no tiene ese idioma.",
     "openInGrid": "Mostrar en la tabla",
     "problems": "Problemas de marcadores y sintaxis ({count})",
-    "progress": "{translated} de {total} traducidas ({percent})"
+    "progress": "{translated} de {total} traducidas ({percent})",
+    "outdated": "Desactualizadas ({count})"
   },
   "localeBar": {
     "bar": "Idiomas visibles",
@@ -107,7 +112,8 @@
     "resources": "Recursos",
     "source": "origen",
     "usages": "Usos",
-    "warnings": "Avisos: {count}"
+    "warnings": "Avisos: {count}",
+    "outdated": "{count} desactualizadas"
   },
   "project": {
     "config": "Configuración y origen de cada valor",
@@ -123,7 +129,9 @@
   "prompt": {
     "copied": "Copiado",
     "copy": "Copiar prompt de traducción",
-    "hint": "Copia un prompt para que un LLM o agente traduzca los mensajes que faltan"
+    "hint": "Copia un prompt para que un LLM o agente traduzca los mensajes que faltan",
+    "copyStale": "Copiar prompt con desactualizadas",
+    "staleHint": "Copia un prompt para un LLM o agente que traduce los mensajes que faltan y actualiza los desactualizados"
   },
   "usages": {
     "all": "Todos ({count})",
@@ -138,5 +146,13 @@
   "value": {
     "empty": "vacío",
     "missing": "falta"
+  },
+  "history": {
+    "title": "Historial",
+    "local": "cambiado localmente",
+    "outdated": "desactualizada",
+    "outdatedHint": "El mensaje de origen cambió después de esta traducción",
+    "sourceThen": "Origen entonces",
+    "sourceNow": "Origen ahora"
   }
 }

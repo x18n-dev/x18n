@@ -49,7 +49,8 @@
     "presets": "Presets",
     "noPresets": "No preset detected.",
     "recent": "Recent changes",
-    "noRecent": "Nothing changed since the page opened."
+    "noRecent": "Nothing changed since the page opened.",
+    "outdated": "{count} outdated"
   },
   "keys": {
     "search": "Search keys and values",
@@ -70,7 +71,11 @@
     "helpMove": "Arrows or j/k to move",
     "helpEdit": "Enter to edit, Esc to cancel",
     "helpOpen": "o to open the key",
-    "helpSearch": "/ to search"
+    "helpSearch": "/ to search",
+    "outdated": "Outdated",
+    "sort": "Sort",
+    "sortKey": "Key",
+    "sortRecent": "Recently changed"
   },
   "value": {
     "missing": "missing",
@@ -98,7 +103,9 @@
   "prompt": {
     "copy": "Copy translate prompt",
     "copied": "Copied",
-    "hint": "Copy a prompt for an LLM or agent that translates the missing messages"
+    "hint": "Copy a prompt for an LLM or agent that translates the missing messages",
+    "copyStale": "Copy prompt with outdated",
+    "staleHint": "Copy a prompt for an LLM or agent that translates the missing messages and updates the outdated ones"
   },
   "locale": {
     "label": "Locale",
@@ -108,7 +115,8 @@
     "empty": "Empty ({count})",
     "problems": "Placeholder and syntax problems ({count})",
     "notFound": "This project has no such locale.",
-    "complete": "Every key is translated."
+    "complete": "Every key is translated.",
+    "outdated": "Outdated ({count})"
   },
   "usages": {
     "missing": "Not defined ({count})",
@@ -138,5 +146,13 @@
     "problems": "Problems",
     "conflict": ".{extension}: {winner} wins over {loser}",
     "config": "Config and where each value comes from"
+  },
+  "history": {
+    "title": "History",
+    "local": "changed locally",
+    "outdated": "outdated",
+    "outdatedHint": "The source message changed after this translation",
+    "sourceThen": "Source then",
+    "sourceNow": "Source now"
   }
 }

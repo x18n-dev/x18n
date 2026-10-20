@@ -64,6 +64,11 @@ export interface ExtractApplyQuery extends ProjectQuery {
 export interface ExtractQuery extends ProjectQuery {
   readonly files?: readonly string[] | undefined;
 }
+export interface HistoryView {
+  readonly at: number | null;
+  readonly revision: string | undefined;
+  readonly author: string | undefined;
+}
 export interface KeyDetail {
   readonly project: string;
   readonly key: KeyString;
@@ -83,6 +88,8 @@ export interface KeyRow {
   readonly missing: readonly LocaleCode[];
   readonly unused: boolean;
   readonly diagnostics: number;
+  readonly outdated: readonly LocaleCode[];
+  readonly changedAt: number | undefined;
 }
 export interface KeyTable {
   readonly project: string;
@@ -98,6 +105,7 @@ export interface LocaleSummary {
   readonly translated: number;
   readonly missing: number;
   readonly empty: number;
+  readonly outdated: number;
   readonly percent: number;
 }
 export interface MessageView {
@@ -108,6 +116,9 @@ export interface MessageView {
   readonly placeholders: readonly ({
     readonly text: string;
   } & TextRange)[];
+  readonly changed: HistoryView | undefined;
+  readonly outdated: boolean;
+  readonly sourceThen: string | undefined;
 }
 export interface OpenQuery extends ProjectQuery {
   readonly path: string;
@@ -141,6 +152,10 @@ export interface ProjectSummary {
   readonly usages: number;
   readonly diagnostics: DiagnosticCounts;
   readonly presets: readonly string[];
+  readonly changes: readonly (HistoryView & {
+    readonly key: KeyString;
+    readonly locale: LocaleCode;
+  })[];
 }
 export interface PromptQuery extends ProjectQuery {
   readonly locale: LocaleCode;
@@ -148,6 +163,7 @@ export interface PromptQuery extends ProjectQuery {
   readonly namespace?: string | undefined;
   readonly limit?: number | undefined;
   readonly cursor?: string | undefined;
+  readonly stale?: boolean | undefined;
 }
 export interface Snippet {
   readonly line: number;
