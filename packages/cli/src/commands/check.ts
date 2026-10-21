@@ -3,7 +3,7 @@ import type { LoadedProject, Workspace } from '@x18n/node'
 import type { GlobalOptions } from '../context'
 import { writeFile } from 'node:fs/promises'
 import process from 'node:process'
-import { X18nError } from '@x18n/core'
+import { errors } from '@x18n/core'
 import { displayPath, openWorkspace, out, useColor } from '../context'
 
 export interface CheckOptions extends GlobalOptions {
@@ -69,7 +69,7 @@ async function report(workspace: Workspace, options: CheckOptions): Promise<numb
   for (const [i, id] of ids.entries()) {
     const reporter = available.get(id)
     if (!reporter)
-      throw new X18nError('X18N0001', `unknown reporter "${id}" (${[...available.keys()].join(', ')})`)
+      throw errors.X18N0001({ issue: `unknown reporter "${id}" (${[...available.keys()].join(', ')})` })
     const text = await reporter.report(inputs, {
       color: !outputs[i] && useColor(options) && id === 'pretty',
       displayPath: (path, project) => displayPath(roots.get(project) ?? '', path),
@@ -79,10 +79,10 @@ async function report(workspace: Workspace, options: CheckOptions): Promise<numb
     else if (text)
       process.stdout.write(text)
   }
-  const errors = inputs.reduce((sum, input) => sum + input.summary.errors, 0)
+  const errorCount = inputs.reduce((sum, input) => sum + input.summary.errors, 0)
   const warnings = inputs.reduce((sum, input) => sum + input.summary.warnings, 0)
   const tooManyWarnings = options.maxWarnings !== undefined && warnings > Number(options.maxWarnings)
-  return errors > 0 || tooManyWarnings ? 1 : 0
+  return errorCount > 0 || tooManyWarnings ? 1 : 0
 }
 
 export async function check(options: CheckOptions): Promise<number> {

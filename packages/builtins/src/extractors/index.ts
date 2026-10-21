@@ -1,6 +1,6 @@
 // Rules and key generation adapted from i18n-ally (MIT), src/extraction/* and src/core/Extract.ts
 import type { ExtractItem, ExtractOptions, ExtractTemplate, HardString, KeyString, Project, TextRange } from '@x18n/core'
-import { createLineIndex, pathMatcher, X18nError } from '@x18n/core'
+import { createLineIndex, errors, pathMatcher } from '@x18n/core'
 
 export type Score = 'must-include' | 'should-include' | 'none' | 'should-exclude' | 'must-exclude'
 
@@ -335,7 +335,7 @@ export function extractItems(project: Project, items: readonly Pick<ExtractCandi
   return items.map((item) => {
     const text = project.text(item.path)
     if (text === undefined || text.slice(item.range.start, item.range.end) !== item.original)
-      throw new X18nError('X18N4004', `${item.path} changed since the plan was made`)
+      throw errors.X18N4004({ path: item.path })
     return { path: item.path, range: item.range, key: project.parseKey(item.key), value: item.value, replacement: item.replacement, imports: item.imports }
   })
 }

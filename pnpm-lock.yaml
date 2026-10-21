@@ -263,6 +263,9 @@ catalogs:
     jsonc-parser:
       specifier: ^3.3.1
       version: 3.3.1
+    nostics:
+      specifier: ^1.3.0
+      version: 1.3.0
     oxc-parser:
       specifier: ^0.155.0
       version: 0.155.0
@@ -494,12 +497,18 @@ importers:
       devframe:
         specifier: catalog:deps
         version: 1.2.6(@devframes/agentic@1.2.5)(cac@7.1.0)(srvx@1.0.6)
+      nostics:
+        specifier: catalog:deps
+        version: 1.3.0
       yaml:
         specifier: catalog:deps
         version: 2.9.1
 
   packages/core:
     dependencies:
+      nostics:
+        specifier: catalog:deps
+        version: 1.3.0
       valibot:
         specifier: catalog:deps
         version: 1.5.0(typescript@6.0.3)

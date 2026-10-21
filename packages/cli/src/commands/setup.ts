@@ -5,7 +5,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { join, resolve } from 'node:path'
 import { namespaceFromPath } from '@x18n/builtins/finders'
-import { PluginFileSchema, validate, X18nError } from '@x18n/core'
+import { errors, PluginFileSchema, validate } from '@x18n/core'
 import { configFileNames, findConfigFile, loadWorkspace } from '@x18n/node'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import { cwd, out, printJson } from '../context'
@@ -13,7 +13,7 @@ import { cwd, out, printJson } from '../context'
 export async function schema(name: string | undefined, options: GlobalOptions): Promise<void> {
   const which = name ?? 'config'
   if (which !== 'config' && which !== 'plugin')
-    throw new X18nError('X18N0001', `unknown schema "${which}" (config, plugin)`)
+    throw errors.X18N0001({ issue: `unknown schema "${which}" (config, plugin)` })
   const require = createRequire(import.meta.url)
   const text = await readFile(require.resolve(`@x18n/core/schema/${which}.json`), 'utf8')
   if (options.json)
@@ -48,7 +48,7 @@ export async function init(options: GlobalOptions & { readonly format?: string |
   const root = resolve(options.root ?? cwd())
   const existing = findConfigFile(root)
   if (existing && !options.force)
-    throw new X18nError('X18N0001', `${existing} already exists (pass --force to replace it)`)
+    throw errors.X18N0001({ issue: `${existing} already exists (pass --force to replace it)` })
   const workspace = await loadWorkspace({ cwd: root, cache: false })
   const loaded = workspace.projects[0]!
   const { project } = loaded
@@ -74,7 +74,7 @@ export async function init(options: GlobalOptions & { readonly format?: string |
     content = `import { defineConfig } from '@x18n/core'\n\n// Detected presets: ${detected.join(', ') || 'none'}. They apply automatically.\nexport default defineConfig(${body})\n`
   }
   if (!configFileNames.some(name => file.endsWith(name)))
-    throw new X18nError('X18N0001', `unknown format "${format}" (ts, yml, json)`)
+    throw errors.X18N0001({ issue: `unknown format "${format}" (ts, yml, json)` })
   await writeFile(file, content)
   if (options.json)
     printJson('init', { file, presets: detected, config })
@@ -133,10 +133,10 @@ function ejectPlugin(data: PluginFile): string {
 export async function eject(file: string, options: GlobalOptions): Promise<void> {
   const path = resolve(cwd(), file)
   if (!existsSync(path))
-    throw new X18nError('X18N1001', path)
+    throw errors.X18N1001({ specifier: path, reason: 'the file does not exist' })
   const result = validate(PluginFileSchema, parseYaml(await readFile(path, 'utf8')))
   if (!result.success)
-    throw new X18nError('X18N1004', result.issues.map(i => `${i.path}: ${i.message}`).join('; '))
+    throw errors.X18N1004({ file: path, issues: result.issues.map(i => `${i.path}: ${i.message}`).join('; ') })
   const code = ejectPlugin(result.output)
   if (options.json)
     printJson('plugin eject', { file: path, code })

@@ -1,5 +1,5 @@
 import type { GlobalOptions } from '../context'
-import { renderPrompt, X18nError } from '@x18n/core'
+import { errors, renderPrompt } from '@x18n/core'
 import { openWorkspace, out, printJson, singleProject } from '../context'
 
 export interface PromptCommandOptions extends GlobalOptions {
@@ -16,10 +16,10 @@ export interface PromptCommandOptions extends GlobalOptions {
 
 export async function prompt(kind: string, options: PromptCommandOptions): Promise<void> {
   if (kind !== 'translate' && kind !== 'review')
-    throw new X18nError('X18N0001', `unknown prompt "${kind}" (translate, review)`)
+    throw errors.X18N0001({ issue: `unknown prompt "${kind}" (translate, review)` })
   const locale = kind === 'translate' ? options.to : options.locale ?? options.to
   if (!locale)
-    throw new X18nError('X18N0001', kind === 'translate' ? 'pass --to <locale>' : 'pass --locale <locale>')
+    throw errors.X18N0001({ issue: kind === 'translate' ? 'pass --to <locale>' : 'pass --locale <locale>' })
   const { project, host } = singleProject(await openWorkspace(options))
   if (options.stale) {
     await project.loadHistory()

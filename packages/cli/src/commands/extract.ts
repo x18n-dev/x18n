@@ -4,7 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { extractItems, findCandidates, toPlanFile } from '@x18n/builtins/extractors'
-import { isJsonObject, X18nError } from '@x18n/core'
+import { errors, isJsonObject } from '@x18n/core'
 import { displayPath, openWorkspace, out, printJson, runPlan, singleProject } from '../context'
 
 export interface ExtractCommandOptions extends GlobalOptions {
@@ -26,7 +26,7 @@ function isPlanItem(value: unknown): value is PlanItem {
 async function readPlan(file: string): Promise<PlanItem[]> {
   const data: unknown = JSON.parse(await readFile(file, 'utf8'))
   if (!isJsonObject(data) || !Array.isArray(data.items) || !data.items.every(isPlanItem))
-    throw new X18nError('X18N4008', `${file} is not an extraction plan`)
+    throw errors.X18N4008({ reason: `${file} is not an extraction plan` })
   return data.items
 }
 

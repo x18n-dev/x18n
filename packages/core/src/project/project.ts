@@ -1,3 +1,4 @@
+import type { X18nError } from '../errors'
 import type { Setup } from '../resolve'
 import type { FileEvent, Host } from '../types/host'
 import type { KeyString, LocaleCode, LocaleInfo, Message, MessageLeaf, MessageTree, Resource, TextRange, Usage } from '../types/model'
@@ -5,7 +6,7 @@ import type { HardString, HistoryContext, ScanResult, SourceFile } from '../type
 import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, ResourceNode, UsageMatch } from '../types/project'
 import type { ResourceState } from './analysis'
 import type { UsageResolver } from './usages'
-import { isX18nError, X18nError } from '../errors'
+import { errors, isX18nError, toErrorInfo } from '../errors'
 import { isKeyUnder, joinKey, keyMatcher, pathMatcher } from '../keys'
 import { parseLocaleInfo } from '../locale'
 import { isMessageLeaf, isMessageTree, pathId, walkLeaves } from '../message-tree'
@@ -166,7 +167,7 @@ export function createProject(options: CreateProjectOptions): Project {
     const ctx = { path: candidate.path, locale: candidate.locale, namespace: candidate.namespace, indent: config.write.indent }
     const base = { resource, hash: hashText(content), content, offset, toStored: storedPathOf(ctx) }
     if (!format)
-      return { ...base, tree: {}, rawTree: {}, ranges: new Map(), error: new X18nError('X18N2001', candidate.path) }
+      return { ...base, tree: {}, rawTree: {}, ranges: new Map(), error: errors.X18N2001({ path: candidate.path }) }
     try {
       const parsed = format.parse(content, ctx)
       let tree: MessageTree = parsed.tree
@@ -175,11 +176,11 @@ export function createProject(options: CreateProjectOptions): Project {
           tree = transform.read(tree, ctx)
       }
       if (!isMessageTree(tree))
-        throw new X18nError('X18N2003', candidate.path)
+        throw errors.X18N2003({ path: candidate.path })
       return { ...base, tree, rawTree: parsed.tree, ranges: parsed.ranges ?? new Map(), error: undefined }
     }
     catch (error) {
-      const coded = isX18nError(error) ? error : new X18nError('X18N2002', `${candidate.path}: ${error instanceof Error ? error.message : String(error)}`)
+      const coded = isX18nError(error) ? error : errors.X18N2002({ path: candidate.path, reason: error instanceof Error ? error.message : String(error), cause: error })
       return { ...base, tree: {}, rawTree: {}, ranges: new Map(), error: coded }
     }
   }
@@ -301,7 +302,7 @@ export function createProject(options: CreateProjectOptions): Project {
           store(file, await scanOne(file))
         }
         catch (error) {
-          store(file, undefined, new X18nError('X18N3001', `${file.path}: ${error instanceof Error ? error.message : String(error)}`))
+          store(file, undefined, errors.X18N3001({ path: file.path, reason: error instanceof Error ? error.message : String(error), cause: error }))
         }
       }))
     }
@@ -577,7 +578,7 @@ export function createProject(options: CreateProjectOptions): Project {
         ...discoveryErrors,
         ...resources.flatMap(state => state.error ? [{ error: state.error, path: state.resource.path }] : []),
         ...[...files].flatMap(([path, state]) => state.error ? [{ error: state.error, path }] : []),
-      ].map(({ error, path }) => ({ ...error.toJSON(), path })),
+      ].map(({ error, path }) => ({ ...toErrorInfo(error), path })),
       config,
     }
   }

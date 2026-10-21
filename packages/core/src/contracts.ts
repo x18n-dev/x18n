@@ -2,8 +2,8 @@ import type { ErrorInfo } from './errors'
 import type { Diagnostic, Fix, KeyString, LocaleCode, Severity } from './types/model'
 import { createLineIndex } from './text'
 
-/** Version of every JSON contract (CLI `--json`, LSP `x18n/*`, RPC, MCP). Bumped on breaking changes to any `data` shape. */
-export const contractVersion = 1
+/** Version of every JSON contract (CLI `--json`, LSP `x18n/*`, RPC, MCP). Bumped on breaking changes to any shape. */
+export const contractVersion = 2
 
 export interface WireRange {
   /** 1-based. */

@@ -151,7 +151,7 @@ describe('rename', () => {
 
   it('refuses when the target exists, listing the files', async () => {
     const { project } = await createTestProject(vueFiles, { presets: [vueI18n()] })
-    expect(() => project.plan([{ type: 'rename', from: 'home.title', to: 'home.sub' }])).toThrow(expect.objectContaining({ code: 'X18N4002', details: ['src/locales/en.json'] }))
+    expect(() => project.plan([{ type: 'rename', from: 'home.title', to: 'home.sub' }])).toThrow(expect.objectContaining({ code: 'X18N4002', message: expect.stringContaining('src/locales/en.json') }))
   })
 
   it('warns about dynamic usages it cannot follow', async () => {

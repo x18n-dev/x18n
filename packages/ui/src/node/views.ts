@@ -1,6 +1,6 @@
 import type { Answers, Diagnostic, EditOp, KeyString, LineIndex, LocaleCode, LocaleCoverage, MessageChange, Plan, Usage, UsageMatch, WireDiagnostic } from '@x18n/core'
 import type { AnalysisView, ApplyView, ExplainView, HistoryView, KeyDetail, KeyTable, PlanView, ProjectSummary, Snippet, UiProject, UsageView } from './types'
-import { createLineIndex, placeholderProblems, toWireDiagnostic, X18nError } from '@x18n/core'
+import { createLineIndex, errors, placeholderProblems, toWireDiagnostic } from '@x18n/core'
 
 /** The named project, or the only one. */
 export function pickProject(projects: readonly UiProject[], name: string | undefined): UiProject {
@@ -8,7 +8,7 @@ export function pickProject(projects: readonly UiProject[], name: string | undef
     ? (projects.length === 1 ? projects[0] : undefined)
     : projects.find(p => p.name === name)
   if (!found)
-    throw new X18nError('X18N0003', name === undefined ? `pass a project (${projects.map(p => p.name).join(', ')})` : `"${name}" (${projects.map(p => p.name).join(', ')})`)
+    throw errors.X18N0003({ name, available: projects.map(p => p.name) })
   return found
 }
 

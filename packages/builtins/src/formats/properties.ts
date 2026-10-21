@@ -1,5 +1,5 @@
 import type { MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
-import { diffText, pathId, walkLeaves, X18nError } from '@x18n/core'
+import { diffText, errors, pathId, walkLeaves } from '@x18n/core'
 import { appendLines, leafText, splice, splitLines } from './shared'
 
 interface Entry {
@@ -34,7 +34,7 @@ function unescape(raw: string, path: string): string {
     else if (next === 'u') {
       const hex = raw.slice(i + 1, i + 5)
       if (!/^[0-9a-f]{4}$/i.test(hex))
-        throw new X18nError('X18N2002', `${path}: malformed \\u escape "\\u${hex}"`)
+        throw errors.X18N2002({ path, reason: `malformed \\u escape "\\u${hex}"` })
       out += String.fromCharCode(Number.parseInt(hex, 16))
       i += 4
     }

@@ -1,5 +1,5 @@
-import type { ErrorCode, MessageLeaf, MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
-import { applyMessageOps, diffText, isMessageLeaf, pathId, X18nError } from '@x18n/core'
+import type { MessageLeaf, MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
+import { applyMessageOps, diffText, errors, isMessageLeaf, pathId } from '@x18n/core'
 import { splice } from './shared'
 
 type Value
@@ -14,7 +14,9 @@ interface Item {
 
 const doubleEscapes: Record<string, string> = { 'n': '\n', 't': '\t', 'r': '\r', 'v': '\v', 'e': '\x1B', 'f': '\f', '\\': '\\', '$': '$', '"': '"' }
 
-function decodeDouble(raw: string, fail: (code: ErrorCode, message: string) => never): string {
+type Fail = (code: 'X18N2002' | 'X18N2003' | 'X18N2004', reason: string) => never
+
+function decodeDouble(raw: string, fail: Fail): string {
   if (/(?:^|[^\\])(?:\\\\)*(?:\$[a-z_{]|\{\$)/i.test(raw))
     fail('X18N2004', 'variable interpolation in a string')
   return raw.replace(/\\(u\{[0-9a-f]+\}|x[0-9a-f]{1,2}|[0-7]{1,3}|[\s\S])/gi, (match, escape: string) => {
@@ -30,9 +32,8 @@ function decodeDouble(raw: string, fail: (code: ErrorCode, message: string) => n
 
 function parseFile(text: string, path: string): Value | undefined {
   let pos = 0
-  const fail = (code: ErrorCode, message: string): never => {
-    const line = text.slice(0, pos).split('\n').length
-    throw new X18nError(code, `${path}:${line}: ${message}`)
+  const fail: Fail = (code, reason) => {
+    throw errors[code]({ path, line: text.slice(0, pos).split('\n').length, reason })
   }
   const skip = (): void => {
     for (;;) {

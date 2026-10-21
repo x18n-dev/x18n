@@ -133,10 +133,10 @@ export interface Envelope<T> {
   readonly errors: readonly ErrorInfo[];
 }
 export interface ErrorInfo {
-  readonly code: ErrorCode;
-  readonly message: string;
-  readonly hint: string;
-  readonly docs: string;
+  readonly name: string;
+  readonly why: string;
+  readonly fix?: string | undefined;
+  readonly docs?: string | undefined;
 }
 export interface ExtractItem {
   readonly path: string;
@@ -933,7 +933,7 @@ export type EditOp = {
   readonly type: "format";
   readonly paths?: readonly string[];
 };
-export type ErrorCode = "X18N0001" | "X18N0002" | "X18N0003" | "X18N1001" | "X18N1002" | "X18N1003" | "X18N1004" | "X18N2001" | "X18N2002" | "X18N2003" | "X18N2004" | "X18N3001" | "X18N4001" | "X18N4002" | "X18N4003" | "X18N4004" | "X18N4005" | "X18N4006" | "X18N4007" | "X18N4008";
+export type ErrorCode = keyof typeof errorDefinitions;
 export type FileChange = {
   readonly type: "edit";
   readonly path: string;
@@ -984,17 +984,10 @@ export type PresetOption = Preset | PluginSpecifier | false | undefined;
 export type ResourceId = string;
 export type Severity = "error" | "warning" | "info" | "hint";
 export type UsageKind = "call" | "selector" | "accessor" | "constant" | "marker";
-// #endregion
-
-// #region Classes
-export declare class X18nError extends Error {
+export type X18nError = Diagnostic$1 & {
+  readonly name: ErrorCode;
   readonly code: ErrorCode;
-  readonly hint: string;
-  readonly docs: string;
-  readonly details: readonly string[];
-  constructor(_: ErrorCode, _?: string, _?: readonly string[]);
-  toJSON(): ErrorInfo;
-}
+};
 // #endregion
 
 // #region Functions
@@ -1036,6 +1029,7 @@ export declare function replaceKeyPrefix(_: KeyString, _: KeyString, _: KeyStrin
 export declare function resolveConfig(_: ResolveConfigOptions): Promise<Setup>;
 export declare function sortTree(_: MessageTree, _: (_: string, _: string) => number): MessageTree;
 export declare function splitKey(_: KeyString, _?: boolean): KeyId;
+export declare function toErrorInfo(_: unknown): ErrorInfo;
 export declare function toWireDiagnostic(_: string, _: Diagnostic, _: (_: string) => string | undefined): WireDiagnostic;
 export declare function toWireRange(_: string | undefined, _: number, _: number): WireRange;
 export declare function validate<T>(_: v.GenericSchema<T>, _: unknown): {
@@ -1051,9 +1045,10 @@ export declare function walkLeaves(_: MessageTree, _?: readonly string[]): Gener
 // #region Variables
 export declare const ConfigSchema: v.GenericSchema<SerializableConfig>;
 export declare const contractVersion: number;
-export declare const errorCodes: { readonly [C in ErrorCode]: {
-  readonly message: string;
-  readonly hint: string;
-}; };
+export declare const errors: ErrorHandles;
 export declare const PluginFileSchema: v.GenericSchema<PluginFile>;
+// #endregion
+
+// #region Referenced (internal)
+type ErrorHandles = { readonly [C in ErrorCode]: (..._: Parameters<Diagnostics<typeof errorDefinitions, []>[C]>) => X18nError; };
 // #endregion

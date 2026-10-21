@@ -65,7 +65,7 @@ describe('x18n binary', () => {
     const dir = await fixture('i18next')
     const result = await x18n(dir, ['check', '--json'])
     const data = json(result)
-    expect(data.x18n).toBe(1)
+    expect(data.x18n).toBe(2)
     expect(data.command).toBe('check')
     expect(data.diagnostics.find((d: any) => d.code === 'placeholder-mismatch')).toMatchObject({
       key: 'auth:login.submit',
@@ -123,7 +123,7 @@ describe('x18n binary', () => {
     const dir = await fixture('vue-i18n')
     const result = await x18n(dir, ['rename', 'nav.home', 'nav.about', '--json'])
     expect(result.code).toBe(1)
-    expect(json(result).errors[0].code).toBe('X18N4002')
+    expect(json(result).errors[0].name).toBe('X18N4002')
   })
 
   it('apply validates placeholders before writing', async () => {
@@ -157,7 +157,7 @@ describe('x18n binary', () => {
     await writeFile(join(dir, 'x18n.config.json'), '{ "sourceLocal": "en" }')
     const result = await x18n(dir, ['status'])
     expect(result.code).toBe(2)
-    expect(result.stderr).toContain('error X18N0001')
+    expect(result.stderr).toContain('[X18N0001]')
   })
 
   it('reports stale translations from git history', async () => {

@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { createBuiltins } from '@x18n/builtins'
 import { compileYamlPlugin } from '@x18n/builtins/yaml-plugin'
-import { createProject, resolveConfig, X18nError } from '@x18n/core'
+import { createProject, errors, resolveConfig } from '@x18n/core'
 import { glob } from 'tinyglobby'
 import { createPluginLoader, findConfigFile, findConfigUpward, loadConfigFile, manifestRootsOf } from './config'
 import { gitHistory } from './git-history'
@@ -147,8 +147,10 @@ export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
   const defaults = options.builtins ?? createBuiltins()
   const builtins = gitRoot ? { ...defaults, plugins: [...defaults.plugins, gitHistory()] } : defaults
   const loaded: LoadedProject[] = []
+  const names: string[] = []
   for (const spec of specs) {
     const name = spec.config.name ?? (spec.root === root ? relative(dirname(root), root) : relative(root, spec.root)).replace(/\\/g, '/')
+    names.push(name)
     if (options.project !== undefined && options.project !== name)
       continue
     const host = createNodeHost(spec.root, { cacheDir: options.cache === false ? false : undefined, logger: options.logger })
@@ -169,6 +171,6 @@ export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
     loaded.push({ name, root: spec.root, configFile: spec.configFile, host, project })
   }
   if (options.project !== undefined && loaded.length === 0)
-    throw new X18nError('X18N0003', options.project)
+    throw errors.X18N0003({ name: options.project, available: names })
   return { root, configFile, projects: loaded }
 }

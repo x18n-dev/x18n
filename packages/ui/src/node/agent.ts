@@ -3,7 +3,7 @@ import type { AgentToolInput, DevframeNodeContext } from 'devframe'
 import type { ApplyView, UiProject } from './types'
 import { toJsonSchema } from '@valibot/to-json-schema'
 import { extractItems, findCandidates, toPlanFile } from '@x18n/builtins/extractors'
-import { parseMessageBatch, renderPrompt, toWireDiagnostic, X18nError } from '@x18n/core'
+import { errors, parseMessageBatch, renderPrompt, toWireDiagnostic } from '@x18n/core'
 import * as v from 'valibot'
 import { AgentCheckSchema, AgentDeleteSchema, AgentKeysSchema, AgentRenameSchema, AgentSetSchema, AgentUsagesSchema, ExtractApplySchema, ExtractQuerySchema, KeyQuerySchema, ProjectQuerySchema, PromptQuerySchema } from './schemas'
 import { applyOps, keyDetail, pickProject, previewOps, summarize, usageViews } from './views'
@@ -46,7 +46,7 @@ export function registerAgentTools(ctx: DevframeNodeContext, projects: readonly 
   tool('get', 'read', 'One key: its value in every locale with file and line, locales where it is missing, usages in code with a few lines of context, and diagnostics. Check a key with it before creating or renaming one.', KeyQuerySchema, (query) => {
     const detail = keyDetail(pick(query.project), query.key)
     if (!detail)
-      throw new X18nError('X18N4006', `"${query.key}"; find keys with x18n_keys`)
+      throw errors.X18N4006({ key: query.key })
     return detail
   })
 

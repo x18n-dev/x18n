@@ -209,7 +209,7 @@ export async function doctor(options: GlobalOptions): Promise<void> {
     if (e.conflicts.length)
       out(`conflicts:\n${e.conflicts.map(c => `  .${c.extension}: ${c.winner} wins over ${c.loser}`).join('\n')}`)
     if (e.errors.length)
-      out(`errors:\n${e.errors.map(err => `  ${err.code} ${err.message}`).join('\n')}`)
+      out(`errors:\n${e.errors.map(err => `  ${err.name} ${err.why}`).join('\n')}`)
     out('config origins:')
     for (const [key, origin] of Object.entries(e.config.origins))
       out(`  ${key}: ${origin}`)

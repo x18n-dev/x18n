@@ -1,6 +1,6 @@
 import type { MessageLeaf, MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
 import type { TextLine } from './shared'
-import { buildTree, diffText, isMessageLeaf, pathId, X18nError } from '@x18n/core'
+import { buildTree, diffText, errors, isMessageLeaf, pathId } from '@x18n/core'
 import { appendLines, detectEol, leafText, splice, splitLines } from './shared'
 
 interface Entry {
@@ -50,7 +50,7 @@ function read(text: string, path: string): { entries: Entry[], sections: Section
   let section = ''
   let lineNumber = 0
   const fail = (message: string): never => {
-    throw new X18nError('X18N2002', `${path}:${lineNumber}: ${message}`)
+    throw errors.X18N2002({ path, line: lineNumber, reason: message })
   }
   for (const line of splitLines(text)) {
     lineNumber++

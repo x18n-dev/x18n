@@ -50,6 +50,7 @@
     "@x18n/ui": "workspace:*",
     "cac": "catalog:deps",
     "devframe": "catalog:deps",
+    "nostics": "catalog:deps",
     "yaml": "catalog:deps"
   }
 }

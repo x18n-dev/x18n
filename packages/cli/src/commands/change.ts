@@ -1,6 +1,6 @@
 import type { EditOp, JsonValue } from '@x18n/core'
 import type { GlobalOptions } from '../context'
-import { parseMessageBatch, placeholderProblems, X18nError } from '@x18n/core'
+import { errors, parseMessageBatch, placeholderProblems, toErrorInfo } from '@x18n/core'
 import { openWorkspace, out, printJson, readInput, runPlan, singleProject, stdinArg } from '../context'
 
 interface WriteOptions extends GlobalOptions {
@@ -13,7 +13,7 @@ async function project(options: GlobalOptions): Promise<ReturnType<typeof single
 
 export async function set(key: string, options: WriteOptions & { readonly locale?: string | undefined, readonly value?: string | undefined }): Promise<void> {
   if (options.value === undefined)
-    throw new X18nError('X18N4008', 'pass --value <text> (or --value - to read stdin)')
+    throw errors.X18N4008({ reason: 'pass --value <text> (or --value - to read stdin)' })
   const loaded = await project(options)
   const value = options.value === stdinArg ? (await readInput(stdinArg)).replace(/\r?\n$/, '') : String(options.value)
   const locale = options.locale ?? loaded.project.sourceLocale
@@ -28,13 +28,13 @@ export async function apply(source: string, options: WriteOptions & { readonly f
     data = JSON.parse(await readInput(source))
   }
   catch (error) {
-    throw new X18nError('X18N4008', `${source} is not JSON: ${error instanceof Error ? error.message : String(error)}`)
+    throw errors.X18N4008({ reason: `${source} is not JSON: ${error instanceof Error ? error.message : String(error)}`, cause: error })
   }
   const ops = parseMessageBatch(p, data)
   const rejected = placeholderProblems(p, ops)
   if (rejected.length > 0 && !options.force) {
     if (options.json) {
-      printJson('apply', { applied: false, rejected }, [], [new X18nError('X18N4007', `${rejected.length} values`).toJSON()])
+      printJson('apply', { applied: false, rejected }, [], [toErrorInfo(errors.X18N4007({ count: rejected.length }))])
       return 1
     }
     for (const r of rejected)

@@ -12,7 +12,7 @@ import type {
   Reporter,
   Scanner,
 } from './types/plugin'
-import { X18nError } from './errors'
+import { errors } from './errors'
 
 export function isPreset(value: Plugin | Preset): value is Preset {
   return 'plugins' in value && Array.isArray(value.plugins)
@@ -59,7 +59,7 @@ function uniqueById<T extends { readonly id: string, readonly override?: boolean
   const out = new Map<string, T>()
   for (const item of items) {
     if (out.has(item.id) && !item.override)
-      throw new X18nError('X18N1002', `${kind} "${item.id}"`)
+      throw errors.X18N1002({ kind, id: item.id })
     out.set(item.id, item)
   }
   return out

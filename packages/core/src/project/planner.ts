@@ -5,7 +5,7 @@ import type { EditOp, ExtractItem, KeyString, LocaleCode, Message, MessageLeaf, 
 import type { Format, MessageOp } from '../types/plugin'
 import type { Answers, ApplyResult, Decision, FileChange, Plan, ProjectChange, UsageMatch } from '../types/project'
 import type { ResourceState } from './analysis'
-import { X18nError } from '../errors'
+import { errors } from '../errors'
 import { isKeyUnder, replaceKeyPrefix, splitKey } from '../keys'
 import { applyMessageOps, isMessageLeaf, pathId, sortTree, walkLeaves } from '../message-tree'
 import { applyTextEdits, diffText, hashText } from '../text'
@@ -141,7 +141,7 @@ class PlanBuilder {
   targetOf(s: ResourceState): Target {
     const format = this.options.registry.formatById(s.resource.format)
     if (!format)
-      throw new X18nError('X18N2001', s.resource.path)
+      throw errors.X18N2001({ path: s.resource.path })
     return { id: s.resource.id, path: s.resource.path, locale: s.resource.locale, namespace: s.resource.namespace, format, state: s }
   }
 
@@ -157,7 +157,7 @@ class PlanBuilder {
   writable(id: string): ResourceState {
     const s = this.stateById.get(id)!
     if (s.resource.readonly)
-      throw new X18nError('X18N4001', s.resource.path)
+      throw errors.X18N4001({ path: s.resource.path })
     return s
   }
 
@@ -211,7 +211,7 @@ class PlanBuilder {
     if (model && path && namespace !== undefined && model.resource.namespace !== undefined && model.resource.namespace !== namespace)
       path = mirrorPath(path, model.resource.namespace, namespace)
     if (!model || !format?.serialize || model.resource.block || !path || exists(path))
-      throw new X18nError('X18N4005', `${key} in ${locale}`)
+      throw errors.X18N4005({ key, locale })
     const target: Target = { id: path, path, locale, namespace: namespace ?? model.resource.namespace, format, state: undefined }
     this.created.set(path, target)
     return target
@@ -413,7 +413,7 @@ class PlanBuilder {
     if (!existing && !this.options.parents().has(to))
       return
     const files = [...new Set([...existing?.values() ?? []].flatMap(list => list.map(m => this.stateById.get(m.resource)?.resource.path ?? m.resource)))]
-    throw new X18nError('X18N4002', `"${to}"${files.length ? ` in ${files.join(', ')}` : ''}`, files)
+    throw errors.X18N4002({ key: to, files })
   }
 
   rename(op: Extract<EditOp, { type: 'rename' | 'rename-prefix' }>): void {
@@ -432,7 +432,7 @@ class PlanBuilder {
     else
       keys = under.length > 0 ? under : derived
     if (keys.length === 0)
-      throw new X18nError('X18N4006', op.from)
+      throw errors.X18N4006({ key: op.from })
     const pairs = keys.map(key => [key, replaceKeyPrefix(key, op.from, op.to)] as const)
     for (const [, to] of pairs)
       this.conflictCheck(to)
@@ -452,7 +452,7 @@ class PlanBuilder {
   delete(op: Extract<EditOp, { type: 'delete' }>): void {
     const keys = this.options.messages(op.key) ? [op.key] : this.options.allKeys().filter(key => isKeyUnder(key, op.key))
     if (keys.length === 0)
-      throw new X18nError('X18N4006', op.key)
+      throw errors.X18N4006({ key: op.key })
     for (const key of keys) {
       this.touched.add(key)
       for (const [locale, list] of this.options.messages(key) ?? []) {
@@ -525,7 +525,7 @@ class PlanBuilder {
     const edit = target.format.edit
     if (entry.formatOnly || sort || !edit) {
       if (!target.format.serialize)
-        throw new X18nError('X18N4001', target.path)
+        throw errors.X18N4001({ path: target.path })
       if (!entry.formatOnly && !edit)
         this.warnings.push(`${target.path} was re-written in full (the ${target.format.id} format cannot edit in place); formatting was reset.`)
       return target.format.serialize(sort || entry.formatOnly ? sortTree(entry.tree, sort ? this.compare() : () => 0) : entry.tree, ctx)
@@ -631,15 +631,15 @@ export function createPlanner(options: PlannerOptions): Planner {
     async apply(plan, answers) {
       const unanswered = plan.decisions.filter(d => answers[d.id] === undefined)
       if (unanswered.length > 0)
-        throw new X18nError('X18N4003', unanswered.map(d => d.message).join(' '), unanswered.map(d => d.id))
+        throw errors.X18N4003({ decisions: unanswered.map(d => d.message) })
       if (plan.revision !== options.state().revision)
-        throw new X18nError('X18N4004')
+        throw errors.X18N4004()
       const fresh = plan.decisions.length > 0 ? planWith(plan.ops, answers) : { plan, texts: texts.get(plan.id) ?? new Map() }
       for (const change of fresh.plan.changes) {
         const current = await options.host.readFile(change.path)
         const expected = fresh.texts.get(change.path)
         if ((change.type === 'edit' && expected !== undefined && current !== expected) || (change.type === 'create' && current !== undefined))
-          throw new X18nError('X18N4004', change.path)
+          throw errors.X18N4004({ path: change.path })
       }
       const events: FileEvent[] = []
       for (const change of fresh.plan.changes)

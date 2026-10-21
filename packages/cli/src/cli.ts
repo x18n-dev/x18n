@@ -2,7 +2,11 @@ import type { CAC } from 'cac'
 import type { UiCommandOptions } from './commands/ui'
 import type { GlobalOptions } from './context'
 import process from 'node:process'
+import { styleText } from 'node:util'
+import { isX18nError, toErrorInfo } from '@x18n/core'
 import cac from 'cac'
+import { formatDiagnostic } from 'nostics'
+import { ansiFormatter } from 'nostics/formatters/ansi'
 import { version } from '../package.json' with { type: 'json' }
 import { apply, fill, format, remove, rename, set } from './commands/change'
 import { check } from './commands/check'
@@ -11,14 +15,17 @@ import { doctor, get, keys, locales, status, usages } from './commands/look'
 import { migrate } from './commands/migrate'
 import { prompt } from './commands/prompt'
 import { eject, init, schema } from './commands/setup'
-import { errorInfo, exitCodeOf, printJson, stdinArg } from './context'
+import { exitCodeOf, printJson, stdinArg, useColor } from './context'
 
 // The UI commands pull in devframe; load them only when one runs, so other commands start fast.
 const uiCommands = (): Promise<typeof import('./commands/ui')> => import('./commands/ui')
 
 type Action = (...args: never[]) => Promise<number | void>
 
-/** Runs a command and turns errors into the JSON envelope or a printed hint, with the matching exit code. */
+const paint = (format: Parameters<typeof styleText>[0]) => (text: string): string => styleText(format, text, { validateStream: false })
+const formatColored = ansiFormatter({ red: paint('red'), yellow: paint('yellow'), cyan: paint('cyan'), gray: paint('gray'), bold: paint('bold'), dim: paint('dim') })
+
+/** Runs a command and turns errors into the JSON envelope or a printed diagnostic, with the matching exit code. */
 function run(command: string, action: Action): (...args: unknown[]) => Promise<void> {
   return async (...args) => {
     const options = args.at(-1) as GlobalOptions // cac always passes the parsed options last
@@ -27,17 +34,12 @@ function run(command: string, action: Action): (...args: unknown[]) => Promise<v
       process.exitCode = code ?? 0
     }
     catch (error) {
-      const info = errorInfo(error)
-      if (options.json) {
-        printJson(command, null, [], [info])
-      }
-      else {
-        process.stderr.write(`error ${info.code}: ${info.message}\n`)
-        if (info.hint)
-          process.stderr.write(`  ${info.hint}\n`)
-        if (!(error instanceof Error && 'code' in error) && error instanceof Error && process.env.DEBUG)
-          process.stderr.write(`${error.stack}\n`)
-      }
+      if (options.json)
+        printJson(command, null, [], [toErrorInfo(error)])
+      else if (isX18nError(error))
+        process.stderr.write(`${(useColor(options) ? formatColored : formatDiagnostic)(error)}\n`)
+      else
+        process.stderr.write(`${error instanceof Error && process.env.DEBUG ? error.stack : `error: ${toErrorInfo(error).why}`}\n`)
       process.exitCode = exitCodeOf(error)
     }
   }

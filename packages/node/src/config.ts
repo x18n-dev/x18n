@@ -5,7 +5,7 @@ import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { compileYamlPlugin } from '@x18n/builtins/yaml-plugin'
-import { isX18nError, PluginFileSchema, validate, X18nError } from '@x18n/core'
+import { errors, isX18nError, PluginFileSchema, validate } from '@x18n/core'
 import { createJiti } from 'jiti'
 import { glob } from 'tinyglobby'
 import { parse as parseYaml } from 'yaml'
@@ -91,13 +91,13 @@ export async function loadConfigFile(file: string): Promise<UserConfig> {
     const loaded = await importModule(file)
     const config = typeof loaded === 'function' ? await (loaded as () => unknown)() : loaded
     if (!isObject(config))
-      throw new X18nError('X18N0002', `${file} does not export a config object`)
+      throw errors.X18N0002({ file, reason: 'it does not export a config object' })
     return config as UserConfig // TS configs are typed by `defineConfig`; `resolveConfig` validates the serializable part
   }
   catch (error) {
     if (isX18nError(error))
       throw error
-    throw new X18nError('X18N0002', `${file}: ${error instanceof Error ? error.message : String(error)}`)
+    throw errors.X18N0002({ file, reason: error instanceof Error ? error.message : String(error), cause: error })
   }
 }
 
@@ -106,7 +106,7 @@ export async function loadYamlPlugin(file: string): Promise<Plugin | Preset> {
   const data: unknown = parseYaml(await readFile(file, 'utf8'))
   const result = validate(PluginFileSchema, data)
   if (!result.success)
-    throw new X18nError('X18N1004', `${file}: ${result.issues.map(i => `${i.path || '(root)'}: ${i.message}`).join('; ')}`)
+    throw errors.X18N1004({ file, issues: result.issues.map(i => `${i.path || '(root)'}: ${i.message}`).join('; ') })
   return compileYamlPlugin(result.output)
 }
 
@@ -131,7 +131,7 @@ export function createPluginLoader(dir: string): (specifier: string, options: Js
     catch (error) {
       if (isX18nError(error))
         throw error
-      throw new X18nError('X18N1001', `${specifier}: ${error instanceof Error ? error.message : String(error)}`)
+      throw errors.X18N1001({ specifier, reason: error instanceof Error ? error.message : String(error), cause: error })
     }
   }
 }

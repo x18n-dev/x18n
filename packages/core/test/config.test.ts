@@ -2,7 +2,7 @@ import type { Format, Plugin, Preset } from '../src'
 import { toJsonSchema } from '@valibot/to-json-schema'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { buildJsonSchema } from '../scripts/schema'
-import { createMemoryHost, defineConfig, definePlugin, definePreset, resolveConfig, X18nError } from '../src'
+import { createMemoryHost, defineConfig, definePlugin, definePreset, isX18nError, resolveConfig } from '../src'
 import { ConfigSchema, PluginFileSchema } from '../src/schema'
 
 const format = (id: string, extensions: string[]): Format => ({ id, extensions, parse: () => ({ tree: {} }) })
@@ -76,8 +76,7 @@ describe('resolveConfig', () => {
 
   it('rejects unknown keys with a coded error', async () => {
     const error = await resolveConfig({ host: createMemoryHost(), config: JSON.parse('{"sourceLocal":"en"}'), builtins: { plugins: [], presets: {} } }).catch(e => e)
-    expect(error).toBeInstanceOf(X18nError)
-    expect(error.code).toBe('X18N0001')
+    expect(isX18nError(error) && error.code).toBe('X18N0001')
   })
 
   it('inherits a parent config', async () => {

@@ -66,7 +66,7 @@ function isActive(reason: string): boolean {
 
     <UiSection v-if="explain.errors.length || explain.conflicts.length" index="05" :title="t('project.problems')">
       <div v-for="(e, i) in explain.errors" :key="`e${i}`" class="flex items-center gap-2 border-b border-base px-4 py-1.5 color-error last:border-b-0">
-        <span class="font-mono text-xs">{{ e.code }}</span> {{ e.message }} <FilePath v-if="e.path" :path="e.path" />
+        <span class="font-mono text-xs">{{ e.name }}</span> {{ e.why }} <FilePath v-if="e.path" :path="e.path" />
       </div>
       <div v-for="c in explain.conflicts" :key="c.extension" class="border-b border-base px-4 py-1.5 color-warn last:border-b-0">
         {{ t('project.conflict', { extension: c.extension, winner: c.winner, loser: c.loser }) }}

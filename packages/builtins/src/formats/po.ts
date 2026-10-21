@@ -1,5 +1,5 @@
 import type { MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
-import { diffText, pathId, walkLeaves, X18nError } from '@x18n/core'
+import { diffText, errors, pathId, walkLeaves } from '@x18n/core'
 import { appendLines, detectEol, leafText, splice, splitLines, withBlankLines } from './shared'
 
 /** gettext joins msgctxt and msgid with EOT. */
@@ -78,7 +78,7 @@ function read(text: string, path: string): Entry[] {
   const entries: Entry[] = []
   let lineNumber = 0
   const fail = (message: string): never => {
-    throw new X18nError('X18N2002', `${path}:${lineNumber}: ${message}`)
+    throw errors.X18N2002({ path, line: lineNumber, reason: message })
   }
   let draft: Draft | undefined
   let field: Field | undefined

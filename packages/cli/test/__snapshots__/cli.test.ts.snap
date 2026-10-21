@@ -2,7 +2,7 @@
 
 exports[`x18n binary > keeps the JSON contract of every read command > check 1`] = `
 "{
-  "x18n": 1,
+  "x18n": 2,
   "command": "check",
   "data": {
     "projects": [
@@ -207,7 +207,7 @@ exports[`x18n binary > keeps the JSON contract of every read command > check 1`]
 
 exports[`x18n binary > keeps the JSON contract of every read command > get app.greeting 1`] = `
 "{
-  "x18n": 1,
+  "x18n": 2,
   "command": "get",
   "data": {
     "projects": [
@@ -271,7 +271,7 @@ exports[`x18n binary > keeps the JSON contract of every read command > get app.g
 
 exports[`x18n binary > keeps the JSON contract of every read command > keys --values 1`] = `
 "{
-  "x18n": 1,
+  "x18n": 2,
   "command": "keys",
   "data": {
     "projects": [
@@ -346,7 +346,7 @@ exports[`x18n binary > keeps the JSON contract of every read command > keys --va
 
 exports[`x18n binary > keeps the JSON contract of every read command > locales 1`] = `
 "{
-  "x18n": 1,
+  "x18n": 2,
   "command": "locales",
   "data": {
     "projects": [
@@ -392,7 +392,7 @@ exports[`x18n binary > keeps the JSON contract of every read command > locales 1
 
 exports[`x18n binary > keeps the JSON contract of every read command > prompt translate --to de --format json 1`] = `
 "{
-  "x18n": 1,
+  "x18n": 2,
   "command": "prompt translate",
   "data": {
     "kind": "translate",
@@ -479,7 +479,7 @@ exports[`x18n binary > keeps the JSON contract of every read command > prompt tr
 
 exports[`x18n binary > keeps the JSON contract of every read command > status 1`] = `
 "{
-  "x18n": 1,
+  "x18n": 2,
   "command": "status",
   "data": {
     "projects": [
@@ -524,7 +524,7 @@ exports[`x18n binary > keeps the JSON contract of every read command > status 1`
 
 exports[`x18n binary > keeps the JSON contract of every read command > usages 1`] = `
 "{
-  "x18n": 1,
+  "x18n": 2,
   "command": "usages",
   "data": {
     "projects": [

@@ -1,5 +1,5 @@
 import type { Plugin } from '@x18n/core'
-import { isMessageTree, X18nError } from '@x18n/core'
+import { errors, isMessageTree } from '@x18n/core'
 import JSON5 from 'json5'
 
 export function json5(): Plugin {
@@ -16,10 +16,10 @@ export function json5(): Plugin {
           data = JSON5.parse(text)
         }
         catch (error) {
-          throw new X18nError('X18N2002', `${ctx.path}: ${error instanceof Error ? error.message : String(error)}`)
+          throw errors.X18N2002({ path: ctx.path, reason: error instanceof Error ? error.message : String(error), cause: error })
         }
         if (!isMessageTree(data))
-          throw new X18nError('X18N2003', ctx.path)
+          throw errors.X18N2003({ path: ctx.path })
         return { tree: data }
       },
       serialize: (tree, ctx) => `${JSON5.stringify(tree, null, ctx.indent === 'tab' ? '\t' : ctx.indent ?? 2)}\n`,

@@ -1,6 +1,6 @@
 import type { Format, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
 import type { Document, Node as YamlNode } from 'yaml'
-import { applyTextEdits, diffText, pathId, X18nError } from '@x18n/core'
+import { applyTextEdits, diffText, errors, pathId } from '@x18n/core'
 import { isMap, isNode, isScalar, parseDocument, Scalar, stringify, Document as YamlDocument } from 'yaml'
 import { toLeaf } from './shared'
 
@@ -48,7 +48,7 @@ function readMap(node: YamlNode, path: string[], ranges: Map<string, NodeRange>)
 function parse(text: string, path: string): Document.Parsed {
   const doc = parseDocument(text, { keepSourceTokens: true, uniqueKeys: false })
   if (doc.errors.length > 0)
-    throw new X18nError('X18N2002', `${path}: ${doc.errors[0]!.message}`)
+    throw errors.X18N2002({ path, reason: doc.errors[0]!.message })
   return doc
 }
 
@@ -77,7 +77,7 @@ export function yaml(): Plugin {
       if (doc.contents === null)
         return { tree: {}, ranges }
       if (!isMap(doc.contents))
-        throw new X18nError('X18N2003', ctx.path)
+        throw errors.X18N2003({ path: ctx.path })
       return { tree: readMap(doc.contents, [], ranges), ranges }
     },
     edit(text, ops, ctx) {

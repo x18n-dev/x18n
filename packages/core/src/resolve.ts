@@ -3,7 +3,7 @@ import type { ConfigDraft, ConfigOrigin, PluginOption, PresetOption, ResolvedCon
 import type { Host } from './types/host'
 import type { JsonObject } from './types/model'
 import type { ConfigContext, DetectContext, ManifestReader, Plugin, Preset, PresetFactory } from './types/plugin'
-import { X18nError } from './errors'
+import { errors } from './errors'
 import { createRegistry, isPreset } from './plugins'
 import { ConfigSchema, validate } from './schema'
 
@@ -227,7 +227,7 @@ function validateLayers(layers: readonly (UserConfig | undefined)[]): void {
       continue
     const result = validate(ConfigSchema, serializablePart(layer))
     if (!result.success)
-      throw new X18nError('X18N0001', result.issues.map(issue => `${issue.path || '(root)'}: ${issue.message}`).join('; '))
+      throw errors.X18N0001({ issue: result.issues.map(issue => `${issue.path || '(root)'}: ${issue.message}`).join('; ') })
   }
 }
 
@@ -242,7 +242,7 @@ function createLoader(options: ResolveConfigOptions): (option: PresetOption | Pl
     if (factory)
       return factory(pluginOptions)
     if (!options.loadPlugin)
-      throw new X18nError('X18N1003', specifier)
+      throw errors.X18N1003({ preset: specifier })
     return options.loadPlugin(specifier, pluginOptions)
   }
 }

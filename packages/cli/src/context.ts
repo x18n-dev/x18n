@@ -1,11 +1,11 @@
-import type { Answers, Diagnostic, Envelope, ErrorInfo, Plan, Project, WireDiagnostic } from '@x18n/core'
+import type { Answers, Diagnostic, Envelope, ErrorCode, ErrorInfo, Plan, Project, WireDiagnostic } from '@x18n/core'
 import type { LoadedProject, Workspace } from '@x18n/node'
 import { Buffer } from 'node:buffer'
 import { readFile } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
-import { applyTextEdits, envelope, isX18nError, toWireDiagnostic, X18nError } from '@x18n/core'
+import { applyTextEdits, envelope, errors, isX18nError, toWireDiagnostic } from '@x18n/core'
 import { loadWorkspace, stderrLogger } from '@x18n/node'
 
 export interface GlobalOptions {
@@ -41,7 +41,7 @@ export async function openWorkspace(options: GlobalOptions): Promise<Workspace> 
 /** Write commands work on one project; a monorepo needs `--project`. */
 export function singleProject(workspace: Workspace): LoadedProject {
   if (workspace.projects.length !== 1)
-    throw new X18nError('X18N0003', `pick one with --project (${workspace.projects.map(p => p.name).join(', ')})`)
+    throw errors.X18N0003({ name: undefined, available: workspace.projects.map(p => p.name) })
   return workspace.projects[0]!
 }
 
@@ -62,21 +62,18 @@ export function wireDiagnostics(loaded: LoadedProject, diagnostics: readonly Dia
   return diagnostics.map(d => toWireDiagnostic(loaded.name, d, path => loaded.project.text(path)))
 }
 
-/** Exit code for an error: 2 usage or config, 3 decision needed, 4 stale plan, 1 otherwise. */
-export function exitCodeOf(error: unknown): number {
-  if (!isX18nError(error))
-    return 2
-  if (error.code === 'X18N4003')
+/** Exit code for an error code: 2 usage or config, 3 decision needed, 4 stale plan, 1 otherwise. */
+export function exitCodeFor(code: ErrorCode): number {
+  if (code === 'X18N4003')
     return 3
-  if (error.code === 'X18N4004')
+  if (code === 'X18N4004')
     return 4
-  return /^X18N[01]/.test(error.code) ? 2 : 1
+  return /^X18N[01]/.test(code) ? 2 : 1
 }
 
-export function errorInfo(error: unknown): ErrorInfo {
-  if (isX18nError(error))
-    return error.toJSON()
-  return { code: 'X18N0002', message: error instanceof Error ? error.message : String(error), hint: '', docs: '' }
+/** Errors without an x18n code exit with 2. */
+export function exitCodeOf(error: unknown): number {
+  return isX18nError(error) ? exitCodeFor(error.code) : 2
 }
 
 /** Stands for a lone `-` argument (stdin). */
@@ -102,7 +99,7 @@ async function answer(plan: Plan, options: GlobalOptions): Promise<Answers> {
     return answers
   }
   if (options.json || !process.stdin.isTTY)
-    throw new X18nError('X18N4003', plan.decisions.map(d => `${d.message} (${d.options.map(o => o.id).join(' | ')})`).join(' '), plan.decisions.map(d => d.id))
+    throw errors.X18N4003({ decisions: plan.decisions.map(d => `${d.message} (${d.options.map(o => o.id).join(' | ')})`) })
   const rl = createInterface({ input: process.stdin, output: process.stderr })
   try {
     for (const decision of plan.decisions) {

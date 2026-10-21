@@ -1,6 +1,6 @@
-import type { ErrorCode, MessageLeaf, MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
+import type { MessageLeaf, MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
 import type { Expression, Node, ObjectExpression, ObjectPropertyKind, Program } from 'oxc-parser'
-import { applyMessageOps, diffText, isMessageLeaf, pathId, X18nError } from '@x18n/core'
+import { applyMessageOps, diffText, errors, isMessageLeaf, pathId } from '@x18n/core'
 import { parseSync } from 'oxc-parser'
 import { splice } from './shared'
 
@@ -17,7 +17,7 @@ interface Module {
   readonly scalars: Map<string, Scalar>
 }
 
-type Fail = (code: ErrorCode, node: Node, message: string) => never
+type Fail = (code: 'X18N2003' | 'X18N2004', node: Node, reason: string) => never
 
 /** Type-only wrappers and `defineX({ ... })` helpers that return their argument. */
 function unwrap(node: Expression): Expression {
@@ -107,12 +107,12 @@ function readObject(node: ObjectExpression, path: readonly string[], module: Pic
 }
 
 function readModule(text: string, path: string): Module {
-  const fail: Fail = (code, node, message) => {
-    throw new X18nError(code, `${path}:${text.slice(0, node.start).split('\n').length}: ${message}`)
+  const fail: Fail = (code, node, reason) => {
+    throw errors[code]({ path, line: text.slice(0, node.start).split('\n').length, reason })
   }
   const result = parseSync(path, text, { lang: /\.[mc]?ts$/.test(path) ? 'ts' : 'js', sourceType: 'module' })
   if (result.errors.length > 0)
-    throw new X18nError('X18N2002', `${path}: ${result.errors[0]!.message}`)
+    throw errors.X18N2002({ path, reason: result.errors[0]!.message })
   const root = findRoot(result.program, fail)
   const found = { ranges: new Map<string, NodeRange>(), scalars: new Map<string, Scalar>() }
   return { root, tree: root ? readObject(root, [], found, text, fail) : {}, ...found }

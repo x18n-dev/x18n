@@ -1,6 +1,6 @@
 import type { MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
 import type { TextLine } from './shared'
-import { diffText, pathId, walkLeaves, X18nError } from '@x18n/core'
+import { diffText, errors, pathId, walkLeaves } from '@x18n/core'
 import { appendLines, detectEol, leafText, splice, splitLines, withBlankLines } from './shared'
 
 // Attributes are stored flat as `id.attr`: a message can have both a value and attributes,
@@ -70,7 +70,7 @@ function read(text: string, path: string): Message[] {
     }
     if (/^[ \t]/.test(content)) {
       if (!current)
-        throw new X18nError('X18N2002', `${path}:${lineNumber}: indented line outside a message`)
+        throw errors.X18N2002({ path, line: lineNumber, reason: 'indented line outside a message' })
       const attribute = /^[ \t]+\.([a-z][\w-]*)[ \t]*=[ \t]*/i.exec(content)
       if (attribute) {
         const nameStart = line.start + attribute[0].indexOf('.') + 1
@@ -102,7 +102,7 @@ function read(text: string, path: string): Message[] {
     }
     const message = /^(-?[a-z][\w-]*)[ \t]*=[ \t]*/i.exec(content)
     if (!message)
-      throw new X18nError('X18N2002', `${path}:${lineNumber}: expected a message, a term or a comment`)
+      throw errors.X18N2002({ path, line: lineNumber, reason: 'expected a message, a term or a comment' })
     current = {
       id: message[1]!,
       idRange: { start: line.start, end: line.start + message[1]!.length },

@@ -351,7 +351,7 @@ class Server {
       return project.plan(ops)
     }
     catch (error) {
-      throw new ResponseError(1, isX18nError(error) ? `${error.message}. ${error.hint}` : String(error))
+      throw new ResponseError(1, isX18nError(error) ? `${error.message}. ${error.fix}` : String(error))
     }
   }
 

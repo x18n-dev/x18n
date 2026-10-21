@@ -31,6 +31,7 @@
     "prepack": "pnpm build"
   },
   "dependencies": {
+    "nostics": "catalog:deps",
     "valibot": "catalog:deps"
   },
   "devDependencies": {

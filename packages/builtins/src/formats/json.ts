@@ -1,6 +1,6 @@
 import type { Format, MessageTree, NodeRange, Plugin } from '@x18n/core'
 import type { Node, ParseError } from 'jsonc-parser'
-import { diffText, pathId, X18nError } from '@x18n/core'
+import { diffText, errors, pathId } from '@x18n/core'
 import { applyEdits, modify, parseTree, printParseErrorCode } from 'jsonc-parser'
 import { detectEol, detectIndent } from './shared'
 
@@ -31,16 +31,16 @@ function createJsonFormat(id: string, extensions: readonly string[], allowCommen
     id,
     extensions,
     parse(text, ctx) {
-      const errors: ParseError[] = []
-      const root = parseTree(text, errors, { allowTrailingComma: true, disallowComments: !allowComments })
-      if (errors.length > 0) {
-        const first = errors[0]!
-        throw new X18nError('X18N2002', `${ctx.path}: ${printParseErrorCode(first.error)} at offset ${first.offset}`)
+      const problems: ParseError[] = []
+      const root = parseTree(text, problems, { allowTrailingComma: true, disallowComments: !allowComments })
+      if (problems.length > 0) {
+        const first = problems[0]!
+        throw errors.X18N2002({ path: ctx.path, reason: `${printParseErrorCode(first.error)} at offset ${first.offset}` })
       }
       if (!root || root.type !== 'object') {
         if (text.trim() === '')
           return { tree: {}, ranges: new Map() }
-        throw new X18nError('X18N2003', ctx.path)
+        throw errors.X18N2003({ path: ctx.path })
       }
       const ranges = new Map<string, NodeRange>()
       return { tree: readTree(root, [], ranges), ranges }
