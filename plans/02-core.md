@@ -213,4 +213,4 @@ Core builds prompts from the analysis, because the content depends only on proje
 
 ## Errors
 
-Core errors are coded (`X18N` + 4 digits) with a message, a hint and a docs link, so the CLI can print them well and JSON output can carry the code. They are grouped: `X18N0xxx` config, `1xxx` plugin, `2xxx` discovery and parse, `3xxx` scanning, `4xxx` edits, `5xxx` reviews. Each code gets a docs page under `docs/content/errors/` ([16-docs.md](./16-docs.md)).
+Core errors are coded (`X18N` + 4 digits) with a reason (`why`), a `fix` and a docs link, so the CLI can print them well and JSON output can carry the code. They are a [nostics](https://nostics.dev) catalog (`errors` in `errors.ts`): each code has typed params, and a call site raises it with `throw errors.X18N2002({ path, reason })`. Core defines no reporters; surfaces print what they catch. They are grouped: `X18N0xxx` config, `1xxx` plugin, `2xxx` discovery and parse, `3xxx` scanning, `4xxx` edits, `5xxx` reviews. Each code gets a docs page under `docs/content/errors/` ([16-docs.md](./16-docs.md)).

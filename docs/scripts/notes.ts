@@ -1,123 +1,181 @@
 import type { ErrorCode } from '../../packages/core/src/index'
 
-/** The "What to do" section of each error page. `generate.ts` fails when a code has no entry. */
-export const errorNotes: { readonly [C in ErrorCode]: string } = {
-  X18N0001: `The config, or the input of a command, does not match what x18n expects. The message names the field and the problem, for example \`usage.include: Invalid type\`.
+/** The title and the "What to do" section of each error page. `generate.ts` fails when a code has no entry. */
+export const errorNotes: { readonly [C in ErrorCode]: { readonly title: string, readonly notes: string } } = {
+  X18N0001: {
+    title: 'Invalid config',
+    notes: `The config, or the input of a command, does not match what x18n expects. The message names the field and the problem, for example \`usage.include: Invalid type\`.
 
 1. Read the field path in the message and compare the value with the [config reference](/references/config).
 2. YAML and JSON configs reject unknown keys. If the field is a typo, fix the name.
 3. Add \`$schema: https://x18n.antfu.dev/schema/config.json\` to a YAML or JSON config. Your editor then shows the errors as you type.
 
 The CLI uses the same code for command input it cannot use: an unknown \`--reporter\` id, an unknown \`x18n prompt\` kind, a missing \`--to\`, or an \`x18n.config.*\` that already exists when you run \`x18n init\` or \`x18n migrate\` without \`--force\`.`,
+  },
 
-  X18N0002: `x18n found a config file, but it failed to run or read it. The message holds the error from the loader.
+  X18N0002: {
+    title: 'Config file could not be loaded',
+    notes: `x18n found a config file, but it failed to run or read it. The message holds the error from the loader.
 
 1. Fix the syntax error that the message names.
 2. Make sure that a TS or JS config has a default export, for example \`export default defineConfig({ ... })\`.
-3. Run \`x18n doctor\` to see which config file x18n picked.
+3. Run \`x18n doctor\` to see which config file x18n picked.`,
+  },
 
-The CLI also prints this code for an unexpected error that has no code of its own. Set \`DEBUG=1\` to print the stack trace.`,
-
-  X18N0003: `The command needs one project, but the name you gave matches none, or the workspace has several projects and you gave no name.
+  X18N0003: {
+    title: 'Unknown project',
+    notes: `The command needs one project, but the name you gave matches none, or the workspace has several projects and you gave no name.
 
 1. Run \`x18n status\` to list the project names.
 2. Pass one of them with \`--project <name>\`.
 
 Commands that write files (\`set\`, \`apply\`, \`rename\`, \`delete\`, \`fill\`, \`format\`, \`extract\`, \`prompt\`) always need one project in a monorepo.`,
+  },
 
-  X18N1001: `x18n failed to load a plugin from \`plugins\` or \`presets\`.
+  X18N1001: {
+    title: 'Plugin could not be loaded',
+    notes: `x18n failed to load a plugin from \`plugins\` or \`presets\`.
 
 1. If the specifier is a package name, install the package in the project.
 2. If it is a path, make sure that it is relative to the config file and that the file exists.
 3. Make sure that the module exports a plugin, a preset, or a function that returns one.`,
+  },
 
-  X18N1002: `Two plugins register a capability (a format, finder, scanner, check, reporter or placeholder syntax) with the same id.
+  X18N1002: {
+    title: 'Duplicate capability id',
+    notes: `Two plugins register a capability (a format, finder, scanner, check, reporter or placeholder syntax) with the same id.
 
 1. Rename the id in your own plugin.
 2. If the second one is meant to replace the first, set \`override: true\` on it.`,
+  },
 
-  X18N1003: `A string in \`presets\` is not the name of a built-in preset, and x18n has no plugin loader in this runtime.
+  X18N1003: {
+    title: 'Unknown preset',
+    notes: `A string in \`presets\` is not the name of a built-in preset, and x18n has no plugin loader in this runtime.
 
 1. Use a name from the [presets list](/presets).
 2. Or pass a preset object from a TS config, for example \`presets: [vueI18n()]\`.`,
+  },
 
-  X18N1004: `A YAML plugin file does not match the plugin schema. The message names the file, the field and the problem.
+  X18N1004: {
+    title: 'Invalid YAML plugin',
+    notes: `A YAML plugin file does not match the plugin schema. The message names the file, the field and the problem.
 
 1. Add \`# yaml-language-server: $schema=https://x18n.antfu.dev/schema/plugin.json\` as the first line of the file. Your editor then shows the errors.
 2. Fix each field that the message lists. See [YAML plugins](/plugins/yaml).`,
+  },
 
-  X18N2001: `x18n found a locale file, but no format reads its extension.
+  X18N2001: {
+    title: 'No format for resource',
+    notes: `x18n found a locale file, but no format reads its extension.
 
 1. Map the extension to a format id in the config: \`formats: { lang: 'json' }\`.
 2. Or add a plugin that has a format for the extension.
 
 \`x18n check\` reports this as an \`invalid-resource\` diagnostic on the file.`,
+  },
 
-  X18N2002: `A locale file has a syntax error. The message names the file and the position.
+  X18N2002: {
+    title: 'Resource could not be parsed',
+    notes: `A locale file has a syntax error. The message names the file and the position.
 
 1. Open the file and fix the syntax error.
 2. Run \`x18n check\` again.
 
 \`x18n check\` reports this as an \`invalid-resource\` diagnostic on the file.`,
+  },
 
-  X18N2003: `A locale file parsed, but its top level is not an object of messages. A locale file holds nested objects whose leaves are strings, numbers, booleans or \`null\`.
+  X18N2003: {
+    title: 'Resource is not an object of messages',
+    notes: `A locale file parsed, but its top level is not an object of messages. A locale file holds nested objects whose leaves are strings, numbers, booleans or \`null\`.
 
 1. Make sure that the top level of the file is an object, not an array or a string.
 2. If the file is not a locale file, change \`resources\` so that its pattern does not match the file.`,
+  },
 
-  X18N2004: `x18n reads JS and TS locale files as text and does not run them. A file that computes its messages cannot be read that way.
+  X18N2004: {
+    title: 'Locale file is not static',
+    notes: `x18n reads JS and TS locale files as text and does not run them. A file that computes its messages cannot be read that way.
 
 1. Move the messages to a JSON or YAML file.
 2. Or set \`execute: true\` on the resource pattern. x18n then runs the file in Node, and the messages become read-only.`,
+  },
 
-  X18N3001: `A scanner failed to parse a source file, so x18n did not find the usages in it.
+  X18N3001: {
+    title: 'Source file could not be scanned',
+    notes: `A scanner failed to parse a source file, so x18n did not find the usages in it.
 
 1. Fix the syntax error in the file.
 2. If the file is generated or is not source code, exclude it with \`usage.exclude\`.
 
 \`x18n check\` reports this as an \`invalid-resource\` warning on the file.`,
+  },
 
-  X18N4001: `The edit targets a read-only resource. Resources with \`execute: true\` are read-only, because x18n cannot write the code that computes them.
+  X18N4001: {
+    title: 'Resource is read-only',
+    notes: `The edit targets a read-only resource. Resources with \`execute: true\` are read-only, because x18n cannot write the code that computes them.
 
 1. Edit the source of the computed values by hand.
 2. Or move the messages to a JSON or YAML file.`,
+  },
 
-  X18N4002: `A rename target already exists in at least one locale. x18n does not merge two keys.
+  X18N4002: {
+    title: 'Rename target already exists',
+    notes: `A rename target already exists in at least one locale. x18n does not merge two keys.
 
 1. Run \`x18n get <to>\` to see the existing key.
 2. Delete or rename it first, then run the rename again.`,
+  },
 
-  X18N4003: `The plan has a decision (a question such as "which file gets the new key"), and the command got no answer. This happens with \`--json\`, or when stdin is not a terminal.
+  X18N4003: {
+    title: 'A decision is needed',
+    notes: `The plan has a decision (a question such as "which file gets the new key"), and the command got no answer. This happens with \`--json\`, or when stdin is not a terminal.
 
 1. Run the command again with \`--yes\` to accept the default answer of each decision.
 2. Or run it in a terminal and answer the questions.`,
+  },
 
-  X18N4004: `A file changed after x18n made the plan, so x18n did not write anything. For \`x18n extract --apply\`, the source file changed after you wrote the plan file.
+  X18N4004: {
+    title: 'Plan is stale',
+    notes: `A file changed after x18n made the plan, so x18n did not write anything. For \`x18n extract --apply\`, the source file changed after you wrote the plan file.
 
 1. Run the command again. x18n makes a new plan from the current files.
 2. For extraction, run \`x18n extract --plan <file>\` again and edit the new plan.`,
+  },
 
-  X18N4005: `x18n has no resource where it can write the key in this locale.
+  X18N4005: {
+    title: 'No resource for the key',
+    notes: `x18n has no resource where it can write the key in this locale.
 
 1. Add a resource pattern in \`resources\` that covers the locale, for example \`{ pattern: 'locales/{locale}.json' }\`.
 2. Or create the locale file, then run the command again.`,
+  },
 
-  X18N4006: `The key does not exist in any locale.
+  X18N4006: {
+    title: 'Key not found',
+    notes: `The key does not exist in any locale.
 
 1. Run \`x18n keys\` to list the keys, or \`x18n keys "<glob>"\` to search.
 2. Check the namespace. In a namespaced project the key is \`ns:path\`, for example \`common:save\`.`,
+  },
 
-  X18N4007: `A value adds or drops a placeholder compared to the source value, so \`x18n apply\` wrote nothing. The JSON output lists the values in \`data.rejected\`.
+  X18N4007: {
+    title: 'Placeholder mismatch',
+    notes: `A value adds or drops a placeholder compared to the source value, so \`x18n apply\` wrote nothing. The JSON output lists the values in \`data.rejected\`.
 
 1. Keep every placeholder of the source value, with the same name, for example \`{name}\` or \`{{count}}\`.
 2. Run \`x18n apply\` again.
 3. If the difference is on purpose, pass \`--force\`.`,
+  },
 
-  X18N4008: `The input of an edit has the wrong shape.
+  X18N4008: {
+    title: 'Invalid edit input',
+    notes: `The input of an edit has the wrong shape.
 
 - \`x18n set\` needs \`--value <text>\` (or \`--value -\` to read stdin).
 - \`x18n apply\` needs JSON in the shape \`{ "<locale>": { "<key>": "<value>" } }\`. Values are strings, numbers, booleans or \`null\`.
 - \`x18n extract --apply\` needs a plan file written by \`x18n extract --plan\`.`,
+  },
 }
 
 /** Extra text on the page of a check. */

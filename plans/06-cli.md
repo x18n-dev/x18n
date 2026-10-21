@@ -114,7 +114,7 @@ Every `--json` output has this envelope:
 
 - `x18n` is the contract version. A breaking change to any `data` shape bumps it. Adding optional fields does not.
 - `data` shapes are valibot schemas in `@x18n/core` (`contracts/`), and the docs publish them as JSON Schema.
-- Errors carry `code`, `message`, `hint`. They are also printed, but in JSON mode only inside the envelope, so stdout is always one JSON document.
+- Errors carry `name` (the code), `why`, `fix` and `docs`, the JSON of a [nostics](https://nostics.dev) diagnostic. They are also printed, but in JSON mode only inside the envelope, so stdout is always one JSON document.
 - Snapshot tests cover the output of every command on fixture projects.
 
 ## Exit codes

@@ -10,9 +10,10 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { allChecks } from '../../packages/builtins/src/checks/index'
 import { reporters } from '../../packages/builtins/src/reporters/index'
-import { exitCodeOf } from '../../packages/cli/src/context'
+import { exitCodeFor } from '../../packages/cli/src/context'
 import { buildJsonSchema } from '../../packages/core/scripts/schema'
-import { ConfigSchema, contractVersion, createMemoryHost, errorCodes, PluginFileSchema, resolveConfig, X18nError } from '../../packages/core/src/index'
+import { errorDefinitions } from '../../packages/core/src/errors'
+import { ConfigSchema, contractVersion, createMemoryHost, PluginFileSchema, resolveConfig } from '../../packages/core/src/index'
 import { commands as lspCommands, methods as lspMethods } from '../../packages/lsp/src/protocol'
 import { registerAgentTools } from '../../packages/ui/src/node/agent'
 import vscodePackage from '../../packages/vscode/package.json' with { type: 'json' }
@@ -309,8 +310,8 @@ const exitMeanings: { readonly [code: number]: string } = {
 
 function exitCodeTable(): string {
   const byExit = new Map<number, ErrorCode[]>()
-  for (const errorCode of Object.keys(errorCodes) as ErrorCode[]) { // `Object.keys` loses the key type of `errorCodes`
-    const exit = exitCodeOf(new X18nError(errorCode))
+  for (const errorCode of Object.keys(errorDefinitions) as ErrorCode[]) { // `Object.keys` loses the key type of `errorDefinitions`
+    const exit = exitCodeFor(errorCode)
     byExit.set(exit, [...byExit.get(exit) ?? [], errorCode])
   }
   for (const exit of byExit.keys()) {
@@ -395,7 +396,7 @@ async function contractsPage(): Promise<void> {
   page('content/6.references/3.json-contracts.md', 'JSON contracts', 'The versioned JSON output of the CLI, shared by the LSP, the UI and MCP.', `
 x18n has one versioned JSON contract. The CLI prints it with \`--json\`. The LSP \`x18n/*\` requests, the UI RPC functions and the MCP tools use the same shapes.
 
-The current contract version is \`${contractVersion}\`. A breaking change to any \`data\` shape increases it. A new optional field does not.
+The current contract version is \`${contractVersion}\`. A breaking change to any shape increases it. A new optional field does not.
 
 ## Envelope
 
@@ -603,42 +604,44 @@ async function sourceFiles(): Promise<Map<string, string>> {
 
 async function errorPages(): Promise<void> {
   const files = await sourceFiles()
-  const codes = Object.keys(errorCodes) as ErrorCode[] // `Object.keys` loses the key type of `errorCodes`
+  const codes = Object.keys(errorDefinitions) as ErrorCode[] // `Object.keys` loses the key type of `errorDefinitions`
   for (const extra of Object.keys(errorNotes)) {
     if (!codes.includes(extra as ErrorCode)) // checking an unknown string against the codes
       throw new Error(`notes.ts has notes for unknown error ${extra}`)
   }
   for (const errorCode of codes) {
-    const { message, hint } = errorCodes[errorCode]
-    const notes = errorNotes[errorCode]
-    if (!notes)
+    const { fix } = errorDefinitions[errorCode]
+    const entry = errorNotes[errorCode]
+    if (!entry)
       throw new Error(`notes.ts has no notes for ${errorCode}`)
-    const raisedIn = [...files].filter(([path, text]) => path !== 'packages/core/src/errors.ts' && text.includes(`'${errorCode}'`)).map(([path]) => path)
-    page(`content/7.errors/${errorCode.toLowerCase()}.md`, `${errorCode}: ${message}`, `${message}. ${hint}`, `
+    const raisedBy = new RegExp(`\\.${errorCode}\\(|'${errorCode}'`)
+    const raisedIn = [...files].filter(([path, text]) => path !== 'packages/core/src/errors.ts' && raisedBy.test(text)).map(([path]) => path)
+    page(`content/7.errors/${errorCode.toLowerCase()}.md`, `${errorCode}: ${entry.title}`, `${entry.title}. ${fix}`, `
 ## Message
 
 \`\`\`
-error ${errorCode}: ${message}: <detail>
-  ${hint}
+[${errorCode}] ${entry.title} <detail>
+├▶ fix: ${fix}
+╰▶ see: https://x18n.antfu.dev/errors/${errorCode.toLowerCase()}
 \`\`\`
 
-The CLI prints the code, the message and a detail, such as a file name or a field. The hint follows on the next line. With \`--json\`, the same parts are in \`errors\` of the [envelope](/references/json-contracts).
+The CLI prints the code and why the error happened, with details such as a file name or a field. The fix and a link to this page follow. With \`--json\`, the same parts are in \`errors\` of the [envelope](/references/json-contracts).
 
 ## What to do
 
-${notes}
+${entry.notes}
 
 ## Exit code
 
-The CLI exits with code \`${exitCodeOf(new X18nError(errorCode))}\`.
+The CLI exits with code \`${exitCodeFor(errorCode)}\`.
 
 ## Source
 
 ${raisedIn.length ? raisedIn.map(path => `- ${sourceLink(path)}`).join('\n') : 'No code raises this error yet. The code is reserved.'}
 `)
   }
-  page('content/7.errors/index.md', 'Errors', 'Every X18N error code with its message, hint and exit code.', `
-Each error of x18n has a code such as \`X18N0001\`. The CLI prints the code with the message and a hint. With \`--json\`, the error is in \`errors\` of the [envelope](/references/json-contracts), with a \`docs\` link to its page here.
+  page('content/7.errors/index.md', 'Errors', 'Every X18N error code with its title, fix and exit code.', `
+Each error of x18n has a code such as \`X18N0001\`. The CLI prints the code with why the error happened, a fix and a link to the page of the code. With \`--json\`, the error is in \`errors\` of the [envelope](/references/json-contracts), with a \`docs\` link to its page here.
 
 The first digit is the group:
 
@@ -648,7 +651,7 @@ The first digit is the group:
 - \`3\`: scanning source files.
 - \`4\`: edits.
 
-${table(['Code', 'Message', 'Exit code'], codes.map(c => [`[${c}](/errors/${c.toLowerCase()})`, errorCodes[c].message, code(String(exitCodeOf(new X18nError(c))))]))}
+${table(['Code', 'Title', 'Exit code'], codes.map(c => [`[${c}](/errors/${c.toLowerCase()})`, errorNotes[c].title, code(String(exitCodeFor(c)))]))}
 `)
   outputs.set('content/7.errors/.navigation.yml', 'title: Errors\n')
 }
