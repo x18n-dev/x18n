@@ -35,7 +35,10 @@
     "placeholdersExtra": "unerwartete Platzhalter {names}",
     "placeholdersMissing": "fehlende Platzhalter {names}",
     "rejected": "Nicht gespeichert: {key} in {locale}: {message}.",
-    "saveAnyway": "Trotzdem speichern"
+    "saveAnyway": "Trotzdem speichern",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "hint": "Enter zum Speichern · Umschalt+Enter für neue Zeile · Esc zum Abbrechen"
   },
   "extract": {
     "apply": "Extrahieren ({count})",

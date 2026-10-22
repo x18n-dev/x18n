@@ -86,7 +86,10 @@
     "placeholdersMissing": "missing placeholders {names}",
     "placeholdersExtra": "unexpected placeholders {names}",
     "saveAnyway": "Save anyway",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "save": "Save",
+    "cancel": "Cancel",
+    "hint": "Enter to save · Shift+Enter for a new line · Esc to cancel"
   },
   "detail": {
     "label": "Key",

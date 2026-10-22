@@ -22,6 +22,35 @@ test('edits a value in the grid and writes the locale file', async ({ page }) =>
   }
 })
 
+test('edits a value on the key page with save and cancel', async ({ page }) => {
+  const { root, dispose } = await fixture()
+  const { info, child } = await startUi(root)
+  try {
+    await page.goto(info.link!)
+    await page.getByRole('link', { name: 'Keys', exact: true }).click()
+    await page.locator('[data-key="nav.about"] [role="gridcell"]').first().dblclick()
+    const value = page.locator('[data-locale="de"]').getByTitle('Edit', { exact: true })
+    const editor = page.getByRole('group', { name: 'Value of nav.about in de' })
+
+    await value.dblclick()
+    await editor.getByRole('textbox').fill('Verworfen')
+    await editor.getByRole('button', { name: 'Cancel' }).click()
+    await expect(editor).toHaveCount(0)
+    await expect(value).not.toContainText('Verworfen')
+
+    await value.dblclick()
+    await editor.getByRole('textbox').fill('Über uns')
+    await editor.getByRole('button', { name: 'Save' }).click()
+    await expect.poll(async () => JSON.parse(await readFile(join(root, 'src/locales/de.json'), 'utf8')).nav.about).toBe('Über uns')
+    await expect(editor).toHaveCount(0)
+    await expect(value).toContainText('Über uns')
+  }
+  finally {
+    child.kill()
+    await dispose()
+  }
+})
+
 test('refuses unauthenticated clients', async ({ page, request }) => {
   const { root, dispose } = await fixture()
   const { info, child } = await startUi(root)

@@ -35,7 +35,10 @@
     "placeholdersExtra": "placeholders inesperados {names}",
     "placeholdersMissing": "placeholders ausentes {names}",
     "rejected": "Não salvo: {key} em {locale}: {message}.",
-    "saveAnyway": "Salvar mesmo assim"
+    "saveAnyway": "Salvar mesmo assim",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "hint": "Enter para salvar · Shift+Enter para nova linha · Esc para cancelar"
   },
   "extract": {
     "apply": "Extrair ({count})",

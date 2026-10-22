@@ -35,7 +35,10 @@
     "placeholdersExtra": "marcadores de posición inesperados {names}",
     "placeholdersMissing": "faltan marcadores de posición {names}",
     "rejected": "No guardado: {key} en {locale}: {message}.",
-    "saveAnyway": "Guardar de todos modos"
+    "saveAnyway": "Guardar de todos modos",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "hint": "Intro para guardar · Mayús+Intro para nueva línea · Esc para cancelar"
   },
   "extract": {
     "apply": "Extraer ({count})",

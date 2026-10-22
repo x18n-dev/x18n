@@ -11,6 +11,7 @@ import FilePath from '../../components/FilePath.vue'
 import InfoPop from '../../components/InfoPop.vue'
 import KeySidebar from '../../components/KeySidebar.vue'
 import LocaleFlag from '../../components/LocaleFlag.vue'
+import MessageEditor from '../../components/MessageEditor.vue'
 import MessageText from '../../components/MessageText.vue'
 import UiSection from '../../components/ui/UiSection.vue'
 import { applyEdit, describeProblem, setMessage } from '../../edit'
@@ -95,16 +96,14 @@ function openUsage(usage: UsageView): void {
               <span v-if="row.locale === currentProject?.sourceLocale" class="badge">{{ t('overview.source') }}</span>
               <span v-if="row.message?.outdated" class="badge border-current color-warn" :title="t('history.outdatedHint')">{{ t('history.outdated') }}</span>
             </span>
-            <div v-if="editing?.locale === row.locale" class="grid gap-2">
-              <textarea v-model="editing.draft" class="input h-auto py-1.5 font-mono" rows="2" :aria-label="t('keys.editValue', { key, locale: row.locale })" @keydown.enter.exact.prevent="save()" @keydown.escape="editing = undefined" />
-              <p v-if="problem" class="flex items-center gap-2 color-warn">
-                <span class="i-ph-warning-duotone" />
-                {{ problem }}
-                <button class="btn-outline h-7" @click="save(true)">
-                  {{ t('edit.saveAnyway') }}
-                </button>
-              </p>
-            </div>
+            <MessageEditor
+              v-if="editing?.locale === row.locale"
+              v-model="editing.draft"
+              :label="t('keys.editValue', { key, locale: row.locale })"
+              :problem="problem"
+              @save="save"
+              @cancel="editing = undefined"
+            />
             <div v-else class="grid min-w-0 gap-1" :title="backend?.capabilities.write ? t('detail.edit') : undefined" @dblclick="backend?.capabilities.write && edit(row.locale, row.message?.value)">
               <MessageText :value="row.message?.value" :placeholders="row.message?.placeholders ?? []" />
               <dl v-if="row.message?.sourceThen !== undefined" class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 border-l-2 border-[var(--x-warn)] py-0.5 pl-3 text-xs">

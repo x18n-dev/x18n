@@ -35,7 +35,10 @@
     "placeholdersExtra": "多余的占位符 {names}",
     "placeholdersMissing": "缺少占位符 {names}",
     "rejected": "未保存：{key}（{locale}）：{message}。",
-    "saveAnyway": "仍然保存"
+    "saveAnyway": "仍然保存",
+    "save": "保存",
+    "cancel": "取消",
+    "hint": "Enter 保存 · Shift+Enter 换行 · Esc 取消"
   },
   "extract": {
     "apply": "提取（{count}）",

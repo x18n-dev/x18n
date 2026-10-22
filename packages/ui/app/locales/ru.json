@@ -35,7 +35,10 @@
     "placeholdersExtra": "лишние плейсхолдеры {names}",
     "placeholdersMissing": "нет плейсхолдеров {names}",
     "rejected": "Не сохранено: {key} в {locale}: {message}.",
-    "saveAnyway": "Всё равно сохранить"
+    "saveAnyway": "Всё равно сохранить",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "hint": "Enter: сохранить · Shift+Enter: новая строка · Esc: отмена"
   },
   "extract": {
     "apply": "Извлечь ({count})",

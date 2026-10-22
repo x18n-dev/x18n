@@ -35,7 +35,10 @@
     "placeholdersExtra": "예상치 못한 플레이스홀더 {names}",
     "placeholdersMissing": "누락된 플레이스홀더 {names}",
     "rejected": "저장되지 않음: {locale}의 {key}: {message}.",
-    "saveAnyway": "그래도 저장"
+    "saveAnyway": "그래도 저장",
+    "save": "저장",
+    "cancel": "취소",
+    "hint": "Enter로 저장 · Shift+Enter로 줄 바꿈 · Esc로 취소"
   },
   "extract": {
     "apply": "추출 ({count})",

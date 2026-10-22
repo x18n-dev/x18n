@@ -35,7 +35,10 @@
     "placeholdersExtra": "想定外のプレースホルダー {names}",
     "placeholdersMissing": "不足しているプレースホルダー {names}",
     "rejected": "保存されませんでした: {locale} の {key}: {message}。",
-    "saveAnyway": "このまま保存"
+    "saveAnyway": "このまま保存",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "hint": "Enter で保存 · Shift+Enter で改行 · Esc でキャンセル"
   },
   "extract": {
     "apply": "抽出 ({count})",

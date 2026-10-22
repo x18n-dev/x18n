@@ -35,7 +35,10 @@
     "placeholdersExtra": "espaces réservés inattendus {names}",
     "placeholdersMissing": "espaces réservés manquants {names}",
     "rejected": "Non enregistré : {key} en {locale} : {message}.",
-    "saveAnyway": "Enregistrer quand même"
+    "saveAnyway": "Enregistrer quand même",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "hint": "Entrée pour enregistrer · Maj+Entrée pour une nouvelle ligne · Échap pour annuler"
   },
   "extract": {
     "apply": "Extraire ({count})",

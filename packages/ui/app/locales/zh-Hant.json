@@ -35,7 +35,10 @@
     "placeholdersExtra": "多出的佔位符 {names}",
     "placeholdersMissing": "缺少佔位符 {names}",
     "rejected": "未儲存：{key}（{locale}）：{message}。",
-    "saveAnyway": "仍要儲存"
+    "saveAnyway": "仍要儲存",
+    "save": "儲存",
+    "cancel": "取消",
+    "hint": "Enter 儲存 · Shift+Enter 換行 · Esc 取消"
   },
   "extract": {
     "apply": "擷取（{count}）",
