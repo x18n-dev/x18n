@@ -10,6 +10,8 @@ jobs:
     uses: sxzz/workflows/.github/workflows/release.yml@main
     with:
       publish: true
+      # Build before publishing so `packages/cli/skills` (copied by the tsdown hook) exists when files are packed.
+      build: pnpm build
     permissions:
       contents: write
       id-token: write
