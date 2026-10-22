@@ -8,7 +8,7 @@ import { State } from 'vscode-languageclient/node'
 import { useAnnotations } from './annotations'
 import { createClient } from './client'
 import { useCommands } from './commands'
-import { config } from './config'
+import { annotationInPlace, config } from './config'
 import { commands, version } from './generated/meta'
 import { createLog, useLog } from './log'
 import { migratableFolders, migrate } from './migrate'
@@ -71,13 +71,13 @@ const { activate, deactivate } = defineExtension((context): X18nExtensionApi => 
     }
     void offerMigration()
   }, { immediate: true })
-  watch(() => [config.annotationMaxLength, config.codeLens], () => {
+  watch(() => [config.annotationMaxLength, config.codeLens, config.showFlags], () => {
     if (!client.isRunning())
       return
     log('Annotation settings changed; restarting the language server.')
     void client.restart()
   })
-  watch(() => [config.displayLocale, config.annotations, config.inPlace], () => {
+  watch(() => [config.displayLocale, config.annotations, annotationInPlace()], () => {
     if (!client.isRunning())
       return
     log(`Display locale: ${config.displayLocale || 'default'}.`)
@@ -97,7 +97,11 @@ const { activate, deactivate } = defineExtension((context): X18nExtensionApi => 
   const status = useStatusBarItem({
     id: 'x18n.displayLocale',
     alignment: StatusBarAlignment.Right,
-    text: () => `$(globe) ${current.value?.displayLocale ?? ''}`,
+    text: () => {
+      const locale = current.value?.displayLocale ?? ''
+      const flag = config.showFlags ? current.value?.locales.find(l => l.code === locale)?.flag : undefined
+      return `${flag ?? '$(globe)'} ${locale}`
+    },
     tooltip: 'x18n display locale',
     command: commands.setDisplayLocale,
   })

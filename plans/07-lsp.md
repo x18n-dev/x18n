@@ -74,7 +74,7 @@ All methods use the `x18n/` prefix. Shapes are valibot schemas shared with the c
 
 ## Settings
 
-The server reads editor UX settings from `workspace/configuration`, section `x18n`: `annotations`, `inPlace`, `annotationMaxLength`, `displayLocale`. Project settings live only in `x18n.config.ts`; editor settings never override them.
+The server reads editor UX settings from `initializationOptions`: `annotationMaxLength`, `displayLocale`, `codeLens`, `showFlags`. `x18n/setDisplayLocale` changes the display locale later. Project settings live only in `x18n.config.ts`; editor settings never override them.
 
 ## Testing
 

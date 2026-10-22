@@ -16,6 +16,7 @@ export interface Commands {
 }
 export interface Decoration {
   readonly range: Range;
+  readonly expression?: Range | undefined;
   readonly key: string;
   readonly value: string | undefined;
   readonly state: "ok" | "missing" | "dynamic";

@@ -94,15 +94,16 @@ describe('fileItems', () => {
 
 describe('progressItems', () => {
   it('shows coverage per locale and expands to missing and empty keys', async () => {
-    const [de] = progressItems({ projects: [{ name: 'app', locales: [{ locale: 'de', translated: 3, total: 4, missing: ['a'], empty: ['b'] }] }] })
-    expect(de).toMatchObject({ label: 'de', description: '75% · 3/4' })
+    const app = { ...project('app', '/w'), locales: [{ code: 'de', displayName: 'Deutsch', flag: '🇩🇪' }] }
+    const [de] = progressItems({ projects: [{ name: 'app', locales: [{ locale: 'de', translated: 3, total: 4, missing: ['a'], empty: ['b'] }] }] }, [app])
+    expect(de).toMatchObject({ label: 'de', description: '75% · 3/4', locale: { code: 'de', flag: '🇩🇪' } })
     const groups = await de!.children!()
     expect(groups.map(g => [g.label, g.description])).toEqual([['Missing', '1'], ['Empty', '1']])
     expect(await groups[0]!.children!()).toMatchObject([{ label: 'a', openKey: { project: 'app', key: 'a' } }])
   })
 
   it('has no children for complete locales', () => {
-    const [en] = progressItems({ projects: [{ name: 'app', locales: [{ locale: 'en', translated: 4, total: 4, missing: [], empty: [] }] }] })
+    const [en] = progressItems({ projects: [{ name: 'app', locales: [{ locale: 'en', translated: 4, total: 4, missing: [], empty: [] }] }] }, [])
     expect(en).toMatchObject({ icon: 'pass', description: '100% · 4/4' })
     expect(en!.children).toBeUndefined()
   })

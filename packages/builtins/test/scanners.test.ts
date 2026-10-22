@@ -75,6 +75,19 @@ describe('js scanner', () => {
     ])
   })
 
+  it('records the call of a key literal, not of keys picked from a condition or a constant', async () => {
+    const code = `const K = 'k'; t('a', { n: 1 }); t(\`b\`); t(ok ? 'c' : 'd'); t(K); <Trans i18nKey="e" />`
+    const result = await scan(code)
+    expect(result.usages.map(u => `${u.raw}|${u.expression ? code.slice(u.expression.start, u.expression.end) : ''}`)).toEqual([
+      'a|t(\'a\', { n: 1 })',
+      'b|t(`b`)',
+      'c|',
+      'd|',
+      'k|',
+      'e|',
+    ])
+  })
+
   it('collects hard strings outside translate calls', async () => {
     const code = `import x from 'mod'; console.log('debug'); const a = <p title="Hover me">Hello world</p>; const b = 'Some text'; t('key')`
     const hard = (await scan(code)).hardStrings!.map(h => `${h.kind}:${h.text}`)
@@ -105,6 +118,8 @@ describe('project usages', () => {
     }, { presets: [vueI18n()] })
     const analysis = project.analyze()
     expect(project.usages().map(m => m.usage.key)).toEqual(['a', 'b', 'block', 'missing.key', 'b', 'a', 'block', 'pages.'])
+    const text = project.text('src/App.vue')!
+    expect(project.usages().map(({ usage: { expression } }) => expression && text.slice(expression.start, expression.end))).toEqual(['t(\'a\')', '$t(\'b\')', undefined, undefined, undefined, undefined, undefined, '$t(`pages.${x}`)']) // eslint-disable-line no-template-curly-in-string
     expect(analysis.unused).toEqual(['local', 'unused'])
     expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['missing.key'])
     const missing = analysis.diagnostics.find(d => d.code === 'missing-key')!

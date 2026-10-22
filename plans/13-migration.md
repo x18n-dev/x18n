@@ -27,14 +27,14 @@ and writes `x18n.config.ts` (or `--format yml`), `x18n/custom.x18n-plugin.yml` w
 | `regex.usageMatch`, `regex.usageMatchAppend`, `regex.key` | a generated YAML plugin with `scanners.regex` |
 | `refactor.templates` | `extract.templates` |
 | `extract.keygenStrategy`, `keygenStyle`, `keyPrefix`, `keyMaxLength`, `ignored`, `ignoredByFiles`, `autoDetect` | `extract.*` with the same meaning |
-| `annotations`, `annotationInPlace`, `annotationMaxLength` | VS Code settings `x18n.annotations`, `x18n.inPlace`, `x18n.annotationMaxLength` (written to `.vscode/settings.json`, editor UX only) |
+| `annotations`, `annotationInPlace`, `annotationInPlaceFullMatch`, `annotationMaxLength`, `showFlags`, `theme.annotation*` | VS Code settings with the same names under `x18n.*` (written to `.vscode/settings.json`, editor UX only) |
 | `extract.targetPickingStrategy` | dropped: the new-key placement rule of [02-core.md](./02-core.md) picks the target resource, and a tie is a decision |
 | `annotationDelimiter` | dropped |
 | `parsers.typescript.*` (executed JS/TS locale files) | `execute: true` on the matching `resources` pattern |
 | `review.*` | `review.*` (`user.name` / `user.email` become `review.author`) |
 | `translate.*` | dropped; replaced by translate prompts. The command prints a note. |
 | `disablePathParsing` | `keyStyle: 'flat'` |
-| `readonly`, `encoding`, `fullReloadOnChanged`, `includeSubfolders`, `ignoreFiles`, `editor.preferEditor`, `showFlags` | handled by defaults or dropped; listed in the report |
+| `readonly`, `encoding`, `fullReloadOnChanged`, `includeSubfolders`, `ignoreFiles`, `editor.preferEditor` | handled by defaults or dropped; listed in the report |
 
 ## Custom framework map
 

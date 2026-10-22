@@ -48,7 +48,9 @@ describe('migrate i18n-ally', () => {
     expect(files.find(f => f.path === 'x18n/custom.x18n-plugin.yml')!.content).toContain('flag: 🇬🇧')
     const vscode = files.find(f => f.path === '.vscode/settings.json')!.content
     expect(vscode).toContain('"x18n.displayLocale": "de"')
-    expect(vscode).toContain('"x18n.inPlace": false')
+    expect(vscode).toContain('"x18n.annotationInPlace": false')
+    expect(vscode).toContain('"x18n.showFlags": false')
+    expect(vscode).toContain('"x18n.theme.annotation": "#999"')
     expect(vscode).toContain('// i18n-ally settings of a Vue project')
     expect(notes.some(n => n.includes('translate prompts'))).toBe(true)
     expect(removable).toContain('i18n-ally.localesPaths')

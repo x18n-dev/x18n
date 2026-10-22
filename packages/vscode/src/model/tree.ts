@@ -1,4 +1,4 @@
-import type { FileKeysResult, Location, ProgressResult, Range, TreeNode, UsageReportResult } from '@x18n/lsp'
+import type { FileKeysResult, Location, ProgressResult, ProjectInfo, Range, TreeNode, UsageReportResult } from '@x18n/lsp'
 import type { KeyRef, X18nClient } from './client'
 
 /** What a tree item shows and does, independent of the `vscode` API. */
@@ -10,6 +10,8 @@ export interface Item {
   readonly icon?: string | undefined
   /** Theme color id for the icon. */
   readonly color?: string | undefined
+  /** Locale whose flag replaces the icon when `x18n.showFlags` is on. */
+  readonly locale?: { readonly code: string, readonly flag: string | undefined } | undefined
   /** `x18n.key` for leaves, `x18n.prefix` for parents; drives the context menu. */
   readonly context?: 'x18n.key' | 'x18n.prefix' | undefined
   readonly ref?: KeyRef | undefined
@@ -92,12 +94,13 @@ function keyList(keys: readonly string[], project: string): Item[] {
   return keys.map(key => ({ label: key, icon: 'symbol-string', context: 'x18n.key', ref: { project, key }, openKey: { project, key } }))
 }
 
-/** Progress view: locales with coverage, expanding to missing and empty keys. */
-export function progressItems(result: ProgressResult): Item[] {
+/** Progress view: locales with coverage, expanding to missing and empty keys. `projects` gives the flags. */
+export function progressItems(result: ProgressResult, projects: readonly ProjectInfo[]): Item[] {
   const locales = (project: ProgressResult['projects'][number]): Item[] => project.locales.map(l => ({
     label: l.locale,
     description: `${percent(l.translated, l.total)} · ${l.translated}/${l.total}`,
     icon: l.translated === l.total ? 'pass' : 'circle-large-outline',
+    locale: { code: l.locale, flag: projects.find(p => p.name === project.name)?.locales.find(c => c.code === l.locale)?.flag },
     ...l.missing.length + l.empty.length > 0
       ? {
           children: async () => [

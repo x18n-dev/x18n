@@ -4,6 +4,7 @@ import type { X18nClient } from './model/client'
 import type { Item } from './model/tree'
 import { ref, useActiveTextEditor, useDisposable, useTreeView, watch } from 'reactive-vscode'
 import { Range, ThemeColor, ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri, workspace } from 'vscode'
+import { flagIcon } from './flags'
 import { commands } from './generated/meta'
 import { projectFor } from './model/client'
 import { fileItems, keyTree, progressItems, usageReportItems } from './model/tree'
@@ -12,7 +13,7 @@ interface ItemNode extends TreeViewNode {
   readonly item: Item
 }
 
-function treeItem(item: Item): TreeItem {
+async function treeItem(item: Item): Promise<TreeItem> {
   const treeItem = new TreeItem(item.label, item.children ? TreeItemCollapsibleState.Collapsed : TreeItemCollapsibleState.None)
   if (item.description !== undefined)
     treeItem.description = item.description
@@ -20,7 +21,10 @@ function treeItem(item: Item): TreeItem {
     treeItem.tooltip = item.tooltip
   if (item.context !== undefined)
     treeItem.contextValue = item.context
-  if (item.icon)
+  const flag = item.locale && await flagIcon(item.locale.code, item.locale.flag)
+  if (flag)
+    treeItem.iconPath = flag
+  else if (item.icon)
     treeItem.iconPath = new ThemeIcon(item.icon, item.color === undefined ? undefined : new ThemeColor(item.color))
   if (item.location) {
     const { start, end } = item.location.range
@@ -71,7 +75,10 @@ export function useViews(x18n: X18nClient, refresh: Event<void>): void {
     return Promise.all([x18n.request('x18n/fileKeys', { uri }), x18n.request('x18n/projects', undefined)])
       .then(([result, projects]) => fileItems(uri, projectFor(projects, document.uri.fsPath)?.name, result).map(toNode), () => [])
   })
-  useTreeView('x18n.progress', roots(async () => progressItems(await x18n.request('x18n/progress', undefined))))
+  useTreeView('x18n.progress', roots(async () => {
+    const [progress, projects] = await Promise.all([x18n.request('x18n/progress', undefined), x18n.request('x18n/projects', undefined)])
+    return progressItems(progress, projects)
+  }))
   useTreeView('x18n.keys', roots(() => keyTree(x18n)))
   useTreeView('x18n.usageReport', roots(async () => usageReportItems(await x18n.request('x18n/usageReport', undefined))))
   watch(editor, () => fileRevision.value++)

@@ -1,7 +1,7 @@
 import type { Location, Position, WorkspaceEdit } from 'vscode'
 import type { X18nExtensionApi } from '../../src/index'
 import { deepStrictEqual, ok } from 'node:assert/strict'
-import { commands, extensions, TabInputWebview, Uri, window, workspace } from 'vscode'
+import { commands, ConfigurationTarget, extensions, Range, TabInputWebview, Uri, window, workspace } from 'vscode'
 
 async function until<T>(what: string, probe: () => Promise<T | undefined> | T | undefined, timeout = 30_000): Promise<T> {
   const end = Date.now() + timeout
@@ -36,6 +36,20 @@ const tests: [string, (api: X18nExtensionApi) => Promise<void>][] = [
       return texts.includes('My App') ? texts : undefined
     })
     ok(replaced.includes('Hello {name}'))
+  }],
+  ['replaces the whole call with full match', async (api) => {
+    const uri = file('src/App.vue')
+    const settings = workspace.getConfiguration('x18n')
+    await settings.update('annotationInPlaceFullMatch', true, ConfigurationTarget.Global)
+    try {
+      const document = await workspace.openTextDocument(uri)
+      const greeting = await until('a full-match replacement', () => api.inPlace(uri.toString()).replaced.find(r => r.fullMatch && r.text === 'Hello {name}'))
+      const { start, end } = greeting.range
+      deepStrictEqual(document.getText(new Range(start.line, start.character, end.line, end.character)), `$t('app.greeting', { name: 'x' })`)
+    }
+    finally {
+      await settings.update('annotationInPlaceFullMatch', undefined, ConfigurationTarget.Global)
+    }
   }],
   ['renames a typed key literal through x18n', async () => {
     const uri = file('src/typed.ts')

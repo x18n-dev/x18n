@@ -659,6 +659,9 @@ importers:
 
   packages/vscode:
     devDependencies:
+      '@iconify-json/circle-flags':
+        specifier: catalog:frontend
+        version: 1.2.12
       '@oxc-parser/binding-wasm32-wasip1':
         specifier: catalog:deps
         version: 0.155.0

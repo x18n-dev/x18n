@@ -63,6 +63,7 @@ export function createUsageResolver(
         raw: candidate.raw,
         path,
         range: candidate.range,
+        expression: candidate.expression,
         scanner,
         kind: candidate.kind,
         dynamic: candidate.dynamic,

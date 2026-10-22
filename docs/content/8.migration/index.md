@@ -69,7 +69,7 @@ export default defineConfig({
 })
 ```
 
-and adds `"x18n.inPlace": false` and `"x18n.displayLocale": "de"` to `.vscode/settings.json`.
+and adds `"x18n.annotationInPlace": false` and `"x18n.displayLocale": "de"` to `.vscode/settings.json`.
 
 ## In VS Code
 
@@ -101,7 +101,7 @@ When a folder has `i18n-ally.*` settings in `.vscode/settings.json` and no `x18n
 | `regex.usageMatch`, `regex.usageMatchAppend` | `scanners.regex` in the generated plugin, for JS, TS, Vue, HTML and Svelte files |
 | `localeCountryMap` | `localeInfo` flags in the generated plugin |
 | `parsers.typescript.*` | `execute: true` on the JS and TS resource patterns. These resources are read-only. |
-| `annotations`, `annotationInPlace`, `annotationMaxLength`, `displayLanguage` | The VS Code settings `x18n.annotations`, `x18n.inPlace`, `x18n.annotationMaxLength` and `x18n.displayLocale` |
+| `annotations`, `annotationInPlace`, `annotationInPlaceFullMatch`, `annotationMaxLength`, `displayLanguage`, `showFlags`, `theme.annotation*` | The VS Code settings with the same names under `x18n.*`; `displayLanguage` becomes `x18n.displayLocale` |
 
 ## Framework map
 
@@ -155,7 +155,7 @@ Every framework of i18n-ally has a preset. For an unknown framework id, the comm
 
 - `translate.*`: x18n calls no translation service. It writes [translate prompts](/agents/prompts) for an agent or an LLM instead. The command prints a note.
 - `review.*`: x18n does not read reviews yet. The command copies `.vscode/i18n-ally-reviews.yml` to `.x18n/reviews.yml` for later, and prints a note.
-- `readonly`, `encoding`, `fullReloadOnChanged`, `includeSubfolders`, `ignoreFiles`, `editor.preferEditor`, `showFlags`, `annotationDelimiter`, `languageTagSystem`, `targetPickingStrategy` and `extract.targetPickingStrategy`: the defaults of x18n handle them, or x18n has no such setting. The command prints a note for each one it finds. x18n uses locale codes as written, so it needs no `languageTagSystem`.
+- `readonly`, `encoding`, `fullReloadOnChanged`, `includeSubfolders`, `ignoreFiles`, `editor.preferEditor`, `annotationDelimiter`, `languageTagSystem`, `targetPickingStrategy` and `extract.targetPickingStrategy`: the defaults of x18n handle them, or x18n has no such setting. The command prints a note for each one it finds. x18n uses locale codes as written, so it needs no `languageTagSystem`.
 
 Settings that are not on this page are not migrated.
 

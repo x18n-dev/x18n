@@ -833,6 +833,7 @@ export interface Usage {
   readonly raw: string;
   readonly path: string;
   readonly range: TextRange;
+  readonly expression: TextRange | undefined;
   readonly scanner: string;
   readonly kind: UsageKind;
   readonly dynamic: false | "prefix" | "unknown";
@@ -843,6 +844,7 @@ export interface Usage {
 export interface UsageCandidate {
   readonly raw: string;
   readonly range: TextRange;
+  readonly expression?: TextRange | undefined;
   readonly kind: UsageKind;
   readonly dynamic: false | "prefix" | "unknown";
   readonly namespace?: string | undefined;

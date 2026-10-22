@@ -52,6 +52,8 @@ On by default, like i18n-ally:
 - On the cursor line and inside selections, the raw key is revealed, so editing always shows the real text.
 - When the value is missing, the key itself is shown in a warning color.
 - Dynamic keys, and keys too long for the line, fall back to the after-key hint.
+- `x18n.annotationInPlaceFullMatch` (i18n-ally-next): the value replaces the whole call, from `Decoration.expression`. Calls over several lines keep the key-only replacement.
+- `x18n.theme.*` (i18n-ally): CSS colors and borders of in-place values and missing keys; empty uses theme colors.
 - The display locale defaults to the source locale and can be switched from the status bar.
 
 ## Webview embedding
@@ -67,9 +69,12 @@ On by default, like i18n-ally:
 Editor UX only. There are no project settings and no overrides of `x18n.config.ts`:
 - `x18n.enabled`
 - `x18n.annotations`
-- `x18n.inPlace` (default `true`)
+- `x18n.annotationInPlace` (default `true`)
+- `x18n.annotationInPlaceFullMatch` (default `false`)
 - `x18n.annotationMaxLength` (default 40)
 - `x18n.displayLocale`
+- `x18n.showFlags` (default `true`): circle-flags SVG icons in views and pickers, flag emoji in hovers and the status bar
+- `x18n.theme.annotation`, `x18n.theme.annotationMissing`, `x18n.theme.annotationBorder`, `x18n.theme.annotationMissingBorder`, `x18n.theme.annotationInPlaceFullMatch`
 - `x18n.codeLens`
 - `x18n.trace.server`
 

@@ -59,6 +59,8 @@ interface Settings {
   annotationMaxLength: number
   displayLocale: string | undefined
   codeLens: boolean
+  /** Flag emoji next to locales in hovers. */
+  showFlags: boolean
 }
 
 const severities: Record<X18nDiagnostic['severity'], DiagnosticSeverity> = {
@@ -94,7 +96,7 @@ class Server {
   readonly projects: ServerProject[] = []
   readonly published = new Map<string, Set<string>>()
   readonly timers = new Map<string, ReturnType<typeof setTimeout>>()
-  readonly settings: Settings = { annotationMaxLength: 40, displayLocale: undefined, codeLens: false }
+  readonly settings: Settings = { annotationMaxLength: 40, displayLocale: undefined, codeLens: false, showFlags: true }
   ready: Promise<void> = Promise.resolve()
   folders: string[] = []
   watchRegistration = false
@@ -195,6 +197,8 @@ class Server {
       this.settings.annotationMaxLength = settings.annotationMaxLength
     if (typeof settings?.codeLens === 'boolean')
       this.settings.codeLens = settings.codeLens
+    if (typeof settings?.showFlags === 'boolean')
+      this.settings.showFlags = settings.showFlags
     return {
       serverInfo: { name: 'x18n', version },
       capabilities: {
@@ -395,7 +399,8 @@ class Server {
         const value = display(project.lookup(target.key, locale)?.value)
         const change = changes[i]
         const changed = dated ? ` ${change ? changedAt(change).replace(/\|/g, '\\|') : ''}${outdated.has(locale) ? ' · **outdated**' : ''} |` : ''
-        lines.push(`| ${project.localeInfo(locale).flag ?? ''} ${locale} | ${value === undefined ? '_missing_' : value === '' ? '_empty_' : value.replace(/\|/g, '\\|').replace(/\n/g, ' ')} |${changed}`)
+        const flag = this.settings.showFlags ? project.localeInfo(locale).flag : undefined
+        lines.push(`| ${flag ?? ''} ${locale} | ${value === undefined ? '_missing_' : value === '' ? '_empty_' : value.replace(/\|/g, '\\|').replace(/\n/g, ' ')} |${changed}`)
       })
     }
     const usages = target.type === 'subtree' ? project.usages({ prefix: target.key }) : project.usages({ key: target.key })
@@ -743,7 +748,7 @@ class Server {
           return []
         const value = display(entry.project.lookup(usage.key, locale)?.value)
         const state = usage.dynamic !== false ? 'dynamic' as const : value === undefined ? 'missing' as const : 'ok' as const
-        return [{ range: this.range(entry, path, usage.range), key: usage.key, value, state }]
+        return [{ range: this.range(entry, path, usage.range), ...usage.expression ? { expression: this.range(entry, path, usage.expression) } : {}, key: usage.key, value, state }]
       }),
     }
   }

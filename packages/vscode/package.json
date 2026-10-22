@@ -227,10 +227,15 @@
           "default": true,
           "description": "Show translated values next to or in place of keys in code."
         },
-        "x18n.inPlace": {
+        "x18n.annotationInPlace": {
           "type": "boolean",
           "default": true,
           "description": "Replace keys in code with their display-locale value. The raw key shows on the cursor line and inside selections."
+        },
+        "x18n.annotationInPlaceFullMatch": {
+          "type": "boolean",
+          "default": false,
+          "description": "In in-place mode, replace the whole translate call, such as `t('key', { n })`, instead of only the key. Keys whose call is not known keep the key-only replacement."
         },
         "x18n.annotationMaxLength": {
           "type": "number",
@@ -241,6 +246,36 @@
           "type": "string",
           "default": "",
           "description": "Locale shown in annotations. Empty means the source locale."
+        },
+        "x18n.showFlags": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the flag of each locale in views, pickers, hovers and the status bar."
+        },
+        "x18n.theme.annotation": {
+          "type": "string",
+          "default": "",
+          "description": "CSS color of in-place values. Empty uses the inlay hint color of the theme."
+        },
+        "x18n.theme.annotationMissing": {
+          "type": "string",
+          "default": "",
+          "description": "CSS color of keys without a value. Empty uses the warning color of the theme."
+        },
+        "x18n.theme.annotationBorder": {
+          "type": "string",
+          "default": "",
+          "description": "CSS border color of in-place values. Empty draws no border."
+        },
+        "x18n.theme.annotationMissingBorder": {
+          "type": "string",
+          "default": "",
+          "description": "CSS border color of keys without a value. Empty draws no border."
+        },
+        "x18n.theme.annotationInPlaceFullMatch": {
+          "type": "string",
+          "default": "",
+          "description": "CSS color of values that replace a whole call (`x18n.annotationInPlaceFullMatch`). Empty uses `x18n.theme.annotation`."
         },
         "x18n.codeLens": {
           "type": "boolean",
@@ -293,6 +328,7 @@
     "ext:publish": "pnpm run ext:package && vsce publish --packagePath x18n.vsix && ovsx publish x18n.vsix"
   },
   "devDependencies": {
+    "@iconify-json/circle-flags": "catalog:frontend",
     "@oxc-parser/binding-wasm32-wasip1": "catalog:deps",
     "@types/vscode": "catalog:types",
     "@vscode/test-electron": "catalog:vscode",

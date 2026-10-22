@@ -92,6 +92,8 @@ export interface Usage {
   readonly path: string
   /** Range of the key text only (inside the quotes): the range rename rewrites. */
   readonly range: TextRange
+  /** Range of the whole call that holds the key (`t('a', { n })`), when the scanner knows it. */
+  readonly expression: TextRange | undefined
   readonly scanner: string
   readonly kind: UsageKind
   /** `t(`pages.${id}.title`)` gives 'prefix' with key `pages`. */

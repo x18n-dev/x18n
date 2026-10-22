@@ -16,7 +16,7 @@ Use this when a project has i18n-ally settings: `i18n-ally.*`, legacy `vue-i18n-
 4. Write the files: `x18n migrate i18n-ally --json` (add `--format yml` if the user chose YAML; `--force` replaces an existing x18n config). It writes:
    - `x18n.config.ts` (or `.yml`, `.json`) from the project settings
    - `x18n/custom.x18n-plugin.yml`, when there are custom regexes, a custom framework, refactor templates or `localeCountryMap` flags
-   - editor settings in `.vscode/settings.json`: `x18n.displayLocale`, `x18n.inPlace`, `x18n.annotations`, `x18n.annotationMaxLength`
+   - editor settings in `.vscode/settings.json`: `x18n.displayLocale`, `x18n.annotationInPlace`, `x18n.annotations`, `x18n.annotationMaxLength`, `x18n.showFlags`
    - `.x18n/reviews.yml`, when `.vscode/i18n-ally-reviews.yml` or `.vscode/i18n-ally-next-reviews.yml` exists
 
    **Done when** the command exits with code 0 and `data.files` lists the files above that apply.
@@ -42,7 +42,7 @@ In VS Code, the extension offers the same migration when it finds i18n-ally sett
 | `refactor.templates` | `extract.templates` |
 | `extract.*` | `extract.*`, same meaning |
 | `sortKeys`, `sortCompare`, `indent`, `tabStyle`, `keepFulfilled` | `write.sort`, `write.indent`, `write.keepFilled` |
-| `annotations`, `annotationInPlace`, `annotationMaxLength` | VS Code settings `x18n.annotations`, `x18n.inPlace`, `x18n.annotationMaxLength` |
+| `annotations`, `annotationInPlace`, `annotationInPlaceFullMatch`, `annotationMaxLength`, `showFlags`, `theme.annotation*` | VS Code settings with the same names under `x18n.*` |
 | `localeCountryMap` | `localeInfo` flags in the generated YAML plugin |
 | custom framework `languageIds`, `usageMatchRegex`, `scopeRangeRegex`, `refactorTemplates`, `monopoly` | the generated YAML plugin: `scanners.regex`, `scopes.regex`, `extract.templates`; `monopoly` sets `presets: []` |
 

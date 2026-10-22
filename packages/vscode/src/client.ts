@@ -3,7 +3,7 @@ import type { ExtensionContext } from 'vscode'
 import type { LanguageClientOptions, ServerOptions } from 'vscode-languageclient/node'
 import { Uri, workspace } from 'vscode'
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node'
-import { config } from './config'
+import { annotationInPlace, config } from './config'
 import { commands, displayName } from './generated/meta'
 import { hintCovered } from './model/inplace'
 import { findLocalServer } from './model/local-server'
@@ -35,6 +35,7 @@ export function createClient(context: ExtensionContext, hooks: ClientHooks): Lan
       displayLocale: config.displayLocale || undefined,
       annotationMaxLength: config.annotationMaxLength,
       codeLens: config.codeLens,
+      showFlags: config.showFlags,
     }),
     middleware: {
       // VS Code merges references from every provider and has no API to read the others' results from inside one
@@ -47,7 +48,7 @@ export function createClient(context: ExtensionContext, hooks: ClientHooks): Lan
         if (!config.annotations)
           return []
         const hints = await next(document, range, token)
-        if (!hints || !config.inPlace)
+        if (!hints || !annotationInPlace())
           return hints
         const decorations = await hooks.decorations(document.uri.toString())
         return hints.filter(hint => !hintCovered(hint.position, decorations, config.annotationMaxLength))

@@ -90,6 +90,8 @@ export interface UsageReportResult {
 
 export interface Decoration {
   readonly range: Range
+  /** The whole call holding the key, when the scanner knows it. */
+  readonly expression?: Range | undefined
   readonly key: string
   readonly value: string | undefined
   readonly state: 'ok' | 'missing' | 'dynamic'

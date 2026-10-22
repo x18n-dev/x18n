@@ -113,6 +113,8 @@ export interface ScanContext {
 export interface UsageCandidate {
   readonly raw: string
   readonly range: TextRange
+  /** Range of the whole call that holds the key, when the scanner knows it. */
+  readonly expression?: TextRange | undefined
   readonly kind: UsageKind
   readonly dynamic: false | 'prefix' | 'unknown'
   readonly namespace?: string | undefined

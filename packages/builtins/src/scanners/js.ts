@@ -190,15 +190,17 @@ class FileScan {
   }
 
   /** ---- Usages ---- */
-  addKey(value: ArgValue, binding: Binding, namespace: string | undefined): void {
+  /** `expression` is the call holding `value`, kept only when the key is the call's own literal. */
+  addKey(value: ArgValue, binding: Binding, namespace: string | undefined, expression?: TextRange): void {
     if ('props' in value)
       return
     const node = unwrap(value)
     const base = { namespace: namespace ?? binding.namespace, keyPrefix: binding.keyPrefix }
+    const call = expression ? { expression: this.range(expression) } : {}
     if (isStringLiteral(node)) {
       this.consumed.add(node.start)
       this.keySlots.push(this.range(innerRange(node)))
-      this.usages.push({ ...base, raw: node.value, range: this.range(innerRange(node)), kind: 'call', dynamic: false })
+      this.usages.push({ ...base, ...call, raw: node.value, range: this.range(innerRange(node)), kind: 'call', dynamic: false })
       return
     }
     if (node.type === 'JSXExpressionContainer') {
@@ -211,7 +213,7 @@ class FileScan {
       const raw = first.value.cooked ?? first.value.raw
       this.consumed.add(node.start)
       const range = this.range({ start: node.start + 1, end: node.start + 1 + raw.length })
-      this.usages.push({ ...base, raw, range, kind: 'call', dynamic: node.expressions.length === 0 ? false : raw ? 'prefix' : 'unknown' })
+      this.usages.push({ ...base, ...call, raw, range, kind: 'call', dynamic: node.expressions.length === 0 ? false : raw ? 'prefix' : 'unknown' })
       return
     }
     if (node.type === 'ConditionalExpression') {
@@ -252,7 +254,7 @@ class FileScan {
     return object && object.type === 'ObjectExpression' ? objectProperty(object, node.property.name) : undefined
   }
 
-  handleCall(name: string, args: readonly ArgValue[]): boolean {
+  handleCall(name: string, args: readonly ArgValue[], expression?: TextRange): boolean {
     const bindings = this.lookupAll(name).filter(binding => !binding.spec.factory)
     for (const binding of bindings) {
       const namespace = binding.spec.namespace ? this.stringArg(this.argValues(args, binding.spec.namespace, 1)[0]) : undefined
@@ -260,7 +262,7 @@ class FileScan {
         // With several specs per callee, only the one whose key position holds a key counts.
         if (bindings.length > 1 && !('props' in value) && unwrap(value).type === 'ObjectExpression')
           continue
-        this.addKey(value, binding, namespace)
+        this.addKey(value, binding, namespace, expression)
       }
     }
     return bindings.length > 0
@@ -269,7 +271,7 @@ class FileScan {
   call(node: CallExpression): void {
     const name = calleeName(node.callee)
     if (name !== undefined)
-      this.handleCall(name, node.arguments)
+      this.handleCall(name, node.arguments, { start: node.start, end: node.end })
   }
 
   jsx(node: JSXOpeningElement): void {

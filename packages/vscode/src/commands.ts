@@ -1,11 +1,13 @@
 import type { ProjectInfo } from '@x18n/lsp'
+import type { Uri } from 'vscode'
 import type { LanguageClient } from 'vscode-languageclient/node'
 import type { KeyRef, X18nClient } from './model/client'
 import { commands as serverCommands } from '@x18n/lsp'
 import { useCommand } from 'reactive-vscode'
 import { ConfigurationTarget, env, Range, Selection, TextEditorRevealType, commands as vscodeCommands, window, workspace } from 'vscode'
 import { CodeActionKind, CodeActionRequest, ExecuteCommandRequest } from 'vscode-languageclient/node'
-import { config } from './config'
+import { annotationInPlace, config } from './config'
+import { flagIcon } from './flags'
 import { commands } from './generated/meta'
 import { migratableFolders, migrate } from './migrate'
 import { isKeyRef, projectFor } from './model/client'
@@ -26,6 +28,11 @@ function refOf(arg: unknown): KeyRef | undefined {
   if (typeof arg === 'object' && arg !== null && 'item' in arg && typeof arg.item === 'object' && arg.item !== null && 'ref' in arg.item && isKeyRef(arg.item.ref))
     return arg.item.ref
   return undefined
+}
+
+async function localeItem(locale: ProjectInfo['locales'][number]): Promise<{ label: string, code: string, iconPath?: Uri }> {
+  const icon = await flagIcon(locale.code, locale.flag)
+  return { label: locale.code, code: locale.code, ...icon ? { iconPath: icon } : {} }
 }
 
 /** Display locale, translate prompt and key commands. `x18n.extract` is the server's command, see `client.ts`. */
@@ -54,11 +61,10 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
   }
 
   async function pickLocale(info: ProjectInfo, placeHolder: string, skipSource = false): Promise<string | undefined> {
-    const items = info.locales.filter(l => !skipSource || l.code !== info.sourceLocale).map(l => ({
-      label: `${l.flag ? `${l.flag} ` : ''}${l.code}`,
+    const items = await Promise.all(info.locales.filter(l => !skipSource || l.code !== info.sourceLocale).map(async l => ({
+      ...await localeItem(l),
       description: [l.displayName, l.code === info.sourceLocale ? 'source' : undefined].filter(Boolean).join(' · '),
-      code: l.code,
-    }))
+    })))
     return (await window.showQuickPick(items, { placeHolder }))?.code
   }
 
@@ -78,7 +84,7 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
     const locales = [...new Map(projects.flatMap(p => p.locales).map(l => [l.code, l])).values()]
     const picked = await window.showQuickPick([
       { label: 'Source locale', description: projects.map(p => p.sourceLocale).join(', '), code: '' },
-      ...locales.map(l => ({ label: `${l.flag ? `${l.flag} ` : ''}${l.code}`, description: l.displayName ?? '', code: l.code })),
+      ...await Promise.all(locales.map(async l => ({ ...await localeItem(l), description: l.displayName ?? '' }))),
     ], { placeHolder: 'Locale shown in annotations' })
     // The settings watcher in `index.ts` tells the server and refreshes the views.
     if (picked)
@@ -161,7 +167,7 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
   register(commands.goToNextUsage, goToUsage(1))
   register(commands.goToPrevUsage, goToUsage(-1))
 
-  register(commands.toggleInPlace, async () => config.update('inPlace', !config.inPlace, ConfigurationTarget.Global))
+  register(commands.toggleInPlace, async () => config.update('annotationInPlace', !annotationInPlace(), ConfigurationTarget.Global))
   register(commands.restartServer, () => client.restart())
   register(commands.showOutput, async () => client.outputChannel.show())
 

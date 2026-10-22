@@ -55,7 +55,9 @@ class TemplateScan {
   keyExpression(content: string, offset: number): void {
     const callee = '__x18nKey('
     try {
-      merge(this.out, scanSource(this.parse, `${callee}${content})`, { calls: [{ callee: '__x18nKey' }], offset: offset - callee.length, filename: 'template.ts', hardStrings: false }))
+      const result = scanSource(this.parse, `${callee}${content})`, { calls: [{ callee: '__x18nKey' }], offset: offset - callee.length, filename: 'template.ts', hardStrings: false })
+      // The call is synthetic: there is no call in the file to hide.
+      merge(this.out, { ...result, usages: result.usages.map(({ expression: _, ...usage }) => usage) })
     }
     catch {}
   }

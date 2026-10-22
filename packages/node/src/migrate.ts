@@ -85,13 +85,20 @@ const keygenStyles: Readonly<Record<string, 'camel' | 'snake' | 'kebab' | 'dot'>
 }
 
 const editorSettings: Readonly<Record<string, string>> = {
-  annotations: 'x18n.annotations',
-  annotationInPlace: 'x18n.inPlace',
-  annotationMaxLength: 'x18n.annotationMaxLength',
-  displayLanguage: 'x18n.displayLocale',
+  'annotations': 'x18n.annotations',
+  'annotationInPlace': 'x18n.annotationInPlace',
+  'annotationInPlaceFullMatch': 'x18n.annotationInPlaceFullMatch',
+  'annotationMaxLength': 'x18n.annotationMaxLength',
+  'displayLanguage': 'x18n.displayLocale',
+  'showFlags': 'x18n.showFlags',
+  'theme.annotation': 'x18n.theme.annotation',
+  'theme.annotationMissing': 'x18n.theme.annotationMissing',
+  'theme.annotationBorder': 'x18n.theme.annotationBorder',
+  'theme.annotationMissingBorder': 'x18n.theme.annotationMissingBorder',
+  'theme.annotationInPlaceFullMatch': 'x18n.theme.annotationInPlaceFullMatch',
 }
 
-const handledByDefaults = ['readonly', 'encoding', 'fullReloadOnChanged', 'includeSubfolders', 'ignoreFiles', 'editor.preferEditor', 'showFlags', 'annotationDelimiter', 'languageTagSystem', 'targetPickingStrategy', 'extract.targetPickingStrategy']
+const handledByDefaults = ['readonly', 'encoding', 'fullReloadOnChanged', 'includeSubfolders', 'ignoreFiles', 'editor.preferEditor', 'annotationDelimiter', 'languageTagSystem', 'targetPickingStrategy', 'extract.targetPickingStrategy']
 
 async function readText(path: string): Promise<string | undefined> {
   return readFile(path, 'utf8').catch(() => undefined)
