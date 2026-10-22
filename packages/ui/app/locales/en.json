@@ -149,12 +149,11 @@
     "apply": "Extract ({count})",
     "done": "Extracted keys: {count}. Changed files: {files}.",
     "strings": "Strings: {count}",
-    "applyFile": "Extract all ({count})",
-    "one": "Extract",
-    "existing": "Existing",
-    "existingHint": "Reuses an existing key: {value}",
-    "new": "New",
-    "newHint": "Creates a new key"
+    "one": "Extract this string",
+    "existing": "Reuses an existing key",
+    "new": "Creates a new key",
+    "file": "Extract this file",
+    "differs": "Its source message differs from this string; extraction keeps the existing messages."
   },
   "project": {
     "presets": "Presets",

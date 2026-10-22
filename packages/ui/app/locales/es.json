@@ -42,16 +42,15 @@
   },
   "extract": {
     "apply": "Extraer ({count})",
-    "applyFile": "Extraer todo ({count})",
+    "differs": "Su mensaje de origen difiere de esta cadena; la extracción conserva los mensajes existentes.",
     "done": "Claves extraídas: {count}. Archivos modificados: {files}.",
-    "existing": "Existente",
-    "existingHint": "Reutiliza una clave existente: {value}",
+    "existing": "Reutiliza una clave existente",
+    "file": "Extraer este archivo",
     "hint": "Cadenas fijas en el código con una clave propuesta. Edita las claves y extrae una cadena, un archivo o todas las cadenas marcadas.",
     "key": "Clave",
-    "new": "Nueva",
-    "newHint": "Crea una clave nueva",
+    "new": "Crea una clave nueva",
     "none": "No se encontraron cadenas fijas en el código.",
-    "one": "Extraer",
+    "one": "Extraer esta cadena",
     "strings": "Cadenas: {count}"
   },
   "keys": {

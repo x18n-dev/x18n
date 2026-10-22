@@ -2,19 +2,17 @@
 import type { ExtractCandidate } from '@x18n/builtins/extractors'
 import { computed, ref, watch } from 'vue'
 import FilePath from '../components/FilePath.vue'
+import InfoPop from '../components/InfoPop.vue'
+import LocaleFlag from '../components/LocaleFlag.vue'
+import MessageText from '../components/MessageText.vue'
 import UiPage from '../components/ui/UiPage.vue'
 import UiSection from '../components/ui/UiSection.vue'
 import { t } from '../i18n'
-import { backend, projectName, useLive } from '../state'
+import { backend, locales, projectName, useLive } from '../state'
 
 const candidates = useLive((b, project) => b.extractCandidates(project))
 const table = useLive((b, project) => b.keys(project))
-
-/** Source values of the keys that already exist. */
-const existing = computed(() => {
-  const keys = table.value
-  return new Map(keys?.rows.map(row => [row.key, row.values[keys.sourceLocale]]))
-})
+const existing = computed(() => new Map(table.value?.rows.map(row => [row.key, row])))
 
 interface Draft { id: string, candidate: ExtractCandidate, key: string, picked: boolean }
 const drafts = ref<Draft[]>([])
@@ -66,10 +64,10 @@ async function extract(list: readonly Draft[]): Promise<void> {
   }
 }
 
-/** A file's picked strings, or all of them when none is picked. */
-function fileBatch(list: readonly Draft[]): readonly Draft[] {
-  const some = list.filter(d => d.picked)
-  return some.length ? some : list
+/** The draft reuses a key whose source message is not the string's text, which extraction keeps. */
+function differs(draft: Draft): boolean {
+  const source = table.value?.sourceLocale
+  return source !== undefined && existing.value.get(draft.key)?.values[source] !== draft.candidate.value
 }
 </script>
 
@@ -90,26 +88,46 @@ function fileBatch(list: readonly Draft[]): readonly Draft[] {
     <UiSection v-for="([path, list], i) in byFile" :key="path" :index="String(i + 1).padStart(2, '0')" :title="t('extract.strings', { count: list.length })">
       <template #aside>
         <FilePath :path="path" class="ml-2 flex-auto" />
-        <button v-if="backend?.capabilities.write" class="btn-outline" :disabled="busy" @click="extract(fileBatch(list))">
-          {{ list.some(d => d.picked) ? t('extract.apply', { count: fileBatch(list).length }) : t('extract.applyFile', { count: list.length }) }}
+        <button v-if="backend?.capabilities.write" class="btn-outline" :disabled="busy" @click="extract(list)">
+          {{ t('extract.file') }}
         </button>
       </template>
-      <label v-for="draft in list" :key="draft.id" class="grid grid-cols-[auto_3rem_1fr_18rem_4.5rem_auto] items-center gap-3 border-b border-base px-4 py-1.5 last:border-b-0">
-        <input v-model="draft.picked" type="checkbox" class="accent-[var(--x-fg)]" :disabled="!backend?.capabilities.write">
-        <span class="text-right font-mono text-xs color-faint tabular-nums">{{ draft.candidate.line }}</span>
-        <span class="truncate" :title="draft.candidate.text">{{ draft.candidate.text }}</span>
-        <input v-model="draft.key" class="input font-mono text-xs" :readonly="!backend?.capabilities.write" :aria-label="t('extract.key')">
-        <span
-          v-if="existing.has(draft.key)"
-          class="badge justify-center"
-          :class="existing.get(draft.key) !== draft.candidate.value && 'color-warn'"
-          :title="t('extract.existingHint', { value: String(existing.get(draft.key) ?? '') })"
-        >{{ t('extract.existing') }}</span>
-        <span v-else class="badge justify-center color-ok" :title="t('extract.newHint')">{{ t('extract.new') }}</span>
-        <button v-if="backend?.capabilities.write" class="btn-ghost" :disabled="busy || !draft.key" @click.prevent="extract([draft])">
-          {{ t('extract.one') }}
+      <div v-for="draft in list" :key="draft.id" class="grid grid-cols-[auto_3rem_1fr_20rem_auto] items-center gap-3 border-b border-base px-4 py-1.5 last:border-b-0">
+        <label class="contents">
+          <input v-model="draft.picked" type="checkbox" class="accent-[var(--x-fg)]" :disabled="!backend?.capabilities.write">
+          <span class="text-right font-mono text-xs color-faint tabular-nums">{{ draft.candidate.line }}</span>
+          <span class="truncate" :title="draft.candidate.text">{{ draft.candidate.text }}</span>
+        </label>
+        <div class="flex items-center gap-2">
+          <InfoPop v-if="existing.get(draft.key)" :label="t('extract.existing')" :pinnable="false" align="left">
+            <template #trigger>
+              <span
+                class="i-ph-key-duotone shrink-0 text-base"
+                :class="differs(draft) ? 'color-warn' : 'color-info'"
+                role="img"
+                :aria-label="t('extract.existing')"
+              />
+            </template>
+            <p class="mb-1.5 text-xs color-muted">
+              {{ t('extract.existing') }}
+            </p>
+            <p v-if="differs(draft)" class="mb-1.5 text-xs color-warn">
+              {{ t('extract.differs') }}
+            </p>
+            <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+              <template v-for="locale in locales" :key="locale.code">
+                <span class="flex items-center gap-1.5 font-mono"><LocaleFlag :code="locale.code" />{{ locale.code }}</span>
+                <MessageText :value="existing.get(draft.key)?.values[locale.code]" />
+              </template>
+            </div>
+          </InfoPop>
+          <span v-else class="i-ph-plus-circle-duotone shrink-0 text-base color-ok" role="img" :title="t('extract.new')" :aria-label="t('extract.new')" />
+          <input v-model="draft.key" class="input min-w-0 flex-auto font-mono text-xs" :readonly="!backend?.capabilities.write" :aria-label="t('extract.key')">
+        </div>
+        <button v-if="backend?.capabilities.write" class="btn-icon" :disabled="busy || !draft.key" :title="t('extract.one')" :aria-label="t('extract.one')" @click="extract([draft])">
+          <span class="i-ph-export-duotone text-base" />
         </button>
-      </label>
+      </div>
     </UiSection>
   </UiPage>
 </template>

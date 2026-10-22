@@ -42,16 +42,15 @@
   },
   "extract": {
     "apply": "擷取（{count}）",
-    "applyFile": "全部擷取（{count}）",
+    "differs": "其來源訊息與此字串不同；擷取時會保留既有訊息。",
     "done": "已擷取鍵：{count}。已變更檔案：{files}。",
-    "existing": "既有",
-    "existingHint": "沿用既有鍵：{value}",
+    "existing": "沿用既有鍵",
+    "file": "擷取此檔案",
     "hint": "已附建議鍵的寫死字串。可編輯鍵，然後逐條、依檔案或批次擷取已勾選的字串。",
     "key": "鍵",
-    "new": "新增",
-    "newHint": "建立新鍵",
+    "new": "建立新鍵",
     "none": "找不到寫死的字串。",
-    "one": "擷取",
+    "one": "擷取此字串",
     "strings": "字串：{count}"
   },
   "keys": {

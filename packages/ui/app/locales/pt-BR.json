@@ -42,16 +42,15 @@
   },
   "extract": {
     "apply": "Extrair ({count})",
-    "applyFile": "Extrair tudo ({count})",
+    "differs": "A mensagem de origem difere desta string; a extração mantém as mensagens existentes.",
     "done": "Chaves extraídas: {count}. Arquivos alterados: {files}.",
-    "existing": "Existente",
-    "existingHint": "Reutiliza uma chave existente: {value}",
+    "existing": "Reutiliza uma chave existente",
+    "file": "Extrair este arquivo",
     "hint": "Strings fixas no código com uma chave sugerida. Edite as chaves e extraia uma string, um arquivo ou todas as strings marcadas.",
     "key": "Chave",
-    "new": "Nova",
-    "newHint": "Cria uma chave nova",
+    "new": "Cria uma chave nova",
     "none": "Nenhuma string fixa encontrada.",
-    "one": "Extrair",
+    "one": "Extrair esta string",
     "strings": "Strings: {count}"
   },
   "keys": {

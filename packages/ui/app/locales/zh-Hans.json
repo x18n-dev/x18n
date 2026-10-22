@@ -42,16 +42,15 @@
   },
   "extract": {
     "apply": "提取（{count}）",
-    "applyFile": "全部提取（{count}）",
+    "differs": "其源消息与此字符串不同；提取时会保留现有消息。",
     "done": "已提取键：{count}。已修改文件：{files}。",
-    "existing": "已有",
-    "existingHint": "复用已有键：{value}",
+    "existing": "复用已有键",
+    "file": "提取此文件",
     "hint": "带有建议键的硬编码字符串。可编辑键，然后逐条、按文件或批量提取已勾选的字符串。",
     "key": "键",
-    "new": "新建",
-    "newHint": "创建新键",
+    "new": "创建新键",
     "none": "未发现硬编码字符串。",
-    "one": "提取",
+    "one": "提取此字符串",
     "strings": "字符串：{count}"
   },
   "keys": {

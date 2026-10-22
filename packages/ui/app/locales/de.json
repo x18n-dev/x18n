@@ -42,16 +42,15 @@
   },
   "extract": {
     "apply": "Extrahieren ({count})",
-    "applyFile": "Alle extrahieren ({count})",
+    "differs": "Die Quellnachricht weicht von diesem String ab; beim Extrahieren bleiben die vorhandenen Nachrichten erhalten.",
     "done": "Extrahierte Schlüssel: {count}. Geänderte Dateien: {files}.",
-    "existing": "Vorhanden",
-    "existingHint": "Verwendet einen vorhandenen Schlüssel: {value}",
+    "existing": "Verwendet einen vorhandenen Schlüssel",
+    "file": "Diese Datei extrahieren",
     "hint": "Fest codierte Strings mit vorgeschlagenem Schlüssel. Schlüssel bearbeiten, dann einen String, eine Datei oder alle angehakten Strings extrahieren.",
     "key": "Schlüssel",
-    "new": "Neu",
-    "newHint": "Legt einen neuen Schlüssel an",
+    "new": "Legt einen neuen Schlüssel an",
     "none": "Keine fest codierten Strings gefunden.",
-    "one": "Extrahieren",
+    "one": "Diesen String extrahieren",
     "strings": "Strings: {count}"
   },
   "keys": {
