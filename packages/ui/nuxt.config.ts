@@ -70,6 +70,14 @@ export default defineNuxtConfig({
     output: {
       dir: './dist',
     },
+    hooks: {
+      // Nuxt renders `app.baseURL: './'` as `/`, so the HTML would load `/_nuxt/` from the origin root.
+      // Relative URLs let a host mount the SPA under a path, like Vite DevTools at `/__x18n/`.
+      'prerender:generate': (route) => {
+        if (route.contents)
+          route.contents = route.contents.replaceAll('"/_nuxt/', '"./_nuxt/').replace('app:{baseURL:"/"', 'app:{baseURL:"./"')
+      },
+    },
   },
 
   // Hash routes and a relative base: the SPA works under any mount path and on hosts without a fallback route.

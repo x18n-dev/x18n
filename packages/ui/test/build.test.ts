@@ -20,7 +20,11 @@ it('writes a static report with the SPA and the dumped data', async () => {
     const outDir = join(dir, 'report')
     await createBuild(createX18nDevframe(workspace.projects), { outDir, distDir: spa })
 
-    expect(await readFile(join(outDir, 'index.html'), 'utf8')).toContain('<div id="__nuxt">')
+    const html = await readFile(join(outDir, 'index.html'), 'utf8')
+    expect(html).toContain('<div id="__nuxt">')
+    // Relative asset URLs keep the report working under any path.
+    expect(html).toContain('src="./_nuxt/')
+    expect(html).not.toContain('"/_nuxt/')
     expect(JSON.parse(await readFile(join(outDir, '__connection.json'), 'utf8')).backend).toBe('static')
     const manifest = JSON.parse(await readFile(join(outDir, '__rpc-dump/index.json'), 'utf8'))
     expect(Object.keys(manifest).filter(name => name.startsWith('x18n:')).sort()).toEqual([

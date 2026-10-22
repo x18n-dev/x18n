@@ -56,7 +56,8 @@ For other editors, you can use the [Language Server](./packages/lsp) to enable s
 | [`@x18n/node`](./packages/node) | Node.js host: file system, config and plugin loading |
 | [`@x18n/cli`](./packages/cli) | The CLI, with JSON output for CI and agents |
 | [`@x18n/lsp`](./packages/lsp) | Language server for any LSP editor |
-| [`@x18n/ui`](./packages/ui) | devframe UI: local dev server, static report, in-browser workspace, VS Code panel |
+| [`@x18n/ui`](./packages/ui) | devframe UI: local dev server, static report, in-browser workspace, VS Code panel, devtools panel |
+| [`@x18n/devtools`](./packages/devtools) | The UI as a panel in Vite DevTools, Nuxt DevTools and devframe hubs |
 | [`x18n-vscode`](./packages/vscode) | VS Code extension on top of the language server |
 
 ## Credits

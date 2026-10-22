@@ -105,6 +105,7 @@ catalogs:
     '@devframes/vite': 1.2.5
     '@oxc-parser/binding-wasm32-wasip1': ^0.155.0
     '@valibot/to-json-schema': ^1.8.0
+    '@vitejs/devtools-kit': ^0.8.0
     '@vue/compiler-core': ^3.5.44
     '@vue/compiler-sfc': ^3.5.44
     cac: ^7.1.0
@@ -141,6 +142,7 @@ catalogs:
   testing:
     # 1.63 drives the browsers preinstalled in the dev container (chromium 1243).
     '@playwright/test': ~1.64.1
+    '@vitejs/devtools': ^0.8.0
     tsnapi: ^1.5.0
     vitest: ^5.0.5
     vscode-jsonrpc: ^9.0.3

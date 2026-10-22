@@ -215,10 +215,11 @@ export type ExtractPlanItem = Pick<ExtractCandidate, "path" | "range" | "origina
 export type UiEditOp = Exclude<EditOp, {
   readonly type: "extract" | "format";
 }>;
+export type UiProjectLoader = (_: DevframeNodeContext) => Promise<readonly UiProject[]>;
 // #endregion
 
 // #region Functions
-export declare function createX18nDevframe(_: readonly UiProject[], _?: RpcOptions): DevframeDefinition;
+export declare function createX18nDevframe(_: readonly UiProject[] | UiProjectLoader, _?: RpcOptions): DevframeDefinition;
 // #endregion
 
 // #region Referenced (internal)

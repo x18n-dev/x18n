@@ -235,3 +235,9 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 - Decided: "Translate with Agent" in VS Code opens the editor's chat in agent mode with the translate prompt. The agent writes results with `x18n apply` and runs `x18n check`, as the prompt says. Without a chat command, the prompt goes to the clipboard.
 - Considered: an editor LLM engine like [i18n-ally-next](https://github.com/Lydanne/i18n-ally-next)'s `editor-llm`: call `vscode.lm`, parse a JSON reply, write it through a new LSP command, with a model setting and picker.
 - Why: it keeps D9, as x18n calls no model, and it adds no wire contract or reply parsing. The agent already gets placeholder checks from `x18n apply` and can fix what `x18n check` reports, which a single model reply cannot.
+
+## D40 - One devtools package, with a subpath per host
+
+- Decided: `@x18n/devtools` ships `/vite` (a Vite plugin through `createPluginFromDevframe`, for Vite DevTools and Nuxt DevTools 4) and `/devframe` (a definition for any hub). Both load the workspace from the host's root when the host sets the devframe up, through a loader that `createX18nDevframe` in `@x18n/ui` accepts.
+- Considered: a `@x18n/vite` package with only the plugin; a Nuxt module that adds the plugin.
+- Why: Nuxt DevTools 4 runs on Vite DevTools, so one plugin covers both, and `vite.plugins` is one line. Hubs need only the definition. Loading in `setup` uses the host's root, so the user passes no path.

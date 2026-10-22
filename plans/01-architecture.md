@@ -10,6 +10,7 @@
 | `packages/cli` | `@x18n/cli` | Node >= 22 | The `x18n` command. Ships the agent skill. |
 | `packages/lsp` | `@x18n/lsp` | Node >= 22 | Language server (`x18n-lsp --stdio`). Hosts the UI server on request. |
 | `packages/ui` | `@x18n/ui` | Node side + browser SPA | devframe definition (node side) and the Nuxt SPA (browser side). |
+| `packages/devtools` | `@x18n/devtools` | Node >= 22 | The UI as a devtools panel: a Vite plugin for Vite DevTools and Nuxt DevTools (`/vite`) and a devframe definition for hubs (`/devframe`). |
 | `packages/vscode` | `x18n-vscode` (private, Marketplace + Open VSX) | VS Code extension host | Extension client. Bundles the LSP and UI assets. |
 | `docs` | private | - | Docs site on the comark-docs Nuxt layer, also hosts the in-browser playground. |
 
@@ -32,6 +33,7 @@
 ```
 
 - `x18n` (CLI) depends on `@x18n/ui` for `x18n ui`, `x18n build` and `x18n mcp`.
+- `@x18n/devtools` depends on `@x18n/ui` and `@x18n/node`; it loads the workspace from the host's root when the host sets the devframe up.
 - `@x18n/lsp` depends on `@x18n/ui` to start the UI server from the same project instance.
 - `x18n-vscode` depends on `@x18n/lsp` only, plus the UI assets for the webview.
 
@@ -70,6 +72,7 @@ host (fs/glob/watch)                                   surfaces
 | --- | --- |
 | CLI one-shot (`x18n check`) | One Node process: node host, project, exit. |
 | CLI UI (`x18n ui`) | One Node process: project + devframe dev server, browser connects over WebSocket. |
+| DevTools panel | The app's Vite dev server: the host (Vite DevTools, Nuxt DevTools, a devframe hub) mounts the devframe, owns auth and the WebSocket, and serves the SPA at `/__x18n/`. |
 | Static report (`x18n build`) | Build step dumps RPC results. The deployed site has no server. |
 | In-browser workspace (1.x) | No server. The SPA runs core + builtins with a browser host over the File System Access API or in-memory demo files. |
 | Other LSP editors (1.x) | Editor spawns `x18n-lsp`. The server holds the project and an overlay host for unsaved buffers. |

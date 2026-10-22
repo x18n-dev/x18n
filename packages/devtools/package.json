@@ -1,0 +1,49 @@
+{
+  "name": "@x18n/devtools",
+  "type": "module",
+  "version": "0.0.12",
+  "description": "x18n UI inside Vite DevTools, Nuxt DevTools and devframe hubs",
+  "author": "Anthony Fu <anthonyfu117@hotmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/x18n-dev/x18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/x18n-dev/x18n.git",
+    "directory": "packages/devtools"
+  },
+  "bugs": "https://github.com/x18n-dev/x18n/issues",
+  "keywords": [
+    "i18n",
+    "devtools",
+    "devframe",
+    "vite"
+  ],
+  "sideEffects": false,
+  "exports": {
+    "./devframe": "./dist/devframe.mjs",
+    "./vite": "./dist/vite.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "prepack": "pnpm build"
+  },
+  "dependencies": {
+    "@vitejs/devtools-kit": "catalog:deps",
+    "@x18n/node": "workspace:*",
+    "@x18n/ui": "workspace:*",
+    "devframe": "catalog:deps"
+  },
+  "devDependencies": {
+    "@vitejs/devtools": "catalog:testing",
+    "vite": "catalog:cli"
+  }
+}

@@ -14,14 +14,14 @@ const alias = [
   { find: /^@x18n\/ui$/, replacement: src('ui/src/node/index.ts') },
 ]
 
-const packages = ['builtins', 'cli', 'core', 'lsp', 'node', 'ui', 'vscode']
+const packages = ['builtins', 'cli', 'core', 'devtools', 'lsp', 'node', 'ui', 'vscode']
 
 export default defineConfig({
-  resolve: { alias },
   test: {
     projects: [
       ...packages.map(name => ({
-        extends: true as const,
+        // Vite DevTools serves the SPA from next to the built `@x18n/ui`, so devtools tests use built packages.
+        resolve: { alias: name === 'devtools' ? [] : alias },
         test: { name, root: `./packages/${name}` },
       })),
       {
