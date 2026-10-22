@@ -3,9 +3,18 @@ title: What is x18n
 description: x18n is TypeScript, but for i18n. It links locale files to the code like imports, checks every key and changes the files safely.
 ---
 
-Think of x18n as TypeScript, but for i18n.
-
 x18n reads the i18n setup of a project: the locale files, and the translate calls in the code. It shows every key across locales, finds where each key is used, and reports keys that are missing, unused or broken. It also changes locale files for you, without breaking their format.
+
+## The problem
+
+Locale files drift as a project grows:
+
+- A key exists in English but not in German.
+- A key stays in the files after the code stops using it.
+- A translation drops a placeholder, so `Hello {name}` becomes `Hallo`.
+- Hard-coded text gets into the UI without a key.
+
+[i18n-ally](https://github.com/lokalise/i18n-ally) found many of these problems inside VS Code. Its logic is tied to the VS Code API, so it cannot run in CI, in a browser or for a coding agent. x18n moves the same logic into an engine that runs anywhere.
 
 ## TypeScript, but for i18n
 
@@ -25,17 +34,6 @@ x18n makes the connection. It treats each message in a locale file as a symbol, 
 | Quick fixes | Add a missing key, copy the source value, extract a hard-coded string |
 
 Like TypeScript, x18n adds no runtime code. Your i18n library still loads the same files. x18n only checks the links and helps you change them.
-
-## The problem
-
-Locale files drift as a project grows:
-
-- A key exists in English but not in German.
-- A key stays in the files after the code stops using it.
-- A translation drops a placeholder, so `Hello {name}` becomes `Hallo`.
-- Hard-coded text gets into the UI without a key.
-
-[i18n-ally](https://github.com/lokalise/i18n-ally) found many of these problems inside VS Code. Its logic is tied to the VS Code API, so it cannot run in CI, in a browser or for a coding agent. x18n moves the same logic into an engine that runs anywhere.
 
 ## One engine, many surfaces
 
