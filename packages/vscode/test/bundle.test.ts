@@ -1,6 +1,7 @@
 import type { ChildProcess } from 'node:child_process'
 import { Buffer } from 'node:buffer'
 import { spawn } from 'node:child_process'
+import { once } from 'node:events'
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -77,7 +78,9 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  child?.kill()
+  // Windows keeps the temp dir locked until the server has exited.
+  if (child?.kill())
+    await once(child, 'exit')
   await rm(dir, { recursive: true, force: true })
 })
 
