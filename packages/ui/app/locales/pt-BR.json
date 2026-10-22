@@ -42,10 +42,16 @@
   },
   "extract": {
     "apply": "Extrair ({count})",
+    "applyFile": "Extrair tudo ({count})",
     "done": "Chaves extraídas: {count}. Arquivos alterados: {files}.",
-    "hint": "Strings fixas no código com uma chave sugerida. Edite as chaves, desmarque as strings a ignorar e aplique.",
+    "existing": "Existente",
+    "existingHint": "Reutiliza uma chave existente: {value}",
+    "hint": "Strings fixas no código com uma chave sugerida. Edite as chaves e extraia uma string, um arquivo ou todas as strings marcadas.",
     "key": "Chave",
+    "new": "Nova",
+    "newHint": "Cria uma chave nova",
     "none": "Nenhuma string fixa encontrada.",
+    "one": "Extrair",
     "strings": "Strings: {count}"
   },
   "keys": {

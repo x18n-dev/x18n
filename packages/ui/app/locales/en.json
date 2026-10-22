@@ -143,12 +143,18 @@
     "filter": "Filter by file or key"
   },
   "extract": {
-    "hint": "Hard-coded strings with a proposed key. Edit keys, untick strings to skip, then apply.",
+    "hint": "Hard-coded strings with a proposed key. Edit keys, then extract one string, one file, or every ticked string.",
     "none": "No hard-coded strings found.",
     "key": "Key",
     "apply": "Extract ({count})",
     "done": "Extracted keys: {count}. Changed files: {files}.",
-    "strings": "Strings: {count}"
+    "strings": "Strings: {count}",
+    "applyFile": "Extract all ({count})",
+    "one": "Extract",
+    "existing": "Existing",
+    "existingHint": "Reuses an existing key: {value}",
+    "new": "New",
+    "newHint": "Creates a new key"
   },
   "project": {
     "presets": "Presets",

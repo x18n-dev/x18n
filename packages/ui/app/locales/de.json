@@ -42,10 +42,16 @@
   },
   "extract": {
     "apply": "Extrahieren ({count})",
+    "applyFile": "Alle extrahieren ({count})",
     "done": "Extrahierte Schlüssel: {count}. Geänderte Dateien: {files}.",
-    "hint": "Fest codierte Strings mit vorgeschlagenem Schlüssel. Schlüssel bearbeiten, zu überspringende Strings abwählen, dann anwenden.",
+    "existing": "Vorhanden",
+    "existingHint": "Verwendet einen vorhandenen Schlüssel: {value}",
+    "hint": "Fest codierte Strings mit vorgeschlagenem Schlüssel. Schlüssel bearbeiten, dann einen String, eine Datei oder alle angehakten Strings extrahieren.",
     "key": "Schlüssel",
+    "new": "Neu",
+    "newHint": "Legt einen neuen Schlüssel an",
     "none": "Keine fest codierten Strings gefunden.",
+    "one": "Extrahieren",
     "strings": "Strings: {count}"
   },
   "keys": {

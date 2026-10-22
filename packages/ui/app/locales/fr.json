@@ -42,10 +42,16 @@
   },
   "extract": {
     "apply": "Extraire ({count})",
+    "applyFile": "Tout extraire ({count})",
     "done": "Clés extraites : {count}. Fichiers modifiés : {files}.",
-    "hint": "Chaînes codées en dur avec une clé proposée. Modifiez les clés, décochez les chaînes à ignorer, puis appliquez.",
+    "existing": "Existante",
+    "existingHint": "Réutilise une clé existante : {value}",
+    "hint": "Chaînes codées en dur avec une clé proposée. Modifiez les clés, puis extrayez une chaîne, un fichier ou toutes les chaînes cochées.",
     "key": "Clé",
+    "new": "Nouvelle",
+    "newHint": "Crée une nouvelle clé",
     "none": "Aucune chaîne codée en dur trouvée.",
+    "one": "Extraire",
     "strings": "Chaînes : {count}"
   },
   "keys": {
