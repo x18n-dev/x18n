@@ -189,27 +189,6 @@
       "skillPath": "skills/productivity/writing-for-agents/SKILL.md",
       "computedHash": "95da47fc97af998e85b7d7e6d57b3ac76727c1e290cfe9ea09005aacb826959f",
       "via": "@antfu/skills"
-    },
-    "x18n": {
-      "source": "@x18n/cli",
-      "sourceType": "node_modules",
-      "skillPath": "skills/x18n/SKILL.md",
-      "version": "0.0.8",
-      "computedHash": "1d58651c88e93a96dc03b325d3b9fb227c18cb5acfb2c0228859aa78f1839f8a"
-    },
-    "x18n-check": {
-      "source": "@x18n/cli",
-      "sourceType": "node_modules",
-      "skillPath": "skills/x18n-check/SKILL.md",
-      "version": "0.0.8",
-      "computedHash": "c2dacaf4a4003eb284a7f28da0936a81e720f7d202a78c4ac9729c6a5572d223"
-    },
-    "x18n-setup": {
-      "source": "@x18n/cli",
-      "sourceType": "node_modules",
-      "skillPath": "skills/x18n-setup/SKILL.md",
-      "version": "0.0.8",
-      "computedHash": "fa02f9beee145ffa0ef5aaa73cb8f6a2e1f23bbe278e4bcb9da2a5d3ba33f8a0"
     }
   }
 }
