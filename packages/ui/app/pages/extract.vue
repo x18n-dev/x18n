@@ -102,7 +102,7 @@ function differs(draft: Draft): boolean {
           <InfoPop v-if="existing.get(draft.key)" :label="t('extract.existing')" :pinnable="false" align="left">
             <template #trigger>
               <span
-                class="i-ph-key-duotone shrink-0 text-base"
+                class="i-ph-link-simple-duotone shrink-0 text-base"
                 :class="differs(draft) ? 'color-warn' : 'color-info'"
                 role="img"
                 :aria-label="t('extract.existing')"
@@ -125,7 +125,7 @@ function differs(draft: Draft): boolean {
           <input v-model="draft.key" class="input min-w-0 flex-auto font-mono text-xs" :readonly="!backend?.capabilities.write" :aria-label="t('extract.key')">
         </div>
         <button v-if="backend?.capabilities.write" class="btn-icon" :disabled="busy || !draft.key" :title="t('extract.one')" :aria-label="t('extract.one')" @click="extract([draft])">
-          <span class="i-ph-export-duotone text-base" />
+          <span class="i-ph-hammer-duotone text-base" />
         </button>
       </div>
     </UiSection>
