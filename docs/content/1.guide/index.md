@@ -1,6 +1,6 @@
 ---
 title: What is x18n
-description: x18n is TypeScript, but for i18n. It links locale files to the code like imports, checks every key and changes the files safely.
+description: Universal toolkits for linting, viewing and managing i18n for any frameworks.
 ---
 
 x18n reads the i18n setup of a project: the locale files, and the translate calls in the code. It shows every key across locales, finds where each key is used, and reports keys that are missing, unused or broken. It also changes locale files for you, without breaking their format.
