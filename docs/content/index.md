@@ -161,7 +161,7 @@ Run x18n in the root of a project. It detects the i18n library from your depende
 Coming from i18n-ally?
 
 #description
-`x18n migrate i18n-ally` converts your settings and custom frameworks into an x18n config. x18n is in early development.
+`x18n migrate i18n-ally` converts your settings and custom frameworks into an x18n config.
 
 #links
   :::u-button

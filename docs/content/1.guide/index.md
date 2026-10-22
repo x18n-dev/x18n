@@ -67,5 +67,3 @@ The built-in formats read JSON, JSONC, JSON5, YAML, gettext PO, Java properties,
 | `@x18n/lsp` | The language server. |
 | `@x18n/ui` | The UI. |
 | `x18n-vscode` | The VS Code extension. |
-
-x18n is in early development. The plan lives in [`plans/`](https://github.com/x18n-dev/x18n/tree/main/plans).
