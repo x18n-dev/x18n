@@ -9,6 +9,7 @@ export interface ScanSourceOptions {
   readonly filename: string;
   readonly expression?: boolean;
   readonly ignoreCallees?: readonly string[] | undefined;
+  readonly textAttributes?: readonly string[] | undefined;
 }
 // #endregion
 

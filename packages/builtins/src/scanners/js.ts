@@ -11,7 +11,17 @@ interface Binding {
 /** A value read from call arguments: an AST node, or the props of a JSX element seen as one object argument. */
 type ArgValue = Node | { readonly props: ReadonlyMap<string, Node> }
 
-const hardStringIgnoredAttributes = new Set(['class', 'className', 'style', 'key', 'ref', 'id', 'href', 'src', 'type', 'name', 'for', 'htmlFor', 'role', 'slot', 'as', 'to', 'target', 'rel', 'lang', 'xmlns', 'viewBox', 'd', 'fill', 'stroke'])
+const textAttributeWords = new Set(['title', 'subtitle', 'label', 'text', 'placeholder', 'alt', 'content', 'description', 'caption', 'message', 'tooltip', 'hint', 'summary', 'heading', 'headline'])
+
+/**
+ * Markup attributes whose values users read: those whose last word is a text word (`title`, `aria-label`,
+ * `confirmText`, `empty-message`), plus `extract.attributes`. Every other attribute holds code: classes,
+ * URLs, ids, SVG geometry, attributify utilities.
+ */
+export function isTextAttribute(name: string, extra: readonly string[] = []): boolean {
+  const last = name.replace(/([a-z\d])([A-Z])/g, '$1-$2').toLowerCase().split(/[-_:.]/).at(-1)!
+  return textAttributeWords.has(last) || extra.includes(name)
+}
 
 function isNode(value: unknown): value is Node {
   return typeof value === 'object' && value !== null && 'type' in value && typeof value.type === 'string' && 'start' in value
@@ -88,7 +98,7 @@ class FileScan {
   readonly typed = new Map<string, CallSpec>()
   readonly consumed = new Set<number>()
 
-  constructor(readonly text: string, readonly offset: number, calls: readonly CallSpec[], readonly collectHardStrings: boolean, readonly ignoredCallees: ReadonlySet<string> = new Set()) {
+  constructor(readonly text: string, readonly offset: number, calls: readonly CallSpec[], readonly collectHardStrings: boolean, readonly ignoredCallees: ReadonlySet<string> = new Set(), readonly textAttributes: readonly string[] = []) {
     for (const spec of calls) {
       for (const name of [spec.callee].flat()) {
         if (spec.factory) {
@@ -437,7 +447,7 @@ class FileScan {
     if (parent.type === 'JSXAttribute') {
       const name = parent.name.type === 'JSXIdentifier' ? parent.name.name : ''
       // The range covers the whole attribute, which templates such as `{attr}={t('{key}')}` replace.
-      if (isStringLiteral(node) && !hardStringIgnoredAttributes.has(name) && !name.startsWith('data-') && !name.startsWith('aria-'))
+      if (isStringLiteral(node) && isTextAttribute(name, this.textAttributes))
         this.hard(node.value, { start: parent.start, end: parent.end }, 'jsx-attribute', name)
       return
     }
@@ -542,13 +552,15 @@ export interface ScanSourceOptions {
   readonly expression?: boolean
   /** Callees whose string arguments are never hard strings (`extract.ignoreCallees`). */
   readonly ignoreCallees?: readonly string[] | undefined
+  /** Attributes whose values are text, on top of the built-in ones (`extract.attributes`). */
+  readonly textAttributes?: readonly string[] | undefined
 }
 
 export function scanSource(parse: ParseSync, text: string, options: ScanSourceOptions): ScanResult {
   const source = options.expression ? `(${text})` : text
   const shift = options.expression ? -1 : 0
   const result = parse(options.filename, source, { sourceType: 'module', range: false })
-  const scan = new FileScan(source, (options.offset ?? 0) + shift, options.calls, options.hardStrings !== false, new Set(options.ignoreCallees))
+  const scan = new FileScan(source, (options.offset ?? 0) + shift, options.calls, options.hardStrings !== false, new Set(options.ignoreCallees), options.textAttributes)
   scan.walk(result.program, undefined, '')
   scan.markers(result.program, result.comments)
   return scan.result()
@@ -561,7 +573,7 @@ export function js(): Plugin {
     extensions: ['js', 'jsx', 'mjs', 'cjs', 'ts', 'tsx', 'mts', 'cts'],
     async scan(file, ctx) {
       const parse = await loadParser()
-      return scanSource(parse, file.text, { calls: ctx.calls, filename: file.path, hardStrings: true, ignoreCallees: ctx.config.extract.ignoreCallees })
+      return scanSource(parse, file.text, { calls: ctx.calls, filename: file.path, hardStrings: true, ignoreCallees: ctx.config.extract.ignoreCallees, textAttributes: ctx.config.extract.attributes })
     },
   }
   return { name: 'x18n:scanner-js', scanners: [scanner] }

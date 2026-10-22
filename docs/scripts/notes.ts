@@ -250,7 +250,7 @@ export const configNotes: { readonly [field: string]: string } = {
   'ExtractOptions.keygen': 'How `x18n extract` makes a new key: `slug` from the text, `source` uses the text itself, `random`, or `empty`. Default `slug`.',
   'ExtractOptions.keyCase': 'Case of slug keys. Default `camel`.',
   'ExtractOptions.keyMaxLength': 'Longest slug, in characters. Default 40.',
-  'ExtractOptions.ignoreAttributes': 'Attribute names whose values are never extracted, for example `class`.',
+  'ExtractOptions.ignoreAttributes': 'Attribute names whose values are never extracted, even text ones such as `alt`.',
   'ExtractOptions.ignoreCallees': 'Accepted by the schema. x18n does not read it yet.',
   'ExtractOptions.templates': 'Replacement templates, tried before the templates of presets. See [Extraction templates](/presets#extraction-templates).',
   'ExtractTemplate.template': 'Replacement code. `{key}` is the key, `{attr}` the attribute name, `{args}` the arguments of a template string.',

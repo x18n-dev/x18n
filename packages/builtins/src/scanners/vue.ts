@@ -1,6 +1,6 @@
 import type { AttributeNode, DirectiveNode, ElementNode, RootNode, TemplateChildNode } from '@vue/compiler-core'
 import type { CallSpec, HardString, Plugin, Scanner, ScanResult, TextRange, UsageCandidate } from '@x18n/core'
-import { loadParser, scanSource } from './js'
+import { isTextAttribute, loadParser, scanSource } from './js'
 
 type SfcCompiler = typeof import('@vue/compiler-sfc')
 let compiler: Promise<SfcCompiler> | undefined
@@ -21,7 +21,6 @@ const ATTRIBUTE = 6
 function isKeyAttribute(tag: string, name: string): boolean {
   return name === 'keypath' || (name === 'path' && (tag === 'i18n' || tag === 'i18n-d'))
 }
-const ignoredAttributes = new Set(['class', 'style', 'key', 'ref', 'id', 'name', 'type', 'href', 'src', 'to', 'for', 'role', 'lang', 'target', 'rel', 'is', 'slot'])
 
 interface Collected {
   usages: UsageCandidate[]
@@ -38,7 +37,7 @@ function merge(into: Collected, result: ScanResult): void {
 class TemplateScan {
   readonly out: Collected = { usages: [], keySlots: [], hardStrings: [] }
 
-  constructor(readonly parse: Awaited<ReturnType<typeof loadParser>>, readonly calls: readonly CallSpec[]) {}
+  constructor(readonly parse: Awaited<ReturnType<typeof loadParser>>, readonly calls: readonly CallSpec[], readonly textAttributes: readonly string[] | undefined) {}
 
   expression(content: string, offset: number): void {
     if (!content.trim())
@@ -87,7 +86,7 @@ class TemplateScan {
         this.out.usages.push({ raw: value.content, range, kind: 'call', dynamic: false })
         this.out.keySlots.push(range)
       }
-      else if (!ignoredAttributes.has(prop.name) && !prop.name.startsWith('data-') && /\p{L}/u.test(value.content)) {
+      else if (isTextAttribute(prop.name, this.textAttributes) && /\p{L}/u.test(value.content)) {
         this.out.hardStrings.push({ text: value.content, range: { start: prop.loc.start.offset, end: prop.loc.end.offset }, kind: 'vue-attribute', attribute: prop.name })
       }
       return
@@ -137,12 +136,12 @@ export function vue(): Plugin {
     async scan(file, ctx) {
       const [{ parse }, parseJs] = await Promise.all([loadVueCompiler(), loadParser()])
       const { descriptor } = parse(file.text, { filename: file.path, sourceMap: false, ignoreEmpty: false })
-      const template = new TemplateScan(parseJs, ctx.calls)
+      const template = new TemplateScan(parseJs, ctx.calls, ctx.config.extract.attributes)
       for (const script of [descriptor.script, descriptor.scriptSetup]) {
         if (!script)
           continue
         const lang = script.lang ?? 'js'
-        merge(template.out, scanSource(parseJs, script.content, { calls: ctx.calls, ignoreCallees: ctx.config.extract.ignoreCallees, offset: script.loc.start.offset, filename: `script.${lang === 'tsx' || lang === 'jsx' ? lang : lang === 'ts' ? 'ts' : 'js'}` }))
+        merge(template.out, scanSource(parseJs, script.content, { calls: ctx.calls, ignoreCallees: ctx.config.extract.ignoreCallees, textAttributes: ctx.config.extract.attributes, offset: script.loc.start.offset, filename: `script.${lang === 'tsx' || lang === 'jsx' ? lang : lang === 'ts' ? 'ts' : 'js'}` }))
       }
       if (descriptor.template?.ast)
         template.node(descriptor.template.ast)

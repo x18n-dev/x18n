@@ -158,6 +158,7 @@ export interface ExtractOptions {
   readonly ignoreByFile?: {
     readonly [glob: string]: readonly string[];
   } | undefined;
+  readonly attributes?: readonly string[] | undefined;
   readonly ignoreAttributes?: readonly string[] | undefined;
   readonly ignoreCallees?: readonly string[] | undefined;
   readonly templates?: readonly (string | ExtractTemplate)[] | undefined;

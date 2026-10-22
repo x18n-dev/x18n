@@ -78,6 +78,7 @@ const extractOptions = v.strictObject({
   reuseExisting: v.optional(v.boolean()),
   ignore: v.optional(strings),
   ignoreByFile: v.optional(v.record(v.string(), strings)),
+  attributes: v.optional(strings),
   ignoreAttributes: v.optional(strings),
   ignoreCallees: v.optional(strings),
   templates: v.optional(extractTemplates),

@@ -6,7 +6,7 @@ export type Score = 'must-include' | 'should-include' | 'none' | 'should-exclude
 
 export interface ExtractionRule {
   readonly id: string
-  readonly test: (text: string, kind: string) => Score
+  readonly test: (text: string, kind: string, attribute: string | undefined) => Score
 }
 
 const textKinds = new Set(['jsx-text', 'vue-template-text', 'svelte-text', 'html-text'])
@@ -26,6 +26,13 @@ export const rules: readonly ExtractionRule[] = [
     const tokens = text.trim().split(/\s+/)
     return tokens.every(t => /^!?[a-z][\w:/[\].#%!-]*$/.test(t)) && tokens.filter(t => /[-:!/[\d]/.test(t)).length * 2 > tokens.length ? 'must-exclude' : 'none'
   } },
+  // `text="xs secondary"`, `sm:text="lg"`: attributify utilities on an attribute that is also a common text prop.
+  { id: 'attributify', test: (text, kind, attribute) => kind.endsWith('attribute') && (attribute === 'text' || attribute?.includes(':') === true)
+    && text.trim().split(/\s+/).every(t => /^!?-?[a-z\d$[(][\w:/[\]().,#%!$+~-]*$/.test(t))
+    ? 'must-exclude'
+    : 'none' },
+  // `repeating-linear-gradient(to right, var(--c-primary) 0%, ...)`, `calc(100% - 2rem)`: CSS values.
+  { id: 'css-value', test: text => /^-?[a-z][\w-]*\(.*\)$/s.test(text.trim()) || /\bvar\(--/.test(text) ? 'must-exclude' : 'none' },
   { id: 'non-ascii', test: text => /\P{ASCII}/u.test(text) && /\p{L}/u.test(text) ? 'must-include' : 'none' },
   { id: 'sentence', test: text => /\p{L}\s+\p{L}/u.test(text) ? 'should-include' : 'none' },
   { id: 'text-node', test: (text, kind) => textKinds.has(kind) || kind.endsWith('attribute') ? 'should-include' : 'none' },
@@ -53,10 +60,10 @@ function isExtractableFile(path: string): boolean {
 }
 
 /** Folds rule scores the i18n-ally way (`shouldExtract`). */
-export function shouldExtract(text: string, kind: string, list: readonly ExtractionRule[] = rules): boolean {
+export function shouldExtract(text: string, kind: string, list: readonly ExtractionRule[] = rules, attribute?: string): boolean {
   let result: Score = 'none'
   for (const rule of list) {
-    const score = rule.test(text, kind)
+    const score = rule.test(text, kind, attribute)
     if (score === 'must-include')
       return true
     if (score === 'must-exclude')
@@ -234,7 +241,7 @@ export function* extractableHardStrings(
 ): Generator<HardString & { readonly path: string }> {
   const ignores = new Map<string, (offset: number) => boolean>()
   for (const hard of hardStrings) {
-    if (!isExtractableFile(hard.path) || !shouldExtract(hard.text, hard.kind) || ignoredByConfig(options, hard))
+    if (!isExtractableFile(hard.path) || !shouldExtract(hard.text, hard.kind, rules, hard.attribute) || ignoredByConfig(options, hard))
       continue
     let ignored = ignores.get(hard.path)
     if (!ignored) {

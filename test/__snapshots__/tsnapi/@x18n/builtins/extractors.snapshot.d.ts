@@ -19,7 +19,7 @@ export interface ExtractCandidate {
 }
 export interface ExtractionRule {
   readonly id: string;
-  readonly test: (_: string, _: string) => Score;
+  readonly test: (_: string, _: string, _: string | undefined) => Score;
 }
 export interface ExtractPlanFile {
   readonly x18n: 1;
@@ -44,7 +44,7 @@ export declare function extractableHardStrings(_: ExtractOptions, _: Iterable<Ha
 }>;
 export declare function extractItems(_: Project, _: readonly Pick<ExtractCandidate, "path" | "range" | "original" | "key" | "value" | "replacement" | "imports">[]): ExtractItem[];
 export declare function findCandidates(_: Project, _?: FindOptions): ExtractCandidate[];
-export declare function shouldExtract(_: string, _: string, _?: readonly ExtractionRule[]): boolean;
+export declare function shouldExtract(_: string, _: string, _?: readonly ExtractionRule[], _?: string): boolean;
 export declare function slugify(_: string, _?: KeyCase, _?: number): string;
 export declare function toPlanFile(_: Project, _: readonly ExtractCandidate[]): ExtractPlanFile;
 // #endregion

@@ -1,7 +1,7 @@
 import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
 import { extractableHardStrings, extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
-import { reactI18next, reactIntl, vueI18n } from '../src/presets'
+import { reactI18next, reactIntl, svelteI18n, vueI18n } from '../src/presets'
 import { createTestProject, json } from './_utils'
 
 async function extractAll(project: Project): Promise<void> {
@@ -34,6 +34,52 @@ describe('extraction rules', () => {
     expect(shouldExtract('<b>Save</b> your changes', 'js-string')).toBe(true)
     expect(shouldExtract('well-known issue', 'js-string')).toBe(true)
     expect(shouldExtract('Move to trash', 'js-string')).toBe(true)
+  })
+
+  it('skips attributify utilities on text props and CSS values', () => {
+    expect(shouldExtract('xs secondary', 'vue-attribute', undefined, 'text')).toBe(false)
+    expect(shouldExtract('lg', 'vue-attribute', undefined, 'sm:text')).toBe(false)
+    expect(shouldExtract('Save changes', 'vue-attribute', undefined, 'text')).toBe(true)
+    expect(shouldExtract('repeating-linear-gradient(to right,var(--c-primary) 0%,var(--c-primary-active) 100%)', 'js-string')).toBe(false)
+    expect(shouldExtract('calc(100% - 2rem)', 'js-string')).toBe(false)
+  })
+
+  it('extracts only text attributes from markup', async () => {
+    const tag = '<component as="RouterLink" flex="~ col gap-2" border="b base" w="sm:1/2 full" color="var(--c-primary)" enter-from-class="opacity-0" text="xs secondary" title="Open menu" aria-label="Close dialog" confirm-text="Yes please" empty-state="Nothing here">Hidden</component>'
+    const { project } = await createTestProject({
+      'locales/en.json': json({}),
+      'src/App.vue': `<template>\n  ${tag}\n</template>\n`,
+      'src/App.tsx': `export const App = () => ${tag.replace('enter-from-class', 'className')}\n`,
+      'src/App.svelte': `${tag.replace('enter-from-class', 'class')}\n`,
+    }, { presets: [vueI18n(), svelteI18n()], extract: { attributes: ['empty-state'] } })
+    expect(findCandidates(project).map(c => `${c.path}:${c.attribute ?? c.kind}`)).toEqual([
+      'src/App.svelte:title',
+      'src/App.svelte:aria-label',
+      'src/App.svelte:confirm-text',
+      'src/App.svelte:empty-state',
+      'src/App.svelte:svelte-text',
+      'src/App.tsx:title',
+      'src/App.tsx:aria-label',
+      'src/App.tsx:confirm-text',
+      'src/App.tsx:empty-state',
+      'src/App.tsx:jsx-text',
+      'src/App.vue:title',
+      'src/App.vue:aria-label',
+      'src/App.vue:confirm-text',
+      'src/App.vue:empty-state',
+      'src/App.vue:vue-template-text',
+    ])
+  })
+})
+
+describe('config ignores', () => {
+  it('skips exact strings and /regex/ from extract.ignore and extract.ignoreByFile', async () => {
+    const { project } = await createTestProject({
+      'locales/en.json': json({}),
+      'src/a.ts': 'export const a = [\'Hello there\', \'Brand Name\', \'TODO: later\', \'Kept text\']',
+      'src/b.ts': 'export const b = [\'Only here\', \'Brand Name\']',
+    }, { extract: { ignore: ['Brand Name', '/^todo:/i'], ignoreByFile: { 'src/b.ts': ['Only here'] } } })
+    expect(findCandidates(project).map(c => c.text)).toEqual(['Hello there', 'Kept text'])
   })
 })
 

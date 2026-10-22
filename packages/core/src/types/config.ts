@@ -77,10 +77,12 @@ export interface ExtractOptions {
   readonly keyMaxLength?: number | undefined
   /** Reuse a key when the same text exists as a source value. Default true. */
   readonly reuseExisting?: boolean | undefined
-  /** Strings or `/regex/` never extracted. */
+  /** Strings never extracted: an exact string such as `Elk`, or a `/regex/flags` string such as `/^v\d+/i` that matches the text. */
   readonly ignore?: readonly string[] | undefined
-  /** Ignored strings per file glob. */
+  /** Strings never extracted in the files of a glob, written as in `ignore`. */
   readonly ignoreByFile?: { readonly [glob: string]: readonly string[] } | undefined
+  /** Attribute names whose values are text, on top of those whose last word is `title`, `label`, `text`, `placeholder`, `alt`, `content`, `description`, `message` and the like. Markup attributes outside this set are never extracted. */
+  readonly attributes?: readonly string[] | undefined
   readonly ignoreAttributes?: readonly string[] | undefined
   readonly ignoreCallees?: readonly string[] | undefined
   readonly templates?: readonly (string | ExtractTemplate)[] | undefined

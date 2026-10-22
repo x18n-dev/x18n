@@ -1,5 +1,5 @@
 import type { HardString, Plugin, Scanner, ScanResult, TextRange, UsageCandidate } from '@x18n/core'
-import { loadParser, scanSource } from './js'
+import { isTextAttribute, loadParser, scanSource } from './js'
 
 type SvelteCompiler = typeof import('svelte/compiler')
 let compiler: Promise<SvelteCompiler> | undefined
@@ -15,16 +15,16 @@ function isSvelteNode(value: unknown): value is SvelteNode {
 }
 
 const expressionTypes = new Set(['ExpressionTag', 'HtmlTag', 'ConstTag', 'RenderTag', 'IfBlock', 'EachBlock', 'AwaitBlock', 'KeyBlock'])
-const ignoredAttributes = new Set(['class', 'style', 'id', 'name', 'type', 'href', 'src', 'for', 'role', 'lang', 'rel', 'target'])
 
-function textHardString(node: SvelteNode, data: string, attribute: SvelteNode & { name?: unknown } | undefined, out: HardString[]): void {
+function textHardString(node: SvelteNode, data: string, attribute: SvelteNode & { name?: unknown } | undefined, textAttributes: readonly string[] | undefined, out: HardString[]): void {
   const text = data.trim()
-  const name = typeof attribute?.name === 'string' ? attribute.name : undefined
-  if (!text || !/\p{L}/u.test(text) || (name !== undefined && ignoredAttributes.has(name)))
+  if (!text || !/\p{L}/u.test(text))
     return
   if (attribute) {
-    // The whole attribute, which templates such as `{attr}={$_('{key}')}` replace.
-    out.push({ text, range: { start: attribute.start, end: attribute.end }, kind: 'svelte-attribute', ...name ? { attribute: name } : {} })
+    if (typeof attribute.name === 'string' && isTextAttribute(attribute.name, textAttributes)) {
+      // The whole attribute, which templates such as `{attr}={$_('{key}')}` replace.
+      out.push({ text, range: { start: attribute.start, end: attribute.end }, kind: 'svelte-attribute', attribute: attribute.name })
+    }
     return
   }
   const start = node.start + data.indexOf(text)
@@ -75,7 +75,7 @@ export function svelte(): Plugin {
         if (expressionTypes.has(node.type) && 'expression' in node && isSvelteNode(node.expression))
           scan(file.text.slice(node.expression.start, node.expression.end), node.expression.start, true)
         if (node.type === 'Text' && 'data' in node && typeof node.data === 'string')
-          textHardString(node, node.data, parentType === 'Attribute' ? attribute : undefined, hardStrings)
+          textHardString(node, node.data, parentType === 'Attribute' ? attribute : undefined, ctx.config.extract.attributes, hardStrings)
         const owner = node.type === 'Attribute' ? node : attribute
         for (const [key, child] of Object.entries(node)) {
           if (key !== 'expression' && typeof child === 'object')

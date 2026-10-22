@@ -50,6 +50,12 @@ exports[`schemas > config schema 1`] = `
     "extract": {
       "additionalProperties": false,
       "properties": {
+        "attributes": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
         "autoDetect": {
           "type": "boolean",
         },
