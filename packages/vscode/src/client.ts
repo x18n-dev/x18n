@@ -4,7 +4,7 @@ import type { LanguageClientOptions, ServerOptions } from 'vscode-languageclient
 import { Uri, workspace } from 'vscode'
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node'
 import { config } from './config'
-import { displayName } from './generated/meta'
+import { commands, displayName } from './generated/meta'
 import { hintCovered } from './model/inplace'
 import { findLocalServer } from './model/local-server'
 import { dedupeLocations } from './model/locations'
@@ -28,6 +28,8 @@ export function createClient(context: ExtensionContext, hooks: ClientHooks): Lan
   }
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: 'file' }],
+    // Hovers link to these commands; untrusted markdown would not run them.
+    markdown: { isTrusted: { enabledCommands: [commands.openKey, commands.copyTranslatePrompt, commands.translateWithAgent] } },
     // Read on every (re)start, so a restart after a settings change picks up new values.
     initializationOptions: () => ({
       displayLocale: config.displayLocale || undefined,

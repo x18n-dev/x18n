@@ -42,6 +42,7 @@ So there is no tsserver plugin. Instead:
 | Rename key prefix | Command and code action on resource parent nodes (also the LSP's normal rename there). |
 | Schema validation | `jsonValidation` for `x18n.config.json`; `yaml.schemas` for `x18n.config.y?(a)ml` and `*.x18n-plugin.y?(a)ml`. |
 | Copy translate prompt | Command and hover link, through `x18n/translatePrompt`, to the clipboard. |
+| Translate with agent | Command and hover link: the same prompt, sent to the editor's chat in agent mode (`workbench.action.chat.open`); the clipboard when that command is missing (D39). |
 | i18n-ally migration | When `.vscode/settings.json` has `i18n-ally.*` keys and no x18n config exists, offer "Migrate from i18n-ally": it runs the migration through the server and shows the diff. |
 
 ### In-place annotations
@@ -77,7 +78,7 @@ Editor UX only. There are no project settings and no overrides of `x18n.config.t
 Generated into `src/generated/meta.ts` by `vscode-ext-gen` (`--scope x18n`). Initial set:
 - `x18n.openUi`, `x18n.openKey`, `x18n.setDisplayLocale`
 - `x18n.editKey`, `x18n.renameKeyPrefix`, `x18n.deleteKey`
-- `x18n.extract`, `x18n.extractFile`, `x18n.copyTranslatePrompt`
+- `x18n.extract`, `x18n.extractFile`, `x18n.copyTranslatePrompt`, `x18n.translateWithAgent`
 - `x18n.goToNextUsage`, `x18n.goToPrevUsage`
 - `x18n.toggleInPlace`, `x18n.restartServer`, `x18n.migrateFromI18nAlly`, `x18n.showOutput`
 

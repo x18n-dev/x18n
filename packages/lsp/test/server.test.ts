@@ -124,6 +124,7 @@ describe('language server', () => {
   it('hovers with values per locale', async () => {
     const hover: { contents: { value: string } } = await client.sendRequest('textDocument/hover', { textDocument: { uri: uri('src/App.vue') }, position: await position('src/App.vue', 'app.greeting') })
     expect(hover.contents.value).toContain('| 🇺🇸 en | Hello {name} |')
+    expect(hover.contents.value).toContain('[Translate with agent](command:x18n.translateWithAgent?')
   })
 
   it('completes keys in key slots', async () => {

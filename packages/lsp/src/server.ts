@@ -400,7 +400,7 @@ class Server {
     }
     const usages = target.type === 'subtree' ? project.usages({ prefix: target.key }) : project.usages({ key: target.key })
     const args = encodeURIComponent(JSON.stringify([{ project: at.entry.name, key: target.key }]))
-    lines.push('', `${usages.length} usage${usages.length === 1 ? '' : 's'} · [Open in UI](command:x18n.openKey?${args}) · [Copy translate prompt](command:x18n.copyTranslatePrompt?${args})`)
+    lines.push('', `${usages.length} usage${usages.length === 1 ? '' : 's'} · [Open in UI](command:x18n.openKey?${args}) · [Copy translate prompt](command:x18n.copyTranslatePrompt?${args}) · [Translate with agent](command:x18n.translateWithAgent?${args})`)
     return { contents: { kind: 'markdown', value: lines.join('\n') }, range: this.range(at.entry, at.path, target.range) }
   }
 

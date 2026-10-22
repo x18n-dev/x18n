@@ -34,7 +34,7 @@ The same builder serves:
 - `x18n prompt translate` (CLI),
 - MCP prompt `translate` and tool `x18n_translate_prompt`,
 - the UI button "Copy translate prompt" (per locale, per selection, per key),
-- the VS Code command and hover link.
+- the VS Code commands and hover links: copy, or hand to the editor's chat agent (D39).
 
 `x18n prompt review --locale de` is the same idea for checking existing translations. In 1.0 the agent fixes values with `x18n set` and lists what it changed. Once reviews ship (1.x), it can instead leave `x18n review request-change` comments or `x18n review suggest` values for a human to accept.
 

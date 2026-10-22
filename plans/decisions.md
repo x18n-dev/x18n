@@ -229,3 +229,9 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 - Decided: the `histories` capability returns when each message last changed (`updatedAt`, revision, author, value). Core applies one stale rule for every provider; the first provider with an entry for a message wins. The git provider lives in `@x18n/node`, is on inside a git repo, compares parsed messages per commit (not line blame), and treats a shallow clone as no history.
 - Considered: line blame of the message range; providers that return stale or fresh verdicts; only hash records written by x18n.
 - Why: hash records report nothing until values are written through x18n, while git history exists on day one. Parsed messages ignore reformatting, sorting and moves that break blame. Times from any source (meta file, translation service) fit one rule.
+
+## D39 - The editor's agent translates, not an editor LLM engine
+
+- Decided: "Translate with Agent" in VS Code opens the editor's chat in agent mode with the translate prompt. The agent writes results with `x18n apply` and runs `x18n check`, as the prompt says. Without a chat command, the prompt goes to the clipboard.
+- Considered: an editor LLM engine like [i18n-ally-next](https://github.com/Lydanne/i18n-ally-next)'s `editor-llm`: call `vscode.lm`, parse a JSON reply, write it through a new LSP command, with a model setting and picker.
+- Why: it keeps D9, as x18n calls no model, and it adds no wire contract or reply parsing. The agent already gets placeholder checks from `x18n apply` and can fix what `x18n check` reports, which a single model reply cannot.

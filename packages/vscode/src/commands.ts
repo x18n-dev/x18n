@@ -3,7 +3,7 @@ import type { LanguageClient } from 'vscode-languageclient/node'
 import type { KeyRef, X18nClient } from './model/client'
 import { commands as serverCommands } from '@x18n/lsp'
 import { useCommand } from 'reactive-vscode'
-import { ConfigurationTarget, env, Range, Selection, TextEditorRevealType, window, workspace } from 'vscode'
+import { ConfigurationTarget, env, Range, Selection, TextEditorRevealType, commands as vscodeCommands, window, workspace } from 'vscode'
 import { CodeActionKind, CodeActionRequest, ExecuteCommandRequest } from 'vscode-languageclient/node'
 import { config } from './config'
 import { commands } from './generated/meta'
@@ -116,15 +116,34 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
       void window.showInformationMessage('x18n: no hard strings in this file.')
   })
 
-  register(commands.copyTranslatePrompt, async (arg) => {
+  async function translatePrompt(arg: unknown): Promise<{ locale: string, prompt: string } | undefined> {
     const ref = refOf(arg)
     const info = await project(ref?.project)
     const locale = info && await pickLocale(info, 'Translate into', true)
     if (!locale)
+      return undefined
+    return { locale, prompt: await x18n.request('x18n/translatePrompt', { project: info.name, locale, keys: ref ? [ref.key] : undefined }) }
+  }
+
+  register(commands.copyTranslatePrompt, async (arg) => {
+    const found = await translatePrompt(arg)
+    if (!found)
       return
-    const prompt = await x18n.request('x18n/translatePrompt', { project: info.name, locale, keys: ref ? [ref.key] : undefined })
-    await env.clipboard.writeText(prompt)
-    void window.showInformationMessage(`x18n: translate prompt for ${locale} copied.`)
+    await env.clipboard.writeText(found.prompt)
+    void window.showInformationMessage(`x18n: translate prompt for ${found.locale} copied.`)
+  })
+
+  // The editor's agent follows the prompt's own `x18n apply` and `x18n check` steps, so x18n calls no model itself (D39).
+  register(commands.translateWithAgent, async (arg) => {
+    const found = await translatePrompt(arg)
+    if (!found)
+      return
+    if ((await vscodeCommands.getCommands(true)).includes('workbench.action.chat.open')) {
+      await vscodeCommands.executeCommand('workbench.action.chat.open', { query: found.prompt, mode: 'agent' })
+      return
+    }
+    await env.clipboard.writeText(found.prompt)
+    void window.showInformationMessage(`x18n: this editor has no chat agent; translate prompt for ${found.locale} copied.`)
   })
 
   const goToUsage = (direction: 1 | -1) => async (): Promise<void> => {

@@ -94,6 +94,12 @@
         "icon": "$(copy)"
       },
       {
+        "command": "x18n.translateWithAgent",
+        "title": "Translate with Agent",
+        "category": "x18n",
+        "icon": "$(sparkle)"
+      },
+      {
         "command": "x18n.goToNextUsage",
         "title": "Go to Next Key Usage",
         "category": "x18n"
@@ -157,6 +163,10 @@
         },
         {
           "command": "x18n.copyTranslatePrompt",
+          "when": "viewItem == x18n.key"
+        },
+        {
+          "command": "x18n.translateWithAgent",
           "when": "viewItem == x18n.key"
         },
         {

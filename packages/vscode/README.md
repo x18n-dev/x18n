@@ -14,7 +14,7 @@ All i18n logic lives in the bundled x18n language server; the extension only pre
 - **Activity bar views**: Current File, Progress, Keys and Usage Report.
 - **Status bar**: the display locale; click to switch.
 - **x18n UI** in a panel, also opened at a single key from hovers and views.
-- Copy a translate prompt for an agent or LLM, from the palette, a hover or a key.
+- Copy a translate prompt for an agent or LLM, or hand it to the editor's chat agent, from the palette, a hover or a key.
 - Schema validation for `x18n.config.json`, `x18n.config.y(a)ml` and `*.x18n-plugin.y(a)ml` (YAML needs the Red Hat YAML extension).
 - **Migration from i18n-ally**: when `.vscode/settings.json` has `i18n-ally.*` settings and there is no x18n config, the extension offers to generate one and shows it before writing.
 
@@ -35,6 +35,7 @@ Project settings live in `x18n.config.ts`; the settings below only change the ed
 | `x18n.extract`             | x18n: Extract Hard String              |
 | `x18n.extractFile`         | x18n: Extract All Hard Strings in File |
 | `x18n.copyTranslatePrompt` | x18n: Copy Translate Prompt            |
+| `x18n.translateWithAgent`  | x18n: Translate with Agent             |
 | `x18n.goToNextUsage`       | x18n: Go to Next Key Usage             |
 | `x18n.goToPrevUsage`       | x18n: Go to Previous Key Usage         |
 | `x18n.toggleInPlace`       | x18n: Toggle In-place Annotations      |

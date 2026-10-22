@@ -32,7 +32,7 @@ export interface X18nClient {
   request: <M extends keyof Requests>(method: M, params: Requests[M][0]) => Promise<Requests[M][1]>
 }
 
-/** Argument of `x18n.openKey` and `x18n.copyTranslatePrompt`, also sent by hover links. */
+/** Argument of `x18n.openKey` and the translate prompt commands, also sent by hover links. */
 export interface KeyRef {
   readonly project?: string | undefined
   readonly key: string
