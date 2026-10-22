@@ -1,9 +1,30 @@
 ---
 title: What is x18n
-description: x18n reads the i18n setup of a project, reports problems in its locale files and changes them safely.
+description: x18n is TypeScript, but for i18n. It links locale files to the code like imports, checks every key and changes the files safely.
 ---
 
+Think of x18n as TypeScript, but for i18n.
+
 x18n reads the i18n setup of a project: the locale files, and the translate calls in the code. It shows every key across locales, finds where each key is used, and reports keys that are missing, unused or broken. It also changes locale files for you, without breaking their format.
+
+## TypeScript, but for i18n
+
+Without TypeScript, a call to a function that does not exist fails only at runtime. Without x18n, the same is true for a key. A locale file is static data, and `t('settings.title')` is only a string, so nothing connects the two.
+
+x18n makes the connection. It treats each message in a locale file as a symbol, and each translate call as an import of that symbol. With this link, the tools that you know from TypeScript work for i18n:
+
+| TypeScript | x18n |
+| --- | --- |
+| `tsc --noEmit` | [`x18n check`](/surfaces/cli) reports missing, unused and broken keys |
+| Type error in the editor | The same diagnostics, live in [VS Code](/surfaces/vscode) or any [LSP client](/references/lsp-protocol) |
+| Go to definition of an import | Go to definition of a key opens the message in the source locale |
+| Find all references | Every usage of a key in the code |
+| Rename symbol | [`x18n rename`](/surfaces/cli) or F2 renames a key in every locale file and every usage |
+| Hover for the type | Hover for the value in each locale |
+| Completion of exports | Completion of keys inside translate calls |
+| Quick fixes | Add a missing key, copy the source value, extract a hard-coded string |
+
+Like TypeScript, x18n adds no runtime code. Your i18n library still loads the same files. x18n only checks the links and helps you change them.
 
 ## The problem
 
@@ -18,7 +39,7 @@ Locale files drift as a project grows:
 
 ## One engine, many surfaces
 
-The engine is `@x18n/core`. It does no file access itself and knows no editor. A surface is a layer that people or tools use on top of the engine:
+A good developer experience needs more than a checker. It needs the editor, the CI step, a view of the whole project and tools for agents, and all of them must agree. The engine is `@x18n/core`. It does no file access itself and knows no editor. A surface is a layer that people or tools use on top of the engine:
 
 - The [CLI](/surfaces/cli) is for humans, CI and agents. `x18n check` does for i18n what `tsc --noEmit` does for types.
 - The [VS Code extension](/surfaces/vscode) shows translations in place and treats keys like symbols: go to definition, find references and rename.

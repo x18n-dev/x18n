@@ -1,7 +1,7 @@
 ---
 navigation: false
-title: 'x18n: i18n files, checked and maintained'
-description: x18n reads the locale files of any project, finds where each key is used, and reports missing, unused and broken keys. A CLI, a language server, a VS Code extension, a UI and MCP tools share one engine.
+title: 'x18n: TypeScript, but for i18n'
+description: x18n links your locale files to your code like imports. It checks every key like a type checker, and gives you a CLI, a language server, a VS Code extension, a UI and MCP tools on one engine.
 ---
 
 <!-- eslint-disable markdown/no-missing-atx-heading-space -- `#title` and the like are MDC slot names, not headings. -->
@@ -14,10 +14,10 @@ orientation: horizontal
 ::
 
 #title
-i18n files, checked and maintained
+TypeScript, but for i18n
 
 #description
-x18n reads the locale files and the translate calls of your project. It reports missing, unused and broken keys, and changes locale files without breaking their format. For humans, CI and coding agents.
+x18n links your locale files to your code, as if you imported them. It checks every key like a type and tracks every usage like a reference. A CLI, an editor extension, a UI and agent tools give your translations the developer experience of TypeScript.
 
 #links
   :::u-button
@@ -44,13 +44,73 @@ x18n reads the locale files and the translate calls of your project. It reports 
 
 ::landing-features
 #headline
-Surfaces
+The idea
+
+#title
+Locale files, linked like imports
+
+#description
+A locale file is static data, and a key in `t('settings.title')` is only a string. Nothing connects them, so a typo or a deleted key fails silently at runtime. x18n connects them: it treats each message as a symbol that your code imports, and checks every link.
+
+#default
+  :::landing-feature-card{icon="i-ph-check-circle-duotone" to="/surfaces/cli"}
+  #title
+  Checked like types
+
+  #description
+  `x18n check` is `tsc --noEmit` for i18n. It reports missing keys, unused keys and broken placeholders, and fails CI on errors.
+  :::
+
+  :::landing-feature-card{icon="i-ph-arrow-square-out-duotone" to="/surfaces/vscode"}
+  #title
+  Go to definition
+
+  #description
+  Jump from `t('settings.title')` to the message in the locale file, as you jump from an import to its source.
+  :::
+
+  :::landing-feature-card{icon="i-ph-graph-duotone" to="/surfaces/vscode"}
+  #title
+  Find references
+
+  #description
+  See every usage of a key in the code before you change or delete it. Go to implementation lists the message in every locale.
+  :::
+
+  :::landing-feature-card{icon="i-ph-pencil-simple-line-duotone" to="/surfaces/cli"}
+  #title
+  Safe rename
+
+  #description
+  Rename a key in every locale file and every usage at once, like a symbol rename. The file format stays the same.
+  :::
+
+  :::landing-feature-card{icon="i-ph-text-aa-duotone" to="/surfaces/vscode"}
+  #title
+  Completion and hovers
+
+  #description
+  Complete keys inside translate calls. Hover a key to see its value in each locale, the way you hover a variable to see its type.
+  :::
+
+  :::landing-feature-card{icon="i-ph-lightbulb-duotone" to="/surfaces/vscode"}
+  #title
+  Quick fixes
+
+  #description
+  Add a missing key, copy the source value, or extract a hard-coded string into a key, from the diagnostic itself.
+  :::
+::
+
+::landing-features
+#headline
+The toolset
 
 #title
 One engine, every place you work
 
 #description
-Every surface reads the same config and reports the same diagnostics. The CLI in CI, the editor and the UI always agree.
+TypeScript is more than a compiler: it is the editor, the checks and the refactors around it. x18n gives you the same set for i18n. Every surface reads the same config and reports the same diagnostics, so the CLI in CI, the editor and the UI always agree.
 
 #default
   :::landing-feature-card{icon="i-ph-terminal-window-duotone" to="/surfaces/cli"}
