@@ -1,19 +1,19 @@
 import type { PresetFactory } from '@x18n/core'
 import { ngxTranslate, transloco } from './angular'
-import { general, i18next, nextIntl, nuxtI18n, reactI18next, reactIntl, svelteI18n, vscodeExtension, vueI18n } from './js'
+import { general, i18next, nextIntl, nuxtI18n, reactI18next, reactIntl, svelteI18n, svelteI18next, vscodeExtension, vueI18n } from './js'
 import { flutter } from './mobile'
 import { jekyll, laravel, phpGettext, phpJoomla, rubyRails } from './server'
 import { chromeExtension, emberIntl, fluentVue, globalize, i18nextShopify, i18nJs, i18nTag, lingui, nextInternational, nextTranslate, paraglide, polyglot, solidPrimitivesI18n, ui5 } from './web'
 
 export { ngxTranslate, transloco } from './angular'
-export { general, i18next, nextIntl, nuxtI18n, reactI18next, reactIntl, svelteI18n, vscodeExtension, vueI18n } from './js'
+export { general, i18next, nextIntl, nuxtI18n, reactI18next, reactIntl, svelteI18n, svelteI18next, vscodeExtension, vueI18n } from './js'
 export { flutter } from './mobile'
 export { jekyll, laravel, phpGettext, phpJoomla, railsLazyKey, rubyRails } from './server'
 export { chromeExtension, emberIntl, fluentVue, globalize, i18nextShopify, i18nJs, i18nTag, lingui, nextInternational, nextTranslate, paraglide, polyglot, solidPrimitivesI18n, ui5 } from './web'
 
 /**
  * Presets by name, in detection order: every i18n-ally framework has one.
- * Presets that share plugins (react-i18next and i18next) apply them once.
+ * Presets that share plugins (react-i18next, svelte-i18next and i18next) apply them once.
  */
 export const presets: { readonly [name: string]: PresetFactory } = {
   'nuxt-i18n': () => nuxtI18n(),
@@ -21,6 +21,7 @@ export const presets: { readonly [name: string]: PresetFactory } = {
   'fluent-vue': () => fluentVue(),
   'i18next-shopify': () => i18nextShopify(),
   'react-i18next': () => reactI18next(),
+  'svelte-i18next': () => svelteI18next(),
   'next-translate': () => nextTranslate(),
   'next-international': () => nextInternational(),
   'i18next': () => i18next(),

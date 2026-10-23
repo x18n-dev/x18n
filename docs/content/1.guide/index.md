@@ -37,7 +37,7 @@ x18n knows no i18n library and no file format by itself. Plugins add that knowle
 
 - Vue: [vue-i18n](/presets/vue-i18n), [@nuxtjs/i18n](/presets/nuxt-i18n) and [fluent-vue](/presets/fluent-vue)
 - React and Next.js: [i18next](/presets/i18next), [react-i18next](/presets/react-i18next), [i18next-shopify](/presets/i18next-shopify), [next-intl](/presets/next-intl), [next-translate](/presets/next-translate), [next-international](/presets/next-international), [react-intl](/presets/react-intl) and [Lingui](/presets/lingui)
-- Svelte: [svelte-i18n and sveltekit-i18n](/presets/svelte-i18n)
+- Svelte: [svelte-i18n and sveltekit-i18n](/presets/svelte-i18n) and [svelte-i18next](/presets/svelte-i18next)
 - Solid: [@solid-primitives/i18n](/presets/solid-primitives-i18n)
 - Paraglide JS: [Paraglide](/presets/paraglide)
 - Angular: [ngx-translate](/presets/ngx-translate) and [Transloco](/presets/transloco)

@@ -1092,6 +1092,10 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "svelte-i18next",
+          "reason": "not-detected",
+        },
+        {
           "name": "next-translate",
           "reason": "not-detected",
         },
