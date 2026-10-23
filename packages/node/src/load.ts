@@ -6,7 +6,7 @@ import { createBuiltins } from '@x18n/builtins'
 import { compileYamlPlugin } from '@x18n/builtins/yaml-plugin'
 import { createProject, errors, resolveConfig } from '@x18n/core'
 import { glob } from 'tinyglobby'
-import { createPluginLoader, findConfigFile, findConfigUpward, loadConfigFile, manifestRootsOf } from './config'
+import { createPluginLoader, findConfigFile, findConfigsBelow, findConfigUpward, loadConfigFile, manifestRootsOf } from './config'
 import { gitHistory } from './git-history'
 import { createNodeHost, findGitRoot } from './host'
 import { readI18nAllyConfig } from './migrate'
@@ -117,6 +117,17 @@ function applyDefaults(draft: ConfigDraft, config: SerializableConfig): void {
 
 async function projectSpecs(rootConfigFile: string | undefined, cwd: string, upward: boolean): Promise<{ root: string, specs: ProjectSpec[] }> {
   if (!rootConfigFile) {
+    // A monorepo without a root config: each config below is a workspace of its own, shallowest first,
+    // so a config that lists `projects` claims the configs of its projects before they load alone.
+    const nested = await findConfigsBelow(cwd)
+    if (nested.length) {
+      const specs: ProjectSpec[] = []
+      for (const file of nested) {
+        if (!specs.some(spec => spec.configFile === file))
+          specs.push(...(await projectSpecs(file, cwd, false)).specs)
+      }
+      return { root: resolve(cwd), specs }
+    }
     const settingsRoot = findI18nAllyRoot(cwd, upward)
     const fallback = settingsRoot && await i18nAllyFallback(settingsRoot)
     if (settingsRoot && fallback)

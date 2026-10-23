@@ -44,6 +44,14 @@ export function findConfigUpward(cwd: string): string | undefined {
   }
 }
 
+/** One config file per directory below `dir`, shallowest first. */
+export async function findConfigsBelow(dir: string): Promise<string[]> {
+  const files = await glob(configFileNames.map(name => `**/${name}`), { cwd: dir, absolute: true, ignore: ['**/node_modules/**'] })
+  const dirs = [...new Set(files.map(file => dirname(file)))]
+    .sort((a, b) => a.split('/').length - b.split('/').length || a.localeCompare(b))
+  return dirs.flatMap(found => findConfigFile(found) ?? [])
+}
+
 // Bundled to CJS (the VS Code extension), `import.meta` is empty: there the aliases are skipped
 // and configs resolve x18n's packages from the project, like any other dependency.
 function resolveOwn(specifier: string): string | undefined {
