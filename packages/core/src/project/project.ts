@@ -660,10 +660,10 @@ export function createProject(options: CreateProjectOptions): Project {
     text: path => fileTexts.get(path) ?? files.get(path)?.text,
     basesOf,
     toStored: (target, path) => storedPathOf(target)(path),
-    resolveNew(locale, namespace) {
+    resolveNew(locale, namespace, model) {
       const ctx = { host, config, extensions: [...new Set(registry.formats.flatMap(format => format.extensions))] }
       for (const finder of registry.finders) {
-        const path = finder.resolveNew?.({ locale, namespace }, ctx)
+        const path = finder.resolveNew?.({ locale, namespace, model }, ctx)
         if (path)
           return path
       }

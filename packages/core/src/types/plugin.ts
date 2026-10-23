@@ -65,8 +65,11 @@ export interface LocaleFinder {
   readonly id: string
   readonly override?: boolean | undefined
   readonly find: (ctx: FinderContext) => Promise<readonly ResourceCandidate[]>
-  /** Where a new resource for (locale, namespace) should go. Used by edits that create files. */
-  readonly resolveNew?: ((target: { readonly locale: LocaleCode, readonly namespace: string | undefined }, ctx: FinderContext) => string | undefined) | undefined
+  /**
+   * Where a new resource for (locale, namespace) should go. Used by edits that create files.
+   * `model` is the existing resource the new one would otherwise mirror: the key's source file when it has one.
+   */
+  readonly resolveNew?: ((target: { readonly locale: LocaleCode, readonly namespace: string | undefined, readonly model: Resource | undefined }, ctx: FinderContext) => string | undefined) | undefined
 }
 
 export interface FormatContext {

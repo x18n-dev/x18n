@@ -64,6 +64,11 @@ describe('in-place edits', () => {
     expect(project.locales).toEqual(['en', 'de'])
   })
 
+  it('does not invent a file for a new locale that no pattern would read', async () => {
+    const { project } = await createTestProject({ 'src/strings.json': json({ a: 'A' }) }, { resources: [{ pattern: 'src/strings.json', locale: 'en' }] })
+    expect(() => project.plan([{ type: 'set', key: 'a', locale: 'de', value: 'Ä' }])).toThrow(expect.objectContaining({ code: 'X18N4005' }))
+  })
+
   it('places new keys by longest prefix, asks only on a tie', async () => {
     const { project } = await createTestProject({
       'locales/en/a.json': json({ pages: { home: 'H' } }),

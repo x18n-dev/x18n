@@ -1,7 +1,7 @@
 import type { PluginRegistry } from '../plugins'
 import type { ResolvedConfig } from '../types/config'
 import type { FileEvent, Host } from '../types/host'
-import type { EditOp, ExtractItem, KeyString, LocaleCode, Message, MessageLeaf, MessageTree, TextEdit, Usage } from '../types/model'
+import type { EditOp, ExtractItem, KeyString, LocaleCode, Message, MessageLeaf, MessageTree, Resource, TextEdit, Usage } from '../types/model'
 import type { Format, MessageOp } from '../types/plugin'
 import type { Answers, ApplyResult, Decision, FileChange, Plan, ProjectChange, UsageMatch } from '../types/project'
 import type { ResourceState } from './analysis'
@@ -35,7 +35,7 @@ export interface PlannerOptions {
   /** Stored path of a key path in a (maybe new) resource, through resource transforms. */
   readonly toStored: (target: { readonly path: string, readonly locale: LocaleCode, readonly namespace: string | undefined }, path: readonly string[]) => string[]
   /** A path for a new resource from the locale finders' `resolveNew`. */
-  readonly resolveNew: (locale: LocaleCode, namespace: string | undefined) => string | undefined
+  readonly resolveNew: (locale: LocaleCode, namespace: string | undefined, model: Resource | undefined) => string | undefined
   readonly update: (events: readonly FileEvent[]) => Promise<ProjectChange | undefined>
 }
 
@@ -194,7 +194,11 @@ class PlanBuilder {
     // In prefix mode the namespace is the one of the source file holding the key (`lang/en/messages.php`).
     const namespace = namespaced ? this.keyId(key).namespace ?? this.config.namespace.default : sourceState?.resource.namespace
     const exists = (path: string): boolean => resources.some(r => r.resource.path === path)
-    const resolved = this.options.resolveNew(locale, namespace)
+    // Next to a resource of the key's namespace in another locale, else next to one of another namespace in this locale.
+    const sibling = (r: ResourceState): boolean => r.resource.locale === locale && r.resource.namespace !== undefined && namespace !== undefined
+    const model = (sourceState && fits(sourceState) ? sourceState : undefined)
+      ?? resources.find(s => s.resource.locale === sourceLocale && fits(s)) ?? resources.find(fits) ?? resources.find(sibling)
+    const resolved = this.options.resolveNew(locale, namespace, model?.resource)
     if (resolved && !exists(resolved)) {
       const format = this.options.registry.formatFor(resolved)
       if (format?.serialize) {
@@ -203,15 +207,8 @@ class PlanBuilder {
         return target
       }
     }
-    // Next to a resource of the key's namespace in another locale, else next to one of another namespace in this locale.
-    const sibling = (r: ResourceState): boolean => r.resource.locale === locale && r.resource.namespace !== undefined && namespace !== undefined
-    const model = (sourceState && fits(sourceState) ? sourceState : undefined)
-      ?? resources.find(s => s.resource.locale === sourceLocale && fits(s)) ?? resources.find(fits) ?? resources.find(sibling)
     const format = model && this.options.registry.formatById(model.resource.format)
     let path = model && mirrorPath(model.resource.path, model.resource.locale, locale)
-    // A source file without a locale in its path (`Strings.resx`, `package.nls.json`) gets one before its extension.
-    if (model && path === model.resource.path && model.resource.locale === sourceLocale)
-      path = path.replace(/(?=\.[^./]+$)/, `.${locale}`)
     if (model && path && namespace !== undefined && model.resource.namespace !== undefined && model.resource.namespace !== namespace)
       path = mirrorPath(path, model.resource.namespace, namespace)
     if (!model || !format?.serialize || model.resource.block || !path || exists(path))

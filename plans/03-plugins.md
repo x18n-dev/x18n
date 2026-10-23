@@ -82,7 +82,7 @@ interface LocaleFinder {
   readonly id: string
   readonly find: (ctx: FinderContext) => Promise<readonly ResourceCandidate[]>
   /** Where a new resource for (locale, namespace) should go. Used by edits that create files. */
-  readonly resolveNew?: (target: { locale: LocaleCode, namespace: string | undefined }, ctx: FinderContext) => string | undefined
+  readonly resolveNew?: (target: { locale: LocaleCode, namespace: string | undefined, model: Resource | undefined }, ctx: FinderContext) => string | undefined
 }
 
 interface ResourceCandidate {
