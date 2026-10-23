@@ -2,7 +2,9 @@ import type { ManifestReader, Plugin } from '@x18n/core'
 import { parse as parseYaml } from 'yaml'
 
 function keysOf(value: unknown): string[] {
-  return typeof value === 'object' && value !== null && !Array.isArray(value) ? Object.keys(value) : []
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? Object.keys(value)
+    : []
 }
 
 function fieldsOf(data: unknown, fields: readonly string[]): string[] {
@@ -35,13 +37,19 @@ export const pubspecYaml: ManifestReader = {
 export const gemfile: ManifestReader = {
   id: 'Gemfile',
   file: 'Gemfile',
-  read: text => [...text.matchAll(/^\s*gem\s+["']([^"']+)["']/gm)].map(match => match[1]!),
+  read: text => [
+    ...text.matchAll(/^\s*gem\s+["']([^"']+)["']/gm),
+  ].map(match => match[1]!),
 }
 
 /** The PEP 503 normalized name of a PEP 508 requirement: `Flask_Babel[async]>=4` is `flask-babel`. */
 function requirementName(requirement: string): string[] {
   const name = /^\s*([a-z\d][\w.-]*)/i.exec(requirement)?.[1]
-  return name ? [name.toLowerCase().replace(/[-_.]+/g, '-')] : []
+  return name
+    ? [
+        name.toLowerCase().replace(/[-_.]+/g, '-'),
+      ]
+    : []
 }
 
 /** TOML strings outside comments, up to the first `]` outside a string (`"i18nice[YAML]"` has none) when `toClose`. */
@@ -67,14 +75,19 @@ export const pyprojectToml: ManifestReader = {
     const body = table.slice(table.indexOf('\n') + 1)
     if (header === 'project') {
       const start = /^\s*dependencies\s*=\s*\[/m.exec(body)
-      return start ? tomlStrings(body.slice(start.index + start[0].length), true).flatMap(requirementName) : []
+      return start
+        ? tomlStrings(body.slice(start.index + start[0].length), true).flatMap(requirementName)
+        : []
     }
     // Every string in these tables is a requirement.
     if (header === 'project.optional-dependencies' || header === 'dependency-groups')
       return tomlStrings(body, false).flatMap(requirementName)
-    if (header && /^tool\.poetry\.(?:group\.[\w-]+\.)?(?:dev-)?dependencies$/.test(header))
+    if (header && /^tool\.poetry\.(?:group\.[\w-]+\.)?(?:dev-)?dependencies$/.test(header)) {
       // Keys may be quoted (`"zope.interface" = "^5"`) or dotted (`requests.version = "^2"`).
-      return [...body.matchAll(/^\s*(?:"([^"\n]+)"|'([^'\n]+)'|([\w-]+))\s*[.=]/gm)].flatMap(match => requirementName((match[1] ?? match[2] ?? match[3])!)).filter(name => name !== 'python')
+      return [
+        ...body.matchAll(/^\s*(?:"([^"\n]+)"|'([^'\n]+)'|([\w-]+))\s*[.=]/gm),
+      ].flatMap(match => requirementName((match[1] ?? match[2] ?? match[3])!)).filter(name => name !== 'python')
+    }
     return []
   }),
 }
@@ -83,9 +96,21 @@ export const requirementsTxt: ManifestReader = {
   id: 'requirements.txt',
   file: 'requirements.txt',
   // Lines starting with `-` are pip options (`-r other.txt`, `-e .`).
-  read: text => text.split('\n').flatMap(line => line.trim().startsWith('-') ? [] : requirementName(line)),
+  read: text => text.split('\n').flatMap(line => line.trim().startsWith('-')
+    ? []
+    : requirementName(line)),
 }
 
 export function manifests(): Plugin {
-  return { name: 'x18n:manifests', manifests: [packageJson, composerJson, pubspecYaml, gemfile, pyprojectToml, requirementsTxt] }
+  return {
+    name: 'x18n:manifests',
+    manifests: [
+      packageJson,
+      composerJson,
+      pubspecYaml,
+      gemfile,
+      pyprojectToml,
+      requirementsTxt,
+    ],
+  }
 }

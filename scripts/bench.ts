@@ -19,13 +19,20 @@ const locales = ['en', 'de', 'fr', 'ja']
 const keyCount = 3000
 const fileCount = 5000
 
-const budgets = { checkCold: 10_000, checkWarm: 2_000, rescan: 50, memory: 300 } as const
+const budgets = {
+  checkCold: 10_000,
+  checkWarm: 2_000,
+  rescan: 50,
+  memory: 300,
+} as const
 
 async function generate(): Promise<void> {
   await rm(root, { recursive: true, force: true })
   await mkdir(join(root, 'src/locales'), { recursive: true })
   await mkdir(join(root, '.git'))
-  await writeFile(join(root, 'package.json'), JSON.stringify({ dependencies: { 'vue-i18n': '*' } }))
+  await writeFile(join(root, 'package.json'), JSON.stringify({
+    dependencies: { 'vue-i18n': '*' },
+  }))
   const keys = Array.from({ length: keyCount }, (_, i) => `section${i % 60}.group${i % 7}.item${i}`)
   for (const [l, locale] of locales.entries()) {
     const tree: Record<string, Record<string, Record<string, string>>> = {}
@@ -72,7 +79,9 @@ async function measureLsp(): Promise<{ rescan: number, memory: number }> {
   for (let i = 0; i < warmup + 40; i++) {
     await writeFile(join(root, path), `import { useI18n } from 'vue-i18n'\nconst { t } = useI18n()\nt('section1.group1.item${i}')\n`)
     const start = performance.now()
-    await project.update([{ type: 'change', path }])
+    await project.update([
+      { type: 'change', path },
+    ])
     project.analyze()
     if (i >= warmup)
       samples.push(performance.now() - start)
@@ -90,8 +99,12 @@ const results = { checkCold, checkWarm, rescan, memory }
 
 const lines = Object.entries(results).map(([name, value]) => {
   const budget = budgets[name as keyof typeof budgets] // keys of `results` mirror `budgets`
-  const unit = name === 'memory' ? 'MB' : 'ms'
-  return `${name.padEnd(10)} ${value.toFixed(1).padStart(9)} ${unit}  (budget ${budget} ${unit})${value > budget ? '  OVER BUDGET' : ''}`
+  const unit = name === 'memory'
+    ? 'MB'
+    : 'ms'
+  return `${name.padEnd(10)} ${value.toFixed(1).padStart(9)} ${unit}  (budget ${budget} ${unit})${value > budget
+    ? '  OVER BUDGET'
+    : ''}`
 })
 console.log(lines.join('\n'))
 

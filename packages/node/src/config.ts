@@ -4,11 +4,11 @@ import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { compileYamlPlugin } from '@x18n/builtins/yaml-plugin'
 import { errors, isX18nError, PluginFileSchema, validate } from '@x18n/core'
 import { createJiti } from 'jiti'
 import { glob } from 'tinyglobby'
 import { parse as parseYaml } from 'yaml'
+import { compileYamlPlugin } from './yaml-plugin'
 
 export const configFileNames: readonly string[] = [
   'x18n.config.ts',
@@ -46,8 +46,14 @@ export function findConfigUpward(cwd: string): string | undefined {
 
 /** One config file per directory below `dir`, shallowest first. */
 export async function findConfigsBelow(dir: string): Promise<string[]> {
-  const files = await glob(configFileNames.map(name => `**/${name}`), { cwd: dir, absolute: true, ignore: ['**/node_modules/**'] })
-  const dirs = [...new Set(files.map(file => dirname(file)))]
+  const files = await glob(configFileNames.map(name => `**/${name}`), {
+    cwd: dir,
+    absolute: true,
+    ignore: ['**/node_modules/**'],
+  })
+  const dirs = [
+    ...new Set(files.map(file => dirname(file))),
+  ]
     .sort((a, b) => a.split('/').length - b.split('/').length || a.localeCompare(b))
   return dirs.flatMap(found => findConfigFile(found) ?? [])
 }
@@ -97,7 +103,9 @@ export async function loadConfigFile(file: string): Promise<UserConfig> {
     if (file.endsWith('.json'))
       return JSON.parse(await readFile(file, 'utf8')) as UserConfig // validated by `resolveConfig`
     const loaded = await importModule(file)
-    const config = typeof loaded === 'function' ? await (loaded as () => unknown)() : loaded
+    const config = typeof loaded === 'function'
+      ? await (loaded as () => unknown)()
+      : loaded
     if (!isObject(config))
       throw errors.X18N0002({ file, reason: 'it does not export a config object' })
     return config as UserConfig // TS configs are typed by `defineConfig`; `resolveConfig` validates the serializable part
@@ -105,7 +113,13 @@ export async function loadConfigFile(file: string): Promise<UserConfig> {
   catch (error) {
     if (isX18nError(error))
       throw error
-    throw errors.X18N0002({ file, reason: error instanceof Error ? error.message : String(error), cause: error })
+    throw errors.X18N0002({
+      file,
+      reason: error instanceof Error
+        ? error.message
+        : String(error),
+      cause: error,
+    })
   }
 }
 
@@ -113,8 +127,12 @@ export async function loadConfigFile(file: string): Promise<UserConfig> {
 export async function loadYamlPlugin(file: string): Promise<Plugin | Preset> {
   const data: unknown = parseYaml(await readFile(file, 'utf8'))
   const result = validate(PluginFileSchema, data)
-  if (!result.success)
-    throw errors.X18N1004({ file, issues: result.issues.map(i => `${i.path || '(root)'}: ${i.message}`).join('; ') })
+  if (!result.success) {
+    throw errors.X18N1004({
+      file,
+      issues: result.issues.map(i => `${i.path || '(root)'}: ${i.message}`).join('; '),
+    })
+  }
   return compileYamlPlugin(result.output)
 }
 
@@ -127,11 +145,15 @@ export function createPluginLoader(dir: string): (specifier: string, options: Js
   return async (specifier, options) => {
     try {
       const local = specifier.startsWith('.') || isAbsolute(specifier)
-      const file = local ? resolve(dir, specifier) : createRequire(join(dir, 'package.json')).resolve(specifier)
+      const file = local
+        ? resolve(dir, specifier)
+        : createRequire(join(dir, 'package.json')).resolve(specifier)
       if (/\.ya?ml$/.test(file))
         return await loadYamlPlugin(file)
       const loaded = await importModule(file)
-      const plugin = typeof loaded === 'function' ? (loaded as (options: JsonObject | undefined) => unknown)(options) : loaded
+      const plugin = typeof loaded === 'function'
+        ? (loaded as (options: JsonObject | undefined) => unknown)(options)
+        : loaded
       if (!isPluginLike(plugin))
         throw new Error('the module does not export a plugin or a plugin factory')
       return plugin
@@ -139,7 +161,13 @@ export function createPluginLoader(dir: string): (specifier: string, options: Js
     catch (error) {
       if (isX18nError(error))
         throw error
-      throw errors.X18N1001({ specifier, reason: error instanceof Error ? error.message : String(error), cause: error })
+      throw errors.X18N1001({
+        specifier,
+        reason: error instanceof Error
+          ? error.message
+          : String(error),
+        cause: error,
+      })
     }
   }
 }
@@ -148,13 +176,27 @@ export function createPluginLoader(dir: string): (specifier: string, options: Js
 async function workspacePackages(root: string): Promise<string[]> {
   const pnpm: unknown = parseYaml(await readFile(join(root, 'pnpm-workspace.yaml'), 'utf8').catch(() => '') || '{}')
   const manifest: unknown = JSON.parse(await readFile(join(root, 'package.json'), 'utf8').catch(() => '{}'))
-  const field = (value: unknown, key: string): unknown => typeof value === 'object' && value !== null && key in value ? new Map(Object.entries(value)).get(key) : undefined
+  const field = (value: unknown, key: string): unknown => typeof value === 'object' && value !== null && key in value
+    ? new Map(Object.entries(value)).get(key)
+    : undefined
   const workspaces = field(manifest, 'workspaces')
-  const patterns = [field(pnpm, 'packages'), workspaces, field(workspaces, 'packages')]
-    .flatMap(list => Array.isArray(list) ? list.filter((item): item is string => typeof item === 'string') : [])
+  const patterns = [
+    field(pnpm, 'packages'),
+    workspaces,
+    field(workspaces, 'packages'),
+  ]
+    .flatMap(list => Array.isArray(list)
+      ? list.filter((item): item is string => typeof item === 'string')
+      : [])
   if (patterns.length === 0)
     return []
-  const manifests = await glob(patterns.filter(p => !p.startsWith('!')).map(p => `${p.replace(/\/$/, '')}/package.json`), { cwd: root, ignore: ['**/node_modules/**', ...patterns.filter(p => p.startsWith('!')).map(p => p.slice(1))] })
+  const manifests = await glob(patterns.filter(p => !p.startsWith('!')).map(p => `${p.replace(/\/$/, '')}/package.json`), {
+    cwd: root,
+    ignore: [
+      '**/node_modules/**',
+      ...patterns.filter(p => p.startsWith('!')).map(p => p.slice(1)),
+    ],
+  })
   return manifests.map(file => dirname(file)).sort()
 }
 
@@ -170,5 +212,8 @@ export async function manifestRootsOf(root: string, gitRoot: string | undefined)
     dir = dirname(dir)
     out.push(relative(root, dir).replace(/\\/g, '/'))
   }
-  return [...out, ...await workspacePackages(root)]
+  return [
+    ...out,
+    ...await workspacePackages(root),
+  ]
 }

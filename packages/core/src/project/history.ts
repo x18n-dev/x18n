@@ -34,7 +34,9 @@ export function createHistory(input: HistoryInput): ProjectHistory {
   async function reload(): Promise<void> {
     const ctx = input.context()
     const loaded = await Promise.all(providers.map(provider => provider.load(ctx).catch((error: unknown) => {
-      input.logger?.warn(`History provider "${provider.id}" failed: ${error instanceof Error ? error.message : String(error)}`)
+      input.logger?.warn(`History provider "${provider.id}" failed: ${error instanceof Error
+        ? error.message
+        : String(error)}`)
       return undefined
     })))
     histories = loaded.filter(history => history !== undefined)
@@ -59,9 +61,11 @@ export function createHistory(input: HistoryInput): ProjectHistory {
       if (options.watch && !watchers) {
         const ctx = input.context()
         watchers = providers.flatMap(provider => provider.watch
-          ? [provider.watch(ctx, () => {
-              loading = reload()
-            })]
+          ? [
+              provider.watch(ctx, () => {
+                loading = reload()
+              }),
+            ]
           : [])
       }
       return loading
@@ -71,7 +75,9 @@ export function createHistory(input: HistoryInput): ProjectHistory {
       if (!change)
         return undefined
       const current = input.current(key, locale)
-      return change.value !== undefined && current !== undefined && current !== change.value ? localChange : change
+      return change.value !== undefined && current !== undefined && current !== change.value
+        ? localChange
+        : change
     },
     valueAt: (key, locale, at) => owner(key, locale)?.history.valueAt?.(key, locale, at),
     dispose() {

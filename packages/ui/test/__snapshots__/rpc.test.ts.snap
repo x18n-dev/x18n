@@ -1068,7 +1068,6 @@ exports[`rpc functions > explains the project 1`] = `
         "x18n:checks",
         "x18n:reporters",
         "x18n:vue-i18n",
-        "x18n:placeholders-braces-linked",
         "x18n:finder-sfc-blocks",
         "x18n:general",
       ],
@@ -1126,6 +1125,10 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "typesafe-i18n",
+          "reason": "not-detected",
+        },
+        {
           "name": "ngx-translate",
           "reason": "not-detected",
         },
@@ -1170,6 +1173,10 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "laravel-vue-i18n",
+          "reason": "not-detected",
+        },
+        {
           "name": "laravel",
           "reason": "not-detected",
         },
@@ -1194,11 +1201,11 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
-          "name": "python-gettext",
+          "name": "easy-localization",
           "reason": "not-detected",
         },
         {
-          "name": "i18nice",
+          "name": "flutter-translate",
           "reason": "not-detected",
         },
         {

@@ -2,12 +2,36 @@ import type { ProgressResult, ProjectInfo } from '@x18n/lsp'
 import { describe, expect, it } from 'vitest'
 import { formatStatus, stamp } from '../src/model/log'
 
-const project: ProjectInfo = { name: 'web', root: '/work/web', sourceLocale: 'en', displayLocale: 'de', keys: 10, locales: [] }
+const project: ProjectInfo = {
+  name: 'web',
+  root: '/work/web',
+  sourceLocale: 'en',
+  displayLocale: 'de',
+  keys: 10,
+  locales: [],
+}
 const progress: ProgressResult = {
-  projects: [{ name: 'web', locales: [
-    { locale: 'en', translated: 10, total: 10, missing: [], empty: [] },
-    { locale: 'de', translated: 8, total: 10, missing: ['a'], empty: ['b'] },
-  ] }],
+  projects: [
+    {
+      name: 'web',
+      locales: [
+        {
+          locale: 'en',
+          translated: 10,
+          total: 10,
+          missing: [],
+          empty: [],
+        },
+        {
+          locale: 'de',
+          translated: 8,
+          total: 10,
+          missing: ['a'],
+          empty: ['b'],
+        },
+      ],
+    },
+  ],
 }
 
 describe('output channel log', () => {

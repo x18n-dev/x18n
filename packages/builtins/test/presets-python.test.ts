@@ -45,7 +45,16 @@ describe('python manifests', () => {
       'fake = "1"',
       '\'\'\'',
     ].join('\n')
-    expect(pyprojectToml.read(text)).toEqual(['django', 'i18nice', 'flask-babel', 'sphinx', 'python-i18n', 'zope-interface', 'requests', 'pytest'])
+    expect(pyprojectToml.read(text)).toEqual([
+      'django',
+      'i18nice',
+      'flask-babel',
+      'sphinx',
+      'python-i18n',
+      'zope-interface',
+      'requests',
+      'pytest',
+    ])
   })
 
   it('requirements.txt: names before versions, extras and markers', () => {
@@ -70,7 +79,13 @@ describe('python-gettext', () => {
     })
     expect(detected(project)).toEqual(['python-gettext'])
     expect(project.keys()).toEqual(['Log out', 'One apple', 'Welcome, %(name)s!'])
-    expect(usedKeys(project).sort()).toEqual(['Help', 'Log out', 'Log out', 'One apple', 'Welcome, %(name)s!'])
+    expect(usedKeys(project).sort()).toEqual([
+      'Help',
+      'Log out',
+      'Log out',
+      'One apple',
+      'Welcome, %(name)s!',
+    ])
     expect(project.analyze().diagnostics.map(d => `${d.code}:${d.key}`)).toContain('missing-key:Help')
   })
 
@@ -110,12 +125,24 @@ describe('i18nice', () => {
       'app.py': 'import i18n\nfrom i18n import t\ni18n.t("foo.hi", name="Bob")\nt(\'admin.users.title\')\ni18n.t("foo.mail", count=2)',
     })
     expect(detected(project)).toEqual(['i18nice'])
-    expect(project.keys()).toEqual(['admin.users.title', 'foo.hi', 'foo.mail.many', 'foo.mail.one'])
+    expect(project.keys()).toEqual([
+      'admin.users.title',
+      'foo.hi',
+      'foo.mail.many',
+      'foo.mail.one',
+    ])
     expect(usedKeys(project)).toEqual(['foo.hi', 'admin.users.title', 'foo.mail'])
     const analysis = project.analyze()
     expect(analysis.unused).toEqual([])
     expect(analysis.diagnostics.filter(d => d.code !== 'missing-translation').map(d => `${d.code}:${d.key}`)).toEqual(['placeholder-mismatch:foo.hi'])
-    await project.apply(project.plan([{ type: 'set', key: 'foo.hi', locale: 'de', value: 'Hallo %{name} !' }]))
+    await project.apply(project.plan([
+      {
+        type: 'set',
+        key: 'foo.hi',
+        locale: 'de',
+        value: 'Hallo %{name} !',
+      },
+    ]))
     expect(files.get('translations/foo.de.yml')).toBe('de:\n  hi: Hallo %{name} !\n')
   })
 })

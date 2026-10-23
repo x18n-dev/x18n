@@ -1,12 +1,21 @@
 import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
 import { extractableHardStrings, extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
-import { reactI18next, reactIntl, svelteI18n, vueI18n } from '../src/presets'
+import { laravel } from '../src/presets/laravel'
+import { laravelVueI18n } from '../src/presets/laravel-vue-i18n'
+import { paraglide } from '../src/presets/paraglide'
+import { reactI18next } from '../src/presets/react-i18next'
+import { reactIntl } from '../src/presets/react-intl'
+import { svelteI18n } from '../src/presets/svelte-i18n'
+import { typesafeI18n } from '../src/presets/typesafe-i18n'
+import { vueI18n } from '../src/presets/vue-i18n'
 import { createTestProject, json } from './_utils'
 
 async function extractAll(project: Project): Promise<void> {
   const items = extractItems(project, findCandidates(project))
-  await project.apply(project.plan([{ type: 'extract', items }]))
+  await project.apply(project.plan([
+    { type: 'extract', items },
+  ]))
 }
 
 describe('extraction rules', () => {
@@ -51,7 +60,15 @@ describe('extraction rules', () => {
       'src/App.vue': `<template>\n  ${tag}\n</template>\n`,
       'src/App.tsx': `export const App = () => ${tag.replace('enter-from-class', 'className')}\n`,
       'src/App.svelte': `${tag.replace('enter-from-class', 'class')}\n`,
-    }, { presets: [vueI18n(), svelteI18n()], extract: { attributes: ['empty-state'] } })
+    }, {
+      presets: [
+        vueI18n(),
+        svelteI18n(),
+      ],
+      extract: {
+        attributes: ['empty-state'],
+      },
+    })
     expect(findCandidates(project).map(c => `${c.path}:${c.attribute ?? c.kind}`)).toEqual([
       'src/App.svelte:title',
       'src/App.svelte:aria-label',
@@ -78,7 +95,14 @@ describe('config ignores', () => {
       'locales/en.json': json({}),
       'src/a.ts': 'export const a = [\'Hello there\', \'Brand Name\', \'TODO: later\', \'Kept text\']',
       'src/b.ts': 'export const b = [\'Only here\', \'Brand Name\']',
-    }, { extract: { ignore: ['Brand Name', '/^todo:/i'], ignoreByFile: { 'src/b.ts': ['Only here'] } } })
+    }, {
+      extract: {
+        ignore: ['Brand Name', '/^todo:/i'],
+        ignoreByFile: {
+          'src/b.ts': ['Only here'],
+        },
+      },
+    })
     expect(findCandidates(project).map(c => c.text)).toEqual(['Hello there', 'Kept text'])
   })
 })
@@ -111,9 +135,27 @@ describe('skipped files and control comments', () => {
       'tests/Feature/LoginTest.php',
       'lib/widget_test.dart',
     ]
-    const kept = ['src/App.vue', 'src/configure.ts', 'src/Latest.vue', 'app/views.py', 'app/Contest.java', 'src/protest.ts', 'lib/spectrum.dart']
-    const hard = [...skipped, ...kept].map(path => ({ path, text: 'Hello there', kind: 'js-string', range: { start: 0, end: 13 } }))
-    expect([...extractableHardStrings({}, hard, () => '')].map(h => h.path)).toEqual(kept)
+    const kept = [
+      'src/App.vue',
+      'src/configure.ts',
+      'src/Latest.vue',
+      'app/views.py',
+      'app/Contest.java',
+      'src/protest.ts',
+      'lib/spectrum.dart',
+    ]
+    const hard = [
+      ...skipped,
+      ...kept,
+    ].map(path => ({
+      path,
+      text: 'Hello there',
+      kind: 'js-string',
+      range: { start: 0, end: 13 },
+    }))
+    expect([
+      ...extractableHardStrings({}, hard, () => ''),
+    ].map(h => h.path)).toEqual(kept)
   })
 
   it('honours x18n-ignore-file, x18n-ignore-start/end and x18n-ignore', async () => {
@@ -153,7 +195,11 @@ describe('extraction per preset', () => {
         '  <p>Ignored text</p>',
         '</template>',
       ].join('\n'),
-    }, { presets: [vueI18n()] })
+    }, {
+      presets: [
+        vueI18n(),
+      ],
+    })
     const candidates = findCandidates(project)
     expect(candidates.map(c => `${c.kind}:${c.key}${c.reused ? '*' : ''}`)).toEqual([
       'js-string:clickToContinue',
@@ -176,14 +222,58 @@ describe('extraction per preset', () => {
       '  <p>Ignored text</p>',
       '</template>',
     ].join('\n'))
-    expect(JSON.parse(files.get('src/locales/en.json')!)).toEqual({ existing: 'Already here', clickToContinue: 'Click to continue', mainTitle: 'Main title', welcomeBack: 'Welcome back' })
+    expect(JSON.parse(files.get('src/locales/en.json')!)).toEqual({
+      existing: 'Already here',
+      clickToContinue: 'Click to continue',
+      mainTitle: 'Main title',
+      welcomeBack: 'Welcome back',
+    })
+  })
+
+  it('laravel-vue-i18n with laravel: sentence keys, $t in templates, trans in scripts, :name placeholders', async () => {
+    const { project, files } = await createTestProject({
+      'lang/en.json': json({}),
+      'resources/js/App.vue': [
+        '<script setup lang="ts">',
+        'const msg = `Signed in as ${name}`', // eslint-disable-line no-template-curly-in-string
+        '</script>',
+        '',
+        '<template>',
+        '  <h1 title="Main title">Welcome back</h1>',
+        '</template>',
+      ].join('\n'),
+    }, {
+      presets: [
+        laravelVueI18n(),
+        laravel(),
+      ],
+    })
+    await extractAll(project)
+    expect(files.get('resources/js/App.vue')).toBe([
+      '<script setup lang="ts">',
+      'import { trans } from \'laravel-vue-i18n\'',
+      'const msg = trans(\'Signed in as :name\', { name })',
+      '</script>',
+      '',
+      '<template>',
+      '  <h1 :title="$t(\'Main title\')">{{ $t(\'Welcome back\') }}</h1>',
+      '</template>',
+    ].join('\n'))
+    expect(JSON.parse(files.get('lang/en.json')!)).toEqual({ 'Main title': 'Main title', 'Signed in as :name': 'Signed in as :name', 'Welcome back': 'Welcome back' })
   })
 
   it('react-i18next: JSX text through Trans, attributes through i18next.t, template arguments', async () => {
     const { project, files } = await createTestProject({
       'locales/en/translation.json': json({}),
       'src/App.tsx': 'export const A = () => <p aria-label="x" title="Close dialog">Hello there</p>\nconst msg = `Signed in as ${user.name}`\n', // eslint-disable-line no-template-curly-in-string
-    }, { presets: [reactI18next()], resources: [{ pattern: 'locales/{locale}/{namespace}.json' }] })
+    }, {
+      presets: [
+        reactI18next(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+    })
     await extractAll(project)
     expect(files.get('src/App.tsx')).toBe([
       'import i18next from \'i18next\'',
@@ -199,7 +289,15 @@ describe('extraction per preset', () => {
     const { project: react } = await createTestProject({
       'locales/en/translation.json': json({}),
       'src/App.tsx': 'export function A() {\n  const label = "Don\'t stop now"\n  return <p>Say "hi" there</p>\n}\n',
-    }, { presets: [reactI18next()], resources: [{ pattern: 'locales/{locale}/{namespace}.json' }], extract: { keygen: 'source' } })
+    }, {
+      presets: [
+        reactI18next(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+      extract: { keygen: 'source' },
+    })
     expect(findCandidates(react).map(c => c.replacement)).toEqual([
       'i18next.t(\'Don\\\'t stop now\')',
       '<Trans i18nKey="Say &quot;hi&quot; there" />',
@@ -207,7 +305,12 @@ describe('extraction per preset', () => {
     const { project: vue } = await createTestProject({
       'src/locales/en.json': json({}),
       'src/App.vue': '<template>\n  <p title="It\'s here now">Don\'t stop now</p>\n</template>\n',
-    }, { presets: [vueI18n()], extract: { keygen: 'source' } })
+    }, {
+      presets: [
+        vueI18n(),
+      ],
+      extract: { keygen: 'source' },
+    })
     expect(findCandidates(vue).map(c => c.replacement)).toEqual([
       ':title="$t(\'It\\\'s here now\')"',
       '{{ $t(\'Don\\\'t stop now\') }}',
@@ -218,19 +321,76 @@ describe('extraction per preset', () => {
     const { project, files } = await createTestProject({
       'lang/en.json': json({}),
       'src/App.tsx': 'const A = () => <button>Save changes</button>\n',
-    }, { presets: [reactIntl()], resources: [{ pattern: 'lang/{locale}.json' }] })
+    }, {
+      presets: [
+        reactIntl(),
+      ],
+      resources: [
+        { pattern: 'lang/{locale}.json' },
+      ],
+    })
     await extractAll(project)
     expect(files.get('src/App.tsx')).toBe('import { FormattedMessage } from \'react-intl\'\nconst A = () => <button><FormattedMessage id="saveChanges" /></button>\n')
+  })
+
+  it('typesafe-i18n: LL calls and the TS locale file', async () => {
+    const { project, files } = await createTestProject({
+      'src/i18n/en/index.ts': 'const en = {\n  title: \'Title\',\n} satisfies BaseTranslation\nexport default en\n',
+      'src/App.tsx': 'const A = () => <button>Save changes</button>\nconst msg = `Signed in as ${user.name}`\n', // eslint-disable-line no-template-curly-in-string
+      'src/Page.svelte': '<p>Welcome back home</p>\n',
+    }, {
+      presets: [
+        typesafeI18n(),
+      ],
+    })
+    await extractAll(project)
+    expect(files.get('src/App.tsx')).toBe('const A = () => <button>{LL.saveChanges()}</button>\nconst msg = LL.signedInAs({ name: user.name })\n')
+    expect(files.get('src/Page.svelte')).toBe('<p>{$LL.welcomeBackHome()}</p>\n')
+    expect(files.get('src/i18n/en/index.ts')).toBe([
+      'const en = {',
+      '  title: \'Title\',',
+      '  saveChanges: \'Save changes\',',
+      '  signedInAs: \'Signed in as {name}\',',
+      '  welcomeBackHome: \'Welcome back home\',',
+      '} satisfies BaseTranslation',
+      'export default en',
+      '',
+    ].join('\n'))
+    expect(project.keys()).toEqual([
+      'saveChanges',
+      'signedInAs',
+      'title',
+      'welcomeBackHome',
+    ])
+  })
+
+  it('paraglide: arguments are the first argument of the message function', async () => {
+    const { project, files } = await createTestProject({
+      'messages/en.json': json({}),
+      'src/greet.ts': 'export const msg = `Signed in as ${user.name}`\n', // eslint-disable-line no-template-curly-in-string
+    }, {
+      presets: [
+        paraglide(),
+      ],
+    })
+    await extractAll(project)
+    expect(files.get('src/greet.ts')).toBe('import { m } from \'$lib/paraglide/messages\'\nexport const msg = m.signedInAs({ name: user.name })\n')
   })
 
   it('refuses a plan whose source changed', async () => {
     const { project, files } = await createTestProject({
       'lang/en.json': json({}),
       'src/App.tsx': 'const a = \'Some text here\'\n',
-    }, { resources: [{ pattern: 'lang/{locale}.json' }] })
+    }, {
+      resources: [
+        { pattern: 'lang/{locale}.json' },
+      ],
+    })
     const candidates = findCandidates(project)
     files.set('src/App.tsx', 'const a = \'Other text here\'\n')
-    await project.update([{ type: 'change', path: 'src/App.tsx' }])
+    await project.update([
+      { type: 'change', path: 'src/App.tsx' },
+    ])
     expect(() => extractItems(project, candidates)).toThrow(expect.objectContaining({ code: 'X18N4004' }))
   })
 })

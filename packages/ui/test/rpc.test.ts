@@ -27,7 +27,11 @@ beforeAll(async () => {
   ctx = await createHostContext({
     cwd: root,
     mode: 'dev',
-    host: { mountStatic: () => {}, resolveOrigin: () => 'http://localhost', getStorageDir: () => join(root, '.devframe') },
+    host: {
+      mountStatic: () => {},
+      resolveOrigin: () => 'http://localhost',
+      getStorageDir: () => join(root, '.devframe'),
+    },
   })
   await createX18nDevframe(workspace.projects).setup(ctx)
 })
@@ -75,10 +79,33 @@ describe('rpc functions', () => {
 
   it('plans, refuses placeholder problems, then applies and bumps the shared state', async () => {
     const state = await ctx.rpc.sharedState.get('x18n:state')
-    const ops = [{ type: 'set', key: 'app.greeting', locale: 'de', value: 'Hallo' }] as const
-    expect(wire(await ctx.rpc.invokeLocal('x18n:plan', { project, ops: [...ops] }))).toMatchSnapshot()
-    expect((await ctx.rpc.invokeLocal('x18n:apply', { project, ops: [...ops] })).applied).toBe(false)
-    const applied = await ctx.rpc.invokeLocal('x18n:apply', { project, ops: [{ type: 'set', key: 'app.greeting', locale: 'de', value: 'Hallo {name}' }] })
+    const ops = [
+      {
+        type: 'set',
+        key: 'app.greeting',
+        locale: 'de',
+        value: 'Hallo',
+      },
+    ] as const
+    expect(wire(await ctx.rpc.invokeLocal('x18n:plan', {
+      project,
+      ops: [...ops],
+    }))).toMatchSnapshot()
+    expect((await ctx.rpc.invokeLocal('x18n:apply', {
+      project,
+      ops: [...ops],
+    })).applied).toBe(false)
+    const applied = await ctx.rpc.invokeLocal('x18n:apply', {
+      project,
+      ops: [
+        {
+          type: 'set',
+          key: 'app.greeting',
+          locale: 'de',
+          value: 'Hallo {name}',
+        },
+      ],
+    })
     expect(applied.applied).toBe(true)
     expect(JSON.parse(await readFile(join(root, 'src/locales/de.json'), 'utf8')).app.greeting).toBe('Hallo {name}')
     await expect.poll(() => state.value().revision).toBeGreaterThan(0)
@@ -88,13 +115,20 @@ describe('rpc functions', () => {
 
 describe('agent tools', () => {
   it('names the tools for MCP', () => {
-    expect(ctx.agent.list().tools.map(t => ({ id: t.id, safety: t.safety, description: t.description, inputSchema: t.inputSchema }))).toMatchSnapshot()
+    expect(ctx.agent.list().tools.map(t => ({
+      id: t.id,
+      safety: t.safety,
+      description: t.description,
+      inputSchema: t.inputSchema,
+    }))).toMatchSnapshot()
   })
 
   it('reports status, keys, check and the translate prompt', async () => {
     expect(wire(await ctx.agent.invoke('x18n:status', {}))).toMatchSnapshot()
     expect(wire(await ctx.agent.invoke('x18n:keys', { missing: 'de', values: true, limit: 2 }))).toMatchSnapshot()
-    expect(wire(await ctx.agent.invoke('x18n:check', { only: ['missing-translation'] }))).toMatchSnapshot()
+    expect(wire(await ctx.agent.invoke('x18n:check', {
+      only: ['missing-translation'],
+    }))).toMatchSnapshot()
     expect(wire(await ctx.agent.invoke('x18n:usages', { key: 'nav.home' }))).toMatchSnapshot()
     expect(wire(await ctx.agent.invoke('x18n:get', { key: 'nav.home' }))).toMatchSnapshot()
     await expect(ctx.agent.invoke('x18n:get', { key: 'nope' })).rejects.toThrow('Key not found')
@@ -102,10 +136,21 @@ describe('agent tools', () => {
 
   it('returns placeholder problems instead of writing', async () => {
     const before = await readFile(join(root, 'src/locales/de.json'), 'utf8')
-    expect(wire(await ctx.agent.invoke('x18n:set_messages', { messages: { de: { 'app.greeting': 'Hallo' } } }))).toMatchSnapshot()
+    expect(wire(await ctx.agent.invoke('x18n:set_messages', {
+      messages: {
+        de: { 'app.greeting': 'Hallo' },
+      },
+    }))).toMatchSnapshot()
     expect(await readFile(join(root, 'src/locales/de.json'), 'utf8')).toBe(before)
-    const written = await ctx.agent.invoke('x18n:set_messages', { messages: { de: { 'nav.about': 'Über uns' } } })
-    expect(written).toMatchObject({ applied: true, keys: ['nav.about'] })
+    const written = await ctx.agent.invoke('x18n:set_messages', {
+      messages: {
+        de: { 'nav.about': 'Über uns' },
+      },
+    })
+    expect(written).toMatchObject({
+      applied: true,
+      keys: ['nav.about'],
+    })
     expect(JSON.parse(await readFile(join(root, 'src/locales/de.json'), 'utf8')).nav.about).toBe('Über uns')
   })
 

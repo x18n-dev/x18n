@@ -18,13 +18,24 @@ const parts = computed(() => {
   const out: { text: string, placeholder: boolean }[] = []
   let at = 0
   for (const ph of props.placeholders ?? []) {
-    if (ph.start > at)
-      out.push({ text: props.value.slice(at, ph.start), placeholder: false })
-    out.push({ text: props.value.slice(ph.start, ph.end), placeholder: true })
+    if (ph.start > at) {
+      out.push({
+        text: props.value.slice(at, ph.start),
+        placeholder: false,
+      })
+    }
+    out.push({
+      text: props.value.slice(ph.start, ph.end),
+      placeholder: true,
+    })
     at = ph.end
   }
-  if (at < props.value.length)
-    out.push({ text: props.value.slice(at), placeholder: false })
+  if (at < props.value.length) {
+    out.push({
+      text: props.value.slice(at),
+      placeholder: false,
+    })
+  }
   return out
 })
 </script>

@@ -28,7 +28,12 @@ const devBridge: NonNullable<NuxtConfig['modules']>[number] = async (_, nuxt) =>
   ])
   // The devframe definition from source; Node cannot load its extensionless TS imports by itself.
   const { createX18nDevframe } = await createJiti(import.meta.url).import<typeof import('./src/node/index')>('./src/node/index.ts')
-  const workspace = await loadWorkspace({ cwd: process.cwd(), upward: true, cache: true, logger: stderrLogger })
+  const workspace = await loadWorkspace({
+    cwd: process.cwd(),
+    upward: true,
+    cache: true,
+    logger: stderrLogger,
+  })
   workspace.projects.forEach(p => p.project.watch())
   const bridge = devframeViteBridge(createX18nDevframe(workspace.projects), { base: './' }) as Omit<Plugin, 'configureServer'> & { configureServer: (server: ViteDevServer) => Promise<void> }
   // Mounted at `/`, the bridge answers every other request with a 404; let those fall through to Nuxt.
@@ -37,7 +42,11 @@ const devBridge: NonNullable<NuxtConfig['modules']>[number] = async (_, nuxt) =>
     ...bridge,
     configureServer: server => bridge.configureServer(new Proxy(server, {
       get: (target, key) => key === 'middlewares'
-        ? { use: (handler: Connect.NextHandleFunction) => target.middlewares.use((req, res, next) => routes.test(req.url ?? '') ? handler(req, res, next) : next()) }
+        ? {
+            use: (handler: Connect.NextHandleFunction) => target.middlewares.use((req, res, next) => routes.test(req.url ?? '')
+              ? handler(req, res, next)
+              : next()),
+          }
         : Reflect.get(target, key),
     })),
   })
@@ -102,7 +111,9 @@ export default defineNuxtConfig({
         { rel: 'icon', href: './logo.svg', type: 'image/svg+xml' },
         { rel: 'apple-touch-icon', href: './apple-touch-icon.png' },
       ],
-      script: [{ innerHTML: stashOtp }],
+      script: [
+        { innerHTML: stashOtp },
+      ],
     },
   },
 

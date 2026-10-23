@@ -22,6 +22,28 @@ Full list and reasons: [`plans/01-architecture.md`](./plans/01-architecture.md).
 - Surfaces (CLI, LSP, UI, extension) reach project state only through the core `Project` API.
 - CLI `--json` output, LSP `x18n/*` requests, RPC functions and MCP tools are wire contracts: versioned and covered by schema or snapshot tests.
 
+## Built-ins load on demand
+
+`@x18n/builtins` keeps what decides from what does the work, so a run loads only the modules it needs.
+
+- Presets: each preset is a folder, `src/presets/<name>/`. `entry.ts` is cheap and always loaded: it default-exports
+  `{ detect, exclusive?, load: () => import('./index') }`. `index.ts` is the preset, with its helpers beside it, and core
+  calls `load` only when `detect` passes or the config lists the preset. A preset module MUST NOT carry `detect` or
+  `exclusive`; `entry.ts` MUST NOT statically import the implementation. `src/presets/index.ts` only maps names to
+  entries. Code shared by several presets goes in `src/presets/shared/`.
+- Formats and scanners follow the same pattern: a folder per format or scanner, `src/formats/<name>/` and
+  `src/scanners/<name>/`, with `entry.ts` (`{ extensions, load: () => import('./index') }`, always loaded) and `index.ts`
+  (the implementation). Core loads a format when it first reads a file of that extension (`registry.loadFormatFor`) and a
+  scanner when it first scans a matching file (`registry.loadScannersFor`); `formatFor` returns only loaded formats.
+  `entry.ts` and the module MUST agree on id and extensions (`test/entries.test.ts` checks it).
+- `regex` is the exception among scanners: its extensions come from `usage.regex`, so `createBuiltins()` always loads it.
+  Reporters are a map of loaders, also loaded by `createBuiltins()`.
+- Each module is its own tsdown entry (`@x18n/builtins/<kind>/<name>`, from `<name>/index.ts`) and exports its factory by name and as `default`.
+  The `index.ts` of a kind holds only the map. Code shared between modules goes in a `shared/` folder, which is never an entry.
+- `src/index.ts` imports the maps through the package name (`@x18n/builtins/presets`) and `tsdown.config.ts` keeps
+  them external. Without that, the map and the entry share a chunk with mangled export names, and the tsnapi snapshot
+  turns unreadable and changes every build.
+
 ## Layout
 
 | Path | Package |
