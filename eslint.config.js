@@ -6,7 +6,11 @@ export default antfu(
     type: 'lib',
     pnpm: true,
     // No CSS linter is configured, so style blocks would be parsed as JS.
-    vue: { sfcBlocks: { blocks: { styles: false } } },
+    vue: {
+      sfcBlocks: {
+        blocks: { styles: false },
+      },
+    },
     antislop: true,
     ignores: [
       '**/.nuxt',
@@ -22,6 +26,7 @@ export default antfu(
   },
   {
     rules: {
+      'antfu/reasonable-newline': 'error',
       // Parsers, scanners and the edit planner walk trees; 25 keeps them readable without splitting every visitor.
       'sonarjs/cognitive-complexity': ['error', 25],
     },
@@ -38,17 +43,49 @@ export default antfu(
   {
     files: ['packages/core/src/**/*.ts'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [
-        { group: ['node:*', 'vscode', 'vscode-*', 'devframe', 'devframe/*', '@x18n/*'], message: 'Core runs in any JS runtime and depends on no surface.' },
-      ] }],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'node:*',
+                'vscode',
+                'vscode-*',
+                'devframe',
+                'devframe/*',
+                '@x18n/*',
+              ],
+              message: 'Core runs in any JS runtime and depends on no surface.',
+            },
+          ],
+        },
+      ],
     },
   },
   {
     files: ['packages/builtins/src/**/*.ts'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [
-        { group: ['node:*', 'vscode', 'devframe', '@x18n/node', '@x18n/cli', '@x18n/lsp', '@x18n/ui', '@x18n/core/*'], message: 'Built-ins use only the public API of @x18n/core and no Node APIs.' },
-      ] }],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'node:*',
+                'vscode',
+                'devframe',
+                '@x18n/node',
+                '@x18n/cli',
+                '@x18n/lsp',
+                '@x18n/ui',
+                '@x18n/core/*',
+              ],
+              message: 'Built-ins use only the public API of @x18n/core and no Node APIs.',
+            },
+          ],
+        },
+      ],
     },
   },
 )

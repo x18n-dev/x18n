@@ -9,12 +9,22 @@ export function applyEdit(ops: readonly UiEditOp[], force = false): Promise<Appl
 }
 
 export function setMessage(key: string, locale: string, value: MessageLeaf, force = false): Promise<ApplyView> {
-  return applyEdit([{ type: 'set', key, locale, value }], force)
+  return applyEdit([
+    { type: 'set', key, locale, value },
+  ], force)
 }
 
 export function describeProblem(problem: PlaceholderProblem): string {
   return [
-    problem.missing.length ? t('edit.placeholdersMissing', { names: problem.missing.join(', ') }) : '',
-    problem.extra.length ? t('edit.placeholdersExtra', { names: problem.extra.join(', ') }) : '',
+    problem.missing.length
+      ? t('edit.placeholdersMissing', {
+          names: problem.missing.join(', '),
+        })
+      : '',
+    problem.extra.length
+      ? t('edit.placeholdersExtra', {
+          names: problem.extra.join(', '),
+        })
+      : '',
   ].filter(Boolean).join('; ')
 }

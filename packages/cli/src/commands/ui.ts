@@ -32,16 +32,27 @@ export async function ui(options: UiCommandOptions): Promise<void> {
     process.stderr.write('warning: --no-auth lets anything that reaches the port edit your files. Use it only in CI and e2e tests.\n')
   const server = await createDevServer(definition, {
     host: options.host ?? 'localhost',
-    ...options.port === undefined ? {} : { port: Number(options.port) },
+    ...options.port === undefined
+      ? {}
+      : {
+          port: Number(options.port),
+        },
     auth,
     openBrowser: options.open !== false,
     mcp: { authorization: mcpToken },
   })
   const url = `${server.origin}/`
-  const code = auth ? getTempAuthCodeInfo().code : undefined
+  const code = auth
+    ? getTempAuthCodeInfo().code
+    : undefined
   const mcp = { url: `${url}__mcp`, token: mcpToken }
   if (options.json) {
-    printJson('ui', { url, code, link: code && buildOtpAuthUrl(url, code), mcp })
+    printJson('ui', {
+      url,
+      code,
+      link: code && buildOtpAuthUrl(url, code),
+      mcp,
+    })
   }
   else {
     out(`x18n UI at ${url}`)

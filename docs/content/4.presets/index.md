@@ -20,6 +20,7 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | [`svelte-i18n`](/presets/svelte-i18n) | svelte-i18n, sveltekit-i18n | `svelte-i18n`, `sveltekit-i18n`, `@sveltekit-i18n/base` |
 | [`solid-primitives-i18n`](/presets/solid-primitives-i18n) | @solid-primitives/i18n | `@solid-primitives/i18n` |
 | [`paraglide`](/presets/paraglide) | Paraglide JS | `@inlang/paraglide-js`, `@inlang/paraglide-sveltekit`, `@inlang/paraglide-next`, `@inlang/paraglide-astro`, `@inlang/paraglide-vite` |
+| [`typesafe-i18n`](/presets/typesafe-i18n) | typesafe-i18n | `typesafe-i18n` |
 | [`ngx-translate`](/presets/ngx-translate) | ngx-translate | `@ngx-translate/core` |
 | [`transloco`](/presets/transloco) | Transloco | `@jsverse/transloco`, `@ngneat/transloco` |
 | [`lingui`](/presets/lingui) | Lingui | `@lingui/core`, `@lingui/react`, `@lingui/macro` |
@@ -60,7 +61,10 @@ import { general, vueI18n } from '@x18n/cli/presets'
 import { defineConfig } from '@x18n/core'
 
 export default defineConfig({
-  presets: [vueI18n(), general()],
+  presets: [
+    vueI18n(),
+    general()
+  ],
 })
 ```
 
@@ -70,7 +74,7 @@ presets: [vue-i18n, general]
 
 ::
 
-In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
+In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `typesafeI18n`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
 
 ## What a preset adds
 
@@ -99,6 +103,7 @@ A placeholder syntax tells x18n how placeholders look in messages. The [`placeho
 | --- | --- | --- |
 | braces | `{name}`, `{0}` | vue-i18n, nuxt-i18n, i18next-shopify, next-international, ui5, vscode-extension, flutter |
 | linked | `@:key`, `@.lower:key` | vue-i18n, nuxt-i18n |
+| typed braces | `{name}`, `{name:string}`, `{date\|weekday}` | typesafe-i18n |
 | double braces | `{{name}}`, `{{name, format}}`, `{{- raw}}` | i18next, react-i18next, i18next-shopify, next-translate, ngx-translate, transloco |
 | nesting | `$t(key)` | i18next, react-i18next, i18next-shopify |
 | ICU | `{name}`, `{count, plural, one {# item} other {# items}}` | next-intl, react-intl, svelte-i18n, lingui, ember-intl, globalize |
@@ -120,7 +125,7 @@ Plugins can use all of these syntaxes from `@x18n/builtins/placeholders`. A [YAM
 | --- | --- |
 | `{key}` | The new key. |
 | `{attr}` | The attribute name, for attribute kinds. |
-| `{args}` | The arguments of a template string: `, { name: user.name }`. Empty when there are none. |
+| `{args}` | The arguments of a template string: `, { name: user.name }`, without the `, ` right after `(`. Empty when there are none. |
 
 Each hard string has a kind, which tells where it is:
 

@@ -55,10 +55,18 @@ test('refuses unauthenticated clients', async ({ page, request }) => {
   const { root, dispose } = await fixture()
   const { info, child } = await startUi(root)
   try {
-    const body = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }
+    const body = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/list',
+      params: {},
+    }
     const headers = { 'origin': new URL(info.url).origin, 'accept': 'application/json, text/event-stream', 'content-type': 'application/json' }
     expect((await request.post(info.mcp.url, { headers, data: body })).status()).toBe(401)
-    expect((await request.post(info.mcp.url, { headers: { ...headers, authorization: 'Bearer nope' }, data: body })).status()).toBe(401)
+    expect((await request.post(info.mcp.url, {
+      headers: { ...headers, authorization: 'Bearer nope' },
+      data: body,
+    })).status()).toBe(401)
 
     await page.goto(info.url)
     await expect(page.getByRole('heading', { name: 'Connect to x18n' })).toBeVisible()
@@ -112,7 +120,9 @@ test('locales reorder by dragging and flags can be turned off', async ({ page })
     await page.goto(`${server.url}#/keys`)
     const headers = page.getByRole('columnheader')
     await expect(headers).toHaveText(['Key', /^en/, /^de/])
-    await page.locator('[data-locale-toggle="de"]').dragTo(page.locator('[data-locale-toggle="en"]'), { targetPosition: { x: 2, y: 2 } })
+    await page.locator('[data-locale-toggle="de"]').dragTo(page.locator('[data-locale-toggle="en"]'), {
+      targetPosition: { x: 2, y: 2 },
+    })
     await expect(headers).toHaveText(['Key', /^de/, /^en/])
     await page.reload()
     await expect(headers).toHaveText(['Key', /^de/, /^en/])

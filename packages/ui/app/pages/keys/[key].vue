@@ -48,7 +48,12 @@ async function save(force = false): Promise<void> {
 }
 
 function edit(locale: string, value: MessageLeaf | undefined): void {
-  editing.value = { locale, draft: value === undefined || value === null ? '' : String(value) }
+  editing.value = {
+    locale,
+    draft: value === undefined || value === null
+      ? ''
+      : String(value),
+  }
   problem.value = undefined
 }
 
@@ -57,7 +62,12 @@ function isUiOp(op: Fix['ops'][number]): op is UiEditOp {
 }
 
 function openUsage(usage: UsageView): void {
-  void backend.value?.openInEditor({ project: projectName.value, path: usage.path, line: usage.line, column: usage.column })
+  void backend.value?.openInEditor({
+    project: projectName.value,
+    path: usage.path,
+    line: usage.line,
+    column: usage.column,
+  })
 }
 </script>
 

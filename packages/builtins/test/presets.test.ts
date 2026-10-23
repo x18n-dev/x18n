@@ -2,18 +2,27 @@ import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
 import { createTestProject, json } from './_utils'
 
-const pkg = (...deps: string[]): string => json({ dependencies: Object.fromEntries(deps.map(dep => [dep, '*'])) })
+function pkg(...deps: string[]): string {
+  return json({
+    dependencies: Object.fromEntries(deps.map(dep => [dep, '*'])),
+  })
+}
 
 async function write(project: Project, ops: Parameters<Project['plan']>[0]): Promise<void> {
   const plan = project.plan(ops)
-  await project.apply(plan, { answers: Object.fromEntries(plan.decisions.map(d => [d.id, d.default])) })
+  await project.apply(plan, {
+    answers: Object.fromEntries(plan.decisions.map(d => [d.id, d.default])),
+  })
 }
 
 describe('tier 1 presets', () => {
   it('next-intl: useTranslations namespaces and t.rich', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('next-intl'),
-      'messages/en.json': json({ Home: { title: 'Hi {name}', rich: '<b>x</b>' }, About: { text: 'a' } }),
+      'messages/en.json': json({
+        Home: { title: 'Hi {name}', rich: '<b>x</b>' },
+        About: { text: 'a' },
+      }),
       'app/page.tsx': [
         `import { useTranslations } from 'next-intl'`,
         `export default function Page() { const t = useTranslations('Home'); return <h1>{t('title', { name: 'x' })}{t.rich('rich', {})}</h1> }`,
@@ -45,7 +54,9 @@ describe('tier 1 presets', () => {
   it('svelte-i18n: $_ in markup and script', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('svelte-i18n', 'svelte'),
-      'src/locales/en.json': json({ page: { title: 'T', body: 'B' } }),
+      'src/locales/en.json': json({
+        page: { title: 'T', body: 'B' },
+      }),
       'src/App.svelte': `<script>\n  import { _ } from 'svelte-i18n'\n  const x = $_('page.body')\n</script>\n<h1 title={$_('page.title')}>Hello</h1>`,
     })
     expect(project.usages().map(m => m.usage.key)).toEqual(['page.body', 'page.title'])
@@ -54,7 +65,9 @@ describe('tier 1 presets', () => {
   it('solid-primitives-i18n: t calls with double-brace placeholders', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('@solid-primitives/i18n', 'solid-js'),
-      'src/locales/en.json': json({ home: { title: 'Hi {{name}}' } }),
+      'src/locales/en.json': json({
+        home: { title: 'Hi {{name}}' },
+      }),
       'src/App.tsx': `export default () => <h1>{t('home.title', { name: 'x' })}</h1>`,
     })
     expect(project.explain().presets.find(p => p.name === 'solid-primitives-i18n')?.reason).toBe('detected')
@@ -70,9 +83,64 @@ describe('tier 1 presets', () => {
     expect(project.usages().map(m => m.usage.key)).toEqual(['hello_world', 'a.b'])
   })
 
+  it('typesafe-i18n: TS locale files, namespaces, LL.a.b() usages and typed placeholders', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('typesafe-i18n'),
+      'src/i18n/en/index.ts': [
+        `import type { BaseTranslation } from '../i18n-types'`,
+        `const en = {`,
+        `  HI: 'Hi {name:string}!',`,
+        `  apples: '{count:number} {{apple|apples}}',`,
+        `  photo: '{gender|{male: his, female: her, *: their}} photo',`,
+        `  nav: { home: 'Home', about: 'About' },`,
+        `} satisfies BaseTranslation`,
+        `export default en`,
+      ].join('\n'),
+      'src/i18n/en/dashboard/index.ts': `const en_dashboard = { title: 'Dashboard' }\nexport default en_dashboard\n`,
+      'src/i18n/de/index.ts': [
+        `import type { Translation } from '../i18n-types'`,
+        `const de: Translation = { HI: 'Hallo {who}!', apples: '{count} {{Apfel|Äpfel}}', photo: '{sex|{male: sein, *: ihr}} Foto', nav: { home: 'Start', about: 'Über' } }`,
+        `export default de`,
+      ].join('\n'),
+      'src/i18n/i18n-util.ts': `export const baseLocale = 'en'`,
+      'src/App.tsx': `export const App = () => <h1>{LL.HI({ name })}{LL.nav.home()}{LL.apples(3)}{LL.photo({ gender })}</h1>`,
+      'src/routes/+page.svelte': `<p>{$LL.dashboard.title()}</p>`,
+    })
+    expect(project.explain().presets.find(p => p.name === 'typesafe-i18n')?.reason).toBe('detected')
+    expect(project.locales).toEqual(['en', 'de'])
+    expect(project.keys()).toEqual([
+      'HI',
+      'apples',
+      'dashboard.title',
+      'nav.about',
+      'nav.home',
+      'photo',
+    ])
+    expect(project.usages().map(m => m.usage.key)).toEqual([
+      'HI',
+      'nav.home',
+      'apples',
+      'photo',
+      'dashboard.title',
+    ])
+    const { diagnostics, unused } = project.analyze()
+    expect(unused).toEqual(['nav.about'])
+    expect(diagnostics.filter(d => d.code === 'placeholder-mismatch').map(d => d.message)).toEqual([
+      '"HI" in de has different placeholders than en: missing name; unexpected who.',
+      '"photo" in de has different placeholders than en: missing gender; unexpected sex.',
+    ])
+  })
+
   it('vscode-extension: package.nls files and %key% references', async () => {
     const { project } = await createTestProject({
-      'package.json': json({ devDependencies: { '@types/vscode': '*' }, contributes: { commands: [{ title: '%cmd.open%' }] } }),
+      'package.json': json({
+        devDependencies: { '@types/vscode': '*' },
+        contributes: {
+          commands: [
+            { title: '%cmd.open%' },
+          ],
+        },
+      }),
       'package.nls.json': json({ 'cmd.open': 'Open' }),
       'package.nls.de.json': json({ 'cmd.open': 'Öffnen' }),
       'src/extension.ts': `vscode.l10n.t('Hello')`,
@@ -103,7 +171,14 @@ describe('tier 1 presets', () => {
     expect(project.locales).toEqual(['en', 'de', 'fr'])
     expect(['en', 'de', 'fr'].map(locale => project.message('hi', locale)?.value)).toEqual(['Hi', 'Hallo', 'Salut'])
     expect(project.analyze().undefinedUsages).toEqual([])
-    await write(project, [{ type: 'set', key: 'bye', locale: 'en', value: 'Bye' }])
+    await write(project, [
+      {
+        type: 'set',
+        key: 'bye',
+        locale: 'en',
+        value: 'Bye',
+      },
+    ])
     expect(files.get('i18n/locales/en.ts')).toBe(`export default defineI18nLocale(async locale => ({\n  hi: 'Hi',\n  bye: 'Bye',\n}))\n`)
   })
 
@@ -141,7 +216,13 @@ describe('tier 1 presets', () => {
   it('i18next: each locale needs the plural categories of its own language', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('i18next'),
-      'locales/en/translation.json': json({ apple_zero: 'no apples', apple_one: 'an apple', apple_other: 'apples', place_ordinal_one: '1st', place_ordinal_other: 'nth' }),
+      'locales/en/translation.json': json({
+        apple_zero: 'no apples',
+        apple_one: 'an apple',
+        apple_other: 'apples',
+        place_ordinal_one: '1st',
+        place_ordinal_other: 'nth',
+      }),
       'locales/ja/translation.json': json({ apple_other: 'りんご', place_ordinal_other: '番目' }),
       'locales/ru/translation.json': json({ apple_one: 'яблоко', apple_other: 'яблока', place_ordinal_other: '-й' }),
       'src/a.ts': `i18next.t('apple', { count }); i18next.t('place', { count, ordinal: true })`,
@@ -181,7 +262,12 @@ describe('namespaces', () => {
       'package.json': pkg('react-i18next', 'i18next'),
       'locales/en/translation.json': json({ 'common.stackTrace': 'Stack', 'title': 'T' }),
       'locales/en/errors.json': json({ notFound: 'Not found' }),
-      'locales/en/pages/home.json': json({ title: 'Home', foo: { bar: { baz: 'B' } } }),
+      'locales/en/pages/home.json': json({
+        title: 'Home',
+        foo: {
+          bar: { baz: 'B' },
+        },
+      }),
       'src/A.tsx': [
         `function A() { const { t } = useTranslation(); return t('common.stackTrace') + t('errors:notFound') }`,
         `function B() { const { t } = useTranslation('pages/home', { keyPrefix: 'foo.bar' }); return t('baz') + t('translation:title') }`,
@@ -191,7 +277,12 @@ describe('namespaces', () => {
       ].join('\n'),
       'src/D.tsx': `function D({ t }) { return t('notFound') }\nexport default withTranslation('errors')(D)\n`,
       'src/G.tsx': `function G({ t }) { return t('baz') }\nexport default withTranslation('pages/home', { keyPrefix: 'foo.bar' })(G)\n`,
-    }, { resources: [{ pattern: 'locales/{locale}/{namespaces}.json' }], keyStyle: 'flat' })
+    }, {
+      resources: [
+        { pattern: 'locales/{locale}/{namespaces}.json' },
+      ],
+      keyStyle: 'flat',
+    })
     expect(project.usages().map(m => m.usage.key)).toEqual([
       'translation:common.stackTrace',
       'errors:notFound',
@@ -213,7 +304,12 @@ describe('namespaces', () => {
       'locales/en/translation.json': json({ a: 'A' }),
       'locales/en/errors.json': json({ x: 'X' }),
       'src/a.ts': `i18next.t('x'); i18next.t('errors:x'); i18next.t('translation:a')`,
-    }, { resources: [{ pattern: 'locales/{locale}/{namespace}.json' }], namespace: { default: 'errors' } })
+    }, {
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+      namespace: { default: 'errors' },
+    })
     expect(project.usages().map(m => m.usage.key)).toEqual(['errors:x', 'errors:x', 'translation:a'])
     expect(project.analyze().undefinedUsages).toEqual([])
   })
@@ -227,9 +323,23 @@ describe('namespaces', () => {
       'locales/en/event.json': json({ name: 'Name' }),
       'src/Event.tsx': `const { t } = useTranslation('event'); t('name'); t('delete'); t('nope'); t('app:title')`,
       'src/App.tsx': `const { t } = useTranslation(); t('save'); t('delete')`,
-    }, { resources: [{ pattern: 'locales/{locale}/{namespace}.json' }] })
-    expect(project.config.namespace).toMatchObject({ default: 'app', fallback: ['common'] })
-    expect(project.usages().map(m => m.usage.key)).toEqual(['app:save', 'common:delete', 'event:name', 'common:delete', 'event:nope', 'app:title'])
+    }, {
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+    })
+    expect(project.config.namespace).toMatchObject({
+      default: 'app',
+      fallback: ['common'],
+    })
+    expect(project.usages().map(m => m.usage.key)).toEqual([
+      'app:save',
+      'common:delete',
+      'event:name',
+      'common:delete',
+      'event:nope',
+      'app:title',
+    ])
     expect(project.analyze().undefinedUsages.map(u => u.key)).toEqual(['event:nope'])
   })
 
@@ -240,9 +350,18 @@ describe('namespaces', () => {
       'a/src/index.js': `t('productName'); t('b:productName')`,
       'b/src/index.js': `t('productName')`,
     }, {
-      resources: [{ pattern: 'locales/{locale}/{namespace}.json' }],
-      namespace: { separator: ':', byFile: { 'a/**': 'a', 'b/**': 'b' } },
-      usage: { calls: [{ callee: 't' }] },
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+      namespace: {
+        separator: ':',
+        byFile: { 'a/**': 'a', 'b/**': 'b' },
+      },
+      usage: {
+        calls: [
+          { callee: 't' },
+        ],
+      },
     })
     expect(project.usages().map(m => m.usage.key)).toEqual(['a:productName', 'b:productName', 'b:productName'])
     expect(project.analyze().unused).toEqual([])
@@ -250,17 +369,27 @@ describe('namespaces', () => {
 
   it('a custom separator and a hook with a fixed namespace', async () => {
     const { project, files } = await createTestProject({
-      'locales/en/shared.json': json({ type: { bug: 'Bug' } }),
+      'locales/en/shared.json': json({
+        type: { bug: 'Bug' },
+      }),
       'locales/en/common.json': json({ ok: 'OK' }),
       'src/a.ts': `const { t } = useSharedTranslation(); t('type.bug'); t('common|ok')`,
     }, {
-      resources: [{ pattern: 'locales/{locale}/{namespace}.json' }],
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
       namespace: { separator: '|' },
-      usage: { calls: [{ callee: 'useSharedTranslation', factory: true, namespace: 'shared' }] },
+      usage: {
+        calls: [
+          { callee: 'useSharedTranslation', factory: true, namespace: 'shared' },
+        ],
+      },
     })
     expect(project.usages().map(m => m.usage.key)).toEqual(['shared:type.bug', 'common:ok'])
     expect(project.parseKey('common|ok')).toBe('common:ok')
-    await project.apply(project.plan([{ type: 'rename', from: 'shared:type.bug', to: 'common:bug' }]))
+    await project.apply(project.plan([
+      { type: 'rename', from: 'shared:type.bug', to: 'common:bug' },
+    ]))
     expect(files.get('src/a.ts')).toBe(`const { t } = useSharedTranslation(); t('common|bug'); t('common|ok')`)
   })
 
@@ -274,7 +403,14 @@ describe('namespaces', () => {
     })
     expect(project.keys()).toEqual(['hello', 'todosPage.title'])
     expect(project.analyze().undefinedUsages).toEqual([])
-    await project.apply(project.plan([{ type: 'set', key: 'todosPage.title', locale: 'de', value: 'Aufgaben' }]))
+    await project.apply(project.plan([
+      {
+        type: 'set',
+        key: 'todosPage.title',
+        locale: 'de',
+        value: 'Aufgaben',
+      },
+    ]))
     expect(JSON.parse(files.get('src/assets/i18n/todos-page/de.json')!)).toEqual({ title: 'Aufgaben' })
   })
 })
@@ -285,8 +421,19 @@ describe('glossary check', () => {
       'locales/en.json': json({ a: 'Open the workspace', b: 'Workspaces list', c: 'Homepage' }),
       'locales/de.json': json({ a: 'Öffne den Ordner', b: 'Liste', c: 'Startseite' }),
     }, {
-      resources: [{ pattern: 'locales/{locale}.json' }],
-      glossary: [{ term: 'Workspace', translations: { de: 'Arbeitsbereich' } }, { term: 'Home', translations: { de: 'Start' } }],
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+      glossary: [
+        {
+          term: 'Workspace',
+          translations: { de: 'Arbeitsbereich' },
+        },
+        {
+          term: 'Home',
+          translations: { de: 'Start' },
+        },
+      ],
       checks: { glossary: 'warning' },
     })
     expect(project.analyze().diagnostics.filter(d => d.code === 'glossary').map(d => d.key)).toEqual(['a'])
@@ -298,22 +445,47 @@ describe('glossary check', () => {
       'locales/en.json': json({ a: 'Furigana built into the font.', b: 'Show furigana' }),
       'locales/zh.json': json({ a: '字体内置注音。', b: '显示拼音' }),
     }, {
-      resources: [{ pattern: 'locales/{locale}.json' }],
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
       sourceLocale: 'ja',
-      glossary: [{ term: 'ふりがな', translations: { en: 'Furigana', zh: '注音' } }],
+      glossary: [
+        {
+          term: 'ふりがな',
+          translations: { en: 'Furigana', zh: '注音' },
+        },
+      ],
       checks: { glossary: 'warning' },
     })
-    expect(project.analyze().diagnostics.filter(d => d.code === 'glossary').map(d => [d.key, d.locale])).toEqual([['b', 'zh']])
+    expect(project.analyze().diagnostics.filter(d => d.code === 'glossary').map(d => [d.key, d.locale])).toEqual([
+      ['b', 'zh'],
+    ])
   })
 })
 
 describe('placeholder-mismatch', () => {
   it('skips linked messages and the implicit plural names of vue-i18n', async () => {
     const { project } = await createTestProject({
-      'package.json': json({ dependencies: { 'vue-i18n': '*' } }),
-      'locales/en.json': json({ follow: 'Follow back', you: 'Follows you', days: 'in 0 days|tomorrow|in {n} days', hi: 'Hi {name}' }),
-      'locales/fr.json': json({ follow: 'Suivre', you: '@:follow', days: 'dans {v} jours', hi: 'Salut' }),
-    }, { resources: [{ pattern: 'locales/{locale}.json' }] })
+      'package.json': json({
+        dependencies: { 'vue-i18n': '*' },
+      }),
+      'locales/en.json': json({
+        follow: 'Follow back',
+        you: 'Follows you',
+        days: 'in 0 days|tomorrow|in {n} days',
+        hi: 'Hi {name}',
+      }),
+      'locales/fr.json': json({
+        follow: 'Suivre',
+        you: '@:follow',
+        days: 'dans {v} jours',
+        hi: 'Salut',
+      }),
+    }, {
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+    })
     const problems = project.analyze().diagnostics.filter(d => d.code === 'placeholder-mismatch').map(d => d.message)
     expect(problems).toEqual([
       '"days" in fr has different placeholders than en: unexpected v.',
@@ -327,14 +499,34 @@ describe('vue-i18n <i18n src> blocks', () => {
     const { project, files } = await createTestProject({
       'package.json': pkg('vue-i18n'),
       'src/components/Hello.vue': `<script setup>\nconst { t } = useI18n()\n</script>\n<template><p>{{ t('hello') }}</p></template>\n<i18n src="./Hello.i18n.json"></i18n>\n`,
-      'src/components/Hello.i18n.json': json({ en: { hello: 'Hello' }, de: { hello: 'Hallo' } }),
+      'src/components/Hello.i18n.json': json({
+        en: { hello: 'Hello' },
+        de: { hello: 'Hallo' },
+      }),
     })
     expect(project.locales).toEqual(['en', 'de'])
     expect(project.message('hello', 'de')?.value).toBe('Hallo')
     expect(project.analyze().undefinedUsages).toEqual([])
-    await write(project, [{ type: 'set', key: 'bye', locale: 'de', value: 'Tschüss' }])
-    await write(project, [{ type: 'set', key: 'hello', locale: 'en', value: 'Hi' }])
-    expect(JSON.parse(files.get('src/components/Hello.i18n.json')!)).toEqual({ en: { hello: 'Hi' }, de: { hello: 'Hallo', bye: 'Tschüss' } })
+    await write(project, [
+      {
+        type: 'set',
+        key: 'bye',
+        locale: 'de',
+        value: 'Tschüss',
+      },
+    ])
+    await write(project, [
+      {
+        type: 'set',
+        key: 'hello',
+        locale: 'en',
+        value: 'Hi',
+      },
+    ])
+    expect(JSON.parse(files.get('src/components/Hello.i18n.json')!)).toEqual({
+      en: { hello: 'Hi' },
+      de: { hello: 'Hallo', bye: 'Tschüss' },
+    })
     expect(project.analyze().diagnostics.filter(d => d.severity === 'error')).toEqual([])
     expect(files.get('src/components/Hello.vue')).toContain('<i18n src="./Hello.i18n.json"></i18n>')
   })
@@ -344,7 +536,14 @@ describe('vue-i18n <i18n src> blocks', () => {
       'package.json': pkg('vue-i18n'),
       'src/Hello.vue': `<template><p>{{ $t('a') }}</p></template>\n<i18n locale="en">{ "a": "A" }</i18n>\n<i18n locale="de">{ "a": "B" }</i18n>\n`,
     })
-    await write(project, [{ type: 'set', key: 'a', locale: 'en', value: 'A longer value' }])
+    await write(project, [
+      {
+        type: 'set',
+        key: 'a',
+        locale: 'en',
+        value: 'A longer value',
+      },
+    ])
     expect(files.get('src/Hello.vue')).toContain('<i18n locale="de">{ "a": "B" }</i18n>')
     expect(['en', 'de'].map(locale => project.message('a', locale)?.value)).toEqual(['A longer value', 'B'])
   })
@@ -357,7 +556,14 @@ describe('vue-i18n <i18n src> blocks', () => {
     })
     expect(project.message('hello', 'en')?.value).toBe('Hello')
     expect(project.analyze().undefinedUsages).toEqual([])
-    await write(project, [{ type: 'set', key: 'hello', locale: 'en', value: 'Hi' }])
+    await write(project, [
+      {
+        type: 'set',
+        key: 'hello',
+        locale: 'en',
+        value: 'Hi',
+      },
+    ])
     expect(files.get('messages/hello.en.yaml')).toBe('hello: Hi\n')
   })
 
@@ -376,7 +582,9 @@ describe('vue-i18n <i18n src> blocks', () => {
     const { project } = await createTestProject({
       'package.json': pkg('vue-i18n'),
       'src/Hello.vue': `<i18n src="../../a.json"></i18n>\n<i18n src="./messages.ts"></i18n>\n`,
-      'a.json': json({ en: { a: 'A' } }),
+      'a.json': json({
+        en: { a: 'A' },
+      }),
       'src/messages.ts': `export default { en: { a: 'A' } }\n`,
     })
     expect(project.keys()).toEqual([])

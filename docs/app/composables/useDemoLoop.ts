@@ -15,7 +15,9 @@ interface DemoLoopHooks {
 export function useDemoLoop(run: (sleep: Sleep) => Promise<void>, rest?: () => void, hooks: DemoLoopHooks = {}): void {
   let stopped = false
   const sleep: Sleep = ms => new Promise((resolve, reject) => {
-    setTimeout(() => (stopped ? reject(new Error('stopped')) : resolve()), ms)
+    setTimeout(() => (stopped
+      ? reject(new Error('stopped'))
+      : resolve()), ms)
   })
 
   // A dry run with instant sleeps sums up the duration. Every run resets its own

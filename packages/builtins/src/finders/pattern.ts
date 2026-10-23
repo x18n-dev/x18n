@@ -59,7 +59,9 @@ export function compilePattern(pattern: string, extensions: readonly string[]): 
         break
       case '{ext}':
         source += ext
-        glob += extensions.length === 1 ? extensions[0] : `{${extensions.join(',')}}`
+        glob += extensions.length === 1
+          ? extensions[0]
+          : `{${extensions.join(',')}}`
         break
       case '**/':
         source += '(?:.*/)?'
@@ -104,13 +106,34 @@ export function compilePattern(pattern: string, extensions: readonly string[]): 
   }
 }
 
-const localeDirNames = ['locales', 'locale', 'i18n', 'lang', 'langs', 'language', 'languages', 'translations', 'messages', '_locales', 'l10n']
+const localeDirNames = [
+  'locales',
+  'locale',
+  'i18n',
+  'lang',
+  'langs',
+  'language',
+  'languages',
+  'translations',
+  'messages',
+  '_locales',
+  'l10n',
+]
 
 /** Guesses resource patterns from directories named like `locales`, as i18n-ally did without `localesPaths`. */
 export async function guessResources(ctx: FinderContext): Promise<ResourceSpec[]> {
-  const exts = ctx.extensions.length === 1 ? ctx.extensions[0]! : `{${ctx.extensions.join(',')}}`
+  const exts = ctx.extensions.length === 1
+    ? ctx.extensions[0]!
+    : `{${ctx.extensions.join(',')}}`
   const files = await ctx.host.glob([`**/{${localeDirNames.join(',')}}/**/*.${exts}`], {
-    ignore: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/.nuxt/**', '**/.output/**', '**/build/**'],
+    ignore: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.git/**',
+      '**/.nuxt/**',
+      '**/.output/**',
+      '**/build/**',
+    ],
     gitignore: true,
   })
   const dirs = new Map<string, string[]>()
@@ -129,7 +152,11 @@ export async function guessResources(ctx: FinderContext): Promise<ResourceSpec[]
     const dirLayout = rest.filter(file => file.includes('/') && isLocaleCode(file.split('/')[0]!)).length
     if (fileLayout === 0 && dirLayout === 0)
       continue
-    specs.push({ pattern: fileLayout >= dirLayout ? `${dir}/{locale}.{ext}` : `${dir}/{locale}/{namespaces}.{ext}` })
+    specs.push({
+      pattern: fileLayout >= dirLayout
+        ? `${dir}/{locale}.{ext}`
+        : `${dir}/{locale}/{namespaces}.{ext}`,
+    })
   }
   return specs
 }
@@ -148,18 +175,33 @@ async function findBySpecs(ctx: FinderContext, specs: readonly ResourceSpec[], s
   for (const spec of specs) {
     const compiled = compilePattern(spec.pattern, ctx.extensions)
     // A pattern without a locale token holds the source locale (`package.nls.json`, `i18n.properties`).
-    const fixed = spec.locale ?? (spec.pattern.includes('{locale') ? undefined : ctx.config.sourceLocale)
-    const paths = await ctx.host.glob([compiled.glob], { ignore: ['**/node_modules/**'], gitignore: false })
+    const fixed = spec.locale ?? (spec.pattern.includes('{locale')
+      ? undefined
+      : ctx.config.sourceLocale)
+    const paths = await ctx.host.glob([compiled.glob], {
+      ignore: ['**/node_modules/**'],
+      gitignore: false,
+    })
     for (const path of paths) {
       const matched = compiled.match(path)
       if (!matched)
         continue
-      const locale = fixed ?? matched.locale ?? (spec.pattern.includes('{locale?}') ? ctx.config.sourceLocale : undefined)
+      const locale = fixed ?? matched.locale ?? (spec.pattern.includes('{locale?}')
+        ? ctx.config.sourceLocale
+        : undefined)
       // A `{locale}` the user did not write must look like a locale code, so `locales/index.ts` is not a resource.
       if (!locale || (strictLocales && !isLocaleCode(locale)))
         continue
-      const namespace = spec.namespace ?? (matched.namespace === undefined ? undefined : namespaceFromPath(matched.namespace, ctx.config.namespace.fromPath))
-      out.push({ path, locale, namespace, format: spec.format, readonly: spec.execute === true })
+      const namespace = spec.namespace ?? (matched.namespace === undefined
+        ? undefined
+        : namespaceFromPath(matched.namespace, ctx.config.namespace.fromPath))
+      out.push({
+        path,
+        locale,
+        namespace,
+        format: spec.format,
+        readonly: spec.execute === true,
+      })
     }
   }
   return out
@@ -177,9 +219,13 @@ export const patternFinder: LocaleFinder = {
       const path = spec.pattern
         .replace(/^\.\//, '')
         .replace(/\{locale\??\}/g, target.locale)
-        .replace('{namespaces}', style === 'slash' ? target.namespace ?? '' : (target.namespace ?? '').replace(/\./g, '/'))
+        .replace('{namespaces}', style === 'slash'
+          ? target.namespace ?? ''
+          : (target.namespace ?? '').replace(/\./g, '/'))
         .replace('{namespace}', target.namespace ?? '')
-        .replace('{ext}', spec.format === 'yaml' ? 'yml' : spec.format ?? 'json')
+        .replace('{ext}', spec.format === 'yaml'
+          ? 'yml'
+          : spec.format ?? 'json')
       if (!/[*?{}[\]]/.test(path))
         return path
     }
@@ -189,7 +235,9 @@ export const patternFinder: LocaleFinder = {
     const configured = ctx.config.resources
     const fromUser = ctx.config.origins.resources === 'user' || ctx.config.origins.resources === 'parent'
     // Patterns the user did not write (preset defaults, i18n-ally settings) only match locale-like names.
-    const found = configured.length > 0 ? await findBySpecs(ctx, configured, !fromUser) : []
+    const found = configured.length > 0
+      ? await findBySpecs(ctx, configured, !fromUser)
+      : []
     // Preset defaults that match nothing fall back to the guess, as without a config.
     if (found.length > 0 || fromUser)
       return found
@@ -199,5 +247,8 @@ export const patternFinder: LocaleFinder = {
 
 /** The `pattern` locale finder: files that match `resources[].pattern`, or guessed locale directories. */
 export function pattern(): Plugin {
-  return { name: 'x18n:finder-pattern', localeFinders: [patternFinder] }
+  return {
+    name: 'x18n:finder-pattern',
+    localeFinders: [patternFinder],
+  }
 }
