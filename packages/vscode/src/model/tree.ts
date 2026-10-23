@@ -23,7 +23,11 @@ export interface Item {
   readonly children?: (() => Promise<Item[]>) | undefined
 }
 
-const percent = (translated: number, total: number): string => total === 0 ? '100%' : `${Math.floor(translated / total * 100)}%`
+function percent(translated: number, total: number): string {
+  return total === 0
+    ? '100%'
+    : `${Math.floor(translated / total * 100)}%`
+}
 
 function keyItem(node: TreeNode, project: string | undefined, client: X18nClient): Item {
   const ref = { project, key: node.key }
@@ -74,11 +78,19 @@ function lineOf(range: Range): string {
 export function fileItems(uri: string, project: string | undefined, result: FileKeysResult): Item[] {
   const keys = result.keys.map((k): Item => ({
     label: k.key,
-    description: `${k.dynamic ? '(dynamic)' : k.missing ? '(missing)' : k.value ?? ''} · ${lineOf(k.range)}`,
-    icon: k.dynamic ? 'symbol-variable' : k.missing ? 'warning' : 'symbol-string',
+    description: `${k.dynamic
+      ? '(dynamic)'
+      : k.missing
+        ? '(missing)'
+        : k.value ?? ''} · ${lineOf(k.range)}`,
+    icon: k.dynamic
+      ? 'symbol-variable'
+      : k.missing ? 'warning' : 'symbol-string',
     color: k.missing ? 'list.warningForeground' : undefined,
     context: k.dynamic ? undefined : 'x18n.key',
-    ref: k.dynamic ? undefined : { project, key: k.key },
+    ref: k.dynamic
+      ? undefined
+      : { project, key: k.key },
     location: { uri, range: k.range },
   }))
   const hard = result.hardStrings.map((h): Item => ({
@@ -87,11 +99,20 @@ export function fileItems(uri: string, project: string | undefined, result: File
     icon: 'quote',
     location: { uri, range: h.range },
   }))
-  return [...keys, ...hard]
+  return [
+    ...keys,
+    ...hard,
+  ]
 }
 
 function keyList(keys: readonly string[], project: string): Item[] {
-  return keys.map(key => ({ label: key, icon: 'symbol-string', context: 'x18n.key', ref: { project, key }, openKey: { project, key } }))
+  return keys.map(key => ({
+    label: key,
+    icon: 'symbol-string',
+    context: 'x18n.key',
+    ref: { project, key },
+    openKey: { project, key },
+  }))
 }
 
 /** Progress view: locales with coverage, expanding to missing and empty keys. `projects` gives the flags. */
@@ -99,13 +120,33 @@ export function progressItems(result: ProgressResult, projects: readonly Project
   const locales = (project: ProgressResult['projects'][number]): Item[] => project.locales.map(l => ({
     label: l.locale,
     description: `${percent(l.translated, l.total)} · ${l.translated}/${l.total}`,
-    icon: l.translated === l.total ? 'pass' : 'circle-large-outline',
+    icon: l.translated === l.total
+      ? 'pass'
+      : 'circle-large-outline',
     locale: { code: l.locale, flag: projects.find(p => p.name === project.name)?.locales.find(c => c.code === l.locale)?.flag },
     ...l.missing.length + l.empty.length > 0
       ? {
           children: async () => [
-            ...l.missing.length ? [{ label: 'Missing', description: String(l.missing.length), icon: 'warning', children: async () => keyList(l.missing, project.name) }] : [],
-            ...l.empty.length ? [{ label: 'Empty', description: String(l.empty.length), icon: 'circle-slash', children: async () => keyList(l.empty, project.name) }] : [],
+            ...l.missing.length
+              ? [
+                  {
+                    label: 'Missing',
+                    description: String(l.missing.length),
+                    icon: 'warning',
+                    children: async () => keyList(l.missing, project.name),
+                  },
+                ]
+              : [],
+            ...l.empty.length
+              ? [
+                  {
+                    label: 'Empty',
+                    description: String(l.empty.length),
+                    icon: 'circle-slash',
+                    children: async () => keyList(l.empty, project.name),
+                  },
+                ]
+              : [],
           ],
         }
       : {},
@@ -113,7 +154,11 @@ export function progressItems(result: ProgressResult, projects: readonly Project
   const [only, ...rest] = result.projects
   if (only && rest.length === 0)
     return locales(only)
-  return result.projects.map(p => ({ label: p.name, icon: 'project', children: async () => locales(p) }))
+  return result.projects.map(p => ({
+    label: p.name,
+    icon: 'project',
+    children: async () => locales(p),
+  }))
 }
 
 /** Usage Report view: unused keys and keys used but not defined. */
@@ -128,14 +173,34 @@ export function usageReportItems(result: UsageReportResult): Item[] {
   }))
   const missing = result.missing.map((m): Item => ({
     label: m.key,
-    description: `${m.locations.length} usage${m.locations.length === 1 ? '' : 's'}`,
+    description: `${m.locations.length} usage${m.locations.length === 1
+      ? ''
+      : 's'}`,
     icon: 'warning',
     color: 'list.warningForeground',
     location: m.locations[0],
-    ...m.locations.length > 1 ? { children: async () => m.locations.map(location => ({ label: lineOf(location.range), description: location.uri, location })) } : {},
+    ...m.locations.length > 1
+      ? {
+          children: async () => m.locations.map(location => ({
+            label: lineOf(location.range),
+            description: location.uri,
+            location,
+          })),
+        }
+      : {},
   }))
   return [
-    { label: 'Unused', description: String(unused.length), icon: 'circle-slash', children: async () => unused },
-    { label: 'Missing', description: String(missing.length), icon: 'warning', children: async () => missing },
+    {
+      label: 'Unused',
+      description: String(unused.length),
+      icon: 'circle-slash',
+      children: async () => unused,
+    },
+    {
+      label: 'Missing',
+      description: String(missing.length),
+      icon: 'warning',
+      children: async () => missing,
+    },
   ]
 }

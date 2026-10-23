@@ -13,7 +13,11 @@ function apply(theme: Theme): void {
 /** `?theme=` picks the theme (the VS Code panel sets it); the embedding editor updates it with `postMessage`. */
 export function setupTheme(): void {
   const requested = new URLSearchParams(location.search).get('theme')
-  apply(isTheme(requested) ? requested : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+  apply(isTheme(requested)
+    ? requested
+    : matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light')
   window.addEventListener('message', (event: MessageEvent<{ type?: unknown, theme?: unknown }>) => {
     if (event.source === window.parent && event.source !== window && event.data?.type === 'x18n:theme' && isTheme(event.data.theme))
       apply(event.data.theme)

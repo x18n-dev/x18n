@@ -15,6 +15,7 @@ minimumReleaseAgeExclude:
   - '@turbo/windows-64@2.11.10'
   - '@turbo/windows-arm64@2.11.10'
   - turbo@2.11.10
+  - eslint-plugin-antfu@3.3.1
 
 trustPolicy: no-downgrade
 # Older releases of Nuxt and comark-docs dependencies predate provenance publishing;
@@ -90,6 +91,7 @@ catalogs:
     '@antfu/eslint-config': ^9.5.1
     bumpp: ^12.3.0
     eslint: ^10.13.0
+    eslint-plugin-antfu: ^3.3.1
     eslint-plugin-slop: ^0.1.3
     eslint-plugin-sonarjs: ^4.2.2
     knip: ^6.42.1

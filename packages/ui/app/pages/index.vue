@@ -14,7 +14,9 @@ import { translatePrompt } from '../prompt'
 import { locales, currentProject as project, recentKeys } from '../state'
 
 function outdatedPercent(locale: LocaleSummary): number {
-  return locale.total === 0 ? 0 : (locale.outdated / locale.total) * 100
+  return locale.total === 0
+    ? 0
+    : (locale.outdated / locale.total) * 100
 }
 
 // The latest revision starts open; a click on any revision flips it.
@@ -40,10 +42,26 @@ const translatable = computed(() => (project.value?.locales ?? []).filter(l => l
 const todo = computed(() => translatable.value.filter(l => l.missing + l.empty + l.outdated > 0))
 
 const stats = computed(() => project.value && [
-  { label: t('overview.keys'), value: project.value.keys, to: '/keys' },
-  { label: t('overview.resources'), value: project.value.resources, to: '/project' },
-  { label: t('overview.usages'), value: project.value.usages, to: '/usages' },
-  { label: t('overview.locales'), value: project.value.locales.length, to: '/keys' },
+  {
+    label: t('overview.keys'),
+    value: project.value.keys,
+    to: '/keys',
+  },
+  {
+    label: t('overview.resources'),
+    value: project.value.resources,
+    to: '/project',
+  },
+  {
+    label: t('overview.usages'),
+    value: project.value.usages,
+    to: '/usages',
+  },
+  {
+    label: t('overview.locales'),
+    value: project.value.locales.length,
+    to: '/keys',
+  },
 ])
 </script>
 

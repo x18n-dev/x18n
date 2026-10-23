@@ -32,7 +32,10 @@ export default defineConfig({
   plugins: [
     './x18n/legacy.x18n-plugin.yml',
     'x18n-plugin-po',
-    ['x18n-plugin-glossary-sync', { url: 'https://example.com/terms.json' }],
+    [
+      'x18n-plugin-glossary-sync',
+      { url: 'https://example.com/terms.json' }
+    ],
     acme({ strict: true }),
   ],
 })

@@ -36,8 +36,11 @@ interface MutableTree { [segment: string]: MessageLeaf | MutableTree }
 
 function cloneTree(tree: MessageTree): MutableTree {
   const out: MutableTree = {}
-  for (const [segment, child] of Object.entries(tree))
-    out[segment] = isMessageLeaf(child) ? child : cloneTree(child)
+  for (const [segment, child] of Object.entries(tree)) {
+    out[segment] = isMessageLeaf(child)
+      ? child
+      : cloneTree(child)
+  }
   return out
 }
 
@@ -93,7 +96,9 @@ export function sortTree(tree: MessageTree, compare: (a: string, b: string) => n
   const out: MutableTree = {}
   for (const segment of Object.keys(tree).sort(compare)) {
     const child = tree[segment]!
-    out[segment] = isMessageLeaf(child) ? child : sortTree(child, compare)
+    out[segment] = isMessageLeaf(child)
+      ? child
+      : sortTree(child, compare)
   }
   return out
 }

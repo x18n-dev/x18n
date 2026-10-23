@@ -33,7 +33,13 @@ describe('createNodeHost', () => {
   })
 
   it('globs with gitignore, including nested ignore files', async () => {
-    await write({ '.gitignore': 'ignored/\n', 'src/a.ts': '', 'ignored/b.ts': '', 'src/gen/.gitignore': '*.ts\n', 'src/gen/c.ts': '' })
+    await write({
+      '.gitignore': 'ignored/\n',
+      'src/a.ts': '',
+      'ignored/b.ts': '',
+      'src/gen/.gitignore': '*.ts\n',
+      'src/gen/c.ts': '',
+    })
     const host = createNodeHost(root)
     expect(await host.glob(['**/*.ts'], { gitignore: true })).toEqual(['src/a.ts'])
     expect(await host.glob(['**/*.ts'])).toEqual(['ignored/b.ts', 'src/a.ts', 'src/gen/c.ts'])
@@ -67,7 +73,10 @@ describe('loadWorkspace', () => {
     ['x18n.config.json', '{ "sourceLocale": "de" }'],
   ])('loads %s', async (file, content) => {
     await write({ ...locales, [file]: content })
-    const workspace = await loadWorkspace({ cwd: join(root, 'locales'), cache: false })
+    const workspace = await loadWorkspace({
+      cwd: join(root, 'locales'),
+      cache: false,
+    })
     expect(workspace.configFile).toBe(join(root, file))
     expect(workspace.projects[0]!.project.sourceLocale).toBe('de')
   })
@@ -92,9 +101,21 @@ describe('loadWorkspace', () => {
       'apps/docs/x18n.config.json': '{ "name": "documentation" }',
     })
     const workspace = await loadWorkspace({ cwd: root, cache: false })
-    expect(workspace.projects.map(p => [p.name, p.project.sourceLocale, p.project.keys()])).toEqual([
-      ['documentation', 'de', ['b']],
-      ['apps/web', 'de', ['a']],
+    expect(workspace.projects.map(p => [
+      p.name,
+      p.project.sourceLocale,
+      p.project.keys(),
+    ])).toEqual([
+      [
+        'documentation',
+        'de',
+        ['b'],
+      ],
+      [
+        'apps/web',
+        'de',
+        ['a'],
+      ],
     ])
     const only = await loadWorkspace({ cwd: root, cache: false, project: 'apps/web' })
     expect(only.projects.map(p => p.name)).toEqual(['apps/web'])
@@ -111,9 +132,21 @@ describe('loadWorkspace', () => {
     })
     const workspace = await loadWorkspace({ cwd: root, cache: false })
     expect(workspace.root).toBe(root)
-    expect(workspace.projects.map(p => [p.name, p.project.sourceLocale, p.project.keys()])).toEqual([
-      ['cart', 'fr', ['b']],
-      ['apps/web', 'de', ['a']],
+    expect(workspace.projects.map(p => [
+      p.name,
+      p.project.sourceLocale,
+      p.project.keys(),
+    ])).toEqual([
+      [
+        'cart',
+        'fr',
+        ['b'],
+      ],
+      [
+        'apps/web',
+        'de',
+        ['a'],
+      ],
     ])
   })
 
@@ -146,7 +179,10 @@ describe('loadWorkspace', () => {
       'lang/index.ts': 'export {}',
       'src/a.ts': 't(\'a\')',
     })
-    const workspace = await loadWorkspace({ cwd: join(root, 'src'), cache: false })
+    const workspace = await loadWorkspace({
+      cwd: join(root, 'src'),
+      cache: false,
+    })
     const project = workspace.projects[0]!.project
     expect(workspace.configFile).toBeUndefined()
     expect(workspace.projects[0]!.configFile).toBe(join(root, '.vscode/settings.json'))

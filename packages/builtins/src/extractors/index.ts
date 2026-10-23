@@ -9,37 +9,121 @@ export interface ExtractionRule {
   readonly test: (text: string, kind: string, attribute: string | undefined) => Score
 }
 
-const textKinds = new Set(['jsx-text', 'vue-template-text', 'svelte-text', 'astro-text', 'html-text'])
+const textKinds = new Set([
+  'jsx-text',
+  'vue-template-text',
+  'svelte-text',
+  'astro-text',
+  'html-text',
+])
 
 /** Built-in rules, applied in order. A `must-*` wins at once; otherwise the last `should-*` decides. */
 export const rules: readonly ExtractionRule[] = [
-  { id: 'letters', test: text => /\p{L}/u.test(text) ? 'none' : 'must-exclude' },
-  { id: 'digits', test: text => /^[\d\s.,:%+-]+$/.test(text) ? 'must-exclude' : 'none' },
-  { id: 'url', test: text => /^(?:[a-z][\w+.-]*:\/\/|mailto:|#|\/\/)/i.test(text.trim()) ? 'must-exclude' : 'none' },
-  { id: 'path', test: text => /^(?:\.{0,2}\/|~\/|@\/)[\w./@-]*$/.test(text.trim()) || /^[\w-]+\.[a-z]{2,4}$/i.test(text.trim()) ? 'must-exclude' : 'none' },
-  { id: 'translate-call', test: text => /\$?t\(['"`]/.test(text) || text.includes('{{') ? 'must-exclude' : 'none' },
+  {
+    id: 'letters',
+    test: text => /\p{L}/u.test(text)
+      ? 'none'
+      : 'must-exclude',
+  },
+  {
+    id: 'digits',
+    test: text => /^[\d\s.,:%+-]+$/.test(text)
+      ? 'must-exclude'
+      : 'none',
+  },
+  {
+    id: 'url',
+    test: text => /^(?:[a-z][\w+.-]*:\/\/|mailto:|#|\/\/)/i.test(text.trim())
+      ? 'must-exclude'
+      : 'none',
+  },
+  {
+    id: 'path',
+    test: text => /^(?:\.{0,2}\/|~\/|@\/)[\w./@-]*$/.test(text.trim()) || /^[\w-]+\.[a-z]{2,4}$/i.test(text.trim())
+      ? 'must-exclude'
+      : 'none',
+  },
+  {
+    id: 'translate-call',
+    test: text => /\$?t\(['"`]/.test(text) || text.includes('{{')
+      ? 'must-exclude'
+      : 'none',
+  },
   // `<svg viewBox="0 0 {0} {1}">{2}</svg>`: markup whose only letters sit inside tags.
-  { id: 'markup', test: text => /^<.*>$/s.test(text.trim()) && !/\p{L}/u.test(text.replace(/<[^>]*>|\{\d+\}/g, '')) ? 'must-exclude' : 'none' },
-  { id: 'svg-path', test: text => /^\s*M\s*-?[\d.]/i.test(text) && /^[MLHVCSQTAZ\d\s.,-]+$/i.test(text) ? 'must-exclude' : 'none' },
+  {
+    id: 'markup',
+    test: text => /^<.*>$/s.test(text.trim()) && !/\p{L}/u.test(text.replace(/<[^>]*>|\{\d+\}/g, ''))
+      ? 'must-exclude'
+      : 'none',
+  },
+  {
+    id: 'svg-path',
+    test: text => /^\s*M\s*-?[\d.]/i.test(text) && /^[MLHVCSQTAZ\d\s.,-]+$/i.test(text)
+      ? 'must-exclude'
+      : 'none',
+  },
   // `!color-base underline underline-offset-6`: utility class lists, where most tokens carry a `-`, `:`, `!`, `/`, `[` or digit.
-  { id: 'class-list', test: (text) => {
-    const tokens = text.trim().split(/\s+/)
-    return tokens.every(t => /^!?[a-z][\w:/[\].#%!-]*$/.test(t)) && tokens.filter(t => /[-:!/[\d]/.test(t)).length * 2 > tokens.length ? 'must-exclude' : 'none'
-  } },
+  {
+    id: 'class-list',
+    test: (text) => {
+      const tokens = text.trim().split(/\s+/)
+      return tokens.every(t => /^!?[a-z][\w:/[\].#%!-]*$/.test(t)) && tokens.filter(t => /[-:!/[\d]/.test(t)).length * 2 > tokens.length
+        ? 'must-exclude'
+        : 'none'
+    },
+  },
   // `text="xs secondary"`, `sm:text="lg"`: attributify utilities on an attribute that is also a common text prop.
-  { id: 'attributify', test: (text, kind, attribute) => kind.endsWith('attribute') && (attribute === 'text' || attribute?.includes(':') === true)
-    && text.trim().split(/\s+/).every(t => /^!?-?[a-z\d$[(][\w:/[\]().,#%!$+~-]*$/.test(t))
-    ? 'must-exclude'
-    : 'none' },
+  {
+    id: 'attributify',
+    test: (text, kind, attribute) => kind.endsWith('attribute') && (attribute === 'text' || attribute?.includes(':') === true)
+      && text.trim().split(/\s+/).every(t => /^!?-?[a-z\d$[(][\w:/[\]().,#%!$+~-]*$/.test(t))
+      ? 'must-exclude'
+      : 'none',
+  },
   // `repeating-linear-gradient(to right, var(--c-primary) 0%, ...)`, `calc(100% - 2rem)`: CSS values.
-  { id: 'css-value', test: text => /^-?[a-z][\w-]*\(.*\)$/s.test(text.trim()) || /\bvar\(--/.test(text) ? 'must-exclude' : 'none' },
-  { id: 'non-ascii', test: text => /\P{ASCII}/u.test(text) && /\p{L}/u.test(text) ? 'must-include' : 'none' },
-  { id: 'sentence', test: text => /\p{L}\s+\p{L}/u.test(text) ? 'should-include' : 'none' },
-  { id: 'text-node', test: (text, kind) => textKinds.has(kind) || kind.endsWith('attribute') ? 'should-include' : 'none' },
-  { id: 'single-word', test: (text, kind) => !textKinds.has(kind) && !kind.endsWith('attribute') && !/\s/.test(text.trim()) ? 'should-exclude' : 'none' },
+  {
+    id: 'css-value',
+    test: text => /^-?[a-z][\w-]*\(.*\)$/s.test(text.trim()) || /\bvar\(--/.test(text)
+      ? 'must-exclude'
+      : 'none',
+  },
+  {
+    id: 'non-ascii',
+    test: text => /\P{ASCII}/u.test(text) && /\p{L}/u.test(text)
+      ? 'must-include'
+      : 'none',
+  },
+  {
+    id: 'sentence',
+    test: text => /\p{L}\s+\p{L}/u.test(text)
+      ? 'should-include'
+      : 'none',
+  },
+  {
+    id: 'text-node',
+    test: (text, kind) => textKinds.has(kind) || kind.endsWith('attribute')
+      ? 'should-include'
+      : 'none',
+  },
+  {
+    id: 'single-word',
+    test: (text, kind) => !textKinds.has(kind) && !kind.endsWith('attribute') && !/\s/.test(text.trim())
+      ? 'should-exclude'
+      : 'none',
+  },
   // `tag="p"`, `type="submit"`: attribute values that are one lowercase token are code, not text.
-  { id: 'attribute-token', test: (text, kind) => kind.endsWith('attribute') && /^[a-z][\w-]*$/.test(text.trim()) ? 'must-exclude' : 'none' },
-  { id: 'identifier', test: text => /^[a-z]+(?:[A-Z][a-z\d]*)+$/.test(text) || /^[A-Z\d]+(?:_[A-Z\d]+)+$/.test(text) || /^[a-z\d]+(?:[-_.:][a-z\d]+)+$/.test(text) ? 'should-exclude' : 'none' },
+  {
+    id: 'attribute-token',
+    test: (text, kind) => kind.endsWith('attribute') && /^[a-z][\w-]*$/.test(text.trim())
+      ? 'must-exclude'
+      : 'none',
+  },
+  {
+    id: 'identifier',
+    test: text => /^[a-z]+(?:[A-Z][a-z\d]*)+$/.test(text) || /^[A-Z\d]+(?:_[A-Z\d]+)+$/.test(text) || /^[a-z\d]+(?:[-_.:][a-z\d]+)+$/.test(text)
+      ? 'should-exclude'
+      : 'none',
+  },
 ]
 
 /** Files whose strings users never see, by the naming conventions of common languages and test runners. */
@@ -97,18 +181,38 @@ export function slugify(text: string, keyCase: KeyCase = 'camel', maxLength = 40
     case 'snake': return parts.join('_')
     case 'kebab': return parts.join('-')
     case 'dot': return parts.join('.')
-    default: return parts.map((word, i) => i === 0 ? word : word[0]!.toUpperCase() + word.slice(1)).join('')
+    default: return parts.map((word, i) => i === 0
+      ? word
+      : word[0]!.toUpperCase() + word.slice(1)).join('')
   }
 }
 
 /** Fallback templates per kind, used after config and preset templates. */
 export const defaultTemplates: readonly ExtractTemplate[] = [
-  { template: '{t(\'{key}\'{args})}', kinds: ['jsx-text', 'astro-text'] },
-  { template: '{attr}={t(\'{key}\'{args})}', kinds: ['jsx-attribute', 'astro-attribute'] },
-  { template: '{{ $t(\'{key}\'{args}) }}', kinds: ['vue-template-text', 'html-text'] },
-  { template: ':{attr}="$t(\'{key}\'{args})"', kinds: ['vue-attribute'] },
-  { template: '{$t(\'{key}\'{args})}', kinds: ['svelte-text'] },
-  { template: '{attr}={$t(\'{key}\'{args})}', kinds: ['svelte-attribute'] },
+  {
+    template: '{t(\'{key}\'{args})}',
+    kinds: ['jsx-text', 'astro-text'],
+  },
+  {
+    template: '{attr}={t(\'{key}\'{args})}',
+    kinds: ['jsx-attribute', 'astro-attribute'],
+  },
+  {
+    template: '{{ $t(\'{key}\'{args}) }}',
+    kinds: ['vue-template-text', 'html-text'],
+  },
+  {
+    template: ':{attr}="$t(\'{key}\'{args})"',
+    kinds: ['vue-attribute'],
+  },
+  {
+    template: '{$t(\'{key}\'{args})}',
+    kinds: ['svelte-text'],
+  },
+  {
+    template: '{attr}={$t(\'{key}\'{args})}',
+    kinds: ['svelte-attribute'],
+  },
   { template: 't(\'{key}\'{args})' },
 ]
 
@@ -142,7 +246,9 @@ function prefixFor(template: string | undefined, path: string): string {
   if (!template)
     return ''
   const base = path.slice(path.lastIndexOf('/') + 1).replace(/\.[^.]+$/, '')
-  const dir = path.includes('/') ? path.slice(0, path.lastIndexOf('/')).split('/').at(-1)! : ''
+  const dir = path.includes('/')
+    ? path.slice(0, path.lastIndexOf('/')).split('/').at(-1)!
+    : ''
   return template
     .replace('{fileName}', slugify(base))
     .replace('{dirName}', slugify(dir))
@@ -177,8 +283,12 @@ class KeyAllocator {
   allocate(value: string, path: string, slugText: string): Planned {
     const options = this.project.config.extract
     const reused = this.byValue.get(value)
-    if (reused)
-      return { key: reused, reused: this.taken.has(reused) }
+    if (reused) {
+      return {
+        key: reused,
+        reused: this.taken.has(reused),
+      }
+    }
     const strategy = options.keygen ?? 'slug'
     const prefix = prefixFor(options.keyPrefix, path)
     let base: string
@@ -190,7 +300,9 @@ class KeyAllocator {
       base = ''
     else
       base = slugify(slugText, options.keyCase ?? 'camel', options.keyMaxLength ?? 40)
-    const raw = prefix ? `${prefix}.${base}` : base
+    const raw = prefix
+      ? `${prefix}.${base}`
+      : base
     let key = this.project.parseKey(raw)
     for (let i = 2; this.taken.has(key) && this.taken.get(key) !== value; i++)
       key = this.project.parseKey(`${raw}${i}`)
@@ -203,7 +315,9 @@ class KeyAllocator {
 function ignoredByConfig(options: ExtractOptions, hard: HardString & { path: string }): boolean {
   const matches = (rule: string): boolean => {
     const regex = /^\/(.+)\/([a-z]*)$/.exec(rule)
-    return regex ? new RegExp(regex[1]!, regex[2]).test(hard.text) : rule === hard.text
+    return regex
+      ? new RegExp(regex[1]!, regex[2]).test(hard.text)
+      : rule === hard.text
   }
   if (options.ignore?.some(matches))
     return true
@@ -223,7 +337,9 @@ const ignoreLine = /x18n-ignore(?![-\w])/
 function commentIgnores(text: string): (offset: number) => boolean {
   if (text.includes('x18n-ignore-file'))
     return () => true
-  const regions = [...text.matchAll(/x18n-ignore-start[\s\S]*?(?:x18n-ignore-end|$)/g)].map(m => [m.index, m.index + m[0].length] as const)
+  const regions = [
+    ...text.matchAll(/x18n-ignore-start[\s\S]*?(?:x18n-ignore-end|$)/g),
+  ].map(m => [m.index, m.index + m[0].length] as const)
   const index = createLineIndex(text)
   return (offset) => {
     if (regions.some(([start, end]) => offset >= start && offset < end))
@@ -246,7 +362,9 @@ export function* extractableHardStrings(
     let ignored = ignores.get(hard.path)
     if (!ignored) {
       const text = textOf(hard.path)
-      ignored = text === undefined ? () => true : commentIgnores(text)
+      ignored = text === undefined
+        ? () => true
+        : commentIgnores(text)
       ignores.set(hard.path, ignored)
     }
     if (!ignored(hard.range.start))
@@ -261,14 +379,19 @@ function placeholderShape(project: Project): (name: string) => string {
 }
 
 function templatesFor(project: Project, kind: string, path: string): string[] {
-  return [...project.extractTemplates, ...defaultTemplates]
+  return [
+    ...project.extractTemplates,
+    ...defaultTemplates,
+  ]
     .filter(t => (!t.kinds || t.kinds.includes(kind)) && (!t.files || pathMatcher(t.files)(path)))
     .map(t => t.template)
 }
 
 function rawKeyFor(project: Project, key: KeyString): string {
   const ns = project.config.namespace.default
-  return project.namespaced && ns && key.startsWith(`${ns}:`) ? key.slice(ns.length + 1) : key
+  return project.namespaced && ns && key.startsWith(`${ns}:`)
+    ? key.slice(ns.length + 1)
+    : key
 }
 
 /**
@@ -279,23 +402,38 @@ function quoteKey(before: string, key: string): string {
   const quote = before.at(-1)
   const inAttribute = /="[^"]*$/.test(before)
   let out = key
-  if (quote === '\'' || quote === '`' || (quote === '"' && !inAttribute))
-    out = out.replace(quote === '`' ? /[\\`]|\$\{/g : new RegExp(`[\\\\${quote}]`, 'g'), c => `\\${c}`)
-  return inAttribute ? out.replace(/&/g, '&amp;').replace(/"/g, '&quot;') : out
+  if (quote === '\'' || quote === '`' || (quote === '"' && !inAttribute)) {
+    out = out.replace(quote === '`'
+      ? /[\\`]|\$\{/g
+      : new RegExp(`[\\\\${quote}]`, 'g'), c => `\\${c}`)
+  }
+  return inAttribute
+    ? out.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+    : out
 }
 
 function fillTemplate(template: string, values: { readonly key: string, readonly attr: string, readonly args: string }): string {
-  return template.replace(/\{(key|attr|args)\}/g, (_, name: 'key' | 'attr' | 'args', at: number) =>
-    name === 'key' ? quoteKey(template.slice(0, at), values.key) : values[name])
+  return template.replace(/\{(key|attr|args)\}/g, (_, name: 'key' | 'attr' | 'args', at: number) => {
+    if (name === 'key')
+      return quoteKey(template.slice(0, at), values.key)
+    // `{args}` as the first argument (`m.{key}({args})`) drops its leading `, `.
+    return name === 'args' && template[at - 1] === '('
+      ? values.args.replace(/^, /, '')
+      : values[name]
+  })
 }
 
 /** Hard strings worth extracting, with proposed keys, values and replacements. */
 export function findCandidates(project: Project, options: FindOptions = {}): ExtractCandidate[] {
-  const inFiles = options.files?.length ? pathMatcher(options.files) : undefined
+  const inFiles = options.files?.length
+    ? pathMatcher(options.files)
+    : undefined
   const keys = new KeyAllocator(project)
   const shape = placeholderShape(project)
   const out: ExtractCandidate[] = []
-  const inScope = [...project.hardStrings()].filter(hard => !inFiles || inFiles(hard.path))
+  const inScope = [
+    ...project.hardStrings(),
+  ].filter(hard => !inFiles || inFiles(hard.path))
   for (const hard of extractableHardStrings(project.config.extract, inScope, path => project.text(path))) {
     const text = project.text(hard.path)
     if (text === undefined)
@@ -306,7 +444,11 @@ export function findCandidates(project: Project, options: FindOptions = {}): Ext
     const { key, reused } = keys.allocate(value, hard.path, hard.text.replace(/\{\d+\}/g, ' '))
     const templates = templatesFor(project, hard.kind, hard.path)
     const chosen = templates[0]!
-    const args = hard.args?.length ? `, { ${hard.args.map(a => a.name === a.expression ? a.name : `${a.name}: ${a.expression}`).join(', ')} }` : ''
+    const args = hard.args?.length
+      ? `, { ${hard.args.map(a => a.name === a.expression
+        ? a.name
+        : `${a.name}: ${a.expression}`).join(', ')} }`
+      : ''
     const template = project.extractTemplates.find(t => t.template === chosen)
     out.push({
       path: hard.path,
@@ -319,7 +461,11 @@ export function findCandidates(project: Project, options: FindOptions = {}): Ext
       key,
       reused,
       value,
-      replacement: fillTemplate(chosen, { key: rawKeyFor(project, key), attr: hard.attribute ?? '', args }),
+      replacement: fillTemplate(chosen, {
+        key: rawKeyFor(project, key),
+        attr: hard.attribute ?? '',
+        args,
+      }),
       imports: template?.imports ?? [],
       alternatives: templates.slice(1),
     })
@@ -343,6 +489,13 @@ export function extractItems(project: Project, items: readonly Pick<ExtractCandi
     const text = project.text(item.path)
     if (text === undefined || text.slice(item.range.start, item.range.end) !== item.original)
       throw errors.X18N4004({ path: item.path })
-    return { path: item.path, range: item.range, key: project.parseKey(item.key), value: item.value, replacement: item.replacement, imports: item.imports }
+    return {
+      path: item.path,
+      range: item.range,
+      key: project.parseKey(item.key),
+      value: item.value,
+      replacement: item.replacement,
+      imports: item.imports,
+    }
   })
 }

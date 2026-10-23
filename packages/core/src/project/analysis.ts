@@ -96,24 +96,42 @@ function computeCoverage(state: AnalyzerState, options: AnalyzerOptions, sourceK
       if (value === undefined || value === '') {
         if (inherited(key))
           continue
-        (value === undefined ? missing : empty).push(key)
+        (value === undefined
+          ? missing
+          : empty).push(key)
       }
       else if (locale !== sourceLocale && isOutdated(state.history(key, sourceLocale), state.history(key, locale))) {
         outdated.push(key)
       }
     }
-    return { locale, total: reference.length, translated: reference.length - missing.length - empty.length, missing, empty, outdated }
+    return {
+      locale,
+      total: reference.length,
+      translated: reference.length - missing.length - empty.length,
+      missing,
+      empty,
+      outdated,
+    }
   })
 }
 
 function errorDiagnostics(state: AnalyzerState): Diagnostic[] {
-  return [...state.discoveryErrors, ...state.resourceErrors, ...state.scanErrors].map(({ error, path }) => ({
+  return [
+    ...state.discoveryErrors,
+    ...state.resourceErrors,
+    ...state.scanErrors,
+  ].map(({ error, path }) => ({
     code: 'invalid-resource',
-    severity: error.code.startsWith('X18N3') ? 'warning' : 'error',
+    severity: error.code.startsWith('X18N3')
+      ? 'warning'
+      : 'error',
     message: `${error.message} (${error.code})`,
     key: undefined,
     locale: undefined,
-    location: { path, range: { start: 0, end: 0 } },
+    location: {
+      path,
+      range: { start: 0, end: 0 },
+    },
     fixes: [],
   }))
 }
@@ -132,16 +150,30 @@ function* runCheck(check: Check, level: Severity, inputs: Iterable<DiagnosticInp
   for (const item of inputs) {
     if (item.key !== undefined && input.ignored(item.key))
       continue
-    const severity = config.strict && (item.severity ?? level) === 'warning' ? 'error' : item.severity ?? level
+    const severity = config.strict && (item.severity ?? level) === 'warning'
+      ? 'error'
+      : item.severity ?? level
     let location = item.location
     if (!location && item.key !== undefined) {
       // A plural form only a target locale needs (`item_few`) sits at the source's `other` form.
       const byLocale = state.messages.get(item.key) ?? state.messages.get(input.ctx.formOf(item.key)?.keyOf('other') ?? item.key)
       const found = byLocale?.get(item.locale ?? state.sourceLocale)?.[0] ?? byLocale?.get(state.sourceLocale)?.[0]
-      if (found)
-        location = { path: resourcePath(found.resource), range: found.range?.key ?? { start: 0, end: 0 } }
+      if (found) {
+        location = {
+          path: resourcePath(found.resource),
+          range: found.range?.key ?? { start: 0, end: 0 },
+        }
+      }
     }
-    yield { code: check.id, severity, message: item.message, key: item.key, locale: item.locale, location, fixes: item.fixes ?? [] }
+    yield {
+      code: check.id,
+      severity,
+      message: item.message,
+      key: item.key,
+      locale: item.locale,
+      location,
+      fixes: item.fixes ?? [],
+    }
   }
 }
 
@@ -158,7 +190,9 @@ function runChecks(input: RunChecksInput): Diagnostic[] {
       out.push({
         code: check.id,
         severity: 'error',
-        message: `Check failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Check failed: ${error instanceof Error
+          ? error.message
+          : String(error)}`,
         key: undefined,
         locale: undefined,
         location: undefined,
@@ -182,9 +216,15 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
     if (memo && memo.revision === state.revision)
       return memo
     const { sourceLocale, locales, messages } = state
-    const sourceKeys = [...messages.keys()].filter(key => messages.get(key)?.has(sourceLocale)).sort()
-    const allKeys = [...messages.keys()].sort()
-    const reference = sourceKeys.length > 0 ? sourceKeys : allKeys
+    const sourceKeys = [
+      ...messages.keys(),
+    ].filter(key => messages.get(key)?.has(sourceLocale)).sort()
+    const allKeys = [
+      ...messages.keys(),
+    ].sort()
+    const reference = sourceKeys.length > 0
+      ? sourceKeys
+      : allKeys
 
     const coverage = computeCoverage(state, options, reference)
 
@@ -205,7 +245,11 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
           referenceSyntaxes.forEach(syntax => syntax.find(value).forEach(p => referenced.add(p.name)))
       }
     }
-    const prefixes = [...new Set(state.prefixUsages.flatMap(usage => usage.key === undefined ? [] : [usage.key]))]
+    const prefixes = [
+      ...new Set(state.prefixUsages.flatMap(usage => usage.key === undefined
+        ? []
+        : [usage.key])),
+    ]
     const isUsed = (key: KeyString): boolean => {
       if (state.usagesByKey.has(key) || inUse(key) || referenced.has(key))
         return true
@@ -213,7 +257,9 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
         return true
       return prefixes.some(prefix => key.startsWith(prefix))
     }
-    const unused = hasScanners ? allKeys.filter(key => !isUsed(key)) : []
+    const unused = hasScanners
+      ? allKeys.filter(key => !isUsed(key))
+      : []
     const undefinedUsages = state.usages.filter(usage =>
       usage.dynamic === false && usage.key !== undefined && !isDefined(usage.key))
 
@@ -267,7 +313,13 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
 
     const diagnostics = [
       ...errorDiagnostics(state),
-      ...runChecks({ config, registry, ctx: baseCtx, state, ignored }),
+      ...runChecks({
+        config,
+        registry,
+        ctx: baseCtx,
+        state,
+        ignored,
+      }),
     ]
 
     diagnostics.sort((a, b) =>
@@ -275,7 +327,13 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
       || (a.location?.range.start ?? 0) - (b.location?.range.start ?? 0)
       || a.code.localeCompare(b.code))
 
-    memo = { revision: state.revision, diagnostics, coverage, unused, undefinedUsages }
+    memo = {
+      revision: state.revision,
+      diagnostics,
+      coverage,
+      unused,
+      undefinedUsages,
+    }
     return memo
   }
 

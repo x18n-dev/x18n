@@ -22,7 +22,9 @@ function onDragOver(event: DragEvent, index: number): void {
     return
   event.preventDefault()
   const { left, width } = event.currentTarget.getBoundingClientRect()
-  dropAt.value = event.clientX < left + width / 2 ? index : index + 1
+  dropAt.value = event.clientX < left + width / 2
+    ? index
+    : index + 1
 }
 
 function onDrop(): void {
@@ -30,7 +32,9 @@ function onDrop(): void {
   const at = dropAt.value
   if (code !== undefined && at !== undefined) {
     const from = locales.value.findIndex(l => l.code === code)
-    moveLocale(code, from < at ? at - 1 : at)
+    moveLocale(code, from < at
+      ? at - 1
+      : at)
   }
   onDragEnd()
 }

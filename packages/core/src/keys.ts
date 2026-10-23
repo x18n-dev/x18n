@@ -3,28 +3,45 @@ import type { KeyId, KeyString } from './types/model'
 /** Canonical string form of a key: `ns:a.b.c`, or `a.b.c` without namespace. */
 export function joinKey(namespace: string | undefined, path: readonly string[]): KeyString {
   const dotted = path.join('.')
-  return namespace === undefined ? dotted : `${namespace}:${dotted}`
+  return namespace === undefined
+    ? dotted
+    : `${namespace}:${dotted}`
 }
 
 /** Splits a key string. `namespaced` is false for projects without namespaces, where `:` is part of the key. */
 export function splitKey(key: KeyString, namespaced = true): KeyId {
-  const index = namespaced ? key.indexOf(':') : -1
-  const namespace = index === -1 ? undefined : key.slice(0, index)
-  const rest = index === -1 ? key : key.slice(index + 1)
-  return { namespace, path: rest === '' ? [] : rest.split('.') }
+  const index = namespaced
+    ? key.indexOf(':')
+    : -1
+  const namespace = index === -1
+    ? undefined
+    : key.slice(0, index)
+  const rest = index === -1
+    ? key
+    : key.slice(index + 1)
+  return {
+    namespace,
+    path: rest === ''
+      ? []
+      : rest.split('.'),
+  }
 }
 
 /** True when `key` is `prefix` itself or lies under it (`a.b` is under `a`). */
 export function isKeyUnder(key: KeyString, prefix: KeyString): boolean {
   if (key === prefix)
     return true
-  const sep = prefix.endsWith(':') ? '' : '.'
+  const sep = prefix.endsWith(':')
+    ? ''
+    : '.'
   return key.startsWith(prefix + sep)
 }
 
 /** Replaces the `from` prefix of `key` with `to`. */
 export function replaceKeyPrefix(key: KeyString, from: KeyString, to: KeyString): KeyString {
-  return key === from ? to : to + key.slice(from.length)
+  return key === from
+    ? to
+    : to + key.slice(from.length)
 }
 
 function escapeRegExp(text: string): string {

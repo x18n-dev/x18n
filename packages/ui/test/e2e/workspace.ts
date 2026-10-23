@@ -24,12 +24,24 @@ export async function fixture(): Promise<{ root: string, dispose: () => Promise<
   const root = join(dir, 'vue-i18n')
   await cp(join(fixtures, 'vue-i18n'), root, { recursive: true })
   await writeFile(join(root, '.gitignore'), '')
-  return { root, dispose: () => rm(dir, { recursive: true, force: true }) }
+  return {
+    root,
+    dispose: () => rm(dir, { recursive: true, force: true }),
+  }
 }
 
 /** Runs `x18n ui --json` and resolves with the printed URLs once it listens. */
 export function startUi(root: string, args: string[] = []): Promise<{ info: UiInfo, child: ChildProcess }> {
-  const child = spawn(process.execPath, [bin, 'ui', '--json', '--no-open', '--no-cache', '--port', '0', ...args], { cwd: root })
+  const child = spawn(process.execPath, [
+    bin,
+    'ui',
+    '--json',
+    '--no-open',
+    '--no-cache',
+    '--port',
+    '0',
+    ...args,
+  ], { cwd: root })
   let out = ''
   return new Promise((resolve, reject) => {
     child.stdout.on('data', (chunk: Buffer) => {
@@ -45,21 +57,41 @@ export function startUi(root: string, args: string[] = []): Promise<{ info: UiIn
 
 export function buildReport(root: string, outDir: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    execFile(process.execPath, [bin, 'build', '--out-dir', outDir, '--no-cache'], { cwd: root }, error => error ? reject(error) : resolve())
+    execFile(process.execPath, [
+      bin,
+      'build',
+      '--out-dir',
+      outDir,
+      '--no-cache',
+    ], { cwd: root }, error => error
+      ? reject(error)
+      : resolve())
   })
 }
 
-const types: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' }
+const types: Record<string, string> = {
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+}
 
 /** Serves a folder like any static host: no fallback route, no backend. */
 export async function serveStatic(dir: string): Promise<{ url: string, close: () => void }> {
   const server = createServer((req, res) => {
     const path = decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname)
-    readFile(join(dir, path.endsWith('/') ? `${path}index.html` : path)).then((body) => {
+    readFile(join(dir, path.endsWith('/')
+      ? `${path}index.html`
+      : path)).then((body) => {
       res.writeHead(200, { 'content-type': types[extname(path) || '.html'] ?? 'application/octet-stream' }).end(body)
     }, () => res.writeHead(404).end())
   })
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
   const address = server.address()
-  return { url: `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}/`, close: () => server.close() }
+  return {
+    url: `http://127.0.0.1:${typeof address === 'object' && address
+      ? address.port
+      : 0}/`,
+    close: () => server.close(),
+  }
 }

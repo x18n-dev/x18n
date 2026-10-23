@@ -10,7 +10,17 @@ import { createMessageConnection, StreamMessageReader, StreamMessageWriter } fro
 import { createConnection, InitializeRequest } from 'vscode-languageserver/node'
 import { methods, setupServer } from '../src'
 
-const config = JSON.stringify({ resources: [{ pattern: 'locales/{locale}.json' }], usage: { include: ['src/**/*.ts'], calls: [{ callee: 't' }] } })
+const config = JSON.stringify({
+  resources: [
+    { pattern: 'locales/{locale}.json' },
+  ],
+  usage: {
+    include: ['src/**/*.ts'],
+    calls: [
+      { callee: 't' },
+    ],
+  },
+})
 const files = {
   'apps/web/x18n.config.json': config,
   'apps/web/locales/en.json': '{"title":"Web"}',
@@ -39,7 +49,14 @@ beforeAll(async () => {
   client = createMessageConnection(new StreamMessageReader(toClient), new StreamMessageWriter(toServer))
   client.listen()
   disposers.push(() => client.dispose(), () => server.dispose())
-  await client.sendRequest(InitializeRequest.type, { processId: null, rootUri: null, workspaceFolders: [{ uri: pathToFileURL(root).href, name: 'monorepo' }], capabilities: {} })
+  await client.sendRequest(InitializeRequest.type, {
+    processId: null,
+    rootUri: null,
+    workspaceFolders: [
+      { uri: pathToFileURL(root).href, name: 'monorepo' },
+    ],
+    capabilities: {},
+  })
   await client.sendNotification('initialized', {})
 })
 
@@ -50,12 +67,31 @@ afterAll(async () => {
 
 it('loads every config of a folder without a root config', async () => {
   const projects: ProjectInfo[] = await client.sendRequest(methods.projects)
-  expect(projects.map(p => [p.name, p.root])).toEqual([['apps/docs', join(root, 'apps/docs')], ['apps/web', join(root, 'apps/web')]])
+  expect(projects.map(p => [p.name, p.root])).toEqual([
+    [
+      'apps/docs',
+      join(root, 'apps/docs'),
+    ],
+    [
+      'apps/web',
+      join(root, 'apps/web'),
+    ],
+  ])
 })
 
 it.each(['web', 'docs'])('resolves the project of a file in apps/%s', async (app) => {
   const position = { line: 0, character: 4 }
-  const definition: Location[] = await client.sendRequest('textDocument/definition', { textDocument: { uri: uri(`apps/${app}/src/a.ts`) }, position })
-  expect(definition.map(location => location.uri)).toEqual([uri(`apps/${app}/locales/en.json`)])
-  expect(await client.sendRequest(methods.keyAt, { uri: uri(`apps/${app}/src/a.ts`), position })).toMatchObject({ project: `apps/${app}`, key: 'title' })
+  const definition: Location[] = await client.sendRequest('textDocument/definition', {
+    textDocument: {
+      uri: uri(`apps/${app}/src/a.ts`),
+    },
+    position,
+  })
+  expect(definition.map(location => location.uri)).toEqual([
+    uri(`apps/${app}/locales/en.json`),
+  ])
+  expect(await client.sendRequest(methods.keyAt, {
+    uri: uri(`apps/${app}/src/a.ts`),
+    position,
+  })).toMatchObject({ project: `apps/${app}`, key: 'title' })
 })

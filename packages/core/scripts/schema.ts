@@ -10,7 +10,9 @@ export function buildJsonSchema(schema: GenericSchema<unknown>, title: string): 
   return {
     ...toJsonSchema(schema, {
       errorMode: 'ignore',
-      overrideSchema: context => context.valibotSchema.type === 'custom' ? { type: 'object' } : undefined,
+      overrideSchema: context => context.valibotSchema.type === 'custom'
+        ? { type: 'object' }
+        : undefined,
     }),
     title,
   }

@@ -23,7 +23,7 @@ export interface ArgSource {
 export interface Builtins {
   readonly plugins: readonly Plugin[];
   readonly presets: {
-    readonly [name: string]: PresetFactory;
+    readonly [name: string]: PresetEntry;
   };
 }
 export interface CacheStore {
@@ -204,6 +204,10 @@ export interface FormatContext {
   readonly namespace: string | undefined;
   readonly indent: number | "tab" | undefined;
 }
+export interface FormatEntry {
+  readonly extensions: readonly string[];
+  readonly load: PluginLoader;
+}
 export interface GlobOptions {
   readonly ignore?: readonly string[] | undefined;
   readonly gitignore?: boolean | undefined;
@@ -275,6 +279,32 @@ export interface KeyQuery {
   readonly namespace?: string | undefined;
   readonly missing?: LocaleCode | undefined;
   readonly unused?: boolean | undefined;
+}
+export interface LazyFormat extends FormatEntry {
+  readonly id: string;
+}
+export interface LazyScanner extends ScannerEntry {
+  readonly id: string;
+}
+export interface LibraryOptions {
+  readonly name: string;
+  readonly calls?: readonly CallSpec[];
+  readonly regex?: readonly RegexScannerSpec[];
+  readonly placeholders?: readonly PlaceholderSyntax[];
+  readonly derivedKeys?: readonly string[];
+  readonly namespace?: {
+    readonly separator?: string;
+    readonly default?: string;
+    readonly fromPath?: NamespaceFromPath;
+  };
+  readonly resources?: readonly ResourceSpec[];
+  readonly keyStyle?: "nested" | "flat";
+  readonly templates?: readonly ExtractTemplate[];
+  readonly finders?: readonly LocaleFinder[];
+  readonly normalizeKey?: Plugin["normalizeKey"];
+  readonly transformResource?: ResourceTransform;
+  readonly extra?: (_: ConfigDraft, _: ConfigContext) => void | Promise<void>;
+  readonly translatePrompt?: Plugin["translatePrompt"];
 }
 export interface LineIndex {
   readonly position: (_: number) => LinePosition;
@@ -410,6 +440,8 @@ export interface Plugin {
   readonly manifests?: readonly ManifestReader[] | undefined;
   readonly localeFinders?: readonly LocaleFinder[] | undefined;
   readonly formats?: readonly Format[] | undefined;
+  readonly lazyFormats?: readonly LazyFormat[] | undefined;
+  readonly lazyScanners?: readonly LazyScanner[] | undefined;
   readonly scanners?: readonly Scanner[] | undefined;
   readonly extractors?: readonly Extractor[] | undefined;
   readonly checks?: readonly Check[] | undefined;
@@ -468,9 +500,9 @@ export interface PluginFile {
 }
 export interface PluginRegistry {
   readonly plugins: readonly Plugin[];
-  readonly formats: readonly Format[];
+  readonly formats: readonly (Format | LazyFormat)[];
   readonly finders: readonly LocaleFinder[];
-  readonly scanners: readonly Scanner[];
+  readonly scanners: readonly (Scanner | LazyScanner)[];
   readonly checks: ReadonlyMap<string, Check>;
   readonly reporters: ReadonlyMap<string, Reporter>;
   readonly placeholders: readonly PlaceholderSyntax[];
@@ -479,8 +511,11 @@ export interface PluginRegistry {
   readonly histories: readonly HistoryProvider[];
   readonly conflicts: readonly CapabilityConflict[];
   readonly formatFor: (_: string, _?: string) => Format | undefined;
+  readonly formatIdFor: (_: string, _?: string) => string | undefined;
   readonly formatById: (_: string) => Format | undefined;
-  readonly scannersFor: (_: string) => readonly Scanner[];
+  readonly loadFormatFor: (_: string, _?: string) => Promise<Format | undefined>;
+  readonly scannersFor: (_: string) => readonly (Scanner | LazyScanner)[];
+  readonly loadScannersFor: (_: string) => Promise<readonly Scanner[]>;
 }
 export interface PluralForm {
   readonly type: Intl.PluralRuleType;
@@ -492,6 +527,13 @@ export interface Preset {
   readonly detect?: ((_: DetectContext) => boolean | Promise<boolean>) | undefined;
   readonly exclusive?: boolean | undefined;
   readonly plugins: readonly (Plugin | Preset)[];
+}
+export interface PresetDetection {
+  readonly detect?: ((_: DetectContext) => boolean | Promise<boolean>) | undefined;
+  readonly exclusive?: boolean | undefined;
+}
+export interface PresetEntry extends PresetDetection {
+  readonly load: PresetLoader;
 }
 export interface PresetExplanation {
   readonly name: string;
@@ -773,6 +815,10 @@ export interface Scanner {
   readonly runtime?: "any" | "node" | undefined;
   readonly scan: (_: SourceFile, _: ScanContext) => ScanResult | Promise<ScanResult>;
 }
+export interface ScannerEntry {
+  readonly extensions: readonly string[];
+  readonly load: PluginLoader;
+}
 export interface ScanResult {
   readonly usages: readonly UsageCandidate[];
   readonly scopes?: readonly Scope[] | undefined;
@@ -1002,10 +1048,19 @@ export type PlaceholderComparer = (_: string, _: string) => {
   readonly missing: string[];
   readonly extra: string[];
 };
+export type PluginLoader = () => Promise<{
+  readonly default: () => Plugin;
+}>;
 export type PluginOption = Plugin | Preset | PluginSpecifier | false | undefined;
 export type PluginSpecifier = string | readonly [string, JsonObject];
 export type PresetFactory = (_?: JsonObject) => Preset;
+export type PresetLoader = () => Promise<{
+  readonly default: PresetFactory;
+}>;
 export type PresetOption = Preset | PluginSpecifier | false | undefined;
+export type ReporterLoader = () => Promise<{
+  readonly default: Reporter;
+}>;
 export type ResourceId = string;
 export type Severity = "error" | "warning" | "info" | "hint";
 export type UsageKind = "call" | "selector" | "accessor" | "constant" | "marker";
@@ -1019,6 +1074,7 @@ export type X18nError = Diagnostic$1 & {
 export declare function applyMessageOps(_: MessageTree, _: readonly MessageOp[]): MessageTree;
 export declare function applyTextEdits(_: string, _: readonly TextEdit[]): string;
 export declare function buildTree(_: Iterable<TreeLeaf>): MessageTree;
+export declare function createLibraryPlugin(_: LibraryOptions): Plugin;
 export declare function createLineIndex(_: string): LineIndex;
 export declare function createMemoryHost(_?: Readonly<Record<string, string>>, _?: string): MemoryHost;
 export declare function createOverlayHost(_: Host): OverlayHost;
