@@ -165,6 +165,41 @@ describe('every i18n-ally framework is detected and understood', () => {
     expect(project.analyze().undefinedUsages).toEqual([])
   })
 
+  it('laravel-vue-i18n alongside laravel resolves the same keys from vue and blade', async () => {
+    const { project } = await createTestProject({
+      'composer.json': json({ require: { 'laravel/framework': '^11' } }),
+      'package.json': pkg('vue', 'laravel-vue-i18n'),
+      'lang/en/auth.php': '<?php return [\'failed\' => \'Failed for :name\'];',
+      'lang/en/admin/users.php': '<?php return [\'title\' => \'Users\'];',
+      'lang/de/auth.php': '<?php return [\'failed\' => \'Fehlgeschlagen\'];',
+      'lang/en.json': json({ 'Welcome back!': 'Welcome back!', 'One apple|Many apples': 'One apple|Many apples' }),
+      'resources/js/Pages/Login.vue': '<template><h1>{{ $t(\'Welcome back!\') }}</h1><p>{{ $tChoice(\'One apple|Many apples\', 2) }}</p></template>\n<script setup>\nimport { trans, wTrans } from \'laravel-vue-i18n\'\nconst a = trans(\'auth.failed\', { name })\nconst b = wTrans(\'admin/users.title\')\n</script>\n',
+      'resources/views/a.blade.php': '{{ __(\'auth.failed\') }}',
+    })
+    expect(detected(project)).toEqual(['laravel-vue-i18n', 'laravel'])
+    expect(project.locales).toEqual(['en', 'de'])
+    expect(project.keys()).toEqual(['One apple|Many apples', 'Welcome back!', 'admin.users.title', 'auth.failed'])
+    expect(usedKeys(project).sort()).toEqual(['One apple|Many apples', 'Welcome back!', 'admin.users.title', 'auth.failed', 'auth.failed'])
+    const analysis = project.analyze()
+    expect(analysis.undefinedUsages).toEqual([])
+    expect(analysis.unused).toEqual([])
+    expect(analysis.diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:auth.failed')
+  })
+
+  it('laravel-vue-i18n without composer, keyed by sentences in lang/{locale}.json', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('vue', 'laravel-vue-i18n'),
+      'lang/en.json': json({ 'Welcome, :name!': 'Welcome, :name!' }),
+      'lang/pt.json': json({ 'Welcome, :name!': 'Bem-vindo!' }),
+      'resources/js/app.ts': 'import { transChoice, wTransChoice } from \'laravel-vue-i18n\'\ntransChoice(\'Welcome, :name!\', 1); wTransChoice(\'missing.key\', 2)',
+    })
+    expect(detected(project)).toEqual(['laravel-vue-i18n'])
+    expect(usedKeys(project)).toEqual(['Welcome, :name!', 'missing.key'])
+    const analysis = project.analyze()
+    expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['missing.key'])
+    expect(analysis.diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:Welcome, :name!')
+  })
+
   it('joomla ini files', async () => {
     const { project } = await createTestProject({
       'composer.json': json({ require: { 'joomla/application': '*' } }),

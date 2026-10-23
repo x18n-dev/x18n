@@ -1,7 +1,7 @@
 import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
 import { extractableHardStrings, extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
-import { reactI18next, reactIntl, svelteI18n, vueI18n } from '../src/presets'
+import { laravel, laravelVueI18n, reactI18next, reactIntl, svelteI18n, vueI18n } from '../src/presets'
 import { createTestProject, json } from './_utils'
 
 async function extractAll(project: Project): Promise<void> {
@@ -177,6 +177,33 @@ describe('extraction per preset', () => {
       '</template>',
     ].join('\n'))
     expect(JSON.parse(files.get('src/locales/en.json')!)).toEqual({ existing: 'Already here', clickToContinue: 'Click to continue', mainTitle: 'Main title', welcomeBack: 'Welcome back' })
+  })
+
+  it('laravel-vue-i18n with laravel: $t in templates, trans in scripts, :name placeholders', async () => {
+    const { project, files } = await createTestProject({
+      'lang/en.json': json({}),
+      'resources/js/App.vue': [
+        '<script setup lang="ts">',
+        'const msg = `Signed in as ${name}`', // eslint-disable-line no-template-curly-in-string
+        '</script>',
+        '',
+        '<template>',
+        '  <h1 title="Main title">Welcome back</h1>',
+        '</template>',
+      ].join('\n'),
+    }, { presets: [laravelVueI18n(), laravel()] })
+    await extractAll(project)
+    expect(files.get('resources/js/App.vue')).toBe([
+      '<script setup lang="ts">',
+      'import { trans } from \'laravel-vue-i18n\'',
+      'const msg = trans(\'signedInAs\', { name })',
+      '</script>',
+      '',
+      '<template>',
+      '  <h1 :title="$t(\'mainTitle\')">{{ $t(\'welcomeBack\') }}</h1>',
+      '</template>',
+    ].join('\n'))
+    expect(JSON.parse(files.get('lang/en.json')!)).toEqual({ mainTitle: 'Main title', signedInAs: 'Signed in as :name', welcomeBack: 'Welcome back' })
   })
 
   it('react-i18next: JSX text through Trans, attributes through i18next.t, template arguments', async () => {

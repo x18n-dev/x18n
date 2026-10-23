@@ -31,6 +31,7 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | [`ui5`](/presets/ui5) | SAPUI5, OpenUI5 | `@ui5/cli` |
 | [`chrome-extension`](/presets/chrome-extension) | Chrome and WebExtension i18n | `default_locale` in `manifest.json`, `src/manifest.json` or `public/manifest.json` |
 | [`vscode-extension`](/presets/vscode-extension) | VS Code extension API | `vscode`, `@types/vscode` |
+| [`laravel-vue-i18n`](/presets/laravel-vue-i18n) | laravel-vue-i18n | `laravel-vue-i18n` |
 | [`laravel`](/presets/laravel) | Laravel | `laravel/framework` in `composer.json` |
 | [`php-joomla`](/presets/php-joomla) | Joomla | `joomla/application`, `joomla/cms` in `composer.json` |
 | [`php-gettext`](/presets/php-gettext) | gettext in PHP | never: list it in `presets` |
@@ -70,7 +71,7 @@ presets: [vue-i18n, general]
 
 ::
 
-In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
+In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravelVueI18n`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
 
 ## What a preset adds
 

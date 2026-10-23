@@ -35,7 +35,7 @@ Every surface reads the same config and reports the same diagnostics. A fix that
 
 x18n knows no i18n library and no file format by itself. Plugins add that knowledge. A preset is a group of plugins for one library. x18n detects the presets from the dependencies of the project:
 
-- Vue: [vue-i18n](/presets/vue-i18n), [@nuxtjs/i18n](/presets/nuxt-i18n) and [fluent-vue](/presets/fluent-vue)
+- Vue: [vue-i18n](/presets/vue-i18n), [@nuxtjs/i18n](/presets/nuxt-i18n), [fluent-vue](/presets/fluent-vue) and [laravel-vue-i18n](/presets/laravel-vue-i18n)
 - React and Next.js: [i18next](/presets/i18next), [react-i18next](/presets/react-i18next), [i18next-shopify](/presets/i18next-shopify), [next-intl](/presets/next-intl), [next-translate](/presets/next-translate), [next-international](/presets/next-international), [react-intl](/presets/react-intl) and [Lingui](/presets/lingui)
 - Svelte: [svelte-i18n and sveltekit-i18n](/presets/svelte-i18n)
 - Solid: [@solid-primitives/i18n](/presets/solid-primitives-i18n)

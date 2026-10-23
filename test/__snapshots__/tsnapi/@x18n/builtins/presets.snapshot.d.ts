@@ -14,6 +14,7 @@ export declare function i18nJs(): Preset;
 export declare function i18nTag(): Preset;
 export declare function jekyll(): Preset;
 export declare function laravel(): Preset;
+export declare function laravelVueI18n(): Preset;
 export declare function lingui(): Preset;
 export declare function nextInternational(): Preset;
 export declare function nextIntl(): Preset;

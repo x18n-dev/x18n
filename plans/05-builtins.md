@@ -88,6 +88,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `paraglide` | @inlang/paraglide-js | `messages/{locale}.json`, `m.key()` accessor calls | 2 |
 | `typesafe-i18n` | typesafe-i18n | `LL.a.b()` accessor calls, TS locale files | 2 |
 | `laravel` | composer: laravel/framework | `php` format, `lang/{locale}/{namespace}.php`, `__()`, `trans()`, `@lang` | 2 |
+| `laravel-vue-i18n` | laravel-vue-i18n | `laravel` resources and keys, `trans()`, `wTrans()`, `transChoice()`, `$t()`, `$tChoice()`; listed before the exclusive `laravel` so both apply | 2 |
 | `ruby-rails` | Gemfile: rails | `yaml` with top-level locale transform, `t('.lazy')` from view path | 2 |
 | `flutter` | pubspec: flutter_localizations, intl, flutter_i18n | `arb` format, `AppLocalizations.of(context).key` | 2 |
 | `chrome-extension` | manifest.json with `default_locale` | `_locales/{locale}/messages.json`, `.message` transform, `chrome.i18n.getMessage` | 2 |

@@ -1,8 +1,18 @@
 // Detection and syntax adapted from i18n-ally (MIT), src/frameworks/laravel.ts, php-joomla.ts, php-gettext.ts, ruby-rails.ts and jekyll.ts
-import type { MessageTree, Preset } from '@x18n/core'
+import type { MessageTree, Plugin, Preset, ResourceSpec } from '@x18n/core'
 import { isMessageLeaf } from '@x18n/core'
 import { colon, percentBraces, placeholders, printf } from '../placeholders'
 import { dependsOn, library } from './shared'
+
+const laravelResources: readonly ResourceSpec[] = [
+  { pattern: 'lang/{locale}/{namespaces}.php' },
+  { pattern: 'resources/lang/{locale}/{namespaces}.php' },
+  { pattern: 'lang/{locale}.json' },
+  { pattern: 'resources/lang/{locale}.json' },
+]
+
+/** Nested translation files are referenced as `dir/file.key`. */
+const laravelKey: Plugin['normalizeKey'] = raw => raw.includes('/') ? raw.replace(/\//g, '.') : undefined
 
 /** Laravel: `lang/{locale}/{file}.php` arrays and `lang/{locale}.json`; keys are `file.key`. Exclusive like i18n-ally. */
 export function laravel(): Preset {
@@ -15,15 +25,31 @@ export function laravel(): Preset {
         name: 'laravel',
         // JSON translation keys are whole sentences, so the key is anything inside the quotes.
         regex: [{ extensions: ['php'], patterns: ['[^\\w\\d](?:__|trans|@lang|trans_choice|Lang::get|Lang::choice)\\(\\s*\'([^\']+)\'', '[^\\w\\d](?:__|trans|@lang|trans_choice|Lang::get|Lang::choice)\\(\\s*"([^"]+)"'] }],
-        resources: [
-          { pattern: 'lang/{locale}/{namespaces}.php' },
-          { pattern: 'resources/lang/{locale}/{namespaces}.php' },
-          { pattern: 'lang/{locale}.json' },
-          { pattern: 'resources/lang/{locale}.json' },
-        ],
-        // Nested translation files are referenced as `dir/file.key`.
-        normalizeKey: raw => raw.includes('/') ? raw.replace(/\//g, '.') : undefined,
+        resources: laravelResources,
+        normalizeKey: laravelKey,
         templates: [{ template: '__(\'{key}\')' }],
+      }),
+      placeholders(colon),
+    ],
+  }
+}
+
+/** laravel-vue-i18n: the Laravel translation files read from Vue, so keys match the `laravel` preset. */
+export function laravelVueI18n(): Preset {
+  return {
+    name: 'laravel-vue-i18n',
+    detect: dependsOn(['laravel-vue-i18n']),
+    plugins: [
+      library({
+        name: 'laravel-vue-i18n',
+        calls: [{ callee: ['trans', 'wTrans', 'transChoice', 'wTransChoice', 'trans_choice', '$t', '$tChoice'] }],
+        resources: laravelResources,
+        normalizeKey: laravelKey,
+        templates: [
+          { template: '{{ $t(\'{key}\'{args}) }}', kinds: ['vue-template-text'] },
+          { template: ':{attr}="$t(\'{key}\'{args})"', kinds: ['vue-attribute'] },
+          { template: 'trans(\'{key}\'{args})', kinds: ['js-string', 'js-template'], imports: ['import { trans } from \'laravel-vue-i18n\''] },
+        ],
       }),
       placeholders(colon),
     ],

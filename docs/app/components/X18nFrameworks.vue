@@ -13,6 +13,7 @@ const frameworks: { name: string, icon: string, to: string, mono?: boolean, colo
   { name: 'Shopify', icon: 'logos:shopify', to: '/presets/i18next-shopify' },
   { name: 'SAP', icon: 'logos:sap', to: '/presets/ui5' },
   { name: 'Laravel', icon: 'logos:laravel', to: '/presets/laravel' },
+  { name: 'Inertia', icon: 'simple-icons:inertia', to: '/presets/laravel-vue-i18n', color: '#9553e9' },
   { name: 'Joomla', icon: 'logos:joomla', to: '/presets/php-joomla' },
   { name: 'PHP', icon: 'logos:php', to: '/presets/php-gettext' },
   { name: 'Rails', icon: 'logos:rails', to: '/presets/ruby-rails' },
