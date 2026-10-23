@@ -1,4 +1,5 @@
-import type { CallSpec, ConfigContext, ConfigDraft, DetectContext, ExtractTemplate, LocaleFinder, NamespaceFromPath, Plugin, RegexScannerSpec, ResourceSpec, ResourceTransform } from '@x18n/core'
+import type { CallSpec, ConfigContext, ConfigDraft, DetectContext, ExtractTemplate, LocaleFinder, MessageTree, NamespaceFromPath, Plugin, RegexScannerSpec, ResourceSpec, ResourceTransform } from '@x18n/core'
+import { isMessageLeaf } from '@x18n/core'
 
 export interface LibraryOptions {
   readonly name: string
@@ -48,6 +49,18 @@ export function library(options: LibraryOptions): Plugin {
     transformResource: options.transformResource,
     translatePrompt: options.translatePrompt,
     extractors: options.templates ? [{ id: options.name, templates: options.templates }] : undefined,
+  }
+}
+
+/** Files that start with their locale, `en: { users: ... }`, as in Rails and i18nice. */
+export function localeRoot(applies: ResourceTransform['applies']): ResourceTransform {
+  return {
+    applies,
+    read(tree, ctx) {
+      const root = tree[ctx.locale]
+      return root !== undefined && !isMessageLeaf(root) ? root : {} satisfies MessageTree
+    },
+    toStored: (path, ctx) => [ctx.locale, ...path],
   }
 }
 

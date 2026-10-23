@@ -1,8 +1,7 @@
 // Detection and syntax adapted from i18n-ally (MIT), src/frameworks/laravel.ts, php-joomla.ts, php-gettext.ts, ruby-rails.ts and jekyll.ts
-import type { MessageTree, Preset } from '@x18n/core'
-import { isMessageLeaf } from '@x18n/core'
+import type { Preset } from '@x18n/core'
 import { colon, percentBraces, placeholders, printf } from '../placeholders'
-import { dependsOn, library } from './shared'
+import { dependsOn, library, localeRoot } from './shared'
 
 /** Laravel: `lang/{locale}/{file}.php` arrays and `lang/{locale}.json`; keys are `file.key`. Exclusive like i18n-ally. */
 export function laravel(): Preset {
@@ -98,15 +97,7 @@ export function rubyRails(): Preset {
           { pattern: 'config/locales/{locale}/**/*.yml' },
         ],
         normalizeKey: (raw, ctx) => railsLazyKey(raw, ctx.path),
-        // Rails files start with the locale: `en: { users: ... }`.
-        transformResource: {
-          applies: ctx => /\.ya?ml$/.test(ctx.path),
-          read(tree, ctx) {
-            const root = tree[ctx.locale]
-            return root !== undefined && !isMessageLeaf(root) ? root : {} satisfies MessageTree
-          },
-          toStored: (path, ctx) => [ctx.locale, ...path],
-        },
+        transformResource: localeRoot(ctx => /\.ya?ml$/.test(ctx.path)),
         templates: [{ template: 't(\'{key}\')' }],
       }),
       placeholders(percentBraces),

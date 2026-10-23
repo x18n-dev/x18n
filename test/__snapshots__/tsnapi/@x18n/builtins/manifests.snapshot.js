@@ -10,4 +10,6 @@ export var composerJson /* const */
 export var gemfile /* const */
 export var packageJson /* const */
 export var pubspecYaml /* const */
+export var pyprojectToml /* const */
+export var requirementsTxt /* const */
 // #endregion

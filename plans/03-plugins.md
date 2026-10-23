@@ -61,7 +61,7 @@ Built-in plugins and presets are factories with typed options, for example `vueI
 
 ### Manifest reader
 
-Reads a package manifest into a dependency list for `detect`. Built-ins: `package.json`, `composer.json`, `pubspec.yaml`, `Gemfile` (fixing the i18n-ally parser that only reported `rails-i18n`).
+Reads a package manifest into a dependency list for `detect`. Built-ins: `package.json`, `composer.json`, `pubspec.yaml`, `Gemfile` (fixing the i18n-ally parser that only reported `rails-i18n`), `pyproject.toml` and `requirements.txt` (PEP 503 normalized names, read without a TOML parser).
 
 ```ts
 interface ManifestReader {

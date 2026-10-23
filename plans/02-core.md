@@ -127,7 +127,7 @@ project.dispose()
 Lifecycle:
 
 1. **Resolve.** Config is resolved and the plugin list is final ([04-config.md](./04-config.md)).
-2. **Detect.** Presets with `detect` run against the package manifests the host can read (`package.json`, `composer.json`, `pubspec.yaml`, `Gemfile`). Parsing of manifests is a plugin concern too (`manifests` contribution).
+2. **Detect.** Presets with `detect` run against the package manifests the host can read (`package.json`, `composer.json`, `pubspec.yaml`, `Gemfile`, `pyproject.toml`, `requirements.txt`). Parsing of manifests is a plugin concern too (`manifests` contribution).
 3. **Discover.** Every locale finder returns `ResourceCandidate[]`. Core merges them, drops duplicates (first finder wins, recorded in `project.explain()`), and picks a format per resource by finder hint, then by extension.
 4. **Parse.** Each resource is parsed by its format into a `MessageTree`, then passes through `transformResource` hooks (for example Rails strips the top-level locale key).
 5. **Index.** The key index maps `KeyString` to messages per locale. Namespaces come from the finder (path pattern) and are added to the key.

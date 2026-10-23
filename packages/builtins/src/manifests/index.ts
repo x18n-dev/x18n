@@ -38,6 +38,52 @@ export const gemfile: ManifestReader = {
   read: text => [...text.matchAll(/^\s*gem\s+["']([^"']+)["']/gm)].map(match => match[1]!),
 }
 
+/** The PEP 503 normalized name of a PEP 508 requirement: `Flask_Babel[async]>=4` is `flask-babel`. */
+function requirementName(requirement: string): string[] {
+  const name = /^\s*([a-z\d][\w.-]*)/i.exec(requirement)?.[1]
+  return name ? [name.toLowerCase().replace(/[-_.]+/g, '-')] : []
+}
+
+/** TOML strings outside comments, up to the first `]` outside a string (`"i18nice[YAML]"` has none) when `toClose`. */
+function tomlStrings(text: string, toClose: boolean): string[] {
+  const out: string[] = []
+  for (const match of text.matchAll(/"([^"\n]*)"|'([^'\n]*)'|#.*|(\])/g)) {
+    if (match[3] && toClose)
+      break
+    const value = match[1] ?? match[2]
+    if (value !== undefined)
+      out.push(value)
+  }
+  return out
+}
+
+/** Reads the PEP 621, PEP 735 and Poetry dependency tables; dependency names need no full TOML parser. */
+export const pyprojectToml: ManifestReader = {
+  id: 'pyproject.toml',
+  file: 'pyproject.toml',
+  read: text => text.split(/^[ \t]*\[/m).flatMap((table) => {
+    const header = /^\[?([^\]\n]+)\]/.exec(table)?.[1]?.trim()
+    const body = table.slice(table.indexOf('\n') + 1)
+    if (header === 'project') {
+      const start = /^\s*dependencies\s*=\s*\[/m.exec(body)
+      return start ? tomlStrings(body.slice(start.index + start[0].length), true).flatMap(requirementName) : []
+    }
+    // Every string in these tables is a requirement.
+    if (header === 'project.optional-dependencies' || header === 'dependency-groups')
+      return tomlStrings(body, false).flatMap(requirementName)
+    if (header && /^tool\.poetry\.(?:group\.[\w-]+\.)?(?:dev-)?dependencies$/.test(header))
+      return [...body.matchAll(/^\s*([\w.-]+)\s*=/gm)].flatMap(match => requirementName(match[1]!)).filter(name => name !== 'python')
+    return []
+  }),
+}
+
+export const requirementsTxt: ManifestReader = {
+  id: 'requirements.txt',
+  file: 'requirements.txt',
+  // Lines starting with `-` are pip options (`-r other.txt`, `-e .`).
+  read: text => text.split('\n').flatMap(line => line.trim().startsWith('-') ? [] : requirementName(line)),
+}
+
 export function manifests(): Plugin {
-  return { name: 'x18n:manifests', manifests: [packageJson, composerJson, pubspecYaml, gemfile] }
+  return { name: 'x18n:manifests', manifests: [packageJson, composerJson, pubspecYaml, gemfile, pyprojectToml, requirementsTxt] }
 }
