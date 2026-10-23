@@ -53,7 +53,7 @@ Project settings live only in the config file. Editors have UX settings only and
 | `resources` | ResourceSpec[] | from presets | `{ pattern, format?, namespace?, execute? }`. Feeds the `pattern` finder. `execute: true` runs matching JS/TS files in Node and makes them read-only ([05-builtins.md](./05-builtins.md)). |
 | `formats` | `Record<ext, formatId>` | by extension | Explicit format per extension. |
 | `keyStyle` | `'auto' \| 'nested' \| 'flat'` | `'auto'` | `'auto'` keeps what each file uses. New files use the style of most files. |
-| `namespace` | `{ separator?, default?, fromPath? }` | from presets | `fromPath` names a namespace from `{namespaces}` folders: `dot` (default, `pages.home`), `slash` (i18next, `pages/home`), `camel` (Transloco, `todos-page` is `todosPage`) |
+| `namespace` | `{ separator?, default?, fallback?, byFile?, fromPath? }` | from presets | `fallback` lists the namespaces searched when a key is not in its own (i18next `fallbackNS`). `byFile` maps source globs to the namespace of keys written without one. `fromPath` names a namespace from `{namespaces}` folders: `dot` (default, `pages.home`), `slash` (i18next, `pages/home`), `camel` (Transloco, `todos-page` is `todosPage`) |
 | `usage.include` / `usage.exclude` | string[] | `**/*` / gitignore + build dirs | Source files to scan. |
 | `usage.calls` | CallSpec[] | from presets | Extra callee names, factories, wrappers, typed params ([03-plugins.md](./03-plugins.md)). |
 | `usage.ignoreCallees` | string[] | `[]` | Callee names never counted, for false positives of name matching. |
@@ -77,6 +77,8 @@ Plugin options live under the plugin's own key in `PluginConfigs` (see [03-plugi
 ## Monorepos
 
 A root `x18n.config.ts` lists `projects: ['apps/*', 'packages/ui']`. Each match is a project with its own `x18n.config.ts` that inherits the root options and overrides what it sets. This is the same model as Vitest projects. A matched directory without a config file is a project with the root options and its own detection.
+
+Without a config at or above the cwd, every config below it (outside `node_modules`) loads as a root config of its own, shallowest first, so a config that lists `projects` claims the configs of its projects. The LSP resolves each file to the project with the deepest root that holds it.
 
 The CLI, LSP and UI show every project. `x18n check` checks all of them, and `--project <name>` narrows the run. Project names come from the directory name, or from `name` in the project config.
 
