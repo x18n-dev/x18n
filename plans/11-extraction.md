@@ -4,7 +4,7 @@ Find hard-coded user-facing strings in source code and turn them into keys. Port
 
 ## Pipeline
 
-1. **Detect.** Extractors walk the same ASTs the scanners build (one parse per file) and return `HardString` candidates: text, range, kind (`js-string`, `js-template`, `jsx-text`, `jsx-attribute`, `html-text`, `html-attribute`, `vue-template-text`, ...), and template arguments (`${name}` becomes `{name}` in the message, the expression is kept for the call).
+1. **Detect.** Extractors walk the same ASTs the scanners build (one parse per file) and return `HardString` candidates: text, range, kind (`js-string`, `js-template`, `jsx-text`, `jsx-attribute`, `html-text`, `html-attribute`, `vue-template-text`, `astro-text`, ...), and template arguments (`${name}` becomes `{name}` in the message, the expression is kept for the call).
 2. **Score.** Rules return a score (`must-include`, `should-include`, `none`, `should-exclude`, `must-exclude`), folded like i18n-ally `shouldExtract`: a `must-*` wins at once, otherwise the last `should-*`. Built-in rules port the i18n-ally ones: spaces and letters, camelCase or SCREAMING_CASE (exclude), digits only (exclude), non-ASCII letters (include), URLs and paths (exclude), strings that already contain a translate call (exclude). Ignored contexts: `console.*`, `import` and `require` specifiers, object keys, type positions, `className`/`class`/`style`/`key`/`ref` attributes, configured ignored attributes and callees.
 3. **Ignore lists.** Config `extract.ignore` (strings or regex) and per-file `extract.ignoreByFile`. The "ignore this string" code action writes there. Control comments work too: `x18n-ignore` (its line and the next), `x18n-ignore-start` ... `x18n-ignore-end` (a region), `x18n-ignore-file` (the whole file). Tests, fixtures, mocks, stories, configs and type declarations are never scanned, by the file and directory conventions of common languages.
 4. **Plan.** For each accepted candidate:
@@ -17,7 +17,7 @@ Find hard-coded user-facing strings in source code and turn them into keys. Port
      - If the same text already exists as a value in the source locale, that key is reused (configurable).
    - **Target resource**: the new-key placement rule of [02-core.md](./02-core.md) (namespace, then longest prefix, then first resource).
    - **Replacement**: from refactor templates. Presets give templates per kind (vue-i18n: `{{ $t('{key}') }}` in templates, `t('{key}')` in script setup with `useI18n` present, `:{attr}="$t('{key}')"` for attributes). Config can add templates filtered by kind and file globs. When several templates apply, the plan has a decision. The key is escaped for the quotes around `{key}` (backslashes in a JS string, entities in a double-quoted attribute), because `source` keys hold any text.
-   - **Imports**: a template can require an import or a setup line (`const { t } = useI18n()`); the plan adds it once per file when missing.
+   - **Imports**: a template can require an import or a setup line (`const { t } = useI18n()`); the plan adds it once per file when missing, at the top of a `---` frontmatter (only when a closing `---` line exists) or of the first `<script>`, else after the last import.
 5. **Apply.** One `project.plan([{ type: 'extract', items }])` call: source edits plus resource edits in one plan, so the LSP can return one `WorkspaceEdit`.
 
 ## Surfaces
@@ -35,4 +35,5 @@ Find hard-coded user-facing strings in source code and turn them into keys. Port
 | `vue-i18n` | + vue-template-text, vue-attribute, vue bound attribute |
 | `react-i18next`, `next-intl`, `react-intl` | jsx kinds with library templates (`t('{key}')`, `<FormattedMessage id="{key}" />`) |
 | `svelte-i18n` | svelte text and attributes |
+| any preset with translate calls, in `.astro` | astro-text, astro-attribute, js kinds in the frontmatter. Strings inside `{...}` expressions are not reported, nor strings in `<script>`: a replacement there would run in the browser, where the frontmatter import is not in scope, and `is:inline` scripts cannot import |
 | `fluent-vue`, `next-international`, `transloco` | as in i18n-ally |

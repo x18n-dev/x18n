@@ -13,6 +13,7 @@ const textKinds = new Set([
   'jsx-text',
   'vue-template-text',
   'svelte-text',
+  'astro-text',
   'html-text',
 ])
 
@@ -190,11 +191,11 @@ export function slugify(text: string, keyCase: KeyCase = 'camel', maxLength = 40
 export const defaultTemplates: readonly ExtractTemplate[] = [
   {
     template: '{t(\'{key}\'{args})}',
-    kinds: ['jsx-text'],
+    kinds: ['jsx-text', 'astro-text'],
   },
   {
     template: '{attr}={t(\'{key}\'{args})}',
-    kinds: ['jsx-attribute'],
+    kinds: ['jsx-attribute', 'astro-attribute'],
   },
   {
     template: '{{ $t(\'{key}\'{args}) }}',

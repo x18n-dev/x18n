@@ -834,6 +834,7 @@ export interface Scope {
   readonly range: TextRange;
   readonly namespace?: string | undefined;
   readonly keyPrefix?: string | undefined;
+  readonly optionalPrefix?: boolean | undefined;
 }
 export interface SerializableConfig {
   readonly $schema?: string | undefined;

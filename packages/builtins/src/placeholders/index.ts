@@ -31,6 +31,11 @@ export const doubleBraces: PlaceholderSyntax = byRegex('double-braces', /\{\{-?\
 export const percentBraces: PlaceholderSyntax = byRegex('percent-braces', /%\{(\w+)\}/g, '%{name}')
 /** `%s`, `%d`, `%1$s`: printf. */
 export const printf: PlaceholderSyntax = byRegex('printf', /%(?:(\d+)\$)?[-+ 0#]*(?:[1-9]\d*)?(?:\.\d+)?[sdifoxXeEgGc@]/g, '%s')
+/**
+ * `%(name)s`, `%s`, `%d`: Python percent formatting, as in gettext catalogs. No space flag, so `50% of` is text.
+ * URL escapes are text too: those with an uppercase hex letter (`%2F`), and any `%XX` after `://` in the same word (`%20a`).
+ */
+export const pythonPercent: PlaceholderSyntax = byRegex('python-percent', /(?<!%)%(?![\dA-F][A-F])(?!(?<=:\/\/\S*%)[\dA-Fa-f]{2})(?:\((\w+)\))?[-#0+]*(?:[1-9]\d*|\*)?(?:\.\d+)?[c-giouxXEFGrsa]/g, '%(name)s')
 /** `@:key` and `@.modifier:key`: vue-i18n linked messages. */
 export const linked: PlaceholderSyntax = {
   ...byRegex('linked', /@(?:\.\w+)?:\(?([\w.-]+)\)?/g, '@:key'),

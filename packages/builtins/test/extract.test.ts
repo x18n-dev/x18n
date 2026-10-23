@@ -1,12 +1,15 @@
 import type { Project } from '@x18n/core'
+import { compile } from 'svelte/compiler'
 import { describe, expect, it } from 'vitest'
 import { extractableHardStrings, extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
+import { i18next } from '../src/presets/i18next'
 import { laravel } from '../src/presets/laravel'
 import { laravelVueI18n } from '../src/presets/laravel-vue-i18n'
 import { paraglide } from '../src/presets/paraglide'
 import { reactI18next } from '../src/presets/react-i18next'
 import { reactIntl } from '../src/presets/react-intl'
 import { svelteI18n } from '../src/presets/svelte-i18n'
+import { svelteI18next } from '../src/presets/svelte-i18next'
 import { typesafeI18n } from '../src/presets/typesafe-i18n'
 import { vueI18n } from '../src/presets/vue-i18n'
 import { createTestProject, json } from './_utils'
@@ -60,6 +63,7 @@ describe('extraction rules', () => {
       'src/App.vue': `<template>\n  ${tag}\n</template>\n`,
       'src/App.tsx': `export const App = () => ${tag.replace('enter-from-class', 'className')}\n`,
       'src/App.svelte': `${tag.replace('enter-from-class', 'class')}\n`,
+      'src/App.astro': `${tag.replace('enter-from-class', 'class')}\n`,
     }, {
       presets: [
         vueI18n(),
@@ -70,6 +74,11 @@ describe('extraction rules', () => {
       },
     })
     expect(findCandidates(project).map(c => `${c.path}:${c.attribute ?? c.kind}`)).toEqual([
+      'src/App.astro:title',
+      'src/App.astro:aria-label',
+      'src/App.astro:confirm-text',
+      'src/App.astro:empty-state',
+      'src/App.astro:astro-text',
       'src/App.svelte:title',
       'src/App.svelte:aria-label',
       'src/App.svelte:confirm-text',
@@ -262,6 +271,63 @@ describe('extraction per preset', () => {
     expect(JSON.parse(files.get('lang/en.json')!)).toEqual({ 'Main title': 'Main title', 'Signed in as :name': 'Signed in as :name', 'Welcome back': 'Welcome back' })
   })
 
+  it('i18next in Astro: template text and attributes, frontmatter strings with imports in the frontmatter', async () => {
+    const { project, files } = await createTestProject({
+      'locales/en.json': json({}),
+      'src/pages/index.astro': [
+        '---',
+        'const label = \'Click to continue\'',
+        '---',
+        '<h1 title="Main title" class="text-xl">Welcome back, {name}!</h1>',
+        '<script>',
+        '  document.title = \'Welcome to the page\'',
+        '</script>',
+        '',
+      ].join('\n'),
+    }, {
+      presets: [
+        i18next(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+    })
+    await extractAll(project)
+    expect(files.get('src/pages/index.astro')).toBe([
+      '---',
+      'import i18next from \'i18next\'',
+      'const label = i18next.t(\'clickToContinue\')',
+      '---',
+      '<h1 title={t(\'mainTitle\')} class="text-xl">{t(\'welcomeBack\')} {name}!</h1>',
+      '<script>',
+      '  document.title = \'Welcome to the page\'',
+      '</script>',
+      '',
+    ].join('\n'))
+    expect(JSON.parse(files.get('locales/en.json')!)).toEqual({ clickToContinue: 'Click to continue', mainTitle: 'Main title', welcomeBack: 'Welcome back,' })
+  })
+
+  it('puts imports in the first script when a leading --- has no closing line', async () => {
+    const { project, files } = await createTestProject({
+      'src/locales/en.json': json({}),
+      'src/App.vue': '---\n<script setup lang="ts">\nconst label = \'Click to continue\'\n</script>\n',
+    }, {
+      presets: [
+        vueI18n(),
+      ],
+    })
+    await extractAll(project)
+    expect(files.get('src/App.vue')).toBe([
+      '---',
+      '<script setup lang="ts">',
+      'import { useI18n } from \'vue-i18n\'',
+      'const { t } = useI18n()',
+      'const label = t(\'clickToContinue\')',
+      '</script>',
+      '',
+    ].join('\n'))
+  })
+
   it('react-i18next: JSX text through Trans, attributes through i18next.t, template arguments', async () => {
     const { project, files } = await createTestProject({
       'locales/en/translation.json': json({}),
@@ -283,6 +349,31 @@ describe('extraction per preset', () => {
       '',
     ].join('\n'))
     expect(JSON.parse(files.get('locales/en/translation.json')!)).toEqual({ closeDialog: 'Close dialog', helloThere: 'Hello there', signedInAs: 'Signed in as {{name}}' })
+  })
+
+  it('svelte-i18next: markup through $i18n.t, keeping the store the component imports', async () => {
+    const { project, files } = await createTestProject({
+      'locales/en/translation.json': json({}),
+      'src/App.svelte': '<script>\n  import i18n from \'./i18n\'\n</script>\n<p title="Close dialog">Hello there</p>\n',
+    }, {
+      presets: [
+        svelteI18next(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+    })
+    await extractAll(project)
+    const output = files.get('src/App.svelte')!
+    expect(output).toBe([
+      '<script>',
+      '  import i18n from \'./i18n\'',
+      '</script>',
+      '<p title={$i18n.t(\'closeDialog\')}>{$i18n.t(\'helloThere\')}</p>',
+      '',
+    ].join('\n'))
+    expect(() => compile(output, { filename: 'App.svelte' })).not.toThrow()
+    expect(JSON.parse(files.get('locales/en/translation.json')!)).toEqual({ closeDialog: 'Close dialog', helloThere: 'Hello there' })
   })
 
   it('escapes source-text keys for the quotes of each template', async () => {

@@ -61,7 +61,7 @@ Built-in plugins and presets are factories with typed options, for example `vueI
 
 ### Manifest reader
 
-Reads a package manifest into a dependency list for `detect`. Built-ins: `package.json`, `composer.json`, `pubspec.yaml`, `Gemfile` (fixing the i18n-ally parser that only reported `rails-i18n`).
+Reads a package manifest into a dependency list for `detect`. Built-ins: `package.json`, `composer.json`, `pubspec.yaml`, `Gemfile` (fixing the i18n-ally parser that only reported `rails-i18n`), `pyproject.toml` and `requirements.txt` (PEP 503 normalized names, read without a TOML parser), `Cargo.toml`.
 
 ```ts
 interface ManifestReader {
@@ -148,6 +148,8 @@ interface ScanResult {
   readonly keySlots?: readonly TextRange[]
 }
 ```
+
+A scope with `optionalPrefix` applies its `keyPrefix` only when the prefixed key (or, for a `dynamic: 'prefix'` usage, its parent key) exists in the usage's namespace. Otherwise the key resolves without the prefix. This models page messages that override global ones (nuxt-i18n-micro). The namespace fallback (`namespace.fallback`) runs after this, on the key the prefix step chose, so a prefixed key is not searched in the fallback namespaces. A prefix from the call itself (`useTranslation('ns', { keyPrefix })`) always applies.
 
 Built-in scanners ([05-builtins.md](./05-builtins.md)):
 

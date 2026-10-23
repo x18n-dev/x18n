@@ -28,7 +28,7 @@ export function paraglide(): Preset {
         templates: [
           {
             template: '{m.{key}({args})}',
-            kinds: ['jsx-text', 'svelte-text'],
+            kinds: ['jsx-text', 'svelte-text', 'astro-text'],
             imports: ['import { m } from \'$lib/paraglide/messages\''],
           },
           {

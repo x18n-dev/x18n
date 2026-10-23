@@ -35,11 +35,13 @@ Every surface reads the same config and reports the same diagnostics. A fix that
 
 x18n knows no i18n library and no file format by itself. Plugins add that knowledge. A preset is a group of plugins for one library. x18n detects the presets from the dependencies of the project:
 
-- Vue: [vue-i18n](/presets/vue-i18n), [@nuxtjs/i18n](/presets/nuxt-i18n), [fluent-vue](/presets/fluent-vue) and [laravel-vue-i18n](/presets/laravel-vue-i18n)
-- React and Next.js: [i18next](/presets/i18next), [react-i18next](/presets/react-i18next), [i18next-shopify](/presets/i18next-shopify), [next-intl](/presets/next-intl), [next-translate](/presets/next-translate), [next-international](/presets/next-international), [react-intl](/presets/react-intl) and [Lingui](/presets/lingui)
-- Svelte: [svelte-i18n and sveltekit-i18n](/presets/svelte-i18n)
+- Vue: [vue-i18n](/presets/vue-i18n), [@nuxtjs/i18n](/presets/nuxt-i18n), [Nuxt I18n Micro](/presets/nuxt-i18n-micro), [fluent-vue](/presets/fluent-vue) and [laravel-vue-i18n](/presets/laravel-vue-i18n)
+- React and Next.js: [i18next](/presets/i18next), [react-i18next](/presets/react-i18next), [i18next-shopify](/presets/i18next-shopify), [next-intl](/presets/next-intl), [next-translate](/presets/next-translate), [next-international](/presets/next-international), [react-intl](/presets/react-intl), [Lingui](/presets/lingui) and [@fluent/react](/presets/fluent-react)
+- Svelte: [svelte-i18n and sveltekit-i18n](/presets/svelte-i18n) and [svelte-i18next](/presets/svelte-i18next)
+- Astro: [i18next](/presets/i18next) (also with astro-i18next) and [Paraglide](/presets/paraglide)
 - Solid: [@solid-primitives/i18n](/presets/solid-primitives-i18n)
 - Paraglide JS: [Paraglide](/presets/paraglide)
+- Gravity UI: [@gravity-ui/i18n](/presets/gravity-ui-i18n)
 - typesafe-i18n: [typesafe-i18n](/presets/typesafe-i18n)
 - Angular: [ngx-translate](/presets/ngx-translate) and [Transloco](/presets/transloco)
 - Other JS libraries: [ember-intl](/presets/ember-intl), [Polyglot.js](/presets/polyglot), [Globalize](/presets/globalize), [es2015-i18n-tag](/presets/i18n-tag), [i18n-js](/presets/i18n-js) and [UI5](/presets/ui5)
@@ -47,6 +49,8 @@ x18n knows no i18n library and no file format by itself. Plugins add that knowle
 - PHP: [Laravel](/presets/laravel), [Joomla](/presets/php-joomla) and [gettext](/presets/php-gettext)
 - Ruby: [Rails](/presets/ruby-rails) and [Jekyll](/presets/jekyll)
 - Dart: [flutter_i18n](/presets/flutter), [easy_localization](/presets/easy-localization) and [flutter_translate](/presets/flutter-translate)
+- Python: [gettext](/presets/python-gettext) (Django, Flask-Babel, Babel) and [i18nice](/presets/i18nice) (also python-i18n)
+- Rust: [cargo-i18n](/presets/cargo-i18n) (Fluent)
 - .NET: [`.resx` resources](/presets/dotnet-resx) in C#, Razor and Blazor
 
 The built-in formats read JSON, JSONC, JSON5, YAML, gettext PO, Java properties, Fluent FTL, INI, PHP arrays, .NET resx and static JS or TS modules. They also read Vue `<i18n>` and `<fluent>` blocks. For a library or format that x18n does not support, [write a plugin](/plugins) in YAML or TypeScript.
