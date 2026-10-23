@@ -1,7 +1,13 @@
+import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
 import { createTestProject, json } from './_utils'
 
 const pkg = (...deps: string[]): string => json({ dependencies: Object.fromEntries(deps.map(dep => [dep, '*'])) })
+
+async function write(project: Project, ops: Parameters<Project['plan']>[0]): Promise<void> {
+  const plan = project.plan(ops)
+  await project.apply(plan, { answers: Object.fromEntries(plan.decisions.map(d => [d.id, d.default])) })
+}
 
 describe('tier 1 presets', () => {
   it('next-intl: useTranslations namespaces and t.rich', async () => {
@@ -97,8 +103,7 @@ describe('tier 1 presets', () => {
     expect(project.locales).toEqual(['en', 'de', 'fr'])
     expect(['en', 'de', 'fr'].map(locale => project.message('hi', locale)?.value)).toEqual(['Hi', 'Hallo', 'Salut'])
     expect(project.analyze().undefinedUsages).toEqual([])
-    const plan = project.plan([{ type: 'set', key: 'bye', locale: 'en', value: 'Bye' }])
-    await project.apply(plan, { answers: Object.fromEntries(plan.decisions.map(d => [d.id, d.default])) })
+    await write(project, [{ type: 'set', key: 'bye', locale: 'en', value: 'Bye' }])
     expect(files.get('i18n/locales/en.ts')).toBe(`export default defineI18nLocale(async locale => ({\n  hi: 'Hi',\n  bye: 'Bye',\n}))\n`)
   })
 
@@ -318,11 +323,6 @@ describe('placeholder-mismatch', () => {
 })
 
 describe('vue-i18n <i18n src> blocks', () => {
-  async function write(project: Awaited<ReturnType<typeof createTestProject>>['project'], ops: Parameters<typeof project.plan>[0]): Promise<void> {
-    const plan = project.plan(ops)
-    await project.apply(plan, { answers: Object.fromEntries(plan.decisions.map(d => [d.id, d.default])) })
-  }
-
   it('reads every locale of the referenced file and writes edits to it', async () => {
     const { project, files } = await createTestProject({
       'package.json': pkg('vue-i18n'),
@@ -359,5 +359,27 @@ describe('vue-i18n <i18n src> blocks', () => {
     expect(project.analyze().undefinedUsages).toEqual([])
     await write(project, [{ type: 'set', key: 'hello', locale: 'en', value: 'Hi' }])
     expect(files.get('messages/hello.en.yaml')).toBe('hello: Hi\n')
+  })
+
+  it('reads src file names with # and ?', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('vue-i18n'),
+      'src/Hello.vue': `<template><p>{{ $t('a') }}{{ $t('b') }}</p></template>\n<i18n locale="en" src="./a#1.json"></i18n>\n<i18n locale="de" src="./b?raw.json"></i18n>\n`,
+      'src/a#1.json': json({ a: 'A' }),
+      'src/b?raw.json': json({ b: 'B' }),
+    })
+    expect(project.message('a', 'en')?.value).toBe('A')
+    expect(project.message('b', 'de')?.value).toBe('B')
+  })
+
+  it('skips a src above the project root or in a format blocks cannot hold', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('vue-i18n'),
+      'src/Hello.vue': `<i18n src="../../a.json"></i18n>\n<i18n src="./messages.ts"></i18n>\n`,
+      'a.json': json({ en: { a: 'A' } }),
+      'src/messages.ts': `export default { en: { a: 'A' } }\n`,
+    })
+    expect(project.keys()).toEqual([])
+    expect(project.analyze().diagnostics.filter(d => d.severity === 'error')).toEqual([])
   })
 })

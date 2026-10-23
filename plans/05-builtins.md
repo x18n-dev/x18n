@@ -28,7 +28,7 @@ Tiers decide the release: tier 1 ships in 1.0 with full parity tests, tier 2 in 
 | `properties` | properties | yes | in place | own line-based parser | 2 |
 | `ftl` | ftl | yes | in place | `@fluent/syntax` | 2 |
 | `arb` | arb | yes | in place (json) | json + `@@locale` and `@key` metadata | 2 |
-| `js` / `ts` | js, mjs, cjs, ts, mts | static by default: `export default { ... }`, object literals, `defineX({ ... })` and loaders that only return one (`defineI18nLocale(() => ({ ... }))`); executed with `execute: true` | in place when static; read-only when executed | `oxc-parser` to read, `magicast` to write | 2 |
+| `js` / `ts` | js, mjs, cjs, ts, mts | static by default: `export default { ... }`, object literals, `defineX({ ... })` and loaders that only return one, bare or wrapped (`export default () => ({ ... })`, `defineI18nLocale(() => ({ ... }))`); executed with `execute: true` | in place when static; read-only when executed | `oxc-parser` to read, `magicast` to write | 2 |
 | `php` | php | static `return [ ... ]` arrays | serialize | own parser | 2 |
 | `xliff` | xlf, xliff | yes | in place | small XML parser | 3 |
 | `ini` | ini | yes | serialize | `ini` | 3 |
@@ -48,7 +48,7 @@ Execution is opt-in per resource pattern (`resources: [{ pattern: 'src/locales/{
 | Id | What it finds |
 | --- | --- |
 | `pattern` | Files that match `resources[].pattern` (tokens in [03-plugins.md](./03-plugins.md)). |
-| `sfc-blocks` | Vue `<i18n>` blocks (with `lang`, `locale` and `src` attributes; a `src` file is the resource, relative to the `.vue` file) and fluent-vue `<fluent>` blocks. |
+| `sfc-blocks` | Vue `<i18n>` blocks (with `lang`, `locale` and `src` attributes; a `src` file is the resource, relative to the `.vue` file; a `src` outside the project or not in JSON, JSON5 or YAML is skipped) and fluent-vue `<fluent>` blocks. |
 | `nls` | VS Code extension `package.nls.json` / `package.nls.{locale}.json`. |
 
 ## Scanners

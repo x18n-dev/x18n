@@ -28,9 +28,28 @@ function localeRoot(base: Format): Format {
   }
 }
 
-/** Resolves `src` against the SFC's folder; builtins have no `node:path`. */
-function resolveSrc(from: string, src: string): string {
-  return decodeURIComponent(new URL(src, `file:///${from}`).pathname.slice(1))
+/** Resolves `src` against the SFC's folder (builtins have no `node:path`); undefined above the project root. */
+function resolveSrc(from: string, src: string): string | undefined {
+  const parts = src.startsWith('/') ? [] : from.split('/').slice(0, -1)
+  for (const part of src.split('/')) {
+    if (part === '..') {
+      if (parts.pop() === undefined)
+        return undefined
+    }
+    else if (part && part !== '.') {
+      parts.push(part)
+    }
+  }
+  return parts.join('/')
+}
+
+/** The file and lang of a `src` block, if one of the block formats can read it; a `.js` or `.ts` file is not parsed as JSON. */
+function srcFile(from: string, src: string, lang: string | undefined): { readonly path: string, readonly lang: string } | undefined {
+  const path = resolveSrc(from, src)
+  if (path === undefined)
+    return undefined
+  const fileLang = lang ?? path.slice(path.lastIndexOf('.') + 1)
+  return Object.hasOwn(formatOfLang, fileLang) ? { path, lang: fileLang } : undefined
 }
 
 interface I18nBlock {
@@ -90,14 +109,14 @@ export function sfcBlocks(): Plugin {
               out.push(...blockResources(bases, { path, content, locale, block: { index, range: { start: loc.start.offset, end: loc.end.offset }, lang: lang ?? 'json' }, src: false }, ctx.config.sourceLocale))
               continue
             }
-            const src = resolveSrc(path, attrs.src)
-            const srcText = sources.has(src) ? undefined : await ctx.host.readFile(src)
-            if (srcText === undefined)
+            const src = srcFile(path, attrs.src, lang)
+            const srcText = !src || sources.has(src.path) ? undefined : await ctx.host.readFile(src.path)
+            if (!src || srcText === undefined)
               continue
-            sources.add(src)
+            sources.add(src.path)
             // Locales of a `src` file share it, so each is a block that spans the whole file.
-            const block = { index, range: { start: 0, end: srcText.length }, lang: lang ?? src.slice(src.lastIndexOf('.') + 1) }
-            out.push(...blockResources(bases, { path: src, content: srcText, locale, block, src: true }, ctx.config.sourceLocale))
+            const block = { index, range: { start: 0, end: srcText.length }, lang: src.lang }
+            out.push(...blockResources(bases, { path: src.path, content: srcText, locale, block, src: true }, ctx.config.sourceLocale))
           }
         }
         return out
