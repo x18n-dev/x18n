@@ -115,6 +115,22 @@ describe('tier 1 presets', () => {
     expect(project.usages({ path: 'app/pages/pageA.vue' }).map(m => m.usage.key)).toEqual(['pages.pageA.link.back', 'pages.pageA.title'])
   })
 
+  it('nuxt-i18n-micro: route names and dynamic keys', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('nuxt-i18n-micro', 'nuxt'),
+      'locales/en.json': json({ title: 'Site', list: { a: 'A' } }),
+      'locales/pages/about/en.json': json({ title: 'About', items: { a: 'A' } }),
+      'pages/(marketing)/about.vue': `<script setup>\nconst { $t } = useI18n()\n$t(\`items.\${id}\`)\n$t(\`list.\${id}\`)\n</script>\n<template>{{ $t('title') }}</template>`,
+      'components/pages/about.vue': `<template>{{ $t('title') }}</template>`,
+    })
+    expect(project.usages().map(m => `${m.usage.path}:${m.usage.key}`)).toEqual([
+      'components/pages/about.vue:title',
+      'pages/(marketing)/about.vue:pages.about.items.',
+      'pages/(marketing)/about.vue:list.',
+      'pages/(marketing)/about.vue:pages.about.title',
+    ])
+  })
+
   it('i18next: plural suffixes count as the base key', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('i18next'),

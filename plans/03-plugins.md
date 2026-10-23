@@ -149,6 +149,8 @@ interface ScanResult {
 }
 ```
 
+A scope with `optionalPrefix` applies its `keyPrefix` only when the prefixed key (or, for a `dynamic: 'prefix'` usage, its parent key) exists in the usage's namespace. Otherwise the key resolves without the prefix. This models page messages that override global ones (nuxt-i18n-micro). The namespace fallback (`namespace.fallback`) runs after this, on the key the prefix step chose, so a prefixed key is not searched in the fallback namespaces. A prefix from the call itself (`useTranslation('ns', { keyPrefix })`) always applies.
+
 Built-in scanners ([05-builtins.md](./05-builtins.md)):
 
 - **`regex`**: configurable patterns with a `{key}` placeholder, the same model as i18n-ally `usageMatchRegex`. Kept for parity, for languages without an AST scanner, and for YAML plugins.
