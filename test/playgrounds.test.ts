@@ -28,8 +28,16 @@ async function copy(name: string): Promise<string> {
 
 function x18n(cwd: string, args: string[]): Promise<{ stdout: string, code: number }> {
   return new Promise((resolve) => {
-    execFile(process.execPath, [cli, ...args, '--no-cache'], { cwd, env: { ...process.env, NO_COLOR: '1' } }, (error, stdout) => {
-      resolve({ stdout, code: error ? Number(error.code ?? 1) : 0 })
+    execFile(process.execPath, [cli, ...args, '--no-cache'], {
+      cwd,
+      env: { ...process.env, NO_COLOR: '1' },
+    }, (error, stdout) => {
+      resolve({
+        stdout,
+        code: error
+          ? Number(error.code ?? 1)
+          : 0,
+      })
     })
   })
 }
@@ -45,12 +53,25 @@ async function diagnostics(cwd: string): Promise<string[]> {
 const read = (dir: string, path: string): Promise<string> => readFile(join(dir, path), 'utf8')
 
 describe('x18n check finds the planted problems', () => {
-  it.each(['vue-vite', 'react-i18next', 'next-intl', 'laravel', 'rails', 'angular', 'monorepo'])('%s', async (name) => {
+  it.each([
+    'vue-vite',
+    'react-i18next',
+    'next-intl',
+    'laravel',
+    'rails',
+    'angular',
+    'monorepo',
+  ])('%s', async (name) => {
     expect(await diagnostics(await copy(name))).toMatchSnapshot()
   }, 30_000)
 
   it('a config written by `x18n init` gives the same result as detection', async () => {
-    for (const name of ['vue-vite', 'react-i18next', 'laravel', 'rails']) {
+    for (const name of [
+      'vue-vite',
+      'react-i18next',
+      'laravel',
+      'rails',
+    ]) {
       const dir = await copy(name)
       const detected = await diagnostics(dir)
       expect((await x18n(dir, ['init'])).code).toBe(0)
@@ -80,7 +101,14 @@ describe('write commands keep files tidy', () => {
 
   it('laravel: a new locale gets the file of the source locale', async () => {
     const dir = await copy('laravel')
-    expect((await x18n(dir, ['set', 'messages.dashboard.title', '--locale', 'de', '--value', 'Übersicht'])).code).toBe(0)
+    expect((await x18n(dir, [
+      'set',
+      'messages.dashboard.title',
+      '--locale',
+      'de',
+      '--value',
+      'Übersicht',
+    ])).code).toBe(0)
     expect(await read(dir, 'lang/de/messages.php')).toBe('<?php\n\nreturn [\n    \'dashboard\' => [\n        \'title\' => \'Übersicht\',\n    ],\n];\n')
     expect(await read(dir, 'lang/de.json')).not.toContain('dashboard')
   }, 30_000)
@@ -89,7 +117,14 @@ describe('write commands keep files tidy', () => {
     const dir = await copy('rails')
     expect((await x18n(dir, ['rename', 'users.index.title', 'users.index.heading'])).code).toBe(0)
     expect(await read(dir, 'app/views/users/index.html.erb')).toContain('t(".heading")')
-    expect((await x18n(dir, ['set', 'shared.save', '--locale', 'es', '--value', 'Guardar'])).code).toBe(0)
+    expect((await x18n(dir, [
+      'set',
+      'shared.save',
+      '--locale',
+      'es',
+      '--value',
+      'Guardar',
+    ])).code).toBe(0)
     expect(await read(dir, 'config/locales/es.yml')).toContain('es:\n  users:')
     expect(await read(dir, 'config/locales/es.yml')).toContain('  shared:\n    save: Guardar')
   }, 30_000)
@@ -122,7 +157,9 @@ class Client {
   readonly child: ChildProcess
 
   constructor(readonly root: string) {
-    this.child = spawn(process.execPath, [lsp, '--stdio'], { stdio: ['pipe', 'pipe', 'inherit'] })
+    this.child = spawn(process.execPath, [lsp, '--stdio'], {
+      stdio: ['pipe', 'pipe', 'inherit'],
+    })
     this.connection = createMessageConnection(new StreamMessageReader(this.child.stdout!), new StreamMessageWriter(this.child.stdin!))
     this.connection.onNotification('textDocument/publishDiagnostics', (params: { uri: string, diagnostics: { code: string }[] }) => {
       this.diagnostics.set(this.path(params.uri), params.diagnostics.map(d => d.code))
@@ -147,7 +184,12 @@ class Client {
   async at(path: string, needle: string): Promise<{ textDocument: { uri: string }, position: Position }> {
     const text = await read(this.root, path)
     const lines = text.slice(0, text.indexOf(needle) + 2).split('\n')
-    return { textDocument: { uri: this.uri(path) }, position: { line: lines.length - 1, character: lines.at(-1)!.length } }
+    return {
+      textDocument: {
+        uri: this.uri(path),
+      },
+      position: { line: lines.length - 1, character: lines.at(-1)!.length },
+    }
   }
 
   where(locations: Location[] | null): string[] {
@@ -162,13 +204,48 @@ class Client {
 
 describe('the language server on the playgrounds', () => {
   it.each([
-    ['vue-vite', 'src/App.vue', 'nav.home', ['src/locales/en.json:8']],
-    ['react-i18next', 'src/Login.tsx', '\'title\'', ['public/locales/en/auth.json:3']],
-    ['react-i18next', 'src/Cart.tsx', '\'item\'', ['public/locales/en/common.json:4']],
-    ['next-intl', 'app/[locale]/page.tsx', '\'cta\'', ['messages/en.json:5']],
-    ['laravel', 'resources/views/dashboard.blade.php', 'messages.welcome', ['lang/en/messages.php:4']],
-    ['rails', 'app/views/users/index.html.erb', '".title"', ['config/locales/en.yml:4']],
-    ['angular', 'src/app/app.component.html', '\'HOME.TITLE\'', ['src/assets/i18n/en.json:3']],
+    [
+      'vue-vite',
+      'src/App.vue',
+      'nav.home',
+      ['src/locales/en.json:8'],
+    ],
+    [
+      'react-i18next',
+      'src/Login.tsx',
+      '\'title\'',
+      ['public/locales/en/auth.json:3'],
+    ],
+    [
+      'react-i18next',
+      'src/Cart.tsx',
+      '\'item\'',
+      ['public/locales/en/common.json:4'],
+    ],
+    [
+      'next-intl',
+      'app/[locale]/page.tsx',
+      '\'cta\'',
+      ['messages/en.json:5'],
+    ],
+    [
+      'laravel',
+      'resources/views/dashboard.blade.php',
+      'messages.welcome',
+      ['lang/en/messages.php:4'],
+    ],
+    [
+      'rails',
+      'app/views/users/index.html.erb',
+      '".title"',
+      ['config/locales/en.yml:4'],
+    ],
+    [
+      'angular',
+      'src/app/app.component.html',
+      '\'HOME.TITLE\'',
+      ['src/assets/i18n/en.json:3'],
+    ],
   ])('%s: definition from %s', async (name, file, needle, expected) => {
     const client = new Client(await copy(name))
     try {
@@ -185,16 +262,44 @@ describe('the language server on the playgrounds', () => {
     try {
       await client.start()
       const fromResource = await client.at('src/locales/en.json', '"pages"')
-      expect(client.where(await client.connection.sendRequest('textDocument/references', { ...fromResource, context: { includeDeclaration: true } }))).toEqual([
+      expect(client.where(await client.connection.sendRequest('textDocument/references', {
+        ...fromResource,
+        context: { includeDeclaration: true },
+      }))).toEqual([
         'src/App.vue:23',
       ])
-      const edit: { documentChanges: { textDocument: { uri: string } }[] } = await client.connection.sendRequest('textDocument/rename', { ...await client.at('src/App.vue', 'nav.home'), newName: 'nav.start' })
-      expect(edit.documentChanges.map(change => client.path(change.textDocument.uri)).sort()).toEqual(['src/App.vue', 'src/locales/de.json', 'src/locales/en.json', 'src/locales/ja.yml'])
+      const edit: { documentChanges: { textDocument: { uri: string } }[] } = await client.connection.sendRequest('textDocument/rename', {
+        ...await client.at('src/App.vue', 'nav.home'),
+        newName: 'nav.start',
+      })
+      expect(edit.documentChanges.map(change => client.path(change.textDocument.uri)).sort()).toEqual([
+        'src/App.vue',
+        'src/locales/de.json',
+        'src/locales/en.json',
+        'src/locales/ja.yml',
+      ])
 
       await expect.poll(() => client.diagnostics.get('src/App.vue')).toEqual(['missing-key'])
       const app = await read(client.root, 'src/App.vue')
-      await client.connection.sendNotification('textDocument/didOpen', { textDocument: { uri: client.uri('src/App.vue'), languageId: 'vue', version: 1, text: app } })
-      await client.connection.sendNotification('textDocument/didChange', { textDocument: { uri: client.uri('src/App.vue'), version: 2 }, contentChanges: [{ text: app.replace('nav.contact', 'nav.home') }] })
+      await client.connection.sendNotification('textDocument/didOpen', {
+        textDocument: {
+          uri: client.uri('src/App.vue'),
+          languageId: 'vue',
+          version: 1,
+          text: app,
+        },
+      })
+      await client.connection.sendNotification('textDocument/didChange', {
+        textDocument: {
+          uri: client.uri('src/App.vue'),
+          version: 2,
+        },
+        contentChanges: [
+          {
+            text: app.replace('nav.contact', 'nav.home'),
+          },
+        ],
+      })
       await expect.poll(() => client.diagnostics.get('src/App.vue'), { timeout: 5000 }).toEqual([])
     }
     finally {

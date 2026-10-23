@@ -1,7 +1,12 @@
 <script setup lang="ts">
 const emit = defineEmits<{ start: [ms: number], done: [] }>()
 const locales = [
-  { code: 'en', flag: 'us', value: 'Filter keys', source: true },
+  {
+    code: 'en',
+    flag: 'us',
+    value: 'Filter keys',
+    source: true,
+  },
   { code: 'ja', flag: 'jp', value: 'キーを絞り込む' },
   { code: 'zh-Hans', flag: 'cn', value: '筛选键' },
   { code: 'de', flag: 'de', value: 'Schlüssel filtern' },
@@ -13,7 +18,11 @@ const missing = ['ja', 'fr']
 const tree = [
   { name: 'app', open: false },
   { name: 'auth', open: false },
-  { name: 'sidebar', open: true, children: ['filter', 'list', 'tree'] },
+  {
+    name: 'sidebar',
+    open: true,
+    children: ['filter', 'list', 'tree'],
+  },
   { name: 'usages', open: false },
 ]
 
@@ -55,7 +64,10 @@ useDemoLoop(async (sleep) => {
   await sleep(5000)
 }, () => {
   typed.value = Object.fromEntries(missing.map(c => [c, locales.find(l => l.code === c)!.value]))
-}, { start: ms => emit('start', ms), done: () => emit('done') })
+}, {
+  start: ms => emit('start', ms),
+  done: () => emit('done'),
+})
 </script>
 
 <template>

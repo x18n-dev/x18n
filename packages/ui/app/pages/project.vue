@@ -31,10 +31,22 @@ const totalResources = computed(() => explain.value?.finders.reduce((sum, f) => 
 const problemCount = computed(() => (explain.value?.errors.length ?? 0) + (explain.value?.conflicts.length ?? 0))
 
 const stats = computed(() => explain.value && [
-  { label: t('project.presets'), value: explain.value.presets.filter(p => isActive(p.reason)).length },
-  { label: t('project.finders'), value: explain.value.finders.length },
-  { label: t('overview.resources'), value: totalResources.value },
-  { label: t('project.problems'), value: problemCount.value },
+  {
+    label: t('project.presets'),
+    value: explain.value.presets.filter(p => isActive(p.reason)).length,
+  },
+  {
+    label: t('project.finders'),
+    value: explain.value.finders.length,
+  },
+  {
+    label: t('overview.resources'),
+    value: totalResources.value,
+  },
+  {
+    label: t('project.problems'),
+    value: problemCount.value,
+  },
 ])
 
 const origins = computed(() => Object.entries(explain.value?.config.origins ?? {}))

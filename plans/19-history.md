@@ -66,7 +66,9 @@ A target message is stale when both it and its source message have an entry and 
 ```ts
 export default defineConfig({
   // or `false`, or `{ providers: [myProvider] }`
-  history: { git: { maxDepth: 500, since: '1 year ago' } },
+  history: {
+    git: { maxDepth: 500, since: '1 year ago' }
+  },
 })
 ```
 

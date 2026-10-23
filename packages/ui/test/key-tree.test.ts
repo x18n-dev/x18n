@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { folderIds, treeRows } from '../app/key-tree'
 
-const keys = ['app.title', 'app.nav.home', 'app.nav.about', 'app', 'common:save']
+const keys = [
+  'app.title',
+  'app.nav.home',
+  'app.nav.about',
+  'app',
+  'common:save',
+]
 
 describe('key tree', () => {
   it('folds keys into folders, a folder that is a key keeps both', () => {
@@ -14,7 +20,14 @@ describe('key tree', () => {
 
   it('lists the children of open folders, sorted', () => {
     const rows = treeRows(keys, new Set(['app', 'app.nav']))
-    expect(rows.map(r => `${'  '.repeat(r.depth)}${r.label}`)).toEqual(['app', '  nav', '    about', '    home', '  title', 'common'])
+    expect(rows.map(r => `${'  '.repeat(r.depth)}${r.label}`)).toEqual([
+      'app',
+      '  nav',
+      '    about',
+      '    home',
+      '  title',
+      'common',
+    ])
     expect(rows.find(r => r.label === 'nav')).toMatchObject({ id: 'app.nav', key: undefined, open: true })
   })
 

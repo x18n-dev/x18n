@@ -14,20 +14,27 @@ export interface RpcOptions {
 /** Registers the `x18n:*` functions the SPA calls. Queries dump one record per project (and per key) for the static build. */
 export function registerRpc(ctx: DevframeNodeContext, projects: readonly UiProject[], options: RpcOptions): void {
   const rpc = ctx.scope('x18n').rpc
-  const perProject = (): [ProjectQuery][] => projects.map(p => [{ project: p.name }])
+  const perProject = (): [ProjectQuery][] => projects.map(p => [
+    { project: p.name },
+  ])
 
   rpc.register(defineRpcFunction({
     name: 'project',
     type: 'static',
     jsonSerializable: true,
-    handler: (): ProjectList => ({ projects: projects.map(summarize), openInEditor: options.openInEditor !== undefined }),
+    handler: (): ProjectList => ({
+      projects: projects.map(summarize),
+      openInEditor: options.openInEditor !== undefined,
+    }),
   }))
   rpc.register(defineRpcFunction({
     name: 'keys',
     type: 'query',
     jsonSerializable: true,
     handler: (query: ProjectQuery) => keyTable(pickProject(projects, v.parse(ProjectQuerySchema, query).project)),
-    dump: () => ({ inputs: perProject() }),
+    dump: () => ({
+      inputs: perProject(),
+    }),
   }))
   rpc.register(defineRpcFunction({
     name: 'key',
@@ -38,7 +45,9 @@ export function registerRpc(ctx: DevframeNodeContext, projects: readonly UiProje
       return keyDetail(pickProject(projects, project), key)
     },
     dump: () => ({
-      inputs: projects.flatMap(p => p.project.keys().map((key): [KeyQuery] => [{ project: p.name, key }])),
+      inputs: projects.flatMap(p => p.project.keys().map((key): [KeyQuery] => [
+        { project: p.name, key },
+      ])),
       fallback: null,
     }),
   }))
@@ -51,20 +60,26 @@ export function registerRpc(ctx: DevframeNodeContext, projects: readonly UiProje
       const p = pickProject(projects, project)
       return usageViews(p, p.project.usages({ key, path }))
     },
-    dump: () => ({ inputs: perProject() }),
+    dump: () => ({
+      inputs: perProject(),
+    }),
   }))
   rpc.register(defineRpcFunction({
     name: 'analysis',
     type: 'query',
     jsonSerializable: true,
     handler: (query: ProjectQuery) => analysisView(pickProject(projects, v.parse(ProjectQuerySchema, query).project)),
-    dump: () => ({ inputs: perProject() }),
+    dump: () => ({
+      inputs: perProject(),
+    }),
   }))
   rpc.register(defineRpcFunction({
     name: 'explain',
     type: 'static',
     jsonSerializable: true,
-    handler: () => ({ projects: projects.map(explainView) }),
+    handler: () => ({
+      projects: projects.map(explainView),
+    }),
   }))
   rpc.register(defineRpcFunction({
     name: 'translate-prompt',
@@ -83,7 +98,9 @@ export function registerRpc(ctx: DevframeNodeContext, projects: readonly UiProje
       const { project, files } = v.parse(ExtractQuerySchema, query)
       return findCandidates(pickProject(projects, project).project, { files })
     },
-    dump: () => ({ inputs: perProject() }),
+    dump: () => ({
+      inputs: perProject(),
+    }),
   }))
 
   if (ctx.mode !== 'dev')
@@ -114,7 +131,12 @@ export function registerRpc(ctx: DevframeNodeContext, projects: readonly UiProje
     handler: (query: ExtractApplyQuery) => {
       const { project, items } = v.parse(ExtractApplySchema, query)
       const p = pickProject(projects, project)
-      return applyOps(p, [{ type: 'extract', items: extractItems(p.project, items) }])
+      return applyOps(p, [
+        {
+          type: 'extract',
+          items: extractItems(p.project, items),
+        },
+      ])
     },
   }))
   const open = options.openInEditor
@@ -125,7 +147,10 @@ export function registerRpc(ctx: DevframeNodeContext, projects: readonly UiProje
       jsonSerializable: true,
       handler: (query: OpenQuery) => {
         const { project, ...location } = v.parse(OpenQuerySchema, query)
-        return open({ project: pickProject(projects, project), ...location })
+        return open({
+          project: pickProject(projects, project),
+          ...location,
+        })
       },
     }))
   }

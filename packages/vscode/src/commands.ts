@@ -19,7 +19,11 @@ interface CommandDeps {
   readonly openUi: (ref?: Partial<KeyRef>) => Promise<void>
 }
 
-const message = (error: unknown): string => error instanceof Error ? error.message : String(error)
+function message(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : String(error)
+}
 
 /** Tree items carry their key under `item.ref`; hover links and callers pass a `KeyRef`. */
 function refOf(arg: unknown): KeyRef | undefined {
@@ -32,19 +36,33 @@ function refOf(arg: unknown): KeyRef | undefined {
 
 async function localeItem(locale: ProjectInfo['locales'][number]): Promise<{ label: string, code: string, iconPath?: Uri }> {
   const icon = await flagIcon(locale.code, locale.flag)
-  return { label: locale.code, code: locale.code, ...icon ? { iconPath: icon } : {} }
+  return {
+    label: locale.code,
+    code: locale.code,
+    ...icon
+      ? { iconPath: icon }
+      : {},
+  }
 }
 
 /** Display locale, translate prompt and key commands. `x18n.extract` is the server's command, see `client.ts`. */
 export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtCursor: () => Promise<void> } {
-  const execute = (command: string, arg: object): Promise<unknown> => client.sendRequest(ExecuteCommandRequest.type, { command, arguments: [arg] })
+  const execute = (command: string, arg: object): Promise<unknown> => client.sendRequest(ExecuteCommandRequest.type, {
+    command,
+    arguments: [arg],
+  })
 
   async function keyAtCursor(): Promise<KeyRef | undefined> {
     const editor = window.activeTextEditor
     if (!editor)
       return undefined
-    const at = await x18n.request('x18n/keyAt', { uri: editor.document.uri.toString(), position: editor.selection.active })
-    return at ? { project: at.project, key: at.key } : undefined
+    const at = await x18n.request('x18n/keyAt', {
+      uri: editor.document.uri.toString(),
+      position: editor.selection.active,
+    })
+    return at
+      ? { project: at.project, key: at.key }
+      : undefined
   }
 
   async function resolveRef(arg: unknown): Promise<KeyRef | undefined> {
@@ -57,13 +75,20 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
   async function project(name?: string): Promise<ProjectInfo | undefined> {
     const projects = await x18n.request('x18n/projects', undefined)
     const path = window.activeTextEditor?.document.uri.fsPath
-    return projects.find(p => p.name === name) ?? (path === undefined ? undefined : projectFor(projects, path)) ?? projects[0]
+    return projects.find(p => p.name === name) ?? (path === undefined
+      ? undefined
+      : projectFor(projects, path)) ?? projects[0]
   }
 
   async function pickLocale(info: ProjectInfo, placeHolder: string, skipSource = false): Promise<string | undefined> {
     const items = await Promise.all(info.locales.filter(l => !skipSource || l.code !== info.sourceLocale).map(async l => ({
       ...await localeItem(l),
-      description: [l.displayName, l.code === info.sourceLocale ? 'source' : undefined].filter(Boolean).join(' · '),
+      description: [
+        l.displayName,
+        l.code === info.sourceLocale
+          ? 'source'
+          : undefined,
+      ].filter(Boolean).join(' · '),
     })))
     return (await window.showQuickPick(items, { placeHolder }))?.code
   }
@@ -81,10 +106,19 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
 
   register(commands.setDisplayLocale, async () => {
     const projects = await x18n.request('x18n/projects', undefined)
-    const locales = [...new Map(projects.flatMap(p => p.locales).map(l => [l.code, l])).values()]
+    const locales = [
+      ...new Map(projects.flatMap(p => p.locales).map(l => [l.code, l])).values(),
+    ]
     const picked = await window.showQuickPick([
-      { label: 'Source locale', description: projects.map(p => p.sourceLocale).join(', '), code: '' },
-      ...await Promise.all(locales.map(async l => ({ ...await localeItem(l), description: l.displayName ?? '' }))),
+      {
+        label: 'Source locale',
+        description: projects.map(p => p.sourceLocale).join(', '),
+        code: '',
+      },
+      ...await Promise.all(locales.map(async l => ({
+        ...await localeItem(l),
+        description: l.displayName ?? '',
+      }))),
     ], { placeHolder: 'Locale shown in annotations' })
     // The settings watcher in `index.ts` tells the server and refreshes the views.
     if (picked)
@@ -98,13 +132,23 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
       return
     const locale = await pickLocale(info, `Locale of ${ref.key} to edit`)
     const value = locale && await window.showInputBox({ title: `${ref.key} (${locale})`, prompt: 'New message' })
-    if (value)
-      await execute(serverCommands.set, { project: info.name, key: ref.key, locale, value })
+    if (value) {
+      await execute(serverCommands.set, {
+        project: info.name,
+        key: ref.key,
+        locale,
+        value,
+      })
+    }
   })
 
   register(commands.renameKeyPrefix, async (arg) => {
     const ref = await resolveRef(arg)
-    const to = ref && await window.showInputBox({ title: `Rename ${ref.key}.*`, value: ref.key, valueSelection: [0, ref.key.length] })
+    const to = ref && await window.showInputBox({
+      title: `Rename ${ref.key}.*`,
+      value: ref.key,
+      valueSelection: [0, ref.key.length],
+    })
     if (to && to !== ref.key)
       await execute(serverCommands.renamePrefix, { project: ref.project, key: ref.key, to })
   })
@@ -128,7 +172,13 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
     const locale = info && await pickLocale(info, 'Translate into', true)
     if (!locale)
       return undefined
-    return { locale, prompt: await x18n.request('x18n/translatePrompt', { project: info.name, locale, keys: ref ? [ref.key] : undefined }) }
+    return { locale, prompt: await x18n.request('x18n/translatePrompt', {
+      project: info.name,
+      locale,
+      keys: ref
+        ? [ref.key]
+        : undefined,
+    }) }
   }
 
   register(commands.copyTranslatePrompt, async (arg) => {
@@ -156,7 +206,9 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
     const editor = window.activeTextEditor
     if (!editor)
       return
-    const { keys } = await x18n.request('x18n/fileKeys', { uri: editor.document.uri.toString() })
+    const { keys } = await x18n.request('x18n/fileKeys', {
+      uri: editor.document.uri.toString(),
+    })
     const target = adjacentRange(keys.map(k => k.range), editor.selection.active, direction)
     if (!target)
       return
@@ -192,12 +244,19 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
       return
     const { document, selection } = editor
     const actions = await client.sendRequest(CodeActionRequest.type, {
-      textDocument: { uri: document.uri.toString() },
+      textDocument: {
+        uri: document.uri.toString(),
+      },
       range: client.code2ProtocolConverter.asRange(selection),
-      context: { diagnostics: [], only: [CodeActionKind.RefactorExtract] },
+      context: {
+        diagnostics: [],
+        only: [CodeActionKind.RefactorExtract],
+      },
     })
     const extracts = (actions ?? []).filter(a => 'kind' in a && a.kind === CodeActionKind.RefactorExtract && a.edit)
-    const picked = extracts.length > 1 ? await window.showQuickPick(extracts.map(a => ({ label: a.title, action: a })), { placeHolder: 'Extract' }) : { action: extracts[0] }
+    const picked = extracts.length > 1
+      ? await window.showQuickPick(extracts.map(a => ({ label: a.title, action: a })), { placeHolder: 'Extract' })
+      : { action: extracts[0] }
     if (!picked?.action || !('edit' in picked.action) || !picked.action.edit) {
       if (extracts.length === 0)
         void window.showInformationMessage('x18n: no hard string to extract here.')

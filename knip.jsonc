@@ -2,7 +2,9 @@
   "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
   // tsnapi writes these API snapshots; they are compared, never imported.
   "ignore": ["test/__snapshots__/tsnapi/**", "test/fixtures/**", "playground/**"],
-  "ignoreDependencies": ["@antfu/utils", "taze", "@antfu/skills"],
+  // Each builtin preset and format is exported by name and as `default`, which the loader maps `import()`.
+  "rules": { "duplicates": "off" },
+  "ignoreDependencies": ["@antfu/utils", "taze", "@antfu/skills", "eslint-plugin-antfu"],
   "workspaces": {
     ".": {
       // Loaded by the x18n CLI itself, not imported.
@@ -11,6 +13,12 @@
     "packages/vscode": {
       // Never imported: tsdown copies its `.wasm` next to the bundle, where the aliased WASM `oxc-parser` loads it.
       "ignoreDependencies": ["@oxc-parser/binding-wasm32-wasip1"]
+    },
+    "docs": {
+      // Nuxt auto-imports components and composables, so nothing imports them.
+      "entry": ["app/**/*.{vue,ts}"],
+      // `@iconify-json/*` are read by UnoCSS `presetIcons` for icon classes. None is imported.
+      "ignoreDependencies": ["@iconify-json/devicon", "@iconify-json/logos", "@iconify-json/ph", "@nuxt/ui", "comark-content", "vue-router"]
     },
     "packages/ui": {
       // `@unocss/reset` is loaded through the `css` option of `nuxt.config.ts`;

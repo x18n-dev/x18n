@@ -44,11 +44,17 @@ function cell(text: string): string {
 }
 
 function code(text: string): string {
-  return text.includes('`') ? `\`\` ${text} \`\`` : `\`${text}\``
+  return text.includes('`')
+    ? `\`\` ${text} \`\``
+    : `\`${text}\``
 }
 
 function table(head: readonly string[], rows: readonly (readonly string[])[]): string {
-  return [`| ${head.join(' | ')} |`, `| ${head.map(() => '---').join(' | ')} |`, ...rows.map(row => `| ${row.map(cell).join(' | ')} |`)].join('\n')
+  return [
+    `| ${head.join(' | ')} |`,
+    `| ${head.map(() => '---').join(' | ')} |`,
+    ...rows.map(row => `| ${row.map(cell).join(' | ')} |`),
+  ].join('\n')
 }
 
 function sourceLink(path: string): string {
@@ -66,7 +72,11 @@ function declaration(text: string, name: string): string {
   const end = /^\}$/m.exec(rest)
   const blank = rest.indexOf('\n\n')
   const isInterface = /^(?:\/\*\*.*\*\/\n)?(?:export )?interface/.test(rest)
-  return isInterface && end ? rest.slice(0, end.index + 1) : rest.slice(0, blank === -1 ? undefined : blank)
+  return isInterface && end
+    ? rest.slice(0, end.index + 1)
+    : rest.slice(0, blank === -1
+        ? undefined
+        : blank)
 }
 
 interface Field {
@@ -87,7 +97,11 @@ function fields(text: string, name: string): Field[] {
     }
     const member = /^ {2}readonly ([$\w]+)\??: (.+)$/.exec(line)
     if (member) {
-      out.push({ name: member[1]!, type: member[2]!.replace(/readonly /g, '').replace(/ \| undefined$/, ''), doc })
+      out.push({
+        name: member[1]!,
+        type: member[2]!.replace(/readonly /g, '').replace(/ \| undefined$/, ''),
+        doc,
+      })
       doc = undefined
     }
   }
@@ -123,8 +137,11 @@ function schemaType(schema: JsonSchema): string {
     return schema.enum.map(value => `'${value}'`).join(' | ')
   if (schema.const !== undefined)
     return JSON.stringify(schema.const)
-  if (schema.type === 'array')
-    return `${schema.items ? schemaType(schema.items) : 'unknown'}[]`
+  if (schema.type === 'array') {
+    return `${schema.items
+      ? schemaType(schema.items)
+      : 'unknown'}[]`
+  }
   return schema.type ?? 'unknown'
 }
 
@@ -145,12 +162,22 @@ const configTree: ConfigNode = {
     usage: {
       iface: 'UsageOptions',
       children: {
-        calls: { iface: 'CallSpec', children: { namespace: { iface: 'ArgSource', caption: 'An `ArgSource`, as in `key`, `namespace` and `keyPrefix`' } } },
+        calls: {
+          iface: 'CallSpec',
+          children: {
+            namespace: { iface: 'ArgSource', caption: 'An `ArgSource`, as in `key`, `namespace` and `keyPrefix`' },
+          },
+        },
         regex: { iface: 'RegexScannerSpec' },
       },
     },
     write: { iface: 'WriteOptions' },
-    extract: { iface: 'ExtractOptions', children: { templates: { iface: 'ExtractTemplate' } } },
+    extract: {
+      iface: 'ExtractOptions',
+      children: {
+        templates: { iface: 'ExtractTemplate' },
+      },
+    },
     glossary: { iface: 'GlossaryEntry' },
   },
 }
@@ -164,7 +191,9 @@ const configDefaults: { readonly [path: string]: string } = {
 }
 
 function valueAt(value: unknown, path: readonly string[]): unknown {
-  return path.reduce<unknown>((current, key) => typeof current === 'object' && current !== null ? new Map(Object.entries(current)).get(key) : undefined, value)
+  return path.reduce<unknown>((current, key) => typeof current === 'object' && current !== null
+    ? new Map(Object.entries(current)).get(key)
+    : undefined, value)
 }
 
 function formatDefault(value: unknown): string | undefined {
@@ -189,7 +218,11 @@ async function configPage(): Promise<void> {
     return { ...field, doc }
   })
   const schema = buildJsonSchema(ConfigSchema, 'x18n config') as JsonSchema // `buildJsonSchema` returns a plain JSON Schema object
-  const { config: resolved } = await resolveConfig({ host: createMemoryHost(), config: {}, builtins: { plugins: [], presets: {} } })
+  const { config: resolved } = await resolveConfig({
+    host: createMemoryHost(),
+    config: {},
+    builtins: { plugins: [], presets: {} },
+  })
   const sections: string[] = []
 
   function verify(node: ConfigNode, object: JsonSchema | undefined, path: string): Field[] {
@@ -204,7 +237,9 @@ async function configPage(): Promise<void> {
   function itemTable(node: ConfigNode, object: JsonSchema | undefined, path: string): string {
     const list = verify(node, object, path)
     return table(['Field', 'Type', 'Description'], list.map(f => [
-      `${code(f.name)}${object?.required?.includes(f.name) ? '' : '?'}`,
+      `${code(f.name)}${object?.required?.includes(f.name)
+        ? ''
+        : '?'}`,
       code(f.type),
       f.doc!,
     ]))
@@ -217,10 +252,15 @@ async function configPage(): Promise<void> {
       const child = node.children?.[field.name]
       const property = object?.properties?.[field.name]
       const isObject = child !== undefined && property?.type === 'object'
-      const resolvedDefault = isObject ? undefined : configDefaults[id] ?? formatDefault(valueAt(resolved, fieldPath))
+      const resolvedDefault = isObject
+        ? undefined
+        : configDefaults[id] ?? formatDefault(valueAt(resolved, fieldPath))
       const lines = [`${'#'.repeat(depth)} ${code(id)}`, '', `Type: ${code(isObject ? 'object' : field.type)}`]
-      if (resolvedDefault)
-        lines.push('', `Default:${resolvedDefault.startsWith('\n') ? '' : ' '}${resolvedDefault}`)
+      if (resolvedDefault) {
+        lines.push('', `Default:${resolvedDefault.startsWith('\n')
+          ? ''
+          : ' '}${resolvedDefault}`)
+      }
       lines.push('', field.doc!)
       sections.push(lines.join('\n'))
       if (!child)
@@ -259,7 +299,11 @@ ${sections.join('\n\n')}
 
 \`defineConfig\` in \`x18n.config.ts\` accepts more than YAML and JSON. These options take plugin objects and functions:
 
-${table(['Option', 'Type', 'Description'], tsOnly.map(f => [code(f.name), code(f.type), f.doc!]))}
+${table(['Option', 'Type', 'Description'], tsOnly.map(f => [
+  code(f.name),
+  code(f.type),
+  f.doc!,
+]))}
 
 A \`PluginSpecifier\` is a string (a built-in preset name, a package name or a path), or \`[specifier, options]\`. A \`CheckSetting\` is a severity (\`'error'\`, \`'warning'\`, \`'info'\`, \`'hint'\` or \`'off'\`), or \`[severity, options]\`.
 `)
@@ -287,12 +331,20 @@ function parseCli(text: string): { global: CliOption[], commands: CliCommand[] }
   for (const line of text.split('\n')) {
     const command = new RegExp(`cli\\.command\\(${literal}, ${literal}\\)`).exec(line)
     if (command) {
-      commands.push({ name: unescape(command[1]!), description: unescape(command[2]!), options: [] })
+      commands.push({
+        name: unescape(command[1]!),
+        description: unescape(command[2]!),
+        options: [],
+      })
       continue
     }
     const option = new RegExp(`\\.option\\(${literal}, ${literal}\\)`).exec(line)
-    if (option)
-      (commands.at(-1)?.options ?? global).push({ flag: unescape(option[1]!), description: unescape(option[2]!) })
+    if (option) {
+      (commands.at(-1)?.options ?? global).push({
+        flag: unescape(option[1]!),
+        description: unescape(option[2]!),
+      })
+    }
   }
   const count = (pattern: RegExp): number => text.match(pattern)?.length ?? 0
   if (count(/\.command\(/g) !== commands.length || count(/\.option\(/g) !== global.length + commands.reduce((sum, c) => sum + c.options.length, 0))
@@ -312,7 +364,10 @@ function exitCodeTable(): string {
   const byExit = new Map<number, ErrorCode[]>()
   for (const errorCode of Object.keys(errorDefinitions) as ErrorCode[]) { // `Object.keys` loses the key type of `errorDefinitions`
     const exit = exitCodeFor(errorCode)
-    byExit.set(exit, [...byExit.get(exit) ?? [], errorCode])
+    byExit.set(exit, [
+      ...byExit.get(exit) ?? [],
+      errorCode,
+    ])
   }
   for (const exit of byExit.keys()) {
     if (!(exit in exitMeanings))
@@ -327,17 +382,34 @@ function exitCodeTable(): string {
 
 /** Fails when a page names an `x18n` command or flag that the CLI does not have. */
 async function verifyCommandsInDocs(global: readonly CliOption[], commands: readonly CliCommand[]): Promise<void> {
-  const longFlags = (options: readonly CliOption[]): string[] => options.flatMap(o => [...o.flag.matchAll(/--([a-z][\w-]*)/g)].map(m => m[1]!))
-  const known = new Map(commands.map(c => [c.name.split(' ')[0]!, new Set([...longFlags(c.options), ...longFlags(global), 'help', 'version'])]))
+  const longFlags = (options: readonly CliOption[]): string[] => options.flatMap(o => [
+    ...o.flag.matchAll(/--([a-z][\w-]*)/g),
+  ].map(m => m[1]!))
+  const known = new Map(commands.map(c => [
+    c.name.split(' ')[0]!,
+    new Set([
+      ...longFlags(c.options),
+      ...longFlags(global),
+      'help',
+      'version',
+    ]),
+  ]))
   const problems: string[] = []
   for (const file of await readdir(join(docs, 'content'), { recursive: true })) {
     if (!file.endsWith('.md'))
       continue
     const text = await readFile(join(docs, 'content', file), 'utf8')
     const fence = /^(`{3,})[^`\n]*\n([\s\S]*?)^\1$/gm
-    const blocks = [...text.matchAll(fence)].map(m => m[2]!)
-    const spans = [...text.replace(fence, '').matchAll(/(`+)([^`\n](?:[^\n]*?[^`\n])?)\1(?!`)/g)].map(m => m[2]!)
-    const code = [...blocks, ...spans].flatMap(part => part.split('\n'))
+    const blocks = [
+      ...text.matchAll(fence),
+    ].map(m => m[2]!)
+    const spans = [
+      ...text.replace(fence, '').matchAll(/(`+)([^`\n](?:[^\n]*?[^`\n])?)\1(?!`)/g),
+    ].map(m => m[2]!)
+    const code = [
+      ...blocks,
+      ...spans,
+    ].flatMap(part => part.split('\n'))
     for (const line of code) {
       for (const match of line.matchAll(/(?:^|[\s(])x18n ([a-z][\w-]*)([^\n]*)/g)) {
         const flags = known.get(match[1]!)
@@ -359,12 +431,35 @@ async function verifyCommandsInDocs(global: readonly CliOption[], commands: read
 async function cliPage(): Promise<void> {
   const { global, commands } = parseCli(await source('packages/cli/src/cli.ts'))
   await verifyCommandsInDocs(global, commands)
-  const optionTable = (options: readonly CliOption[]): string => table(['Option', 'Description'], options.map(o => [code(o.flag), o.description]))
+  const optionTable = (options: readonly CliOption[]): string => table(['Option', 'Description'], options.map(o => [
+    code(o.flag),
+    o.description,
+  ]))
   const sections = commands.map((command) => {
-    const usage = `x18n${command.name ? ` ${command.name}` : ''}${command.options.length || global.length ? ' [options]' : ''}`
-    const heading = command.name ? command.name.split(' ')[0]! : 'x18n'
-    const description = /[.!?]$/.test(command.description) ? command.description : `${command.description}.`
-    return [`## ${heading}`, '', `\`\`\`sh\n${usage}\n\`\`\``, '', description, ...command.options.length ? ['', optionTable(command.options)] : []].join('\n')
+    const usage = `x18n${command.name
+      ? ` ${command.name}`
+      : ''}${command.options.length || global.length
+      ? ' [options]'
+      : ''}`
+    const heading = command.name
+      ? command.name.split(' ')[0]!
+      : 'x18n'
+    const description = /[.!?]$/.test(command.description)
+      ? command.description
+      : `${command.description}.`
+    return [
+      `## ${heading}`,
+      '',
+      `\`\`\`sh\n${usage}\n\`\`\``,
+      '',
+      description,
+      ...command.options.length
+        ? [
+            '',
+            optionTable(command.options),
+          ]
+        : [],
+    ].join('\n')
   })
   page('content/6.references/2.cli.md', 'CLI reference', 'Every command and option of the x18n CLI.', `
 This page lists every command of the \`x18n\` CLI. [CLI and x18n check](/surfaces/cli) explains how to use them. Run \`x18n <command> --help\` to see the same text in a terminal.
@@ -373,7 +468,11 @@ This page lists every command of the \`x18n\` CLI. [CLI and x18n check](/surface
 
 Every command accepts these options.
 
-${optionTable([...global, { flag: '-h, --help', description: 'Display the help of a command' }, { flag: '-v, --version', description: 'Display the version number' }])}
+${optionTable([
+  ...global,
+  { flag: '-h, --help', description: 'Display the help of a command' },
+  { flag: '-v, --version', description: 'Display the version number' },
+])}
 
 A repeatable option takes several values: \`--locale de --locale fr\`. Options that take a list also accept commas: \`--only missing-key,unused-key\`.
 
@@ -449,17 +548,72 @@ ${exitCodeTable()}
 /** ---- LSP protocol ---- */
 
 const methodDocs = {
-  projects: { kind: 'request', params: undefined, result: 'ProjectInfo[]', doc: 'The projects of the workspace.' },
-  keyAt: { kind: 'request', params: 'PositionParams', result: 'KeyAtResult | null', doc: 'The key or key prefix at a position, in code or in a locale file.' },
-  tree: { kind: 'request', params: 'TreeParams', result: 'TreeNode[]', doc: 'One level of the key tree, with translation counts.' },
-  progress: { kind: 'request', params: undefined, result: 'ProgressResult', doc: 'Translation progress per project and locale.' },
-  fileKeys: { kind: 'request', params: 'DocumentParams', result: 'FileKeysResult', doc: 'The keys and hard strings of one file.' },
-  usageReport: { kind: 'request', params: undefined, result: 'UsageReportResult', doc: 'Unused keys, and used keys that are not defined.' },
-  decorations: { kind: 'request', params: 'DocumentParams', result: 'DecorationsResult', doc: 'The ranges and values for in-place annotations in a source file.' },
-  setDisplayLocale: { kind: 'notification (client to server)', params: 'SetDisplayLocaleParams', result: undefined, doc: 'Changes the display locale. The server refreshes the inlay hints.' },
-  openUi: { kind: 'request', params: 'OpenUiParams', result: 'OpenUiResult', doc: 'Starts the UI server for a project on loopback and returns its URL and a one-time auth token.' },
-  translatePrompt: { kind: 'request', params: 'TranslatePromptParams', result: 'string', doc: 'The translate prompt for a locale, as markdown.' },
-  changed: { kind: 'notification (server to client)', params: 'ChangedParams', result: undefined, doc: 'A project changed. `keys` lists the keys that changed.' },
+  projects: {
+    kind: 'request',
+    params: undefined,
+    result: 'ProjectInfo[]',
+    doc: 'The projects of the workspace.',
+  },
+  keyAt: {
+    kind: 'request',
+    params: 'PositionParams',
+    result: 'KeyAtResult | null',
+    doc: 'The key or key prefix at a position, in code or in a locale file.',
+  },
+  tree: {
+    kind: 'request',
+    params: 'TreeParams',
+    result: 'TreeNode[]',
+    doc: 'One level of the key tree, with translation counts.',
+  },
+  progress: {
+    kind: 'request',
+    params: undefined,
+    result: 'ProgressResult',
+    doc: 'Translation progress per project and locale.',
+  },
+  fileKeys: {
+    kind: 'request',
+    params: 'DocumentParams',
+    result: 'FileKeysResult',
+    doc: 'The keys and hard strings of one file.',
+  },
+  usageReport: {
+    kind: 'request',
+    params: undefined,
+    result: 'UsageReportResult',
+    doc: 'Unused keys, and used keys that are not defined.',
+  },
+  decorations: {
+    kind: 'request',
+    params: 'DocumentParams',
+    result: 'DecorationsResult',
+    doc: 'The ranges and values for in-place annotations in a source file.',
+  },
+  setDisplayLocale: {
+    kind: 'notification (client to server)',
+    params: 'SetDisplayLocaleParams',
+    result: undefined,
+    doc: 'Changes the display locale. The server refreshes the inlay hints.',
+  },
+  openUi: {
+    kind: 'request',
+    params: 'OpenUiParams',
+    result: 'OpenUiResult',
+    doc: 'Starts the UI server for a project on loopback and returns its URL and a one-time auth token.',
+  },
+  translatePrompt: {
+    kind: 'request',
+    params: 'TranslatePromptParams',
+    result: 'string',
+    doc: 'The translate prompt for a locale, as markdown.',
+  },
+  changed: {
+    kind: 'notification (server to client)',
+    params: 'ChangedParams',
+    result: undefined,
+    doc: 'A project changed. `keys` lists the keys that changed.',
+  },
 } satisfies { readonly [K in keyof typeof lspMethods]: { kind: string, params: string | undefined, result: string | undefined, doc: string } }
 
 const commandDocs = {
@@ -475,16 +629,28 @@ async function lspPage(): Promise<void> {
   const server = await source('packages/lsp/src/server.ts')
   const migrate = await source('packages/node/src/migrate.ts')
   const names = new Set(Object.values(methodDocs).flatMap(m => [m.params, m.result]).flatMap(type => type?.match(/[A-Z]\w+/g) ?? []))
-  const types = [...protocol.matchAll(/^export interface (\w+)/gm)].map(match => match[1]!).filter(name => !['Methods', 'Commands'].includes(name))
+  const types = [
+    ...protocol.matchAll(/^export interface (\w+)/gm),
+  ].map(match => match[1]!).filter(name => !['Methods', 'Commands'].includes(name))
   for (const name of names) {
     if (!types.includes(name))
       throw new Error(`LSP type ${name} is not in protocol.ts`)
   }
-  const methodTable = table(['Method', 'Kind', 'Params', 'Result', 'Description'], Object.entries(methodDocs).map(([id, m]) => [
+  const methodTable = table([
+    'Method',
+    'Kind',
+    'Params',
+    'Result',
+    'Description',
+  ], Object.entries(methodDocs).map(([id, m]) => [
     code(lspMethods[id as keyof typeof lspMethods]), // `Object.entries` loses the key type of `methodDocs`
     m.kind,
-    m.params ? code(m.params) : '',
-    m.result ? code(m.result) : '',
+    m.params
+      ? code(m.params)
+      : '',
+    m.result
+      ? code(m.result)
+      : '',
     m.doc,
   ]))
   const commandTable = table(['Command', 'Argument', 'Description'], Object.entries(commandDocs).map(([id, c]) => [
@@ -549,14 +715,20 @@ interface AgentTool {
 async function mcpPage(): Promise<void> {
   const tools: AgentTool[] = []
   // A stand-in context: registering only calls `ctx.agent.registerTool`, and no handler runs.
-  const ctx = Object.assign({} as Parameters<typeof registerAgentTools>[0], { agent: { registerTool: (tool: AgentTool) => void tools.push(tool) } })
+  const ctx = Object.assign({} as Parameters<typeof registerAgentTools>[0], {
+    agent: {
+      registerTool: (tool: AgentTool) => void tools.push(tool),
+    },
+  })
   registerAgentTools(ctx, [])
   const sections = tools.map((tool) => {
     const name = tool.id.replace(/[^\w-]+/g, '_')
     const properties = Object.entries(tool.inputSchema?.properties ?? {})
     const input = properties.length
       ? table(['Field', 'Type', 'Description'], properties.map(([field, schema]) => [
-          `${code(field)}${tool.inputSchema?.required?.includes(field) ? '' : '?'}`,
+          `${code(field)}${tool.inputSchema?.required?.includes(field)
+            ? ''
+            : '?'}`,
           code(schemaType(schema)),
           schema.description ?? '',
         ]))
@@ -637,7 +809,9 @@ The CLI exits with code \`${exitCodeFor(errorCode)}\`.
 
 ## Source
 
-${raisedIn.length ? raisedIn.map(path => `- ${sourceLink(path)}`).join('\n') : 'No code raises this error yet. The code is reserved.'}
+${raisedIn.length
+  ? raisedIn.map(path => `- ${sourceLink(path)}`).join('\n')
+  : 'No code raises this error yet. The code is reserved.'}
 `)
   }
   page('content/7.errors/index.md', 'Errors', 'Every X18N error code with its title, fix and exit code.', `
@@ -651,7 +825,11 @@ The first digit is the group:
 - \`3\`: scanning source files.
 - \`4\`: edits.
 
-${table(['Code', 'Title', 'Exit code'], codes.map(c => [`[${c}](/errors/${c.toLowerCase()})`, errorNotes[c].title, code(String(exitCodeFor(c)))]))}
+${table(['Code', 'Title', 'Exit code'], codes.map(c => [
+  `[${c}](/errors/${c.toLowerCase()})`,
+  errorNotes[c].title,
+  code(String(exitCodeFor(c))),
+]))}
 `)
   outputs.set('content/7.errors/.navigation.yml', 'title: Errors\n')
 }
@@ -659,12 +837,17 @@ ${table(['Code', 'Title', 'Exit code'], codes.map(c => [`[${c}](/errors/${c.toLo
 /** ---- Checks ---- */
 
 function checkExample(id: string, severity: string): string {
-  const property = /^[a-z]\w*$/i.test(id) ? id : `'${id}'`
+  const property = /^[a-z]\w*$/i.test(id)
+    ? id
+    : `'${id}'`
   return `\`\`\`ts [x18n.config.ts]\nimport { defineConfig } from '@x18n/core'\n\nexport default defineConfig({\n  checks: {\n    ${property}: '${severity}',\n  },\n})\n\`\`\``
 }
 
 function checkPages(): void {
-  for (const id of [...Object.keys(checkNotes), ...optInChecks]) {
+  for (const id of [
+    ...Object.keys(checkNotes),
+    ...optInChecks,
+  ]) {
     if (!allChecks.some(check => check.id === id))
       throw new Error(`notes.ts has notes for unknown check ${id}`)
   }
@@ -674,7 +857,9 @@ function checkPages(): void {
     const on = check.defaultSeverity !== 'off' && !optIn
     const status = optIn
       ? `The check has the severity \`${check.defaultSeverity}\`, but it runs only when the config turns it on.`
-      : on ? `The check is on by default, with the severity \`${check.defaultSeverity}\`.` : 'The check is off by default.'
+      : on
+        ? `The check is on by default, with the severity \`${check.defaultSeverity}\`.`
+        : 'The check is off by default.'
     page(`content/9.checks/${check.id}.md`, check.id, check.description ?? check.id, `
 ${check.description ?? ''}
 
@@ -725,8 +910,16 @@ export default defineConfig({
 A severity is \`error\`, \`warning\`, \`info\`, \`hint\` or \`off\`. \`strict: true\` (or \`x18n check --strict\`) turns every warning into an error. \`ignoreKeys\` removes keys from every check.
 
 ${table(['Check', 'Default', 'Description'], [
-  ...allChecks.map(check => [`[${check.id}](/checks/${check.id})`, code(check.defaultSeverity), check.description ?? '']),
-  [`[${invalidResource.id}](/checks/${invalidResource.id})`, code('error'), invalidResource.description],
+  ...allChecks.map(check => [
+    `[${check.id}](/checks/${check.id})`,
+    code(check.defaultSeverity),
+    check.description ?? '',
+  ]),
+  [
+    `[${invalidResource.id}](/checks/${invalidResource.id})`,
+    code('error'),
+    invalidResource.description,
+  ],
 ])}
 
 The reporters of \`x18n check --reporter\` are ${reporterIds}. See [CLI and x18n check](/surfaces/cli#x18n-check-reporters).
@@ -751,8 +944,16 @@ async function fillMarkers(path: string, blocks: { readonly [name: string]: stri
 async function markedPages(): Promise<void> {
   const contributes = vscodePackage.contributes
   await fillMarkers('content/2.surfaces/2.vscode.md', {
-    commands: table(['Command', 'Title'], contributes.commands.map(c => [code(c.command), `${c.category}: ${c.title}`])),
-    settings: table(['Setting', 'Description', 'Type', 'Default'], Object.entries(contributes.configuration.properties).map(([key, value]) => [
+    commands: table(['Command', 'Title'], contributes.commands.map(c => [
+      code(c.command),
+      `${c.category}: ${c.title}`,
+    ])),
+    settings: table([
+      'Setting',
+      'Description',
+      'Type',
+      'Default',
+    ], Object.entries(contributes.configuration.properties).map(([key, value]) => [
       code(key),
       value.description,
       code(value.type),
@@ -785,7 +986,9 @@ async function main(): Promise<void> {
 
   const stale: string[] = []
   for (const dir of generatedDirs) {
-    for (const file of existsSync(join(docs, dir)) ? await readdir(join(docs, dir)) : []) {
+    for (const file of existsSync(join(docs, dir))
+      ? await readdir(join(docs, dir))
+      : []) {
       const path = `${dir}/${file}`
       if (file.endsWith('.md') && !outputs.has(path))
         stale.push(path)
@@ -794,13 +997,19 @@ async function main(): Promise<void> {
   const changed: string[] = []
   for (const [path, content] of outputs) {
     const file = join(docs, path)
-    if ((existsSync(file) ? await readFile(file, 'utf8') : undefined) !== content)
+    if ((existsSync(file)
+      ? await readFile(file, 'utf8')
+      : undefined) !== content) {
       changed.push(path)
+    }
   }
 
   if (check) {
     if (changed.length || stale.length) {
-      process.stderr.write(`Generated docs are out of date. Run \`pnpm -C docs run generate\`.\n${[...changed, ...stale].map(p => `  ${p}`).join('\n')}\n`)
+      process.stderr.write(`Generated docs are out of date. Run \`pnpm -C docs run generate\`.\n${[
+        ...changed,
+        ...stale,
+      ].map(p => `  ${p}`).join('\n')}\n`)
       process.exitCode = 1
     }
     return

@@ -24,7 +24,10 @@ export function createUsageResolver(
   normalizers: readonly ((raw: string, ctx: KeyContext) => string | undefined)[],
 ): UsageResolver {
   const { separator, fallback } = config.namespace
-  const byFile = Object.entries(config.namespace.byFile).map(([glob, namespace]) => ({ matches: pathMatcher([glob]), namespace }))
+  const byFile = Object.entries(config.namespace.byFile).map(([glob, namespace]) => ({
+    matches: pathMatcher([glob]),
+    namespace,
+  }))
   return {
     resolve(candidate, scopes, path, scanner, has) {
       const scope = innermost(scopes, candidate.range)
@@ -54,15 +57,21 @@ export function createUsageResolver(
       }
       // An explicit namespace (`t('common:save')`) leaves the scope's key prefix out.
       if (scopePrefix && !explicit) {
-        const prefixed = text ? `${scopePrefix}.${text}` : scopePrefix
+        const prefixed = text
+          ? `${scopePrefix}.${text}`
+          : scopePrefix
         // A prefix usage (`items.${id}`) ends in an empty segment, so its parent key decides.
-        const lookup = candidate.dynamic === 'prefix' ? prefixed.replace(/\.$/, '') : prefixed
+        const lookup = candidate.dynamic === 'prefix'
+          ? prefixed.replace(/\.$/, '')
+          : prefixed
         if (candidate.keyPrefix || !scope?.optionalPrefix || has(joinKey(namespace, lookup.split('.'))))
           text = prefixed
         else
           scopePrefix = undefined
       }
-      const keyPath = text === '' ? [] : text.split('.')
+      const keyPath = text === ''
+        ? []
+        : text.split('.')
       let key: KeyString | undefined
       if (candidate.dynamic === 'unknown')
         key = undefined
@@ -103,19 +112,31 @@ export function suppressedRanges(text: string): TextRange[] {
     if (lineEnd === -1)
       continue
     const nextEnd = text.indexOf('\n', lineEnd + 1)
-    ranges.push({ start: lineEnd + 1, end: nextEnd === -1 ? text.length : nextEnd })
+    ranges.push({
+      start: lineEnd + 1,
+      end: nextEnd === -1
+        ? text.length
+        : nextEnd,
+    })
   }
   const block = /x18n-disable(?![-\w])/g
   for (const match of text.matchAll(block)) {
     const end = text.indexOf('x18n-enable', match.index)
-    ranges.push({ start: match.index, end: end === -1 ? text.length : end })
+    ranges.push({
+      start: match.index,
+      end: end === -1
+        ? text.length
+        : end,
+    })
   }
   return ranges
 }
 
 /** The plural categories of a locale's language: Japanese has only `other`. */
 export function categoriesOf(info: LocaleInfo, type: Intl.PluralRuleType): readonly Intl.LDMLPluralRule[] {
-  return type === 'ordinal' ? info.ordinalCategories : info.pluralCategories
+  return type === 'ordinal'
+    ? info.ordinalCategories
+    : info.pluralCategories
 }
 
 export interface DerivedKeys {
@@ -125,7 +146,14 @@ export interface DerivedKeys {
 }
 
 const tokens = /(\{key\}|\{plural\}|\{ordinal\}|\*)/
-const categories: readonly Intl.LDMLPluralRule[] = ['zero', 'one', 'two', 'few', 'many', 'other']
+const categories: readonly Intl.LDMLPluralRule[] = [
+  'zero',
+  'one',
+  'two',
+  'few',
+  'many',
+  'other',
+]
 
 /**
  * Compiles derived-key rules (`{key}_plural`, `{key}_*`, `{key}_{plural}`). `*` is any key segment;
@@ -134,7 +162,11 @@ const categories: readonly Intl.LDMLPluralRule[] = ['zero', 'one', 'two', 'few',
 export function derivedKeys(rules: readonly string[]): DerivedKeys {
   const compiled = rules.map((rule) => {
     const parts = rule.split(tokens)
-    const type: Intl.PluralRuleType | undefined = parts.includes('{ordinal}') ? 'ordinal' : parts.includes('{plural}') ? 'cardinal' : undefined
+    const type: Intl.PluralRuleType | undefined = parts.includes('{ordinal}')
+      ? 'ordinal'
+      : parts.includes('{plural}')
+        ? 'cardinal'
+        : undefined
     const source = parts.map((part) => {
       if (part === '{key}')
         return '(?<key>.+)'
@@ -144,7 +176,10 @@ export function derivedKeys(rules: readonly string[]): DerivedKeys {
         return '[^.:]+'
       return part.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
     }).join('')
-    return { type, re: new RegExp(`^${source}$`, 'd') }
+    return {
+      type,
+      re: new RegExp(`^${source}$`, 'd'),
+    }
   })
   const baseOf = (key: KeyString): KeyString | undefined => {
     for (const { re } of compiled) {
@@ -174,7 +209,12 @@ export function derivedKeys(rules: readonly string[]): DerivedKeys {
         if (!base || !category || !at || (best && best.base.length <= base.length))
           continue
         const [start, end] = at
-        best = { base, type, category, keyOf: other => `${key.slice(0, start)}${other}${key.slice(end)}` }
+        best = {
+          base,
+          type,
+          category,
+          keyOf: other => `${key.slice(0, start)}${other}${key.slice(end)}`,
+        }
       }
       return best
     },

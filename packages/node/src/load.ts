@@ -3,13 +3,13 @@ import type { NodeHost } from './host'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { createBuiltins } from '@x18n/builtins'
-import { compileYamlPlugin } from '@x18n/builtins/yaml-plugin'
 import { createProject, errors, resolveConfig } from '@x18n/core'
 import { glob } from 'tinyglobby'
 import { createPluginLoader, findConfigFile, findConfigsBelow, findConfigUpward, loadConfigFile, manifestRootsOf } from './config'
 import { gitHistory } from './git-history'
 import { createNodeHost, findGitRoot } from './host'
 import { readI18nAllyConfig } from './migrate'
+import { compileYamlPlugin } from './yaml-plugin'
 
 export interface LoadOptions {
   /** Where to look for a config file (upward). Default: the process cwd. */
@@ -78,20 +78,50 @@ async function i18nAllyFallback(root: string): Promise<UserConfig | undefined> {
     name: 'x18n:i18n-ally-settings',
     config: draft => applyDefaults(draft, defaults),
   }
-  return { ...presets ? { presets } : {}, plugins: [settingsPlugin, ...found.plugin ? [compileYamlPlugin(found.plugin)] : []] }
+  return {
+    ...presets
+      ? { presets }
+      : {},
+    plugins: [
+      settingsPlugin,
+      ...found.plugin
+        ? [
+            compileYamlPlugin(found.plugin),
+          ]
+        : [],
+    ],
+  }
 }
 
 function applyDefaults(draft: ConfigDraft, config: SerializableConfig): void {
   if (config.sourceLocale)
     draft.sourceLocale = config.sourceLocale
-  if (config.ignoreLocales)
-    draft.ignoreLocales = [...draft.ignoreLocales, ...config.ignoreLocales]
-  if (config.localeFallbacks)
-    draft.localeFallbacks = draft.localeFallbacks === 'auto' || config.localeFallbacks === 'auto' ? config.localeFallbacks : { ...draft.localeFallbacks, ...config.localeFallbacks }
-  if (config.resources)
-    draft.resources = [...draft.resources, ...config.resources]
-  if (config.formats)
-    draft.formats = { ...draft.formats, ...config.formats }
+  if (config.ignoreLocales) {
+    draft.ignoreLocales = [
+      ...draft.ignoreLocales,
+      ...config.ignoreLocales,
+    ]
+  }
+  if (config.localeFallbacks) {
+    draft.localeFallbacks = draft.localeFallbacks === 'auto' || config.localeFallbacks === 'auto'
+      ? config.localeFallbacks
+      : {
+          ...draft.localeFallbacks,
+          ...config.localeFallbacks,
+        }
+  }
+  if (config.resources) {
+    draft.resources = [
+      ...draft.resources,
+      ...config.resources,
+    ]
+  }
+  if (config.formats) {
+    draft.formats = {
+      ...draft.formats,
+      ...config.formats,
+    }
+  }
   if (config.keyStyle)
     draft.keyStyle = config.keyStyle
   if (config.namespace?.default)
@@ -99,9 +129,18 @@ function applyDefaults(draft: ConfigDraft, config: SerializableConfig): void {
   if (config.usage) {
     draft.usage = {
       ...draft.usage,
-      keysInUse: [...draft.usage.keysInUse, ...config.usage.keysInUse ?? []],
-      derivedKeys: [...draft.usage.derivedKeys, ...config.usage.derivedKeys ?? []],
-      exclude: [...draft.usage.exclude, ...config.usage.exclude ?? []],
+      keysInUse: [
+        ...draft.usage.keysInUse,
+        ...config.usage.keysInUse ?? [],
+      ],
+      derivedKeys: [
+        ...draft.usage.derivedKeys,
+        ...config.usage.derivedKeys ?? [],
+      ],
+      exclude: [
+        ...draft.usage.exclude,
+        ...config.usage.exclude ?? [],
+      ],
     }
   }
   if (config.write) {
@@ -111,8 +150,12 @@ function applyDefaults(draft: ConfigDraft, config: SerializableConfig): void {
       keepFilled: config.write.keepFilled ?? draft.write.keepFilled,
     }
   }
-  if (config.extract)
-    draft.extract = { ...draft.extract, ...config.extract }
+  if (config.extract) {
+    draft.extract = {
+      ...draft.extract,
+      ...config.extract,
+    }
+  }
 }
 
 async function projectSpecs(rootConfigFile: string | undefined, cwd: string, upward: boolean): Promise<{ root: string, specs: ProjectSpec[] }> {
@@ -126,26 +169,66 @@ async function projectSpecs(rootConfigFile: string | undefined, cwd: string, upw
         if (!specs.some(spec => spec.configFile === file))
           specs.push(...(await projectSpecs(file, cwd, false)).specs)
       }
-      return { root: resolve(cwd), specs }
+      return {
+        root: resolve(cwd),
+        specs,
+      }
     }
     const settingsRoot = findI18nAllyRoot(cwd, upward)
     const fallback = settingsRoot && await i18nAllyFallback(settingsRoot)
-    if (settingsRoot && fallback)
-      return { root: settingsRoot, specs: [{ root: settingsRoot, config: fallback, parent: undefined, configFile: join(settingsRoot, '.vscode/settings.json') }] }
+    if (settingsRoot && fallback) {
+      return {
+        root: settingsRoot,
+        specs: [
+          {
+            root: settingsRoot,
+            config: fallback,
+            parent: undefined,
+            configFile: join(settingsRoot, '.vscode/settings.json'),
+          },
+        ],
+      }
+    }
   }
-  const configDir = rootConfigFile ? dirname(rootConfigFile) : resolve(cwd)
-  const rootConfig = rootConfigFile ? await loadConfigFile(rootConfigFile) : {}
+  const configDir = rootConfigFile
+    ? dirname(rootConfigFile)
+    : resolve(cwd)
+  const rootConfig = rootConfigFile
+    ? await loadConfigFile(rootConfigFile)
+    : {}
   const root = resolve(configDir, rootConfig.root ?? '.')
-  if (!rootConfig.projects?.length)
-    return { root, specs: [{ root, config: rootConfig, parent: undefined, configFile: rootConfigFile }] }
+  if (!rootConfig.projects?.length) {
+    return {
+      root,
+      specs: [
+        {
+          root,
+          config: rootConfig,
+          parent: undefined,
+          configFile: rootConfigFile,
+        },
+      ],
+    }
+  }
   const { projects, ...parent } = rootConfig
-  const dirs = await glob([...projects], { cwd: root, onlyDirectories: true, ignore: ['**/node_modules/**'] })
+  const dirs = await glob([...projects], {
+    cwd: root,
+    onlyDirectories: true,
+    ignore: ['**/node_modules/**'],
+  })
   const specs: ProjectSpec[] = []
   for (const dir of dirs.sort()) {
     const projectRoot = resolve(root, dir)
     const file = findConfigFile(projectRoot)
-    const config = file ? await loadConfigFile(file) : {}
-    specs.push({ root: resolve(projectRoot, config.root ?? '.'), config, parent, configFile: file })
+    const config = file
+      ? await loadConfigFile(file)
+      : {}
+    specs.push({
+      root: resolve(projectRoot, config.root ?? '.'),
+      config,
+      parent,
+      configFile: file,
+    })
   }
   return { root, specs }
 }
@@ -154,19 +237,36 @@ async function projectSpecs(rootConfigFile: string | undefined, cwd: string, upw
 export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
   const configFile = options.configFile
     ? resolve(options.cwd, options.configFile)
-    : options.upward === false ? findConfigFile(resolve(options.cwd)) : findConfigUpward(options.cwd)
+    : options.upward === false
+      ? findConfigFile(resolve(options.cwd))
+      : findConfigUpward(options.cwd)
   const { root, specs } = await projectSpecs(configFile, options.cwd, options.upward !== false)
   const gitRoot = findGitRoot(root)
-  const defaults = options.builtins ?? createBuiltins()
-  const builtins = gitRoot ? { ...defaults, plugins: [...defaults.plugins, gitHistory()] } : defaults
+  const defaults = options.builtins ?? await createBuiltins()
+  const builtins = gitRoot
+    ? {
+        ...defaults,
+        plugins: [
+          ...defaults.plugins,
+          gitHistory(),
+        ],
+      }
+    : defaults
   const loaded: LoadedProject[] = []
   const names: string[] = []
   for (const spec of specs) {
-    const name = spec.config.name ?? (spec.root === root ? relative(dirname(root), root) : relative(root, spec.root)).replace(/\\/g, '/')
+    const name = spec.config.name ?? (spec.root === root
+      ? relative(dirname(root), root)
+      : relative(root, spec.root)).replace(/\\/g, '/')
     names.push(name)
     if (options.project !== undefined && options.project !== name)
       continue
-    const host = createNodeHost(spec.root, { cacheDir: options.cache === false ? false : undefined, logger: options.logger })
+    const host = createNodeHost(spec.root, {
+      cacheDir: options.cache === false
+        ? false
+        : undefined,
+      logger: options.logger,
+    })
     const projectHost = options.wrapHost?.(host) ?? host
     const setup = await resolveConfig({
       host: projectHost,
@@ -175,13 +275,21 @@ export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
       builtins,
       name,
       runtime: 'node',
-      loadPlugin: createPluginLoader(spec.configFile ? dirname(spec.configFile) : spec.root),
+      loadPlugin: createPluginLoader(spec.configFile
+        ? dirname(spec.configFile)
+        : spec.root),
       manifestRoots: await manifestRootsOf(spec.root, gitRoot),
     })
     const project = createProject({ host: projectHost, setup })
     await project.ready
     await host.flush()
-    loaded.push({ name, root: spec.root, configFile: spec.configFile, host, project })
+    loaded.push({
+      name,
+      root: spec.root,
+      configFile: spec.configFile,
+      host,
+      project,
+    })
   }
   if (options.project !== undefined && loaded.length === 0)
     throw errors.X18N0003({ name: options.project, available: names })
