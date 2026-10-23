@@ -2,7 +2,7 @@
 import type { MessageTree, Preset } from '@x18n/core'
 import { isMessageLeaf } from '@x18n/core'
 import { sfcFluentBlocks } from '../finders/sfc-blocks'
-import { braces, dollars, doubleBraces, fluent, icu, percentBraces, placeholders } from '../placeholders'
+import { braces, dollars, doubleBraces, fluent, icu, percentBraces, placeholders, typedBraces } from '../placeholders'
 import { reactI18next } from './js'
 import { dependsOn, library, scriptExtensions } from './shared'
 
@@ -307,6 +307,35 @@ export function paraglide(): Preset {
         ],
       }),
       placeholders(braces),
+    ],
+  }
+}
+
+/** Usage regex and resource layout after lokalise/i18n-ally#681. */
+export function typesafeI18n(): Preset {
+  return {
+    name: 'typesafe-i18n',
+    detect: dependsOn(['typesafe-i18n']),
+    plugins: [
+      library({
+        name: 'typesafe-i18n',
+        // Messages are functions on the `LL` proxy: `LL.hello({ name })`, `$LL.a.b()` in Svelte.
+        regex: [{ extensions: [...scriptExtensions, 'vue', 'svelte', 'html'], patterns: ['\\bLL\\.({key})\\('] }],
+        // Namespace folders merge into the key path: `LL.dashboard.title()`.
+        resources: [{ pattern: 'src/i18n/{locale}/index.{ext}' }, { pattern: 'src/i18n/{locale}/{namespace}/index.{ext}' }],
+        keyStyle: 'nested',
+        templates: [
+          { template: '{$LL.{key}({args})}', kinds: ['svelte-text'] },
+          { template: '{attr}={$LL.{key}({args})}', kinds: ['svelte-attribute'] },
+          { template: '$LL.{key}({args})', kinds: ['js-string', 'js-template'], files: ['**/*.svelte'] },
+          { template: '{{ LL.{key}({args}) }}', kinds: ['vue-template-text'] },
+          { template: ':{attr}="LL.{key}({args})"', kinds: ['vue-attribute'] },
+          { template: '{LL.{key}({args})}', kinds: ['jsx-text'] },
+          { template: '{attr}={LL.{key}({args})}', kinds: ['jsx-attribute'] },
+          { template: 'LL.{key}({args})', kinds: ['js-string', 'js-template'] },
+        ],
+      }),
+      placeholders(typedBraces),
     ],
   }
 }

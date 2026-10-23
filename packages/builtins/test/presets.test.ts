@@ -64,6 +64,39 @@ describe('tier 1 presets', () => {
     expect(project.usages().map(m => m.usage.key)).toEqual(['hello_world', 'a.b'])
   })
 
+  it('typesafe-i18n: TS locale files, namespaces, LL.a.b() usages and typed placeholders', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('typesafe-i18n'),
+      'src/i18n/en/index.ts': [
+        `import type { BaseTranslation } from '../i18n-types'`,
+        `const en = {`,
+        `  HI: 'Hi {name:string}!',`,
+        `  apples: '{count:number} {{apple|apples}}',`,
+        `  nav: { home: 'Home', about: 'About' },`,
+        `} satisfies BaseTranslation`,
+        `export default en`,
+      ].join('\n'),
+      'src/i18n/en/dashboard/index.ts': `const en_dashboard = { title: 'Dashboard' }\nexport default en_dashboard\n`,
+      'src/i18n/de/index.ts': [
+        `import type { Translation } from '../i18n-types'`,
+        `const de: Translation = { HI: 'Hallo {who}!', apples: '{count} {{Apfel|Äpfel}}', nav: { home: 'Start', about: 'Über' } }`,
+        `export default de`,
+      ].join('\n'),
+      'src/i18n/i18n-util.ts': `export const baseLocale = 'en'`,
+      'src/App.tsx': `export const App = () => <h1>{LL.HI({ name })}{LL.nav.home()}{LL.apples(3)}</h1>`,
+      'src/routes/+page.svelte': `<p>{$LL.dashboard.title()}</p>`,
+    })
+    expect(project.explain().presets.find(p => p.name === 'typesafe-i18n')?.reason).toBe('detected')
+    expect(project.locales).toEqual(['en', 'de'])
+    expect(project.keys()).toEqual(['HI', 'apples', 'dashboard.title', 'nav.about', 'nav.home'])
+    expect(project.usages().map(m => m.usage.key)).toEqual(['HI', 'nav.home', 'apples', 'dashboard.title'])
+    const { diagnostics, unused } = project.analyze()
+    expect(unused).toEqual(['nav.about'])
+    expect(diagnostics.filter(d => d.code === 'placeholder-mismatch').map(d => d.message)).toEqual([
+      '"HI" in de has different placeholders than en: missing name; unexpected who.',
+    ])
+  })
+
   it('vscode-extension: package.nls files and %key% references', async () => {
     const { project } = await createTestProject({
       'package.json': json({ devDependencies: { '@types/vscode': '*' }, contributes: { commands: [{ title: '%cmd.open%' }] } }),

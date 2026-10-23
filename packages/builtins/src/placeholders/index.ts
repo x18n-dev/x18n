@@ -21,6 +21,8 @@ function byRegex(id: string, regex: RegExp, example: string): PlaceholderSyntax 
 
 /** `{name}`: vue-i18n named interpolation and similar. */
 export const braces: PlaceholderSyntax = byRegex('braces', /(?<![{$])\{\s*([\w.-]+)\s*\}(?!\})/g, '{name}')
+/** `{name}` with an optional type and formatters: `{name:string}`, `{date|weekday}`. `{{a|b}}` plurals are not placeholders. */
+export const typedBraces: PlaceholderSyntax = byRegex('typed-braces', /(?<![{$])\{\s*(\w+)\??\s*(?::[^{}|]*)?(?:\|[^{}]*)?\}(?!\})/g, '{name}')
 /** `{{name}}`: i18next interpolation, including `{{name, format}}` and `{{- raw}}`. */
 export const doubleBraces: PlaceholderSyntax = byRegex('double-braces', /\{\{-?\s*([\w.]+)\s*(?:,[^}]*)?\}\}/g, '{{name}}')
 /** `%{name}`: Rails, Polyglot. */

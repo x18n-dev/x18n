@@ -1,7 +1,7 @@
 import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
 import { extractableHardStrings, extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
-import { reactI18next, reactIntl, svelteI18n, vueI18n } from '../src/presets'
+import { reactI18next, reactIntl, svelteI18n, typesafeI18n, vueI18n } from '../src/presets'
 import { createTestProject, json } from './_utils'
 
 async function extractAll(project: Project): Promise<void> {
@@ -221,6 +221,19 @@ describe('extraction per preset', () => {
     }, { presets: [reactIntl()], resources: [{ pattern: 'lang/{locale}.json' }] })
     await extractAll(project)
     expect(files.get('src/App.tsx')).toBe('import { FormattedMessage } from \'react-intl\'\nconst A = () => <button><FormattedMessage id="saveChanges" /></button>\n')
+  })
+
+  it('typesafe-i18n: LL calls and the TS locale file', async () => {
+    const { project, files } = await createTestProject({
+      'src/i18n/en/index.ts': 'const en = {\n  title: \'Title\',\n} satisfies BaseTranslation\nexport default en\n',
+      'src/App.tsx': 'const A = () => <button>Save changes</button>\nconst msg = `Signed in as ${user.name}`\n', // eslint-disable-line no-template-curly-in-string
+      'src/Page.svelte': '<p>Welcome back home</p>\n',
+    }, { presets: [typesafeI18n()] })
+    await extractAll(project)
+    expect(files.get('src/App.tsx')).toBe('const A = () => <button>{LL.saveChanges()}</button>\nconst msg = LL.signedInAs({ name: user.name })\n')
+    expect(files.get('src/Page.svelte')).toBe('<p>{$LL.welcomeBackHome()}</p>\n')
+    expect(files.get('src/i18n/en/index.ts')).toContain('} satisfies BaseTranslation\nexport default en\n')
+    expect(project.keys()).toEqual(['saveChanges', 'signedInAs', 'title', 'welcomeBackHome'])
   })
 
   it('refuses a plan whose source changed', async () => {

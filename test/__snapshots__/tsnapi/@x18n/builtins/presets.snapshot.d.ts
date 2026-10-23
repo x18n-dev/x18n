@@ -31,6 +31,7 @@ export declare function rubyRails(): Preset;
 export declare function solidPrimitivesI18n(): Preset;
 export declare function svelteI18n(): Preset;
 export declare function transloco(): Preset;
+export declare function typesafeI18n(): Preset;
 export declare function ui5(): Preset;
 export declare function vscodeExtension(): Preset;
 export declare function vueI18n(): Preset;

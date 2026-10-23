@@ -40,6 +40,7 @@ x18n knows no i18n library and no file format by itself. Plugins add that knowle
 - Svelte: [svelte-i18n and sveltekit-i18n](/presets/svelte-i18n)
 - Solid: [@solid-primitives/i18n](/presets/solid-primitives-i18n)
 - Paraglide JS: [Paraglide](/presets/paraglide)
+- typesafe-i18n: [typesafe-i18n](/presets/typesafe-i18n)
 - Angular: [ngx-translate](/presets/ngx-translate) and [Transloco](/presets/transloco)
 - Other JS libraries: [ember-intl](/presets/ember-intl), [Polyglot.js](/presets/polyglot), [Globalize](/presets/globalize), [es2015-i18n-tag](/presets/i18n-tag), [i18n-js](/presets/i18n-js) and [UI5](/presets/ui5)
 - Extensions: [Chrome and WebExtensions](/presets/chrome-extension) and [VS Code](/presets/vscode-extension) (`vscode.l10n` and `package.nls.json`)

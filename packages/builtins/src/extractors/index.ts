@@ -285,8 +285,12 @@ function quoteKey(before: string, key: string): string {
 }
 
 function fillTemplate(template: string, values: { readonly key: string, readonly attr: string, readonly args: string }): string {
-  return template.replace(/\{(key|attr|args)\}/g, (_, name: 'key' | 'attr' | 'args', at: number) =>
-    name === 'key' ? quoteKey(template.slice(0, at), values.key) : values[name])
+  return template.replace(/\{(key|attr|args)\}/g, (_, name: 'key' | 'attr' | 'args', at: number) => {
+    if (name === 'key')
+      return quoteKey(template.slice(0, at), values.key)
+    // `{args}` as the first argument (`m.{key}({args})`) drops its leading `, `.
+    return name === 'args' && template[at - 1] === '(' ? values.args.replace(/^, /, '') : values[name]
+  })
 }
 
 /** Hard strings worth extracting, with proposed keys, values and replacements. */

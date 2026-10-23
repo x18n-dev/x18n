@@ -86,7 +86,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `lingui` | @lingui/core | `po` format, `{locale}/messages.po`, `t` macro, `<Trans>` | 2 |
 | `fluent-vue` | fluent-vue | `ftl` format, `$t`, `<fluent>` blocks | 2 |
 | `paraglide` | @inlang/paraglide-js | `messages/{locale}.json`, `m.key()` accessor calls | 2 |
-| `typesafe-i18n` | typesafe-i18n | `LL.a.b()` accessor calls, TS locale files | 2 |
+| `typesafe-i18n` | typesafe-i18n | `src/i18n/{locale}/index.ts` and `{locale}/{namespace}/index.ts` through the `js` format, `LL.a.b()` and `$LL.a.b()` accessor calls (regex), `{name:type\|formatter}` placeholders | 2 |
 | `laravel` | composer: laravel/framework | `php` format, `lang/{locale}/{namespace}.php`, `__()`, `trans()`, `@lang` | 2 |
 | `ruby-rails` | Gemfile: rails | `yaml` with top-level locale transform, `t('.lazy')` from view path | 2 |
 | `flutter` | pubspec: flutter_localizations, intl, flutter_i18n | `arb` format, `AppLocalizations.of(context).key` | 2 |

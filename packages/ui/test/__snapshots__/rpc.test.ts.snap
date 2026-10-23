@@ -1124,6 +1124,10 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "typesafe-i18n",
+          "reason": "not-detected",
+        },
+        {
           "name": "ngx-translate",
           "reason": "not-detected",
         },
