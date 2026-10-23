@@ -31,7 +31,7 @@
     "typecheck": "turbo run typecheck && tsc",
     "ci": "pnpm run lint && pnpm run typecheck && pnpm run knip && pnpm run test --run && x18n check --strict && pnpm -C docs run generate --check",
     "postinstall": "turbo run codegen",
-    "prepare": "git config core.hooksPath .githooks && simple-git-hooks && skills experimental_sync -y",
+    "prepare": "git config core.hooksPath .githooks && simple-git-hooks && skills experimental_sync -y --exclude @x18n/cli",
     "bench": "tsx scripts/bench.ts",
     "test:real-world": "pnpm run build && X18N_REAL_WORLD=1 vitest run --project real-world"
   },
