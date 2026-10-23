@@ -153,6 +153,8 @@ export interface Scope {
   readonly range: TextRange
   readonly namespace?: string | undefined
   readonly keyPrefix?: string | undefined
+  /** The key prefix applies only to keys it defines; others resolve without it, as page messages that extend global ones. */
+  readonly optionalPrefix?: boolean | undefined
 }
 
 export interface HardString {

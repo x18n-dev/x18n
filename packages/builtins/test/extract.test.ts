@@ -1,4 +1,5 @@
 import type { Project } from '@x18n/core'
+import { compile } from 'svelte/compiler'
 import { describe, expect, it } from 'vitest'
 import { extractableHardStrings, extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
 import { laravel } from '../src/presets/laravel'
@@ -7,6 +8,7 @@ import { paraglide } from '../src/presets/paraglide'
 import { reactI18next } from '../src/presets/react-i18next'
 import { reactIntl } from '../src/presets/react-intl'
 import { svelteI18n } from '../src/presets/svelte-i18n'
+import { svelteI18next } from '../src/presets/svelte-i18next'
 import { typesafeI18n } from '../src/presets/typesafe-i18n'
 import { vueI18n } from '../src/presets/vue-i18n'
 import { createTestProject, json } from './_utils'
@@ -283,6 +285,31 @@ describe('extraction per preset', () => {
       '',
     ].join('\n'))
     expect(JSON.parse(files.get('locales/en/translation.json')!)).toEqual({ closeDialog: 'Close dialog', helloThere: 'Hello there', signedInAs: 'Signed in as {{name}}' })
+  })
+
+  it('svelte-i18next: markup through $i18n.t, keeping the store the component imports', async () => {
+    const { project, files } = await createTestProject({
+      'locales/en/translation.json': json({}),
+      'src/App.svelte': '<script>\n  import i18n from \'./i18n\'\n</script>\n<p title="Close dialog">Hello there</p>\n',
+    }, {
+      presets: [
+        svelteI18next(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+    })
+    await extractAll(project)
+    const output = files.get('src/App.svelte')!
+    expect(output).toBe([
+      '<script>',
+      '  import i18n from \'./i18n\'',
+      '</script>',
+      '<p title={$i18n.t(\'closeDialog\')}>{$i18n.t(\'helloThere\')}</p>',
+      '',
+    ].join('\n'))
+    expect(() => compile(output, { filename: 'App.svelte' })).not.toThrow()
+    expect(JSON.parse(files.get('locales/en/translation.json')!)).toEqual({ closeDialog: 'Close dialog', helloThere: 'Hello there' })
   })
 
   it('escapes source-text keys for the quotes of each template', async () => {
