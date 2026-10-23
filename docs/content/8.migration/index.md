@@ -59,7 +59,9 @@ import { defineConfig } from '@x18n/core'
 export default defineConfig({
   sourceLocale: 'en',
   presets: ['vue-i18n'],
-  resources: [{ pattern: 'lang/{locale}/{namespaces}.json' }],
+  resources: [
+    { pattern: 'lang/{locale}/{namespaces}.json' }
+  ],
   usage: {
     keysInUse: ['dynamic.*'],
   },

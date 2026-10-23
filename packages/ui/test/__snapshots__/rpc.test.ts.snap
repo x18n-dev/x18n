@@ -1068,7 +1068,6 @@ exports[`rpc functions > explains the project 1`] = `
         "x18n:checks",
         "x18n:reporters",
         "x18n:vue-i18n",
-        "x18n:placeholders-braces-linked",
         "x18n:finder-sfc-blocks",
         "x18n:general",
       ],

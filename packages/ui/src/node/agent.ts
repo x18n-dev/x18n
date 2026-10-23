@@ -11,7 +11,13 @@ import { applyOps, keyDetail, pickProject, previewOps, summarize, usageViews } f
 function page<T>(items: readonly T[], query: { readonly limit?: number | undefined, readonly cursor?: string | undefined }): { total: number, nextCursor: string | undefined, items: T[] } {
   const start = Number(query.cursor ?? 0) || 0
   const end = start + (query.limit ?? 100)
-  return { total: items.length, nextCursor: end < items.length ? String(end) : undefined, items: items.slice(start, end) }
+  return {
+    total: items.length,
+    nextCursor: end < items.length
+      ? String(end)
+      : undefined,
+    items: items.slice(start, end),
+  }
 }
 
 /**
@@ -20,25 +26,49 @@ function page<T>(items: readonly T[], query: { readonly limit?: number | undefin
  */
 export function registerAgentTools(ctx: DevframeNodeContext, projects: readonly UiProject[]): void {
   function tool<T, R>(id: string, safety: NonNullable<AgentToolInput['safety']>, description: string, schema: v.GenericSchema<T>, run: (input: T) => R): void {
-    ctx.agent.registerTool({ id: `x18n:${id}`, safety, description, inputSchema: toJsonSchema(schema), handler: (input: unknown) => run(v.parse(schema, input ?? {})) })
+    ctx.agent.registerTool({
+      id: `x18n:${id}`,
+      safety,
+      description,
+      inputSchema: toJsonSchema(schema),
+      handler: (input: unknown) => run(v.parse(schema, input ?? {})),
+    })
   }
   const pick = (name: string | undefined): UiProject => pickProject(projects, name)
   /** Plans the ops, and applies them only with `confirm`. */
   const confirmable = (p: UiProject, ops: readonly EditOp[], query: { readonly confirm?: boolean | undefined, readonly answers?: Readonly<Record<string, string>> | undefined }): ApplyView | Promise<ApplyView> =>
-    query.confirm ? applyOps(p, ops, { answers: query.answers }) : { ...previewOps(p, ops), applied: false, revision: p.project.revision }
+    query.confirm
+      ? applyOps(p, ops, { answers: query.answers })
+      : {
+          ...previewOps(p, ops),
+          applied: false,
+          revision: p.project.revision,
+        }
 
   tool('status', 'read', 'Overview of the i18n project: locales with translation coverage, counts of keys, resources and usages, diagnostics by check, and detected presets. Call it first to learn project names, the source locale and locale codes.', ProjectQuerySchema, query => ({
-    projects: (query.project === undefined ? projects : [pick(query.project)]).map(summarize),
+    projects: (query.project === undefined
+      ? projects
+      : [
+          pick(query.project),
+        ]).map(summarize),
   }))
 
   tool('keys', 'read', 'List message keys, paged. Filter by `missing` locale (keys to translate), `unused` (keys no code uses), `namespace` or a key `glob`. Pass `values: true` to get the value per locale. Continue with `cursor: nextCursor`.', AgentKeysSchema, (query) => {
     const { project } = pick(query.project)
-    const keys = project.keys({ glob: query.glob, missing: query.missing, unused: query.unused, namespace: query.namespace })
+    const keys = project.keys({
+      glob: query.glob,
+      missing: query.missing,
+      unused: query.unused,
+      namespace: query.namespace,
+    })
     const { items, ...rest } = page(keys, query)
     return {
       ...rest,
       keys: items.map(key => query.values
-        ? { key, values: Object.fromEntries((project.get(key)?.messages ?? []).map(m => [m.locale, m.value])) }
+        ? {
+            key,
+            values: Object.fromEntries((project.get(key)?.messages ?? []).map(m => [m.locale, m.value])),
+          }
         : { key }),
     }
   })
@@ -53,7 +83,10 @@ export function registerAgentTools(ctx: DevframeNodeContext, projects: readonly 
   tool('usages', 'read', 'Usages in code, paged: of one `key` (usages with a computed key under a prefix of it are marked `possible`), of one file (`path`), or all. Each usage has file, line, column and a code snippet.', AgentUsagesSchema, (query) => {
     const p = pick(query.project)
     const { items, ...rest } = page(p.project.usages({ key: query.key, path: query.path }), query)
-    return { ...rest, usages: usageViews(p, items) }
+    return {
+      ...rest,
+      usages: usageViews(p, items),
+    }
   })
 
   tool('check', 'read', 'Run the checks (missing translations, placeholder mismatches, invalid syntax, unused and undefined keys, ...) and return diagnostics, paged. After writing messages, call it with `only: ["placeholder-mismatch", "invalid-syntax"]` and fix what it reports.', AgentCheckSchema, (query) => {
@@ -80,12 +113,25 @@ export function registerAgentTools(ctx: DevframeNodeContext, projects: readonly 
 
   tool('rename_key', 'destructive', 'Rename a key (or every key under a parent) in all locales, and its usages in code unless `usages: false`. Without `confirm` it returns the plan (files to change, decisions, warnings); call again with `confirm: true` to apply it.', AgentRenameSchema, (query) => {
     const p = pick(query.project)
-    return confirmable(p, [{ type: 'rename', from: p.project.parseKey(query.from), to: p.project.parseKey(query.to), usages: query.usages !== false }], query)
+    return confirmable(p, [
+      {
+        type: 'rename',
+        from: p.project.parseKey(query.from),
+        to: p.project.parseKey(query.to),
+        usages: query.usages !== false,
+      },
+    ], query)
   })
 
   tool('delete_key', 'destructive', 'Delete a key (or every key under a parent) in all locales, or only in `locales`. Code is not changed. Without `confirm` it returns the plan; call again with `confirm: true` to apply it.', AgentDeleteSchema, (query) => {
     const p = pick(query.project)
-    return confirmable(p, [{ type: 'delete', key: p.project.parseKey(query.key), locales: query.locales ?? 'all' }], query)
+    return confirmable(p, [
+      {
+        type: 'delete',
+        key: p.project.parseKey(query.key),
+        locales: query.locales ?? 'all',
+      },
+    ], query)
   })
 
   tool('extract_plan', 'read', 'Find hard-coded strings in source files and propose a key, a message and a code replacement for each. Review the items (edit keys, drop items you do not want), then pass them to x18n_extract_apply.', ExtractQuerySchema, (query) => {
@@ -95,6 +141,11 @@ export function registerAgentTools(ctx: DevframeNodeContext, projects: readonly 
 
   tool('extract_apply', 'action', 'Apply extraction items from x18n_extract_plan: adds the messages to the source locale and rewrites the code. Fails when a file changed since the plan was made; plan again then.', ExtractApplySchema, (query) => {
     const p = pick(query.project)
-    return applyOps(p, [{ type: 'extract', items: extractItems(p.project, query.items) }])
+    return applyOps(p, [
+      {
+        type: 'extract',
+        items: extractItems(p.project, query.items),
+      },
+    ])
   })
 }

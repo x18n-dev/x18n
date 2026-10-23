@@ -27,7 +27,13 @@ export function isJsonObject(value: unknown): value is JsonObject {
 
 const jsonObject = v.custom<JsonObject>(isJsonObject, 'Expected a JSON object')
 const strings = v.array(v.string())
-const level = v.picklist(['error', 'warning', 'info', 'hint', 'off'])
+const level = v.picklist([
+  'error',
+  'warning',
+  'info',
+  'hint',
+  'off',
+])
 
 const argSource = v.strictObject({
   arg: v.number(),
@@ -35,10 +41,19 @@ const argSource = v.strictObject({
 }) satisfies v.GenericSchema<ArgSource>
 
 const callSpec = v.strictObject({
-  callee: v.union([v.string(), strings]),
+  callee: v.union([
+    v.string(),
+    strings,
+  ]),
   kind: v.optional(v.picklist(['call', 'selector', 'accessor'])),
-  key: v.optional(v.union([v.number(), argSource])),
-  namespace: v.optional(v.union([argSource, v.string()])),
+  key: v.optional(v.union([
+    v.number(),
+    argSource,
+  ])),
+  namespace: v.optional(v.union([
+    argSource,
+    v.string(),
+  ])),
   keyPrefix: v.optional(argSource),
   factory: v.optional(v.boolean()),
   returns: v.optional(strings),
@@ -58,7 +73,13 @@ const resourceSpec = v.strictObject({
   execute: v.optional(v.boolean()),
 }) satisfies v.GenericSchema<ResourceSpec>
 
-const pluginSpecifier = v.union([v.string(), v.tuple([v.string(), jsonObject])])
+const pluginSpecifier = v.union([
+  v.string(),
+  v.tuple([
+    v.string(),
+    jsonObject,
+  ]),
+])
 
 const extractTemplate = v.strictObject({
   template: v.string(),
@@ -67,7 +88,10 @@ const extractTemplate = v.strictObject({
   imports: v.optional(strings),
 }) satisfies v.GenericSchema<ExtractTemplate>
 
-const extractTemplates = v.array(v.union([v.string(), extractTemplate]))
+const extractTemplates = v.array(v.union([
+  v.string(),
+  extractTemplate,
+]))
 
 const extractOptions = v.strictObject({
   autoDetect: v.optional(v.boolean()),
@@ -91,7 +115,10 @@ const glossaryEntry = v.strictObject({
   doNotTranslate: v.optional(v.boolean()),
 }) satisfies v.GenericSchema<GlossaryEntry>
 
-const checkSetting = v.union([level, v.tuple([level, jsonObject])]) satisfies v.GenericSchema<CheckSetting>
+const checkSetting = v.union([
+  level,
+  v.tuple([level, jsonObject]),
+]) satisfies v.GenericSchema<CheckSetting>
 
 const namespaceOptions = v.strictObject({
   separator: v.optional(v.string()),
@@ -108,8 +135,14 @@ const configSchema = v.strictObject({
   sourceLocale: v.optional(v.string()),
   locales: v.optional(strings),
   ignoreLocales: v.optional(strings),
-  localeFallbacks: v.optional(v.union([v.literal('auto'), v.record(v.string(), v.string())])),
-  presets: v.optional(v.union([v.literal('auto'), v.array(pluginSpecifier)])),
+  localeFallbacks: v.optional(v.union([
+    v.literal('auto'),
+    v.record(v.string(), v.string()),
+  ])),
+  presets: v.optional(v.union([
+    v.literal('auto'),
+    v.array(pluginSpecifier),
+  ])),
   plugins: v.optional(v.array(pluginSpecifier)),
   resources: v.optional(v.array(resourceSpec)),
   formats: v.optional(v.record(v.string(), v.string())),
@@ -125,8 +158,14 @@ const configSchema = v.strictObject({
     derivedKeys: v.optional(strings),
   })),
   write: v.optional(v.strictObject({
-    sort: v.optional(v.union([v.literal(false), v.picklist(['binary', 'locale'])])),
-    indent: v.optional(v.union([v.number(), v.literal('tab')])),
+    sort: v.optional(v.union([
+      v.literal(false),
+      v.picklist(['binary', 'locale']),
+    ])),
+    indent: v.optional(v.union([
+      v.number(),
+      v.literal('tab'),
+    ])),
     keepFilled: v.optional(v.boolean()),
   })),
   extract: v.optional(extractOptions),
@@ -135,7 +174,13 @@ const configSchema = v.strictObject({
   ignoreKeys: v.optional(strings),
   glossary: v.optional(v.array(glossaryEntry)),
   // Provider options are typed by each provider; core only knows they are keyed by provider.
-  history: v.optional(v.union([v.boolean(), v.record(v.string(), v.union([v.literal(false), v.looseObject({})]))])),
+  history: v.optional(v.union([
+    v.boolean(),
+    v.record(v.string(), v.union([
+      v.literal(false),
+      v.looseObject({}),
+    ])),
+  ])),
   projects: v.optional(strings),
 })
 
@@ -178,7 +223,10 @@ const pluginFileSchema = v.strictObject({
   $schema: v.optional(v.string()),
   name: v.string(),
   detect: v.optional(v.strictObject({
-    dependencies: v.optional(v.strictObject({ any: v.optional(strings), all: v.optional(strings) })),
+    dependencies: v.optional(v.strictObject({
+      any: v.optional(strings),
+      all: v.optional(strings),
+    })),
     files: v.optional(strings),
   })),
   exclusive: v.optional(v.boolean()),
@@ -193,12 +241,24 @@ const pluginFileSchema = v.strictObject({
     calls: v.optional(v.array(callSpec)),
     regex: v.optional(v.array(regexSpec)),
   })),
-  scopes: v.optional(v.strictObject({ regex: v.string() })),
+  scopes: v.optional(v.strictObject({
+    regex: v.string(),
+  })),
   derivedKeys: v.optional(strings),
-  normalizeKey: v.optional(v.array(v.strictObject({ replace: v.strictObject({ pattern: v.string(), with: v.string() }) }))),
+  normalizeKey: v.optional(v.array(v.strictObject({
+    replace: v.strictObject({
+      pattern: v.string(),
+      with: v.string(),
+    }),
+  }))),
   placeholders: v.optional(strings),
-  localeInfo: v.optional(v.record(v.string(), v.strictObject({ flag: v.optional(v.string()), displayName: v.optional(v.string()) }))),
-  extract: v.optional(v.strictObject({ templates: v.optional(extractTemplates) })),
+  localeInfo: v.optional(v.record(v.string(), v.strictObject({
+    flag: v.optional(v.string()),
+    displayName: v.optional(v.string()),
+  }))),
+  extract: v.optional(v.strictObject({
+    templates: v.optional(extractTemplates),
+  })),
 })
 
 export const PluginFileSchema: v.GenericSchema<PluginFile> = pluginFileSchema

@@ -14,8 +14,12 @@ export function parseMigrationResult(value: unknown): MigrationResult | undefine
     return undefined
   const files = value.files.flatMap((file: unknown) => typeof file === 'object' && file !== null
     && 'path' in file && typeof file.path === 'string' && 'content' in file && typeof file.content === 'string'
-    ? [{ path: file.path, content: file.content }]
+    ? [
+        { path: file.path, content: file.content },
+      ]
     : [])
-  const notes = 'notes' in value && Array.isArray(value.notes) ? value.notes.filter((n: unknown) => typeof n === 'string') : []
+  const notes = 'notes' in value && Array.isArray(value.notes)
+    ? value.notes.filter((n: unknown) => typeof n === 'string')
+    : []
   return { files, notes }
 }

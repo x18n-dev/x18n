@@ -1,11 +1,16 @@
 import type { MessageOp } from '@x18n/core'
 import { applyTextEdits, isX18nError, pathId } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
-import { ecmascript } from '../src/formats'
+import { ecmascript } from '../src/formats/ecmascript'
 import { createTestProject } from './_utils'
 
 const format = ecmascript().formats![0]!
-const ctx = { path: 'locales/de.ts', locale: 'de', namespace: undefined, indent: undefined }
+const ctx = {
+  path: 'locales/de.ts',
+  locale: 'de',
+  namespace: undefined,
+  indent: undefined,
+}
 const edit = (text: string, ops: MessageOp[], path = ctx.path): string => applyTextEdits(text, format.edit!(text, ops, { ...ctx, path }))
 
 const source = `// Header
@@ -27,7 +32,9 @@ function code(text: string, path = ctx.path): string | undefined {
     format.parse(text, { ...ctx, path })
   }
   catch (error) {
-    return isX18nError(error) ? error.code : undefined
+    return isX18nError(error)
+      ? error.code
+      : undefined
   }
   return undefined
 }
@@ -35,7 +42,14 @@ function code(text: string, path = ctx.path): string | undefined {
 describe('ecmascript format', () => {
   it('parses static objects with any key and literal kind', () => {
     const { tree, ranges } = format.parse(source, ctx)
-    expect(tree).toEqual({ 'title': 'Meine App', 'quoted-key': 'Hallo', 'nav': { home: 'Start', 1: 'eins' }, 'count': -3, 'on': true, 'none': null })
+    expect(tree).toEqual({
+      'title': 'Meine App',
+      'quoted-key': 'Hallo',
+      'nav': { home: 'Start', 1: 'eins' },
+      'count': -3,
+      'on': true,
+      'none': null,
+    })
     const quoted = ranges!.get(pathId(['quoted-key']))!
     expect(source.slice(quoted.key.start, quoted.key.end)).toBe('quoted-key')
     expect(source.slice(quoted.value.start, quoted.value.end)).toBe('Hallo')
@@ -54,23 +68,63 @@ describe('ecmascript format', () => {
   })
 
   it('sets existing values in place with the same quotes', () => {
-    expect(edit(source, [{ type: 'set', path: ['title'], value: 'It\'s' }])).toBe(source.replace('\'Meine App\'', '\'It\\\'s\''))
-    expect(edit(source, [{ type: 'set', path: ['quoted-key'], value: 'a"b' }])).toBe(source.replace('"Hallo"', '"a\\"b"'))
-    expect(edit(source, [{ type: 'set', path: ['nav', 'home'], value: '${x}' }])).toBe(source.replace('`Start`', '`\\${x}`')) // eslint-disable-line no-template-curly-in-string
-    expect(edit(source, [{ type: 'set', path: ['count'], value: 4 }])).toBe(source.replace('-3', '4'))
+    expect(edit(source, [
+      {
+        type: 'set',
+        path: ['title'],
+        value: 'It\'s',
+      },
+    ])).toBe(source.replace('\'Meine App\'', '\'It\\\'s\''))
+    expect(edit(source, [
+      {
+        type: 'set',
+        path: ['quoted-key'],
+        value: 'a"b',
+      },
+    ])).toBe(source.replace('"Hallo"', '"a\\"b"'))
+    expect(edit(source, [
+      {
+        type: 'set',
+        path: ['nav', 'home'],
+        value: '${x}', // eslint-disable-line no-template-curly-in-string
+      },
+    ])).toBe(source.replace('`Start`', '`\\${x}`')) // eslint-disable-line no-template-curly-in-string
+    expect(edit(source, [
+      {
+        type: 'set',
+        path: ['count'],
+        value: 4,
+      },
+    ])).toBe(source.replace('-3', '4'))
   })
 
   it('rewrites only the object for structural changes', () => {
-    const added = edit(source, [{ type: 'set', path: ['nav', 'about'], value: 'Über' }])
+    const added = edit(source, [
+      {
+        type: 'set',
+        path: ['nav', 'about'],
+        value: 'Über',
+      },
+    ])
     expect(added.startsWith('// Header\nexport default {\n')).toBe(true)
     expect(added.endsWith('} as const\n')).toBe(true)
     expect(format.parse(added, ctx).tree.nav).toEqual({ home: 'Start', 1: 'eins', about: 'Über' })
-    const removed = edit('module.exports = {\n  a: \'A\',\n  b: \'B\',\n}\n', [{ type: 'delete', path: ['a'] }], 'de.cjs')
+    const removed = edit('module.exports = {\n  a: \'A\',\n  b: \'B\',\n}\n', [
+      {
+        type: 'delete',
+        path: ['a'],
+      },
+    ], 'de.cjs')
     expect(removed).toBe('module.exports = {\n  b: \'B\',\n}\n')
   })
 
   it('serializes and round-trips', () => {
-    const tree = { 'a': 'it\'s', 'kebab-key': 'x', 'nested': { b: 1, c: false, d: null }, 'empty': {} }
+    const tree = {
+      'a': 'it\'s',
+      'kebab-key': 'x',
+      'nested': { b: 1, c: false, d: null },
+      'empty': {},
+    }
     const text = format.serialize!(tree, ctx)
     expect(text).toBe('export default {\n  a: \'it\\\'s\',\n  \'kebab-key\': \'x\',\n  nested: {\n    b: 1,\n    c: false,\n    d: null,\n  },\n  empty: {},\n}\n')
     expect(format.parse(text, ctx).tree).toEqual(tree)
@@ -89,9 +143,20 @@ describe('ecmascript format', () => {
   })
 
   it('works through a project', async () => {
-    const { project, files } = await createTestProject({ 'locales/de.ts': 'export default {\n  hello: \'Hallo\',\n}\n' }, { resources: [{ pattern: 'locales/{locale}.ts' }] })
+    const { project, files } = await createTestProject({ 'locales/de.ts': 'export default {\n  hello: \'Hallo\',\n}\n' }, {
+      resources: [
+        { pattern: 'locales/{locale}.ts' },
+      ],
+    })
     expect(project.keys()).toEqual(['hello'])
-    await project.apply(project.plan([{ type: 'set', key: 'bye', locale: 'de', value: 'Tschüss' }]))
+    await project.apply(project.plan([
+      {
+        type: 'set',
+        key: 'bye',
+        locale: 'de',
+        value: 'Tschüss',
+      },
+    ]))
     expect(files.get('locales/de.ts')).toBe('export default {\n  hello: \'Hallo\',\n  bye: \'Tschüss\',\n}\n')
   })
 })

@@ -61,7 +61,10 @@ import { general, vueI18n } from '@x18n/cli/presets'
 import { defineConfig } from '@x18n/core'
 
 export default defineConfig({
-  presets: [vueI18n(), general()],
+  presets: [
+    vueI18n(),
+    general()
+  ],
 })
 ```
 

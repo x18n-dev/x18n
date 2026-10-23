@@ -11,20 +11,43 @@ import { backend, projectList, projectName, recentKeys, revision } from './state
 import { setupTheme } from './theme'
 
 const nav = computed(() => [
-  { to: '/', label: t('nav.overview') },
-  { to: '/keys', label: t('nav.keys') },
-  { to: '/usages', label: t('nav.usages') },
-  { to: '/extract', label: t('nav.extract') },
-  { to: '/project', label: t('nav.project') },
+  {
+    to: '/',
+    label: t('nav.overview'),
+  },
+  {
+    to: '/keys',
+    label: t('nav.keys'),
+  },
+  {
+    to: '/usages',
+    label: t('nav.usages'),
+  },
+  {
+    to: '/extract',
+    label: t('nav.extract'),
+  },
+  {
+    to: '/project',
+    label: t('nav.project'),
+  },
 ])
 
 // `Keys · my-app · x18n`: the page, then the project when there is a choice of projects.
 const route = useRoute()
 useHead({
   title: computed(() => {
-    const page = nav.value.filter(item => item.to === '/' ? route.path === '/' : route.path.startsWith(item.to)).at(-1)?.label
-    const project = (projectList.value?.projects.length ?? 0) > 1 ? projectName.value : undefined
-    return [page, project, t('app.name')].filter(Boolean).join(' · ')
+    const page = nav.value.filter(item => item.to === '/'
+      ? route.path === '/'
+      : route.path.startsWith(item.to)).at(-1)?.label
+    const project = (projectList.value?.projects.length ?? 0) > 1
+      ? projectName.value
+      : undefined
+    return [
+      page,
+      project,
+      t('app.name'),
+    ].filter(Boolean).join(' · ')
   }),
 })
 
@@ -57,7 +80,9 @@ onMounted(async () => {
     })
   }
   catch (e) {
-    error.value = e instanceof Error ? e.message : String(e)
+    error.value = e instanceof Error
+      ? e.message
+      : String(e)
   }
 })
 </script>

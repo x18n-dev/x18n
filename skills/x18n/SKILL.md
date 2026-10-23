@@ -85,9 +85,16 @@ import { defineConfig } from '@x18n/core'
 
 export default defineConfig({
   glossary: [
-    { term: 'Workspace', translations: { de: 'Arbeitsbereich', fr: 'Espace de travail' } },
+    {
+      term: 'Workspace',
+      translations: { de: 'Arbeitsbereich', fr: 'Espace de travail' }
+    },
     { term: 'x18n', doNotTranslate: true },
-    { term: 'Save', translations: { de: 'Speichern' }, note: 'The button label, not "rescue"' },
+    {
+      term: 'Save',
+      translations: { de: 'Speichern' },
+      note: 'The button label, not "rescue"'
+    },
   ],
   checks: { glossary: 'warning' },
 })

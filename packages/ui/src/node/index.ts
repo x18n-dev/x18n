@@ -26,7 +26,9 @@ export function createX18nDevframe(source: readonly UiProject[] | UiProjectLoade
     importMetaUrl: import.meta.url,
     clientAssets: fileURLToPath(new URL('./public', import.meta.url)),
     async setup(ctx) {
-      const projects = typeof source === 'function' ? await source(ctx) : source
+      const projects = typeof source === 'function'
+        ? await source(ctx)
+        : source
       registerRpc(ctx, projects, options)
       // A static report is dumped once, so it waits for history; the live UI updates when history arrives.
       if (ctx.mode !== 'dev') {
@@ -34,7 +36,9 @@ export function createX18nDevframe(source: readonly UiProject[] | UiProjectLoade
         return
       }
       registerAgentTools(ctx, projects)
-      const state = await ctx.scope('x18n').rpc.sharedState('state', { initialValue: { revision: 0, changedKeys: [] } satisfies X18nState })
+      const state = await ctx.scope('x18n').rpc.sharedState('state', {
+        initialValue: { revision: 0, changedKeys: [] } satisfies X18nState,
+      })
       for (const p of projects) {
         p.project.onChange((change) => {
           state.mutate((draft) => {

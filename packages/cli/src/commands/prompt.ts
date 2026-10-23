@@ -17,9 +17,16 @@ export interface PromptCommandOptions extends GlobalOptions {
 export async function prompt(kind: string, options: PromptCommandOptions): Promise<void> {
   if (kind !== 'translate' && kind !== 'review')
     throw errors.X18N0001({ issue: `unknown prompt "${kind}" (translate, review)` })
-  const locale = kind === 'translate' ? options.to : options.locale ?? options.to
-  if (!locale)
-    throw errors.X18N0001({ issue: kind === 'translate' ? 'pass --to <locale>' : 'pass --locale <locale>' })
+  const locale = kind === 'translate'
+    ? options.to
+    : options.locale ?? options.to
+  if (!locale) {
+    throw errors.X18N0001({
+      issue: kind === 'translate'
+        ? 'pass --to <locale>'
+        : 'pass --locale <locale>',
+    })
+  }
   const { project, host } = singleProject(await openWorkspace(options))
   if (options.stale) {
     await project.loadHistory()
@@ -28,7 +35,9 @@ export async function prompt(kind: string, options: PromptCommandOptions): Promi
   const data = project.prompt(kind, locale, {
     keys: options.keys,
     namespace: options.namespace,
-    limit: options.limit === undefined ? undefined : Number(options.limit),
+    limit: options.limit === undefined
+      ? undefined
+      : Number(options.limit),
     cursor: options.cursor,
     context: options.context,
     stale: options.stale,

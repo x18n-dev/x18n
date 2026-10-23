@@ -22,11 +22,16 @@ export const locales = computed<readonly LocaleSummary[]>(() => {
   const project = currentProject.value
   if (!project)
     return []
-  const byDefault = [...project.locales.filter(l => l.code === project.sourceLocale), ...project.locales.filter(l => l.code !== project.sourceLocale)]
+  const byDefault = [
+    ...project.locales.filter(l => l.code === project.sourceLocale),
+    ...project.locales.filter(l => l.code !== project.sourceLocale),
+  ]
   const picked = order.value[project.name] ?? []
   const rank = (code: string): number => {
     const at = picked.indexOf(code)
-    return at === -1 ? picked.length : at
+    return at === -1
+      ? picked.length
+      : at
   }
   return byDefault.map((locale, i) => ({ locale, i })).sort((a, b) => rank(a.locale.code) - rank(b.locale.code) || a.i - b.i).map(({ locale }) => locale)
 })
@@ -66,7 +71,10 @@ export function toggleLocale(code: string): void {
   const next = new Set(hiddenHere.value)
   if (!next.delete(code))
     next.add(code)
-  hidden.value = { ...hidden.value, [project]: [...next] }
+  hidden.value = {
+    ...hidden.value,
+    [project]: [...next],
+  }
 }
 
 export function showAllLocales(): void {

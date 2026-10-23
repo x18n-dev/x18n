@@ -3,16 +3,18 @@
 `@x18n/builtins` holds every built-in plugin and preset, with tree-shakable subpath exports:
 
 ```
-@x18n/builtins/formats    json(), jsonc(), json5(), yaml(), po(), properties(), ...
+@x18n/builtins/formats    the `formats` loader map; one module per format: formats/json, formats/yaml, ...
 @x18n/builtins/finders    pattern(), sfcBlocks()
-@x18n/builtins/scanners   regex(), js(), vue(), svelte(), html()
+@x18n/builtins/scanners   the `scanners` loader map; scanners/js, scanners/vue, scanners/regex, scanners/regex-scopes, ...
 @x18n/builtins/extractors ...
 @x18n/builtins/checks     recommended() and each check
-@x18n/builtins/reporters  pretty(), json(), markdown(), github(), sarif()
-@x18n/builtins/presets    vueI18n(), i18next(), reactI18next(), nextIntl(), ...
+@x18n/builtins/reporters  the `reporters` loader map; reporters/pretty, reporters/json, ...
+@x18n/builtins/presets    the `presets` loader map; one module per preset: presets/vue-i18n, presets/i18next, ...
 ```
 
-`x18n` re-exports `presets` as `@x18n/cli/presets` so a TS config has one import source.
+Formats, scanners, reporters and presets are maps, so a consumer loads only what it uses. A preset is a folder: `entry.ts` (detection plus a `load`) is always loaded and `index.ts` (the preset) is imported only after detection passes. Formats and scanners are folders too: `entry.ts` holds `{ extensions, load }` and the module loads when a file of that format is first read, or a file it scans is first scanned. `regex` is always loaded. Each module exports its factory by name and as `default`. `createBuiltins()` is async because it loads the reporters, which are always on. Files in a `shared/` folder are not entries. The entry modules are bundled apart, so `index.ts` imports the maps through the package name and tsdown leaves those imports external.
+
+`@x18n/cli` re-exports the preset factories as `@x18n/cli/presets` so a TS config has one import source.
 
 Tiers decide the release: tier 1 ships in 1.0 with full parity tests, tier 2 in 1.x (M15), tier 3 when someone asks.
 

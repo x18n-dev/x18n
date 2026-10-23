@@ -6,6 +6,12 @@ export const canOpenInEditor = computed(() => Boolean(backend.value?.capabilitie
 
 /** Opens a project-relative path in the editor; positions are 1-based. */
 export function openInEditor(path: string, line = 1, column = 1): void {
-  if (canOpenInEditor.value)
-    void backend.value!.openInEditor({ project: projectName.value!, path, line, column })
+  if (canOpenInEditor.value) {
+    void backend.value!.openInEditor({
+      project: projectName.value!,
+      path,
+      line,
+      column,
+    })
+  }
 }

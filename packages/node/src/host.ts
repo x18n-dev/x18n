@@ -20,7 +20,11 @@ export interface NodeHost extends Host {
   readonly flush: () => Promise<void>
 }
 
-const toPosix = (path: string): string => sep === '\\' ? path.replace(/\\/g, '/') : path
+function toPosix(path: string): string {
+  return sep === '\\'
+    ? path.replace(/\\/g, '/')
+    : path
+}
 
 function isNotFound(error: unknown): boolean {
   return error instanceof Error && 'code' in error && (error.code === 'ENOENT' || error.code === 'EISDIR')
@@ -51,8 +55,12 @@ async function loadGitignore(root: string): Promise<(path: string) => boolean> {
   const gitRoot = findGitRoot(root) ?? root
   const add = async (dir: string): Promise<void> => {
     const text = await readFile(join(dir, '.gitignore'), 'utf8').catch(() => undefined)
-    if (text !== undefined)
-      rules.push({ base: dir, ig: ignore().add(text) })
+    if (text !== undefined) {
+      rules.push({
+        base: dir,
+        ig: ignore().add(text),
+      })
+    }
   }
   let dir = root
   const chain: string[] = []
@@ -64,7 +72,11 @@ async function loadGitignore(root: string): Promise<(path: string) => boolean> {
   }
   for (const item of chain.reverse())
     await add(item)
-  const nested = await glob(['**/.gitignore'], { cwd: root, ignore: ['**/node_modules/**', '.gitignore'], dot: true })
+  const nested = await glob(['**/.gitignore'], {
+    cwd: root,
+    ignore: ['**/node_modules/**', '.gitignore'],
+    dot: true,
+  })
   for (const file of nested)
     await add(join(root, dirname(file)))
   return (path) => {
@@ -86,7 +98,9 @@ function createFileCache(dir: string): CacheStore & { flush: () => Promise<void>
   const load = (): Promise<Map<string, string>> => {
     entries ??= readFile(file, 'utf8').then((text) => {
       const data: unknown = JSON.parse(text)
-      return new Map(typeof data === 'object' && data !== null ? Object.entries(data).filter((e): e is [string, string] => typeof e[1] === 'string') : [])
+      return new Map(typeof data === 'object' && data !== null
+        ? Object.entries(data).filter((e): e is [string, string] => typeof e[1] === 'string')
+        : [])
     }).catch(() => new Map<string, string>())
     return entries
   }
@@ -114,8 +128,12 @@ function createFileCache(dir: string): CacheStore & { flush: () => Promise<void>
 export function createNodeHost(root: string, options: NodeHostOptions = {}): NodeHost {
   const absoluteRoot = resolve(root)
   let gitignore: Promise<(path: string) => boolean> | undefined
-  const cacheDir = options.cacheDir === false ? undefined : options.cacheDir ?? join(absoluteRoot, 'node_modules/.cache/x18n')
-  const cache = cacheDir ? createFileCache(join(cacheDir, hashText(absoluteRoot))) : undefined
+  const cacheDir = options.cacheDir === false
+    ? undefined
+    : options.cacheDir ?? join(absoluteRoot, 'node_modules/.cache/x18n')
+  const cache = cacheDir
+    ? createFileCache(join(cacheDir, hashText(absoluteRoot)))
+    : undefined
   const full = (path: string): string => resolve(absoluteRoot, path)
 
   return {
@@ -143,7 +161,9 @@ export function createNodeHost(root: string, options: NodeHostOptions = {}): Nod
     async glob(patterns, globOptions = {}) {
       const found = await glob([...patterns], {
         cwd: absoluteRoot,
-        ignore: [...globOptions.ignore ?? []],
+        ignore: [
+          ...globOptions.ignore ?? [],
+        ],
         dot: false,
         followSymbolicLinks: false,
       })
