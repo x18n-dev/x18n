@@ -1,4 +1,5 @@
 import type { Project } from '@x18n/core'
+import { compile } from 'svelte/compiler'
 import { describe, expect, it } from 'vitest'
 import { extractableHardStrings, extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
 import { reactI18next, reactIntl, svelteI18n, svelteI18next, vueI18n } from '../src/presets'
@@ -195,21 +196,21 @@ describe('extraction per preset', () => {
     expect(JSON.parse(files.get('locales/en/translation.json')!)).toEqual({ closeDialog: 'Close dialog', helloThere: 'Hello there', signedInAs: 'Signed in as {{name}}' })
   })
 
-  it('svelte-i18next: markup through $i18n.t from the context store', async () => {
+  it('svelte-i18next: markup through $i18n.t, keeping the store the component imports', async () => {
     const { project, files } = await createTestProject({
       'locales/en/translation.json': json({}),
-      'src/App.svelte': '<script>\n  let open = false\n</script>\n<p title="Close dialog">Hello there</p>\n',
+      'src/App.svelte': '<script>\n  import i18n from \'./i18n\'\n</script>\n<p title="Close dialog">Hello there</p>\n',
     }, { presets: [svelteI18next()], resources: [{ pattern: 'locales/{locale}/{namespace}.json' }] })
     await extractAll(project)
-    expect(files.get('src/App.svelte')).toBe([
+    const output = files.get('src/App.svelte')!
+    expect(output).toBe([
       '<script>',
-      'import { getContext } from \'svelte\'',
-      'const i18n = getContext(\'i18n\')',
-      '  let open = false',
+      '  import i18n from \'./i18n\'',
       '</script>',
       '<p title={$i18n.t(\'closeDialog\')}>{$i18n.t(\'helloThere\')}</p>',
       '',
     ].join('\n'))
+    expect(() => compile(output, { filename: 'App.svelte' })).not.toThrow()
     expect(JSON.parse(files.get('locales/en/translation.json')!)).toEqual({ closeDialog: 'Close dialog', helloThere: 'Hello there' })
   })
 

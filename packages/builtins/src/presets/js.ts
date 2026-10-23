@@ -192,8 +192,6 @@ export function svelteI18n(): Preset {
 }
 
 export function svelteI18next(): Preset {
-  // SvelteKit components read the store from context: `getContext('i18n')`.
-  const imports = ['import { getContext } from \'svelte\'', 'const i18n = getContext(\'i18n\')']
   return {
     name: 'svelte-i18next',
     detect: dependsOn(['svelte-i18next']),
@@ -203,9 +201,10 @@ export function svelteI18next(): Preset {
         name: 'svelte-i18next',
         // `createI18nStore(i18next)` is a store, so components call `$i18n.t`.
         calls: [{ callee: '$i18n.t', namespace: { arg: 1, property: 'ns' } }],
+        // No imports: components get the store from a module or `getContext`, so `$i18n` is assumed in scope.
         templates: [
-          { template: '{$i18n.t(\'{key}\'{args})}', kinds: ['svelte-text'], imports },
-          { template: '{attr}={$i18n.t(\'{key}\'{args})}', kinds: ['svelte-attribute'], imports },
+          { template: '{$i18n.t(\'{key}\'{args})}', kinds: ['svelte-text'] },
+          { template: '{attr}={$i18n.t(\'{key}\'{args})}', kinds: ['svelte-attribute'] },
         ],
       }),
     ],

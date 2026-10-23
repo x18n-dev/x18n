@@ -76,10 +76,10 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `next-intl` | next-intl | `useTranslations(ns)` / `getTranslations` factories, `t.rich`, `t.markup`, `t.raw`, ICU placeholders | 1 |
 | `react-intl` | react-intl, @formatjs/* | `formatMessage({ id })`, `<FormattedMessage id>`, `defineMessages`, ICU | 1 |
 | `svelte-i18n` | svelte-i18n | `$_`, `$t`, `$format` | 1 |
-| `svelte-i18next` | svelte-i18next | `i18next` + `$i18n.t` store calls, Svelte templates | 2 |
 | `vscode-extension` | vscode, @types/vscode | `nls` finder, `%key%` in `package.json`, `l10n.t` | 1 |
 | `general` | always last | hard-string extraction for JS/TS/HTML, no scanners | 1 |
 | `sveltekit-i18n` | sveltekit-i18n | `$t` | 2 |
+| `svelte-i18next` | svelte-i18next | `i18next` + `$i18n.t` store calls, Svelte templates | 2 |
 | `next-international` | next-international | `useI18n`, `useScopedI18n(scope)` | 2 |
 | `next-translate` | next-translate | `{locale}/{namespace}.json`, `ns:key` | 2 |
 | `ngx-translate` | @ngx-translate/core | `translate` pipe, `instant`, `get`, `[translate]` | 2 |

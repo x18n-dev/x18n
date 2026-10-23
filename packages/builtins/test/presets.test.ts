@@ -153,6 +153,31 @@ describe('tier 1 presets', () => {
   })
 })
 
+describe('tier 2 presets', () => {
+  it('svelte-i18next: $i18n.t in markup and script, with i18next keys', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('svelte-i18next', 'i18next', 'svelte'),
+      'locales/en/translation.json': json({ title: 'T', greet: 'Hi {{name}}', apple_one: 'apple', apple_other: 'apples', unused: 'U' }),
+      'locales/en/errors.json': json({ notFound: 'Not found' }),
+      'src/routes/+page.svelte': [
+        '<script>',
+        '  import { getContext } from \'svelte\'',
+        '  const i18n = getContext("i18n")',
+        '  const label = $i18n.t(\'greet\', { name: \'Ada\' })',
+        '</script>',
+        '<h1 title={$i18n.t(\'errors:notFound\')}>{$i18n.t(\'title\')}</h1>',
+        '<p>{$i18n.t(\'apple\', { count: 2 })} {$i18n.t(\'notFound\', { ns: \'errors\' })} {$i18n.t(\'missing\')}</p>',
+      ].join('\n'),
+    }, { resources: [{ pattern: 'locales/{locale}/{namespace}.json' }] })
+    const detected = project.explain().presets.filter(p => p.reason === 'detected').map(p => p.name)
+    expect(detected).toEqual(['svelte-i18next', 'i18next', 'general'])
+    expect(project.usages().map(m => m.usage.key)).toEqual(['translation:greet', 'errors:notFound', 'translation:title', 'translation:apple', 'errors:notFound', 'translation:missing'])
+    const analysis = project.analyze()
+    expect(analysis.unused).toEqual(['translation:unused'])
+    expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['translation:missing'])
+  })
+})
+
 // Cases that i18n-ally-next fixed after the fork of i18n-ally.
 describe('namespaces', () => {
   it('react-i18next: folders, keyPrefix, flat dotted keys, Translation and withTranslation', async () => {
