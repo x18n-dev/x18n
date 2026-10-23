@@ -16,6 +16,9 @@ describe('python manifests', () => {
     const text = [
       '[project]',
       'name = "app"',
+      'description = """',
+      '[not a table]',
+      '"""',
       'dependencies = [',
       '  "Django>=5.0", # web',
       '  "i18nice[YAML]>=0.15",',
@@ -29,14 +32,20 @@ describe('python manifests', () => {
       '[tool.poetry.dependencies]',
       'python = "^3.11"',
       'python-i18n = { version = "^0.3", extras = ["yaml"] }',
+      '"zope.interface" = "^5"',
+      'requests.version = "^2"',
       '',
       '[tool.poetry.group.dev.dependencies]',
       'pytest = "*"',
       '',
       '[tool.ruff]',
       'line-length = 100',
+      'notes = \'\'\'',
+      '[tool.poetry.dependencies]',
+      'fake = "1"',
+      '\'\'\'',
     ].join('\n')
-    expect(pyprojectToml.read(text)).toEqual(['django', 'i18nice', 'flask-babel', 'sphinx', 'python-i18n', 'pytest'])
+    expect(pyprojectToml.read(text)).toEqual(['django', 'i18nice', 'flask-babel', 'sphinx', 'python-i18n', 'zope-interface', 'requests', 'pytest'])
   })
 
   it('requirements.txt: names before versions, extras and markers', () => {
@@ -63,6 +72,20 @@ describe('python-gettext', () => {
     expect(project.keys()).toEqual(['Log out', 'One apple', 'Welcome, %(name)s!'])
     expect(usedKeys(project).sort()).toEqual(['Help', 'Log out', 'Log out', 'One apple', 'Welcome, %(name)s!'])
     expect(project.analyze().diagnostics.map(d => `${d.code}:${d.key}`)).toContain('missing-key:Help')
+  })
+
+  it('babel alone is not detected, as it is also an npm package', async () => {
+    const { project } = await createTestProject({ 'package.json': '{"devDependencies":{"babel":"^6"}}', 'requirements.txt': 'Babel\n' })
+    expect(detected(project)).toEqual([])
+  })
+
+  it('url escapes are not placeholders', async () => {
+    const { project } = await createTestProject({
+      'requirements.txt': 'Django\n',
+      'locale/en/LC_MESSAGES/django.po': 'msgid "x"\nmsgstr "Read a%2Fb at https://x.com/%20and/?q=%s, %2d %(n)s"\n',
+      'locale/de/LC_MESSAGES/django.po': 'msgid "x"\nmsgstr "Lies %s, %2d %(n)s"\n',
+    })
+    expect(project.analyze().diagnostics.filter(d => d.code === 'placeholder-mismatch')).toEqual([])
   })
 
   it('flask-babel: translations dir and lazy_gettext', async () => {

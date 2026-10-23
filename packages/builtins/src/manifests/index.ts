@@ -61,7 +61,8 @@ function tomlStrings(text: string, toClose: boolean): string[] {
 export const pyprojectToml: ManifestReader = {
   id: 'pyproject.toml',
   file: 'pyproject.toml',
-  read: text => text.split(/^[ \t]*\[/m).flatMap((table) => {
+  // Multi-line strings go first: their lines may start with `[` too.
+  read: text => text.replace(/"""[\s\S]*?"""|'''[\s\S]*?'''/g, '""').split(/^[ \t]*\[/m).flatMap((table) => {
     const header = /^\[?([^\]\n]+)\]/.exec(table)?.[1]?.trim()
     const body = table.slice(table.indexOf('\n') + 1)
     if (header === 'project') {
@@ -72,7 +73,8 @@ export const pyprojectToml: ManifestReader = {
     if (header === 'project.optional-dependencies' || header === 'dependency-groups')
       return tomlStrings(body, false).flatMap(requirementName)
     if (header && /^tool\.poetry\.(?:group\.[\w-]+\.)?(?:dev-)?dependencies$/.test(header))
-      return [...body.matchAll(/^\s*([\w.-]+)\s*=/gm)].flatMap(match => requirementName(match[1]!)).filter(name => name !== 'python')
+      // Keys may be quoted (`"zope.interface" = "^5"`) or dotted (`requests.version = "^2"`).
+      return [...body.matchAll(/^\s*(?:"([^"\n]+)"|'([^'\n]+)'|([\w-]+))\s*[.=]/gm)].flatMap(match => requirementName((match[1] ?? match[2] ?? match[3])!)).filter(name => name !== 'python')
     return []
   }),
 }

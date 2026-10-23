@@ -90,7 +90,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `laravel` | composer: laravel/framework | `php` format, `lang/{locale}/{namespace}.php`, `__()`, `trans()`, `@lang` | 2 |
 | `ruby-rails` | Gemfile: rails | `yaml` with top-level locale transform, `t('.lazy')` from view path | 2 |
 | `flutter` | pubspec: flutter_localizations, intl, flutter_i18n | `arb` format, `AppLocalizations.of(context).key` | 2 |
-| `python-gettext` | pyproject / requirements: django, flask-babel, babel | `po` format, `locale/{locale}/LC_MESSAGES/*.po`, `_()`, `gettext()`, `ngettext()`, Django `{% translate %}`, source-message keys | 2 |
+| `python-gettext` | pyproject / requirements: django, flask-babel | `po` format, `locale/{locale}/LC_MESSAGES/*.po`, `_()`, `gettext()`, `ngettext()`, Django `{% translate %}`, source-message keys | 2 |
 | `i18nice` | pyproject / requirements: i18nice, python-i18n | `{namespaces}.{locale}.yml` with top-level locale transform, `i18n.t()`, `%{name}` | 2 |
 | `chrome-extension` | manifest.json with `default_locale` | `_locales/{locale}/messages.json`, `.message` transform, `chrome.i18n.getMessage` | 2 |
 | `angular` | @angular/localize | `xliff`, `$localize` | 3 |

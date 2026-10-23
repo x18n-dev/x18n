@@ -37,7 +37,7 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | [`ruby-rails`](/presets/ruby-rails) | Ruby on Rails | `rails`, `rails-i18n`, `railties` in `Gemfile` |
 | [`jekyll`](/presets/jekyll) | jekyll-multiple-languages-plugin | `jekyll-multiple-languages-plugin` in `Gemfile` |
 | [`flutter`](/presets/flutter) | flutter_i18n | `flutter_i18n` in `pubspec.yaml` |
-| [`python-gettext`](/presets/python-gettext) | gettext in Python: Django, Flask-Babel, Babel | `django`, `flask-babel`, `babel` in `pyproject.toml` or `requirements.txt` |
+| [`python-gettext`](/presets/python-gettext) | gettext in Python: Django, Flask-Babel, Babel | `django`, `flask-babel` in `pyproject.toml` or `requirements.txt` |
 | [`i18nice`](/presets/i18nice) | i18nice, python-i18n | `i18nice`, `python-i18n` in `pyproject.toml` or `requirements.txt` |
 | [`general`](/presets/general) | none | always |
 

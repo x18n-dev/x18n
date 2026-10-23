@@ -15,7 +15,7 @@ const djangoTags = quoted.map(string => String.raw`\{%\s*trans(?:late)?\s+${stri
 export function pythonGettext(): Preset {
   return {
     name: 'python-gettext',
-    detect: dependsOn(['django', 'babel', 'flask-babel']),
+    detect: dependsOn(['django', 'flask-babel']),
     plugins: [
       library({
         name: 'python-gettext',
