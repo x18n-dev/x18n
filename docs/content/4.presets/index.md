@@ -8,10 +8,13 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | Preset | Library | Detected from |
 | --- | --- | --- |
 | [`nuxt-i18n`](/presets/nuxt-i18n) | @nuxtjs/i18n | `@nuxtjs/i18n`, `nuxt-i18n` |
+| [`nuxt-i18n-micro`](/presets/nuxt-i18n-micro) | Nuxt I18n Micro | `nuxt-i18n-micro` |
 | [`vue-i18n`](/presets/vue-i18n) | vue-i18n | `vue-i18n`, `vuex-i18n`, `petite-vue-i18n`, `vue-i18n-bridge`, `@intlify/*` |
 | [`fluent-vue`](/presets/fluent-vue) | fluent-vue | `fluent-vue`, `fluent-vue-loader`, `rollup-plugin-fluent-vue`, `unplugin-fluent-vue` |
+| [`fluent-react`](/presets/fluent-react) | @fluent/react | `@fluent/react` |
 | [`i18next-shopify`](/presets/i18next-shopify) | i18next-shopify | `@shopify/i18next-shopify` |
 | [`react-i18next`](/presets/react-i18next) | react-i18next | `react-i18next`, `next-i18next` |
+| [`svelte-i18next`](/presets/svelte-i18next) | svelte-i18next | `svelte-i18next` |
 | [`next-translate`](/presets/next-translate) | next-translate | `next-translate` |
 | [`next-international`](/presets/next-international) | next-international | `next-international` |
 | [`i18next`](/presets/i18next) | i18next | `i18next` |
@@ -20,6 +23,7 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | [`svelte-i18n`](/presets/svelte-i18n) | svelte-i18n, sveltekit-i18n | `svelte-i18n`, `sveltekit-i18n`, `@sveltekit-i18n/base` |
 | [`solid-primitives-i18n`](/presets/solid-primitives-i18n) | @solid-primitives/i18n | `@solid-primitives/i18n` |
 | [`paraglide`](/presets/paraglide) | Paraglide JS | `@inlang/paraglide-js`, `@inlang/paraglide-sveltekit`, `@inlang/paraglide-next`, `@inlang/paraglide-astro`, `@inlang/paraglide-vite` |
+| [`gravity-ui-i18n`](/presets/gravity-ui-i18n) | @gravity-ui/i18n | `@gravity-ui/i18n` |
 | [`typesafe-i18n`](/presets/typesafe-i18n) | typesafe-i18n | `typesafe-i18n` |
 | [`ngx-translate`](/presets/ngx-translate) | ngx-translate | `@ngx-translate/core` |
 | [`transloco`](/presets/transloco) | Transloco | `@jsverse/transloco`, `@ngneat/transloco` |
@@ -41,13 +45,16 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | [`flutter`](/presets/flutter) | flutter_i18n | `flutter_i18n` in `pubspec.yaml` |
 | [`easy-localization`](/presets/easy-localization) | easy_localization | `easy_localization` in `pubspec.yaml` |
 | [`flutter-translate`](/presets/flutter-translate) | flutter_translate | `flutter_translate` in `pubspec.yaml` |
+| [`python-gettext`](/presets/python-gettext) | gettext in Python: Django, Flask-Babel, Babel | `django`, `flask-babel` in `pyproject.toml` or `requirements.txt` |
+| [`i18nice`](/presets/i18nice) | i18nice, python-i18n | `i18nice`, `python-i18n` in `pyproject.toml` or `requirements.txt` |
+| [`cargo-i18n`](/presets/cargo-i18n) | cargo-i18n (Fluent) | `i18n-embed-fl`, `i18n-embed` in `Cargo.toml` |
 | [`general`](/presets/general) | none | always |
 
 ## Detection
 
-With the default `presets: 'auto'`, x18n tests each preset in the order of the table. Most presets apply when the project depends on one of the listed packages. x18n reads the dependencies, dev dependencies and peer dependencies in `package.json`, and the dependencies in `composer.json`, `pubspec.yaml` and `Gemfile`. The manifests in the parent directories, up to the git root, count too.
+With the default `presets: 'auto'`, x18n tests each preset in the order of the table. Most presets apply when the project depends on one of the listed packages. x18n reads the dependencies, dev dependencies and peer dependencies in `package.json`, the dependencies in `composer.json`, `pubspec.yaml`, `Gemfile` and `Cargo.toml`, and the Python requirements in `pyproject.toml` (`[project]`, `[project.optional-dependencies]`, `[dependency-groups]` and the Poetry dependency tables) and `requirements.txt`. Python package names compare in their normalized form, so `Flask_Babel` is `flask-babel`. The manifests in the parent directories, up to the git root, count too.
 
-More than one preset can apply. Some presets include the plugins of another preset: `react-i18next` includes everything of `i18next`, and `i18next-shopify` includes everything of `react-i18next`. When two applied presets share a plugin, x18n adds that plugin one time.
+More than one preset can apply. Some presets include the plugins of another preset: `react-i18next` and `svelte-i18next` include everything of `i18next`, and `i18next-shopify` includes everything of `react-i18next`. When two applied presets share a plugin, x18n adds that plugin one time.
 
 A preset can be exclusive. When an exclusive preset applies, x18n tests no preset after it. `laravel` and `php-gettext` are exclusive. `php-gettext` has no detection, so it applies only when you list it.
 
@@ -77,7 +84,7 @@ presets: [vue-i18n, general]
 
 ::
 
-In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `typesafeI18n`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravelVueI18n`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter`, `easyLocalization`, `flutterTranslate` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
+In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `nuxtI18nMicro`, `vueI18n`, `fluentVue`, `fluentReact`, `i18nextShopify`, `reactI18next`, `svelteI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `gravityUiI18n`, `typesafeI18n`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravelVueI18n`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter`, `easyLocalization`, `flutterTranslate`, `pythonGettext`, `i18nice`, `cargoI18n` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
 
 ## What a preset adds
 
@@ -104,16 +111,17 @@ A placeholder syntax tells x18n how placeholders look in messages. The [`placeho
 
 | Syntax | Example | Used by |
 | --- | --- | --- |
-| braces | `{name}`, `{0}` | vue-i18n, nuxt-i18n, i18next-shopify, next-international, ui5, vscode-extension, flutter, easy-localization, flutter-translate |
+| braces | `{name}`, `{0}` | vue-i18n, nuxt-i18n, nuxt-i18n-micro, i18next-shopify, next-international, ui5, vscode-extension, flutter, easy-localization, flutter-translate |
 | positional braces | `{}` | easy-localization |
 | linked | `@:key`, `@.lower:key` | vue-i18n, nuxt-i18n, easy-localization |
 | typed braces | `{name}`, `{name:string}`, `{date\|weekday}` | typesafe-i18n |
-| double braces | `{{name}}`, `{{name, format}}`, `{{- raw}}` | i18next, react-i18next, i18next-shopify, next-translate, ngx-translate, transloco, flutter-translate |
+| double braces | `{{name}}`, `{{name, format}}`, `{{- raw}}` | i18next, react-i18next, i18next-shopify, next-translate, gravity-ui-i18n, ngx-translate, transloco, flutter-translate |
 | nesting | `$t(key)` | i18next, react-i18next, i18next-shopify |
 | ICU | `{name}`, `{count, plural, one {# item} other {# items}}` | next-intl, react-intl, svelte-i18n, lingui, ember-intl, globalize |
-| fluent | `{ $name }` | fluent-vue |
-| percent braces | `%{name}` | polyglot, i18n-js, ruby-rails |
+| fluent | `{ $name }` | fluent-vue, fluent-react |
+| percent braces | `%{name}` | polyglot, i18n-js, ruby-rails, i18nice |
 | printf | `%s`, `%d`, `%1$s` | php-joomla, php-gettext |
+| Python percent | `%(name)s`, `%s`, `%d` | python-gettext |
 | colon | `:name` | laravel |
 | dollars | `$name$` | chrome-extension |
 

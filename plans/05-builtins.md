@@ -64,7 +64,7 @@ Execution is opt-in per resource pattern (`resources: [{ pattern: 'src/locales/{
 | `html` | html, and attributes inside other templates | small HTML tokenizer |
 | `regex` | any configured | RegExp, i18n-ally compatible |
 
-Other languages (PHP, Ruby, Dart, Blade, ERB) start with `regex` scanners in their presets, with the i18n-ally patterns. AST scanners for them are tier 3.
+Other languages (PHP, Ruby, Dart, Python, Blade, ERB, Django and Jinja templates) start with `regex` scanners in their presets, with the i18n-ally patterns. AST scanners for them are tier 3.
 
 ## Presets
 
@@ -74,6 +74,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | --- | --- | --- | --- |
 | `vue-i18n` | vue-i18n, vuex-i18n, @intlify/*, petite-vue-i18n | `$t`, `t`, `tc`, `te`, `d`, `n`, `v-t`, `<i18n-t>`, `useI18n` factory, linked messages `@:key`, `sfc-blocks` | 1 |
 | `nuxt-i18n` | @nuxtjs/i18n | `vue-i18n` + Nuxt `langDir` from `nuxt.config` when static, `i18n/locales` default | 1 |
+| `nuxt-i18n-micro` | nuxt-i18n-micro | `$t`, `$ts`, `$tc`, `$has`, `useI18n` / `useNuxtApp` factories, `translationDir` from `nuxt.config` (`locales` default), page files as `pages.{route}` keys that a page component's usages prefer over global keys | 2 |
 | `i18next` | i18next | `t`, the selector form `t($ => $.a.b)`, namespaces `ns:key` (folder namespaces keep `/`), plural and context suffixes, `{{x}}` placeholders | 1 |
 | `react-i18next` | react-i18next, next-i18next | `i18next` + `useTranslation(ns)` factory, `<Trans i18nKey>`, `<Translation>` render prop, `withTranslation(ns)` for the whole file, `keyPrefix` on all three factories | 1 |
 | `next-intl` | next-intl | `useTranslations(ns)` / `getTranslations` factories, `t.rich`, `t.markup`, `t.raw`, ICU placeholders | 1 |
@@ -82,13 +83,16 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `vscode-extension` | vscode, @types/vscode | `nls` finder, `%key%` in `package.json`, `l10n.t` | 1 |
 | `general` | always last | hard-string extraction for JS/TS/HTML, no scanners | 1 |
 | `sveltekit-i18n` | sveltekit-i18n | `$t` | 2 |
+| `svelte-i18next` | svelte-i18next | `i18next` + `$i18n.t` store calls, Svelte templates | 2 |
 | `next-international` | next-international | `useI18n`, `useScopedI18n(scope)` | 2 |
 | `next-translate` | next-translate | `{locale}/{namespace}.json`, `ns:key` | 2 |
 | `ngx-translate` | @ngx-translate/core | `translate` pipe, `instant`, `get`, `[translate]` | 2 |
 | `transloco` | @jsverse/transloco, @ngneat/transloco | pipe, directive, `*transloco="let t; read: 'scope'"` scopes, camelCase scope folders as key prefixes | 2 |
 | `lingui` | @lingui/core | `po` format, `{locale}/messages.po`, `t` macro, `<Trans>` | 2 |
 | `fluent-vue` | fluent-vue | `ftl` format, `$t`, `<fluent>` blocks | 2 |
+| `fluent-react` | @fluent/react | `ftl` format, `<Localized id>`, `l10n.getString`, `props.getString` from `withLocalization`, attributes through `attrs` | 2 |
 | `paraglide` | @inlang/paraglide-js | `messages/{locale}.json`, `m.key()` accessor calls | 2 |
+| `gravity-ui-i18n` | @gravity-ui/i18n | `i18n.i18n(keyset, key)`, `i18n.keyset(keyset)` and `i18n.bind(null, keyset)` with the keyset as key prefix, `{namespaces}/{locale}.json` keyset folders, CLDR plural objects, `{{x}}` placeholders | 2 |
 | `typesafe-i18n` | typesafe-i18n | `src/i18n/{locale}/index.ts` and `{locale}/{namespace}/index.ts` through the `js` format, `LL.a.b()` and `$LL.a.b()` accessor calls (regex), `{name:type\|formatter}` placeholders | 2 |
 | `laravel` | composer: laravel/framework | `php` format, `lang/{locale}/{namespace}.php`, `__()`, `trans()`, `@lang` | 2 |
 | `laravel-vue-i18n` | laravel-vue-i18n | `laravel` resources and keys, `trans()`, `wTrans()`, `transChoice()`, `$t()`, `$tChoice()`; `keygen: 'source'`, ignores the `php_{locale}` files of the Vite plugin; listed before the exclusive `laravel` so both apply | 2 |
@@ -96,6 +100,9 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `flutter` | pubspec: flutter_localizations, intl, flutter_i18n | `arb` format, `AppLocalizations.of(context).key` | 2 |
 | `easy-localization` | pubspec: easy_localization | `assets/translations/{locale}`, `'key'.tr()`, `tr`, `plural`, `context.tr`, nested plural and gender keys, `{}` placeholders | 2 |
 | `flutter-translate` | pubspec: flutter_translate | `assets/i18n/{locale}`, `translate`, `translatePlural`, nested plural keys | 2 |
+| `python-gettext` | pyproject / requirements: django, flask-babel | `po` format, `locale/{locale}/LC_MESSAGES/*.po`, `_()`, `gettext()`, `ngettext()`, Django `{% translate %}`, source-message keys | 2 |
+| `i18nice` | pyproject / requirements: i18nice, python-i18n | `{namespaces}.{locale}.yml` with top-level locale transform, `i18n.t()`, `%{name}` | 2 |
+| `cargo-i18n` | Cargo.toml: i18n-embed-fl, i18n-embed | `ftl`, `fallback_language` and `assets_dir` from `i18n.toml`, `{assets_dir}/{locale}/*.ftl`, `fl!` macro | 2 |
 | `chrome-extension` | manifest.json with `default_locale` | `_locales/{locale}/messages.json`, `.message` transform, `chrome.i18n.getMessage` | 2 |
 | `angular` | @angular/localize | `xliff`, `$localize` | 3 |
 | `ember-intl` | ember-intl | `t` helper | 3 |
