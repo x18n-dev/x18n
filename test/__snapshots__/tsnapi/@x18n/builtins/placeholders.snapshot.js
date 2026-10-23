@@ -10,6 +10,7 @@ export function placeholders(..._) {}
 export var braces /* const */
 export var colon /* const */
 export var dollars /* const */
+export var dotnet /* const */
 export var doubleBraces /* const */
 export var fluent /* const */
 export var icu /* const */

@@ -90,7 +90,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `laravel` | composer: laravel/framework | `php` format, `lang/{locale}/{namespace}.php`, `__()`, `trans()`, `@lang` | 2 |
 | `ruby-rails` | Gemfile: rails | `yaml` with top-level locale transform, `t('.lazy')` from view path | 2 |
 | `flutter` | pubspec: flutter_localizations, intl, flutter_i18n | `arb` format, `AppLocalizations.of(context).key` | 2 |
-| `dotnet-resx` | a `*.csproj` and a `*.resx` | `resx` format, `Name.resx` (source) and `Name.{locale}.resx`, `Localizer["key"]`, `GetString("key")`, `Resources.Key` | 2 |
+| `dotnet-resx` | a `*.csproj`, `*.vbproj` or `*.fsproj` and a `*.resx` | `resx` format, `Name.resx` (source) and `Name.{locale}.resx`, `Localizer["key"]`, `GetString("key")`, `Resources.Key` | 2 |
 | `chrome-extension` | manifest.json with `default_locale` | `_locales/{locale}/messages.json`, `.message` transform, `chrome.i18n.getMessage` | 2 |
 | `angular` | @angular/localize | `xliff`, `$localize` | 3 |
 | `ember-intl` | ember-intl | `t` helper | 3 |

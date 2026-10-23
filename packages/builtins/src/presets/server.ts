@@ -1,7 +1,7 @@
 // Detection and syntax adapted from i18n-ally (MIT), src/frameworks/laravel.ts, php-joomla.ts, php-gettext.ts, ruby-rails.ts and jekyll.ts
-import type { MessageTree, Preset } from '@x18n/core'
+import type { LocaleFinder, MessageTree, Preset } from '@x18n/core'
 import { isMessageLeaf } from '@x18n/core'
-import { braces, colon, percentBraces, placeholders, printf } from '../placeholders'
+import { colon, dotnet, percentBraces, placeholders, printf } from '../placeholders'
 import { dependsOn, library } from './shared'
 
 /** Laravel: `lang/{locale}/{file}.php` arrays and `lang/{locale}.json`; keys are `file.key`. Exclusive like i18n-ally. */
@@ -128,11 +128,31 @@ export function jekyll(): Preset {
   }
 }
 
+/** .NET satellite assemblies: `X.<culture>.resx` translates `X.resx`, so `Views.Shared.Nav.resx` alone is a source file. */
+const resxFinder: LocaleFinder = {
+  id: 'dotnet-resx',
+  async find(ctx) {
+    const paths = new Set(await ctx.host.glob(['**/*.resx'], { ignore: ['**/node_modules/**', '**/bin/**', '**/obj/**'], gitignore: false }))
+    return [...paths].map((path) => {
+      const satellite = /^(.+)\.([^./]+)\.resx$/.exec(path)
+      const locale = satellite && paths.has(`${satellite[1]}.resx`) ? satellite[2]! : ctx.config.sourceLocale
+      return { path, locale, namespace: undefined }
+    })
+  },
+  resolveNew({ locale, model }, ctx) {
+    if (model?.finder !== 'dotnet-resx')
+      return undefined
+    const suffix = model.path.endsWith(`.${model.locale}.resx`) ? `.${model.locale}.resx` : '.resx'
+    const base = model.path.slice(0, -suffix.length)
+    return locale === ctx.config.sourceLocale ? `${base}.resx` : `${base}.${locale}.resx`
+  },
+}
+
 /** .NET `IStringLocalizer` and strongly typed resources over `.resx` files: `Strings.resx` holds the source locale, `Strings.de.resx` German. */
 export function dotnetResx(): Preset {
   return {
     name: 'dotnet-resx',
-    detect: async ctx => await ctx.fileExists('**/*.csproj') && ctx.fileExists('**/*.resx'),
+    detect: async ctx => await ctx.fileExists('**/*.{csproj,vbproj,fsproj}') && await ctx.fileExists('**/*.resx'),
     plugins: [
       library({
         name: 'dotnet-resx',
@@ -146,14 +166,14 @@ export function dotnetResx(): Preset {
             '(?<![\\w.])(?:Properties\\.)?Resources\\.(?!ResourceManager\\b|Culture\\b)([A-Za-z_]\\w*)\\b(?![.(<])',
           ],
         }],
-        resources: [{ pattern: '**/*.{locale}.resx' }, { pattern: '**/*.resx' }],
+        finders: [resxFinder],
         keyStyle: 'flat',
         templates: [
           { template: '@Localizer["{key}"]', files: ['**/*.cshtml', '**/*.razor'] },
           { template: '_localizer["{key}"]', files: ['**/*.cs'] },
         ],
       }),
-      placeholders(braces),
+      placeholders(dotnet),
     ],
   }
 }

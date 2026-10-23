@@ -37,7 +37,7 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | [`ruby-rails`](/presets/ruby-rails) | Ruby on Rails | `rails`, `rails-i18n`, `railties` in `Gemfile` |
 | [`jekyll`](/presets/jekyll) | jekyll-multiple-languages-plugin | `jekyll-multiple-languages-plugin` in `Gemfile` |
 | [`flutter`](/presets/flutter) | flutter_i18n | `flutter_i18n` in `pubspec.yaml` |
-| [`dotnet-resx`](/presets/dotnet-resx) | .NET `IStringLocalizer` and `.resx` resources | a `*.csproj` and a `*.resx` file |
+| [`dotnet-resx`](/presets/dotnet-resx) | .NET `IStringLocalizer` and `.resx` resources | a `*.csproj`, `*.vbproj` or `*.fsproj` and a `*.resx` file |
 | [`general`](/presets/general) | none | always |
 
 ## Detection
@@ -98,7 +98,7 @@ A placeholder syntax tells x18n how placeholders look in messages. The [`placeho
 
 | Syntax | Example | Used by |
 | --- | --- | --- |
-| braces | `{name}`, `{0}` | vue-i18n, nuxt-i18n, i18next-shopify, next-international, ui5, vscode-extension, flutter, dotnet-resx |
+| braces | `{name}`, `{0}` | vue-i18n, nuxt-i18n, i18next-shopify, next-international, ui5, vscode-extension, flutter |
 | linked | `@:key`, `@.lower:key` | vue-i18n, nuxt-i18n |
 | double braces | `{{name}}`, `{{name, format}}`, `{{- raw}}` | i18next, react-i18next, i18next-shopify, next-translate, ngx-translate, transloco |
 | nesting | `$t(key)` | i18next, react-i18next, i18next-shopify |
@@ -108,6 +108,7 @@ A placeholder syntax tells x18n how placeholders look in messages. The [`placeho
 | printf | `%s`, `%d`, `%1$s` | php-joomla, php-gettext |
 | colon | `:name` | laravel |
 | dollars | `$name$` | chrome-extension |
+| dotnet | `{0}`, `{0:C}`, `{0,-10}`, `{name}` | dotnet-resx |
 
 A linked message (`@:key`) and a nesting placeholder (`$t(key)`) name another key. That key then counts as used. The [`invalid-syntax`](/checks/invalid-syntax) check reports a linked message whose key does not exist, and ICU messages that do not parse or that lack an `other` case.
 

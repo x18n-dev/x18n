@@ -153,7 +153,6 @@ describe('tier 1 presets', () => {
   })
 })
 
-// Cases that i18n-ally-next fixed after the fork of i18n-ally.
 describe('dotnet-resx', () => {
   const data = (entries: Record<string, string>): string => `<?xml version="1.0" encoding="utf-8"?>
 <root>
@@ -198,9 +197,34 @@ ${Object.entries(entries).map(([name, value]) => `  <data name="${name}" xml:spa
     ]))
     expect(written.get('src/App/Resources/SharedResource.de.resx')).toBe(data({ Hello: 'Hallo {0}', Title: 'Titel' }))
     expect(written.get('src/App/Resources/SharedResource.fr.resx')).toContain('  <data name="Title" xml:space="preserve">\n    <value>Titre</value>\n  </data>\n</root>\n')
+    expect(project.locales).toEqual(['en', 'de', 'fr', 'pt-BR'])
+    expect(project.message('Title', 'fr')?.resource).toBe('src/App/Resources/SharedResource.fr.resx')
+  })
+
+  it('reads `X.<name>.resx` as a locale only when `X.resx` exists', async () => {
+    const { project } = await createTestProject({
+      'App.csproj': '<Project Sdk="Microsoft.NET.Sdk.Web" />',
+      'Resources/Views.Shared.Nav.resx': data({ Home: 'Home' }),
+      'Resources/Views.Shared.Nav.de.resx': data({ Home: 'Start' }),
+      'Resources/Pages.App.resx': data({ Title: 'App' }),
+    })
+    expect(project.locales).toEqual(['en', 'de'])
+    expect(project.message('Title', 'en')?.resource).toBe('Resources/Pages.App.resx')
+    expect(project.message('Home', 'de')?.resource).toBe('Resources/Views.Shared.Nav.de.resx')
+  })
+
+  it('compares composite format items, not escaped braces', async () => {
+    const { project } = await createTestProject({
+      'App.csproj': '<Project Sdk="Microsoft.NET.Sdk.Web" />',
+      'Strings.resx': data({ Price: '{0:C} for {1,-10} {{literal}}', Hi: 'Hi {name}' }),
+      'Strings.de.resx': data({ Price: '{0:N2} für {2} {{other}}', Hi: 'Hallo {name}' }),
+    })
+    const mismatches = project.analyze().diagnostics.filter(d => d.code === 'placeholder-mismatch')
+    expect(mismatches.map(d => d.message)).toEqual(['"Price" in de has different placeholders than en: missing 1; unexpected 2.'])
   })
 })
 
+// Cases that i18n-ally-next fixed after the fork of i18n-ally.
 describe('namespaces', () => {
   it('react-i18next: folders, keyPrefix, flat dotted keys, Translation and withTranslation', async () => {
     const { project } = await createTestProject({

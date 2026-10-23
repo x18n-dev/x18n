@@ -6,8 +6,12 @@ interface Entry {
   readonly key: string
   readonly value: string
   readonly range: NodeRange
-  /** The `<value>` body; absent for `<data name="x" />`. */
+  /** The `<value>` body; absent without a `<value>` and for `<value/>`. */
   readonly body: TextRange | undefined
+  /** A `<value/>` to fill. */
+  readonly emptyValue: TextRange | undefined
+  /** The inside of `<data>` when it holds something, such as a `<comment>`. */
+  readonly content: TextRange | undefined
   /** The `<data>` element. */
   readonly element: TextRange
   /** The element with its indent and line break. */
@@ -21,8 +25,10 @@ function decode(raw: string): string {
   return raw.replace(/\r\n?/g, '\n').replace(/<!\[CDATA\[([\s\S]*?)\]\]>|&(#x[\da-f]+|#\d+|\w+);/gi, (match, cdata: string | undefined, name: string | undefined) => {
     if (name === undefined)
       return cdata ?? match
-    if (name.startsWith('#'))
-      return String.fromCodePoint(name[1] === 'x' ? Number.parseInt(name.slice(2), 16) : Number.parseInt(name.slice(1), 10))
+    if (name.startsWith('#')) {
+      const code = name[1] === 'x' ? Number.parseInt(name.slice(2), 16) : Number.parseInt(name.slice(1), 10)
+      return code <= 0x10FFFF ? String.fromCodePoint(code) : match
+    }
     return entities[name] ?? match
   })
 }
@@ -51,8 +57,28 @@ function lineOf(text: string, range: TextRange): TextRange {
 /** Comments and CDATA are skipped so the schema sample in the standard header is not read as data. */
 const tokens = /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<data\b((?:[^>"']|"[^"]*"|'[^']*')*)>/g
 
-function read(text: string, path: string): Entry[] {
+interface Contents {
+  readonly entries: Entry[]
+  /** Names of `<data>` that hold files, images or other objects. */
+  readonly objects: Set<string>
+}
+
+/** The `<value>` inside a `<data>` whose content starts at `offset`. */
+function valueIn(inner: string, offset: number): Pick<Entry, 'value' | 'body' | 'emptyValue'> {
+  const match = /<value\s*\/>|<value\s*>([\s\S]*?)<\/value\s*>/d.exec(inner)
+  if (!match)
+    return { value: '', body: undefined, emptyValue: undefined }
+  const [start, end] = match.indices![0]!
+  const body = match.indices![1]
+  if (!body)
+    return { value: '', body: undefined, emptyValue: { start: offset + start, end: offset + end } }
+  return { value: decode(match[1]!), body: { start: offset + body[0], end: offset + body[1] }, emptyValue: undefined }
+}
+
+function read(text: string, path: string): Contents {
   const entries: Entry[] = []
+  const objects = new Set<string>()
+  const closing = /<\/data\s*>/g
   tokens.lastIndex = 0
   for (let match = tokens.exec(text); match; match = tokens.exec(text)) {
     const attributes = match[1]
@@ -61,31 +87,39 @@ function read(text: string, path: string): Entry[] {
     const start = match.index
     const open = start + match[0].length
     const selfClosing = attributes.endsWith('/')
-    const close = selfClosing ? open : text.indexOf('</data>', open)
-    if (close === -1)
+    closing.lastIndex = open
+    const close = selfClosing ? undefined : closing.exec(text)
+    if (close === null)
       throw errors.X18N2002({ path, reason: 'unclosed <data> element' })
-    const end = selfClosing ? open : close + '</data>'.length
+    const end = close ? close.index + close[0].length : open
     tokens.lastIndex = end
     const name = /\sname\s*=\s*(?:"([^"]*)"|'([^']*)')/d.exec(attributes)
-    // Files, images and other objects carry a `type` or `mimetype`; only strings are messages.
-    if (!name || /\s(?:type|mimetype)\s*=/.test(attributes))
+    if (!name)
       continue
+    const key = decode(name[1] ?? name[2]!)
+    // Files, images and other objects carry a `type` or `mimetype`; only strings are messages.
+    if (/\s(?:type|mimetype)\s*=/.test(attributes)) {
+      objects.add(key)
+      continue
+    }
     const nameAt = name.indices![1] ?? name.indices![2]!
-    const value = /<value\s*>([\s\S]*?)<\/value\s*>/d.exec(text.slice(open, close))
-    const body = value ? { start: open + value.indices![1]![0], end: open + value.indices![1]![1] } : undefined
+    const inner = close ? text.slice(open, close.index) : ''
+    const { value, body, emptyValue } = valueIn(inner, open)
     const line = lineOf(text, { start, end })
     const keyOffset = start + '<data'.length
     entries.push({
-      key: decode(name[1] ?? name[2]!),
-      value: value ? decode(value[1]!) : '',
-      range: { key: { start: keyOffset + nameAt[0], end: keyOffset + nameAt[1] }, value: body ?? { start: open, end: open } },
+      key,
+      value,
+      range: { key: { start: keyOffset + nameAt[0], end: keyOffset + nameAt[1] }, value: body ?? emptyValue ?? { start: open, end: open } },
       body,
+      emptyValue,
+      content: close && inner.trim() ? { start: open, end: close.index } : undefined,
       element: { start, end },
       line,
       indent: line.start < start ? text.slice(line.start, start) : '',
     })
   }
-  return entries
+  return { entries, objects }
 }
 
 function dataElement(key: string, value: string, indent: string, eol: string): string {
@@ -94,14 +128,24 @@ function dataElement(key: string, value: string, indent: string, eol: string): s
 
 function applyOp(text: string, op: MessageOp, path: string): string {
   const key = op.path.join('.')
-  const entries = read(text, path)
+  const { entries, objects } = read(text, path)
   const entry = entries.findLast(e => e.key === key)
   if (op.type === 'delete')
     return entry ? splice(text, entry.line, '') : text
+  // A second `<data name>` would make the file fail to build.
+  if (!entry && objects.has(key))
+    throw errors.X18N4008({ reason: `"${key}" in ${path} holds a file or object, not a string` })
   const eol = detectEol(text)
   const value = escapeText(leafText(op.value)).replace(/\n/g, eol)
   if (entry?.body)
     return splice(text, entry.body, value)
+  if (entry?.emptyValue)
+    return splice(text, entry.emptyValue, `<value>${value}</value>`)
+  // Before a `<comment>`, on its line and indent.
+  if (entry?.content) {
+    const lead = /^\s*/.exec(text.slice(entry.content.start, entry.content.end))![0]
+    return splice(text, { start: entry.content.start, end: entry.content.start }, `${lead}<value>${value}</value>`)
+  }
   if (entry)
     return splice(text, entry.element, dataElement(key, value, entry.indent, eol))
   const root = text.lastIndexOf('</root>')
@@ -122,7 +166,7 @@ const headers: readonly (readonly [string, string])[] = [
   ['writer', 'System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'],
 ]
 
-const skeleton = `<?xml version="1.0" encoding="utf-8"?>\n<root>\n${headers.map(([name, value]) => `  <resheader name="${name}">\n    <value>${value}</value>\n  </resheader>\n`).join('')}</root>\n`
+const head = `<?xml version="1.0" encoding="utf-8"?>\n<root>\n${headers.map(([name, value]) => `  <resheader name="${name}">\n    <value>${value}</value>\n  </resheader>\n`).join('')}`
 
 /** .NET `.resx` files: `<data name="key"><value>text</value></data>` inside `<root>`. */
 export function resx(): Plugin {
@@ -134,7 +178,7 @@ export function resx(): Plugin {
       parse(text, ctx) {
         const tree: Record<string, string> = {}
         const ranges = new Map<string, NodeRange>()
-        for (const entry of read(text, ctx.path)) {
+        for (const entry of read(text, ctx.path).entries) {
           tree[entry.key] = entry.value
           ranges.set(pathId([entry.key]), entry.range)
         }
@@ -146,8 +190,9 @@ export function resx(): Plugin {
           next = applyOp(next, op, ctx.path)
         return diffText(text, next)
       },
-      serialize: (tree: MessageTree, ctx) => [...walkLeaves(tree)]
-        .reduce((text, leaf) => applyOp(text, { type: 'set', path: leaf.path, value: leaf.value }, ctx.path), skeleton),
+      serialize: (tree: MessageTree) => `${head}${[...walkLeaves(tree)]
+        .map(leaf => `  ${dataElement(leaf.path.join('.'), escapeText(leafText(leaf.value)), '  ', '\n')}\n`)
+        .join('')}</root>\n`,
     }],
   }
 }

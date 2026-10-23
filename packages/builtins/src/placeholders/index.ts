@@ -36,6 +36,20 @@ export const colon: PlaceholderSyntax = byRegex('colon', /(?<![\w:]):([a-z_]\w*)
 /** `$name$`: Chrome extension messages. */
 export const dollars: PlaceholderSyntax = byRegex('dollars', /\$(\w+)\$/g, '$name$')
 
+/** `{0}`, `{0:C}`, `{0,-10}`, `{name}`: .NET composite format items. `{{` and `}}` are literal braces. */
+export const dotnet: PlaceholderSyntax = {
+  id: 'dotnet',
+  example: '{0}',
+  find(value) {
+    const out: Placeholder[] = []
+    for (const match of value.matchAll(/\{\{|\}\}|\{\s*(\w+)\s*(?:,\s*-?\d+\s*)?(?::[^{}]*)?\}/g)) {
+      if (match[1] !== undefined)
+        out.push({ syntax: 'dotnet', text: match[0], name: match[1], range: { start: match.index, end: match.index + match[0].length } })
+    }
+    return out
+  },
+}
+
 /** `$t(key)` nesting in i18next. */
 export const nesting: PlaceholderSyntax = { ...byRegex('nesting', /\$t\(([\w.:-]+)(?:,[^)]*)?\)/g, '$t(key)'), reference: true }
 

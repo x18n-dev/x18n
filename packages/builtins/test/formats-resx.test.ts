@@ -72,6 +72,18 @@ describe('resx format', () => {
     expect(format.parse(text, ctx).tree).toEqual({ 'a.b': 'x < y', 'c': '' })
   })
 
+  it('reads `</data >`, keeps an out-of-range character reference and fills `<value/>` next to a comment', () => {
+    const text = '<root>\n  <data name="a">\n    <value/>\n    <comment>Shown on the button</comment>\n  </data >\n  <data name="b">\n    <comment>Title</comment>\n  </data>\n  <data name="c"><value>&#x110000;</value></data>\n</root>\n'
+    expect(format.parse(text, ctx).tree).toEqual({ a: '', b: '', c: '&#x110000;' })
+    expect(edit(text, [{ type: 'set', path: ['a'], value: 'Save' }])).toBe(text.replace('<value/>', '<value>Save</value>'))
+    expect(edit(text, [{ type: 'set', path: ['b'], value: 'Titel' }])).toBe(text.replace('<data name="b">\n', '<data name="b">\n    <value>Titel</value>\n'))
+  })
+
+  it('does not add a string next to a file entry of the same name', () => {
+    expect(() => edit(source, [{ type: 'set', path: ['Logo'], value: 'x' }])).toThrow(expect.objectContaining({ code: 'X18N4008' }))
+    expect(edit(source, [{ type: 'delete', path: ['Logo'] }])).toBe(source)
+  })
+
   it('reports malformed files with a code', () => {
     expect(() => format.parse('<root><data name="a"><value>x</value>', ctx)).toThrow(expect.objectContaining({ code: 'X18N2002' }))
     expect(() => edit('<root>', [{ type: 'set', path: ['a'], value: 'x' }])).toThrow(expect.objectContaining({ code: 'X18N2002' }))
