@@ -218,6 +218,45 @@ describe('every i18n-ally framework is detected and understood', () => {
     expect(usedKeys(project)).toEqual(['title', 'greet'])
   })
 
+  it('easy_localization, with plural and gender forms and positional placeholders', async () => {
+    const { project } = await createTestProject({
+      'pubspec.yaml': 'name: app\ndependencies:\n  easy_localization: ^3.0.0\n',
+      'assets/translations/en-US.json': json({
+        title: 'T',
+        msg: '{} is written in {lang}',
+        day: { one: '{} day', other: '{} days' },
+        gender: { male: 'Hi man', female: 'Hi girl', other: 'Hi' },
+        menu: { open: 'Open', close: 'Close' },
+      }),
+      'assets/translations/de-DE.json': json({ msg: 'Auf {lang} geschrieben' }),
+      'lib/main.dart': [
+        'Text(\'title\').tr();',
+        '\'msg\'.tr(args: [\'Dart\'], namedArgs: {\'lang\': \'en\'});',
+        'plural(\'day\', 2);',
+        'context.tr(\'gender\', gender: \'male\');',
+        'Text(tr("menu.open")); \'menu.close\'.plural(1);',
+        'other.tr(\'nope\'); str(\'nope\');',
+      ].join('\n'),
+    })
+    expect(detected(project)).toEqual(['easy-localization'])
+    expect(project.locales).toEqual(['en-US', 'de-DE'])
+    expect(usedKeys(project).sort()).toEqual(['day', 'gender', 'menu.close', 'menu.open', 'msg', 'title'])
+    const analysis = project.analyze()
+    expect(analysis.unused).toEqual([])
+    expect(analysis.diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:msg')
+  })
+
+  it('flutter_translate, with plural forms', async () => {
+    const { project } = await createTestProject({
+      'pubspec.yaml': 'name: app\ndependencies:\n  flutter_translate: ^4.0.0\n',
+      'assets/i18n/en.json': json({ app_bar: { title: 'Hi {name}' }, plural: { demo: { zero: 'None', one: 'One', other: '{{value}} times' } } }),
+      'lib/main.dart': 'Text(translate(\'app_bar.title\', args: {\'name\': n})); Text(translatePlural("plural.demo", _counter));',
+    })
+    expect(detected(project)).toEqual(['flutter-translate'])
+    expect(usedKeys(project)).toEqual(['app_bar.title', 'plural.demo'])
+    expect(project.analyze().unused).toEqual([])
+  })
+
   it('sveltekit-i18n uses the svelte preset', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('sveltekit-i18n'),

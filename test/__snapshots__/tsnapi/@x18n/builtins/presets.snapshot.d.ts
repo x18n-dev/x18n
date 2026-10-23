@@ -3,9 +3,11 @@
  */
 // #region Functions
 export declare function chromeExtension(): Preset;
+export declare function easyLocalization(): Preset;
 export declare function emberIntl(): Preset;
 export declare function fluentVue(): Preset;
 export declare function flutter(): Preset;
+export declare function flutterTranslate(): Preset;
 export declare function general(): Preset;
 export declare function globalize(): Preset;
 export declare function i18next(): Preset;

@@ -37,6 +37,8 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | [`ruby-rails`](/presets/ruby-rails) | Ruby on Rails | `rails`, `rails-i18n`, `railties` in `Gemfile` |
 | [`jekyll`](/presets/jekyll) | jekyll-multiple-languages-plugin | `jekyll-multiple-languages-plugin` in `Gemfile` |
 | [`flutter`](/presets/flutter) | flutter_i18n | `flutter_i18n` in `pubspec.yaml` |
+| [`easy-localization`](/presets/easy-localization) | easy_localization | `easy_localization` in `pubspec.yaml` |
+| [`flutter-translate`](/presets/flutter-translate) | flutter_translate | `flutter_translate` in `pubspec.yaml` |
 | [`general`](/presets/general) | none | always |
 
 ## Detection
@@ -70,7 +72,7 @@ presets: [vue-i18n, general]
 
 ::
 
-In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
+In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter`, `easyLocalization`, `flutterTranslate` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
 
 ## What a preset adds
 
@@ -97,9 +99,10 @@ A placeholder syntax tells x18n how placeholders look in messages. The [`placeho
 
 | Syntax | Example | Used by |
 | --- | --- | --- |
-| braces | `{name}`, `{0}` | vue-i18n, nuxt-i18n, i18next-shopify, next-international, ui5, vscode-extension, flutter |
-| linked | `@:key`, `@.lower:key` | vue-i18n, nuxt-i18n |
-| double braces | `{{name}}`, `{{name, format}}`, `{{- raw}}` | i18next, react-i18next, i18next-shopify, next-translate, ngx-translate, transloco |
+| braces | `{name}`, `{0}` | vue-i18n, nuxt-i18n, i18next-shopify, next-international, ui5, vscode-extension, flutter, easy-localization, flutter-translate |
+| positional braces | `{}` | easy-localization |
+| linked | `@:key`, `@.lower:key` | vue-i18n, nuxt-i18n, easy-localization |
+| double braces | `{{name}}`, `{{name, format}}`, `{{- raw}}` | i18next, react-i18next, i18next-shopify, next-translate, ngx-translate, transloco, flutter-translate |
 | nesting | `$t(key)` | i18next, react-i18next, i18next-shopify |
 | ICU | `{name}`, `{count, plural, one {# item} other {# items}}` | next-intl, react-intl, svelte-i18n, lingui, ember-intl, globalize |
 | fluent | `{ $name }` | fluent-vue |

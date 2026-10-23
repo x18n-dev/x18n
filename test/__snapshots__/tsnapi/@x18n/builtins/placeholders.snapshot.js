@@ -16,5 +16,6 @@ export var icu /* const */
 export var linked /* const */
 export var nesting /* const */
 export var percentBraces /* const */
+export var positionalBraces /* const */
 export var printf /* const */
 // #endregion
