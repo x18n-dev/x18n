@@ -64,6 +64,34 @@ describe('tier 1 presets', () => {
     expect(project.usages().map(m => m.usage.key)).toEqual(['hello_world', 'a.b'])
   })
 
+  it('cargo-i18n: Cargo.toml, i18n.toml and fl! usages', async () => {
+    const { project } = await createTestProject({
+      'Cargo.toml': '[package]\nname = "app"\n\n[dependencies]\ni18n-embed = { version = "0.16", features = [\n  "fluent-system",\n] }\nrust-embed = "8"\n\n[dependencies.i18n-embed-fl]\nversion = "0.10"\n',
+      'i18n.toml': 'fallback_language = "en-GB"\n\n[fluent]\nassets_dir = "./locales"\n',
+      'locales/en-GB/app.ftl': 'hello-arg = Hello { $name }!\nlogin =\n    .title = Log in\nunused = Unused\n',
+      'locales/de/app.ftl': 'hello-arg = Hallo { $user }!\n',
+      'src/main.rs': 'fl!(LANGUAGE_LOADER, "hello-arg", name = "Bob");\nfl!(crate::loader(), "login", "title");\nfl!("missing-id");\n',
+    })
+    expect(project.explain().presets.find(p => p.name === 'cargo-i18n')?.reason).toBe('detected')
+    expect(project.sourceLocale).toBe('en-GB')
+    expect(project.locales).toEqual(['en-GB', 'de'])
+    expect(project.keys()).toEqual(['hello-arg', 'login.title', 'unused'])
+    expect(project.usages().map(m => m.usage.key)).toEqual(['hello-arg', 'login', 'missing-id'])
+    const report = project.analyze()
+    expect(report.unused).toEqual(['unused'])
+    expect(report.diagnostics.map(d => `${d.code}:${d.key}`)).toEqual(expect.arrayContaining(['placeholder-mismatch:hello-arg', 'missing-key:missing-id']))
+    expect(report.diagnostics.map(d => `${d.code}:${d.key}`)).not.toContain('missing-key:login')
+  })
+
+  it('cargo-i18n: workspace dependencies and the default i18n folder', async () => {
+    const { project } = await createTestProject({
+      'Cargo.toml': '[workspace]\nmembers = ["app"]\n\n[workspace.dependencies]\n"i18n-embed-fl" = "0.10"\n',
+      'i18n/en/app.ftl': 'title = App\n',
+    })
+    expect(project.explain().presets.find(p => p.name === 'cargo-i18n')?.reason).toBe('detected')
+    expect(project.keys()).toEqual(['title'])
+  })
+
   it('vscode-extension: package.nls files and %key% references', async () => {
     const { project } = await createTestProject({
       'package.json': json({ devDependencies: { '@types/vscode': '*' }, contributes: { commands: [{ title: '%cmd.open%' }] } }),

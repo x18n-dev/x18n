@@ -6,6 +6,7 @@ export function manifests() {}
 // #endregion
 
 // #region Variables
+export var cargoToml /* const */
 export var composerJson /* const */
 export var gemfile /* const */
 export var packageJson /* const */

@@ -38,6 +38,35 @@ export const gemfile: ManifestReader = {
   read: text => [...text.matchAll(/^\s*gem\s+["']([^"']+)["']/gm)].map(match => match[1]!),
 }
 
+const cargoSection = /^\[\s*((?:workspace\.|target\.[^\]]+\.)?(?:dev-)?dependencies)(?:\.([\w-]+))?\s*\]/
+const cargoKey = /^\s*"?([\w-]+)"?\s*=/
+
+/**
+ * Dependency names from `[dependencies]`, `[dev-dependencies]`, `[workspace.dependencies]` and target tables,
+ * and `[dependencies.name]` headers. TOML puts each key on its own line, so a line scan is enough.
+ */
+export const cargoToml: ManifestReader = {
+  id: 'Cargo.toml',
+  file: 'Cargo.toml',
+  read(text) {
+    const names: string[] = []
+    let inDependencies = false
+    for (const line of text.split('\n')) {
+      if (line.trimStart().startsWith('[')) {
+        const section = cargoSection.exec(line.trim())
+        inDependencies = section !== null && section[2] === undefined
+        if (section?.[2])
+          names.push(section[2])
+        continue
+      }
+      const name = inDependencies ? cargoKey.exec(line)?.[1] : undefined
+      if (name)
+        names.push(name)
+    }
+    return names
+  },
+}
+
 export function manifests(): Plugin {
-  return { name: 'x18n:manifests', manifests: [packageJson, composerJson, pubspecYaml, gemfile] }
+  return { name: 'x18n:manifests', manifests: [packageJson, composerJson, pubspecYaml, gemfile, cargoToml] }
 }

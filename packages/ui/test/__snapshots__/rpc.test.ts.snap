@@ -1192,6 +1192,10 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "cargo-i18n",
+          "reason": "not-detected",
+        },
+        {
           "name": "general",
           "reason": "detected",
         },

@@ -37,11 +37,12 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | [`ruby-rails`](/presets/ruby-rails) | Ruby on Rails | `rails`, `rails-i18n`, `railties` in `Gemfile` |
 | [`jekyll`](/presets/jekyll) | jekyll-multiple-languages-plugin | `jekyll-multiple-languages-plugin` in `Gemfile` |
 | [`flutter`](/presets/flutter) | flutter_i18n | `flutter_i18n` in `pubspec.yaml` |
+| [`cargo-i18n`](/presets/cargo-i18n) | cargo-i18n (Fluent) | `i18n-embed-fl`, `i18n-embed` in `Cargo.toml` |
 | [`general`](/presets/general) | none | always |
 
 ## Detection
 
-With the default `presets: 'auto'`, x18n tests each preset in the order of the table. Most presets apply when the project depends on one of the listed packages. x18n reads the dependencies, dev dependencies and peer dependencies in `package.json`, and the dependencies in `composer.json`, `pubspec.yaml` and `Gemfile`. The manifests in the parent directories, up to the git root, count too.
+With the default `presets: 'auto'`, x18n tests each preset in the order of the table. Most presets apply when the project depends on one of the listed packages. x18n reads the dependencies, dev dependencies and peer dependencies in `package.json`, and the dependencies in `composer.json`, `pubspec.yaml`, `Gemfile` and `Cargo.toml`. The manifests in the parent directories, up to the git root, count too.
 
 More than one preset can apply. Some presets include the plugins of another preset: `react-i18next` includes everything of `i18next`, and `i18next-shopify` includes everything of `react-i18next`. When two applied presets share a plugin, x18n adds that plugin one time.
 
@@ -70,7 +71,7 @@ presets: [vue-i18n, general]
 
 ::
 
-In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
+In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter`, `cargoI18n` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
 
 ## What a preset adds
 
