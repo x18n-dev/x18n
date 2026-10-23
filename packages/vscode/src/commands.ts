@@ -16,7 +16,7 @@ import { adjacentRange } from './model/locations'
 interface CommandDeps {
   readonly client: LanguageClient
   readonly x18n: X18nClient
-  readonly openUi: (ref?: KeyRef) => Promise<void>
+  readonly openUi: (ref?: Partial<KeyRef>) => Promise<void>
 }
 
 const message = (error: unknown): string => error instanceof Error ? error.message : String(error)
@@ -72,7 +72,7 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
     useCommand(command, (...args: unknown[]) => run(...args).catch(error => window.showErrorMessage(`x18n: ${message(error)}`)))
   }
 
-  register(commands.openUi, () => openUi())
+  register(commands.openUi, async () => openUi({ project: (await project())?.name }))
   register(commands.openKey, async (arg) => {
     const ref = await resolveRef(arg)
     if (ref)
