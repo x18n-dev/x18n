@@ -72,19 +72,31 @@ describe('language server', () => {
   })
 
   it('goes to the source-locale entry from a usage', async () => {
-    const result: Location[] = await client.sendRequest('textDocument/definition', { textDocument: { uri: uri('src/App.vue') }, position: await position('src/App.vue', 'nav.home') })
+    const result: Location[] = await client.sendRequest('textDocument/definition', {
+      textDocument: {
+        uri: uri('src/App.vue'),
+      },
+      position: await position('src/App.vue', 'nav.home'),
+    })
     expect(result.map(relativeOf)).toEqual(['src/locales/en.json'])
     expect(result[0]!.range.start).toEqual(await position('src/locales/en.json', '"home": "Home"'))
   })
 
   it('lists every locale entry as implementations', async () => {
-    const result: Location[] = await client.sendRequest('textDocument/implementation', { textDocument: { uri: uri('src/App.vue') }, position: await position('src/App.vue', 'nav.home') })
+    const result: Location[] = await client.sendRequest('textDocument/implementation', {
+      textDocument: {
+        uri: uri('src/App.vue'),
+      },
+      position: await position('src/App.vue', 'nav.home'),
+    })
     expect(result.map(relativeOf)).toEqual(['src/locales/en.json', 'src/locales/de.json'])
   })
 
   it('finds references from a resource entry, including prefix usages', async () => {
     const result: Location[] = await client.sendRequest('textDocument/references', {
-      textDocument: { uri: uri('src/locales/en.json') },
+      textDocument: {
+        uri: uri('src/locales/en.json'),
+      },
       position: await position('src/locales/en.json', '"home": {', 2),
       context: { includeDeclaration: true },
     })
@@ -93,15 +105,31 @@ describe('language server', () => {
   })
 
   it('returns null from prepareRename outside keys', async () => {
-    const result = await client.sendRequest('textDocument/prepareRename', { textDocument: { uri: uri('src/main.ts') }, position: { line: 0, character: 3 } })
+    const result = await client.sendRequest('textDocument/prepareRename', {
+      textDocument: {
+        uri: uri('src/main.ts'),
+      },
+      position: { line: 0, character: 3 },
+    })
     expect(result).toBeNull()
   })
 
   it('renames from a usage across locales and code', async () => {
     const pos = await position('src/App.vue', 'nav.home')
-    const prepared: { placeholder: string } = await client.sendRequest('textDocument/prepareRename', { textDocument: { uri: uri('src/App.vue') }, position: pos })
+    const prepared: { placeholder: string } = await client.sendRequest('textDocument/prepareRename', {
+      textDocument: {
+        uri: uri('src/App.vue'),
+      },
+      position: pos,
+    })
     expect(prepared.placeholder).toBe('nav.home')
-    const edit: WorkspaceEdit = await client.sendRequest('textDocument/rename', { textDocument: { uri: uri('src/App.vue') }, position: pos, newName: 'nav.start' })
+    const edit: WorkspaceEdit = await client.sendRequest('textDocument/rename', {
+      textDocument: {
+        uri: uri('src/App.vue'),
+      },
+      position: pos,
+      newName: 'nav.start',
+    })
     const changed = new Map<string, string>()
     for (const change of edit.documentChanges ?? []) {
       if (!('textDocument' in change))
@@ -109,16 +137,32 @@ describe('language server', () => {
       const path = posixRelative(fileURLToPath(change.textDocument.uri))
       const content = await text(path)
       const index = createLineIndex(content)
-      changed.set(path, applyTextEdits(content, change.edits.map(e => ({ range: { start: index.offset(e.range.start), end: index.offset(e.range.end) }, text: 'newText' in e ? e.newText : '' }))))
+      changed.set(path, applyTextEdits(content, change.edits.map(e => ({
+        range: {
+          start: index.offset(e.range.start),
+          end: index.offset(e.range.end),
+        },
+        text: 'newText' in e
+          ? e.newText
+          : '',
+      }))))
     }
-    expect([...changed.keys()].sort()).toEqual(['src/App.vue', 'src/locales/de.json', 'src/locales/en.json'])
+    expect([
+      ...changed.keys(),
+    ].sort()).toEqual(['src/App.vue', 'src/locales/de.json', 'src/locales/en.json'])
     expect(changed.get('src/App.vue')).toContain('t(\'nav.start\')')
     expect(changed.get('src/locales/de.json')).toContain('"start": "Start"')
   })
 
   it('refuses a rename onto an existing key', async () => {
     const pos = await position('src/App.vue', 'nav.home')
-    await expect(client.sendRequest('textDocument/rename', { textDocument: { uri: uri('src/App.vue') }, position: pos, newName: 'nav.about' })).rejects.toThrow(/already exists/)
+    await expect(client.sendRequest('textDocument/rename', {
+      textDocument: {
+        uri: uri('src/App.vue'),
+      },
+      position: pos,
+      newName: 'nav.about',
+    })).rejects.toThrow(/already exists/)
   })
 
   it('publishes the diagnostics of x18n check', async () => {
@@ -127,26 +171,51 @@ describe('language server', () => {
   })
 
   it('hovers with values per locale', async () => {
-    const hover: { contents: { value: string } } = await client.sendRequest('textDocument/hover', { textDocument: { uri: uri('src/App.vue') }, position: await position('src/App.vue', 'app.greeting') })
+    const hover: { contents: { value: string } } = await client.sendRequest('textDocument/hover', {
+      textDocument: {
+        uri: uri('src/App.vue'),
+      },
+      position: await position('src/App.vue', 'app.greeting'),
+    })
     expect(hover.contents.value).toContain('| 🇺🇸 en | Hello {name} |')
     expect(hover.contents.value).toContain('[Translate with agent](command:x18n.translateWithAgent?')
   })
 
   it('completes keys in key slots', async () => {
-    const items: { label: string }[] = await client.sendRequest('textDocument/completion', { textDocument: { uri: uri('src/App.vue') }, position: await position('src/App.vue', 'nav.home') })
+    const items: { label: string }[] = await client.sendRequest('textDocument/completion', {
+      textDocument: {
+        uri: uri('src/App.vue'),
+      },
+      position: await position('src/App.vue', 'nav.home'),
+    })
     expect(items.map(i => i.label)).toContain('pages.home.title')
   })
 
   it('lists the key tree of a resource as document symbols', async () => {
-    const symbols: { name: string, children: { name: string }[] }[] = await client.sendRequest('textDocument/documentSymbol', { textDocument: { uri: uri('src/locales/en.json') } })
-    expect(symbols.map(s => s.name)).toEqual(['app', 'nav', 'pages', 'unused', 'linked'])
+    const symbols: { name: string, children: { name: string }[] }[] = await client.sendRequest('textDocument/documentSymbol', {
+      textDocument: {
+        uri: uri('src/locales/en.json'),
+      },
+    })
+    expect(symbols.map(s => s.name)).toEqual([
+      'app',
+      'nav',
+      'pages',
+      'unused',
+      'linked',
+    ])
     expect(symbols[0]!.children.map(c => c.name)).toEqual(['title', 'greeting'])
   })
 
   it('answers x18n/keyAt and x18n/decorations', async () => {
-    const keyAt: { key: string, type: string } = await client.sendRequest(methods.keyAt, { uri: uri('src/locales/en.json'), position: await position('src/locales/en.json', '"pages"', 2) })
+    const keyAt: { key: string, type: string } = await client.sendRequest(methods.keyAt, {
+      uri: uri('src/locales/en.json'),
+      position: await position('src/locales/en.json', '"pages"', 2),
+    })
     expect(keyAt).toMatchObject({ key: 'pages', type: 'subtree' })
-    const result: { decorations: { key: string, state: string, expression?: { start: unknown, end: unknown } }[] } = await client.sendRequest(methods.decorations, { uri: uri('src/App.vue') })
+    const result: { decorations: { key: string, state: string, expression?: { start: unknown, end: unknown } }[] } = await client.sendRequest(methods.decorations, {
+      uri: uri('src/App.vue'),
+    })
     expect(result.decorations.map(d => `${d.key}:${d.state}`)).toContain('app.titel:missing')
     expect(result.decorations.find(d => d.key === 'app.greeting')?.expression).toEqual({ start: await position('src/App.vue', '$t(\'app.greeting', 0), end: await position('src/App.vue', ') }}</h1>') })
     expect(result.decorations.find(d => d.key === 'nav.about')?.expression).toBeUndefined()
@@ -154,8 +223,23 @@ describe('language server', () => {
 
   it('re-scans an open document on change', async () => {
     const content = await text('src/main.ts')
-    await client.sendNotification('textDocument/didOpen', { textDocument: { uri: uri('src/main.ts'), languageId: 'typescript', version: 1, text: content } })
-    await client.sendNotification('textDocument/didChange', { textDocument: { uri: uri('src/main.ts'), version: 2 }, contentChanges: [{ text: `${content}\ni18n.global.t('brand.new')\n` }] })
+    await client.sendNotification('textDocument/didOpen', {
+      textDocument: {
+        uri: uri('src/main.ts'),
+        languageId: 'typescript',
+        version: 1,
+        text: content,
+      },
+    })
+    await client.sendNotification('textDocument/didChange', {
+      textDocument: {
+        uri: uri('src/main.ts'),
+        version: 2,
+      },
+      contentChanges: [
+        { text: `${content}\ni18n.global.t('brand.new')\n` },
+      ],
+    })
     await expect.poll(() => diagnostics.get(uri('src/main.ts'))?.map(d => d.message), { timeout: 3000 }).toEqual(['"brand.new" is not defined in en.'])
   })
 
@@ -176,9 +260,22 @@ describe('completion with namespaces', () => {
     const dir = await mkdtemp(join(tmpdir(), 'x18n-lsp-ns-'))
     const files: Record<string, object | string> = {
       'x18n.config.json': {
-        resources: [{ pattern: 'locales/{locale}/{namespace}.json' }],
-        namespace: { separator: '|', fallback: ['common'] },
-        usage: { calls: [{ callee: 'useTranslation', factory: true, namespace: { arg: 0 } }] },
+        resources: [
+          { pattern: 'locales/{locale}/{namespace}.json' },
+        ],
+        namespace: {
+          separator: '|',
+          fallback: ['common'],
+        },
+        usage: {
+          calls: [
+            {
+              callee: 'useTranslation',
+              factory: true,
+              namespace: { arg: 0 },
+            },
+          ],
+        },
       },
       'locales/en/event.json': { name: 'Name', save: 'Save event' },
       'locales/en/common.json': { save: 'Save', delete: 'Delete' },
@@ -188,7 +285,9 @@ describe('completion with namespaces', () => {
     try {
       for (const [path, content] of Object.entries(files)) {
         await mkdir(join(dir, path, '..'), { recursive: true })
-        await writeFile(join(dir, path), typeof content === 'string' ? content : JSON.stringify(content))
+        await writeFile(join(dir, path), typeof content === 'string'
+          ? content
+          : JSON.stringify(content))
       }
       const connection = await connect(dir)
       const content = await readFile(join(dir, 'src/a.ts'), 'utf8')
@@ -196,7 +295,13 @@ describe('completion with namespaces', () => {
         textDocument: { uri: pathToFileURL(join(dir, 'src/a.ts')).href },
         position: createLineIndex(content).position(content.indexOf(`t('')`) + 3),
       })
-      expect(items.map(i => i.label).sort()).toEqual(['common|save', 'delete', 'name', 'other|x', 'save'])
+      expect(items.map(i => i.label).sort()).toEqual([
+        'common|save',
+        'delete',
+        'name',
+        'other|x',
+        'save',
+      ])
     }
     finally {
       await rm(dir, { recursive: true, force: true })
@@ -207,7 +312,10 @@ describe('completion with namespaces', () => {
 describe('x18n-lsp binary', () => {
   it('answers initialize over stdio', async () => {
     const { spawn } = await import('node:child_process')
-    const child = spawn(process.execPath, [fileURLToPath(new URL('../bin.mjs', import.meta.url)), '--stdio'], { stdio: 'pipe' })
+    const child = spawn(process.execPath, [
+      fileURLToPath(new URL('../bin.mjs', import.meta.url)),
+      '--stdio',
+    ], { stdio: 'pipe' })
     const connection = createMessageConnection(new StreamMessageReader(child.stdout), new StreamMessageWriter(child.stdin))
     connection.listen()
     const result = await connection.sendRequest(InitializeRequest.type, { processId: null, rootUri: null, capabilities: {} })

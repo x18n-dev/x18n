@@ -43,7 +43,14 @@ export function toWireRange(text: string | undefined, start: number, end: number
   const index = createLineIndex(text ?? '')
   const from = index.position(start)
   const to = index.position(end)
-  return { line: from.line + 1, column: from.character + 1, endLine: to.line + 1, endColumn: to.character + 1, start, end }
+  return {
+    line: from.line + 1,
+    column: from.character + 1,
+    endLine: to.line + 1,
+    endColumn: to.character + 1,
+    start,
+    end,
+  }
 }
 
 export function toWireDiagnostic(project: string, diagnostic: Diagnostic, text: (path: string) => string | undefined): WireDiagnostic {
@@ -56,11 +63,19 @@ export function toWireDiagnostic(project: string, diagnostic: Diagnostic, text: 
     key: diagnostic.key,
     locale: diagnostic.locale,
     file: location?.path,
-    range: location ? toWireRange(text(location.path), location.range.start, location.range.end) : undefined,
+    range: location
+      ? toWireRange(text(location.path), location.range.start, location.range.end)
+      : undefined,
     fixes: diagnostic.fixes,
   }
 }
 
 export function envelope<T>(command: string, data: T, diagnostics: readonly WireDiagnostic[] = [], errors: readonly ErrorInfo[] = []): Envelope<T> {
-  return { x18n: contractVersion, command, data, diagnostics, errors }
+  return {
+    x18n: contractVersion,
+    command,
+    data,
+    diagnostics,
+    errors,
+  }
 }

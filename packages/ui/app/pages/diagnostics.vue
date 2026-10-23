@@ -14,7 +14,9 @@ const route = useRoute()
 const router = useRouter()
 const analysis = useLive((b, project) => b.analysis(project))
 
-const code = computed(() => typeof route.query.code === 'string' ? route.query.code : undefined)
+const code = computed(() => typeof route.query.code === 'string'
+  ? route.query.code
+  : undefined)
 const all = computed(() => analysis.value?.diagnostics ?? [])
 
 const codes = computed(() => {
@@ -24,15 +26,25 @@ const codes = computed(() => {
     group.count++
     groups.set(d.code, group)
   }
-  return [...groups.values()].sort((a, b) => b.count - a.count)
+  return [
+    ...groups.values(),
+  ].sort((a, b) => b.count - a.count)
 })
 
 const rows = computed(() => all.value
   .filter(d => !code.value || d.code === code.value)
-  .toSorted((a, b) => (a.severity === b.severity ? 0 : a.severity === 'error' ? -1 : 1)))
+  .toSorted((a, b) => (a.severity === b.severity
+    ? 0
+    : a.severity === 'error'
+      ? -1
+      : 1)))
 
 function select(next: string | undefined): void {
-  void router.replace({ query: next ? { code: next } : {} })
+  void router.replace({
+    query: next
+      ? { code: next }
+      : {},
+  })
 }
 </script>
 

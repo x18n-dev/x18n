@@ -21,7 +21,9 @@ export function createMemoryHost(initial: Readonly<Record<string, string>> = {},
     glob: async (patterns, options = {}) => {
       const include = pathMatcher(patterns)
       const ignore = pathMatcher(options.ignore ?? [])
-      return [...files.keys()].filter(path => include(path) && !ignore(path)).sort()
+      return [
+        ...files.keys(),
+      ].filter(path => include(path) && !ignore(path)).sort()
     },
   }
 }

@@ -16,7 +16,11 @@ function split(text: string): { before: string, hit: string, after: string } {
   const start = props.usage.column - 1
   // Older servers send no length; the key as written is what the range covers.
   const end = Math.min(text.length, start + (props.usage.length ?? props.usage.raw.length))
-  return { before: text.slice(0, start), hit: text.slice(start, end), after: text.slice(end) }
+  return {
+    before: text.slice(0, start),
+    hit: text.slice(start, end),
+    after: text.slice(end),
+  }
 }
 </script>
 

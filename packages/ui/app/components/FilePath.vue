@@ -14,7 +14,10 @@ const { path, line, column, icon = true } = defineProps<{
 
 const parts = computed(() => {
   const at = path.lastIndexOf('/') + 1
-  return { dir: path.slice(0, at), base: path.slice(at) }
+  return {
+    dir: path.slice(0, at),
+    base: path.slice(at),
+  }
 })
 
 function open(event: Event): void {

@@ -11,8 +11,19 @@ function regionOf(flag: string): string {
  */
 export function flagNames(code: string, flag: string | undefined): string[] {
   const tag = code.replace(/_/g, '-').toLowerCase()
-  const names = [...flag ? [regionOf(flag).toLowerCase()] : [], `lang-${tag}`, `lang-${tag.split('-')[0]}`, 'xx']
-  return [...new Set(names)]
+  const names = [
+    ...flag
+      ? [
+          regionOf(flag).toLowerCase(),
+        ]
+      : [],
+    `lang-${tag}`,
+    `lang-${tag.split('-')[0]}`,
+    'xx',
+  ]
+  return [
+    ...new Set(names),
+  ]
 }
 
 /** SVG markup of the first of `names` that `set` has. */

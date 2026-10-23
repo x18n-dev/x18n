@@ -18,8 +18,17 @@ interface Result { stdout: string, stderr: string, code: number }
 
 function x18n(cwd: string, args: string[], input?: string): Promise<Result> {
   return new Promise((resolve) => {
-    const child = execFile(process.execPath, [bin, ...args, '--no-cache'], { cwd, env: { ...process.env, NO_COLOR: '1' } }, (error, stdout, stderr) => {
-      resolve({ stdout, stderr, code: error ? Number(error.code ?? 1) : 0 })
+    const child = execFile(process.execPath, [bin, ...args, '--no-cache'], {
+      cwd,
+      env: { ...process.env, NO_COLOR: '1' },
+    }, (error, stdout, stderr) => {
+      resolve({
+        stdout,
+        stderr,
+        code: error
+          ? Number(error.code ?? 1)
+          : 0,
+      })
     })
     if (input !== undefined) {
       child.stdin!.write(input)
@@ -78,8 +87,20 @@ describe('x18n binary', () => {
   it('check narrows with --only and fails on --max-warnings', async () => {
     const dir = await fixture('vue-i18n')
     expect((await x18n(dir, ['check', '--only', 'empty-translation'])).code).toBe(0)
-    expect((await x18n(dir, ['check', '--only', 'empty-translation', '--max-warnings', '0'])).code).toBe(1)
-    const github = await x18n(dir, ['check', '--only', 'empty-translation', '--reporter', 'github'])
+    expect((await x18n(dir, [
+      'check',
+      '--only',
+      'empty-translation',
+      '--max-warnings',
+      '0',
+    ])).code).toBe(1)
+    const github = await x18n(dir, [
+      'check',
+      '--only',
+      'empty-translation',
+      '--reporter',
+      'github',
+    ])
     expect(github.stdout).toContain('::warning file=src/locales/de.json,line=8,col=6')
   })
 
@@ -88,9 +109,19 @@ describe('x18n binary', () => {
     const status = json(await x18n(dir, ['status', '--json'])).data.projects[0]
     expect(status).toMatchObject({ sourceLocale: 'en', resources: 4, keys: 6 })
     const keys = json(await x18n(dir, ['keys', '--json', '--limit', '2'])).data.projects[0]
-    expect(keys).toMatchObject({ total: 6, nextCursor: '2', keys: [{ key: 'auth:login.submit' }, { key: 'auth:login.title' }] })
+    expect(keys).toMatchObject({
+      total: 6,
+      nextCursor: '2',
+      keys: [
+        { key: 'auth:login.submit' },
+        { key: 'auth:login.title' },
+      ],
+    })
     const get = json(await x18n(dir, ['get', 'common:save', '--json'])).data.projects[0]
-    expect(get.messages.map((m: any) => [m.locale, m.value])).toEqual([['en', 'Save'], ['de', 'Speichern']])
+    expect(get.messages.map((m: any) => [m.locale, m.value])).toEqual([
+      ['en', 'Save'],
+      ['de', 'Speichern'],
+    ])
     const locales = json(await x18n(dir, ['locales', '--json'])).data.projects[0]
     expect(locales.locales.map((l: any) => l.code)).toEqual(['en', 'de'])
   })
@@ -105,11 +136,22 @@ describe('x18n binary', () => {
     const dir = await fixture('vue-i18n')
     const en = join(dir, 'src/locales/en.json')
     const before = await readFile(en, 'utf8')
-    const dry = await x18n(dir, ['set', 'nav.contact', '--value', 'Contact', '--dry-run'])
+    const dry = await x18n(dir, [
+      'set',
+      'nav.contact',
+      '--value',
+      'Contact',
+      '--dry-run',
+    ])
     expect(dry.stdout).toContain('+     "contact": "Contact"')
     expect(await readFile(en, 'utf8')).toBe(before)
 
-    expect((await x18n(dir, ['set', 'nav.contact', '--value', 'Contact'])).code).toBe(0)
+    expect((await x18n(dir, [
+      'set',
+      'nav.contact',
+      '--value',
+      'Contact',
+    ])).code).toBe(0)
     expect(JSON.parse(await readFile(en, 'utf8')).nav.contact).toBe('Contact')
 
     expect((await x18n(dir, ['rename', 'nav.contact', 'nav.reach'])).code).toBe(0)
@@ -121,17 +163,33 @@ describe('x18n binary', () => {
 
   it('rename refuses an existing target with exit code 1', async () => {
     const dir = await fixture('vue-i18n')
-    const result = await x18n(dir, ['rename', 'nav.home', 'nav.about', '--json'])
+    const result = await x18n(dir, [
+      'rename',
+      'nav.home',
+      'nav.about',
+      '--json',
+    ])
     expect(result.code).toBe(1)
     expect(json(result).errors[0].name).toBe('X18N4002')
   })
 
   it('apply validates placeholders before writing', async () => {
     const dir = await fixture('vue-i18n')
-    const bad = await x18n(dir, ['apply', '-', '--json'], JSON.stringify({ de: { 'app.greeting': 'Hallo' } }))
+    const bad = await x18n(dir, ['apply', '-', '--json'], JSON.stringify({
+      de: { 'app.greeting': 'Hallo' },
+    }))
     expect(bad.code).toBe(1)
-    expect(json(bad).data.rejected).toEqual([{ key: 'app.greeting', locale: 'de', missing: ['name'], extra: [] }])
-    const good = await x18n(dir, ['apply', '-'], JSON.stringify({ de: { 'app.greeting': 'Hallo {name}', 'pages.about.title': 'Über uns' } }))
+    expect(json(bad).data.rejected).toEqual([
+      {
+        key: 'app.greeting',
+        locale: 'de',
+        missing: ['name'],
+        extra: [],
+      },
+    ])
+    const good = await x18n(dir, ['apply', '-'], JSON.stringify({
+      de: { 'app.greeting': 'Hallo {name}', 'pages.about.title': 'Über uns' },
+    }))
     expect(good.code).toBe(0)
     const de = JSON.parse(await readFile(join(dir, 'src/locales/de.json'), 'utf8'))
     expect(de.pages.about.title).toBe('Über uns')
@@ -163,28 +221,75 @@ describe('x18n binary', () => {
   it('reports stale translations from git history', async () => {
     const dir = await fixture('vue-i18n')
     const git = (args: string[], date: string): Promise<void> => new Promise((resolve, reject) => {
-      const env = { ...process.env, GIT_AUTHOR_NAME: 'Ada', GIT_AUTHOR_EMAIL: 'ada@example.com', GIT_COMMITTER_NAME: 'Ada', GIT_COMMITTER_EMAIL: 'ada@example.com', GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date }
-      execFile('git', ['-c', 'commit.gpgsign=false', ...args], { cwd: dir, env }, error => error ? reject(error) : resolve())
+      const env = {
+        ...process.env,
+        GIT_AUTHOR_NAME: 'Ada',
+        GIT_AUTHOR_EMAIL: 'ada@example.com',
+        GIT_COMMITTER_NAME: 'Ada',
+        GIT_COMMITTER_EMAIL: 'ada@example.com',
+        GIT_AUTHOR_DATE: date,
+        GIT_COMMITTER_DATE: date,
+      }
+      execFile('git', ['-c', 'commit.gpgsign=false', ...args], { cwd: dir, env }, error => error
+        ? reject(error)
+        : resolve())
     })
     await git(['init', '-q'], '')
     await git(['add', '-A'], '')
     await git(['commit', '-q', '-m', 'first'], '2026-01-01T00:00:00Z')
     const en = JSON.parse(await readFile(join(dir, 'src/locales/en.json'), 'utf8'))
-    await writeFile(join(dir, 'src/locales/en.json'), JSON.stringify({ ...en, app: { ...en.app, title: 'My Great App' } }, null, 2))
+    await writeFile(join(dir, 'src/locales/en.json'), JSON.stringify({
+      ...en,
+      app: { ...en.app, title: 'My Great App' },
+    }, null, 2))
     await git(['commit', '-q', '-am', 'second'], '2026-02-01T00:00:00Z')
 
-    const check = json(await x18n(dir, ['check', '--only', 'stale-translation', '--json']))
-    expect(check.diagnostics).toMatchObject([{ code: 'stale-translation', key: 'app.title', locale: 'de', file: 'src/locales/de.json' }])
+    const check = json(await x18n(dir, [
+      'check',
+      '--only',
+      'stale-translation',
+      '--json',
+    ]))
+    expect(check.diagnostics).toMatchObject([
+      {
+        code: 'stale-translation',
+        key: 'app.title',
+        locale: 'de',
+        file: 'src/locales/de.json',
+      },
+    ])
     expect(check.diagnostics[0].message).toMatch(/^"app.title" in de is older than en \(source changed 2026-02-01 in [0-9a-f]{7}\)\.$/)
     expect(check.data.projects[0].coverage.find((c: any) => c.locale === 'de').outdated).toBe(1)
-    const prompt = json(await x18n(dir, ['prompt', 'translate', '--to', 'de', '--stale', '--json']))
+    const prompt = json(await x18n(dir, [
+      'prompt',
+      'translate',
+      '--to',
+      'de',
+      '--stale',
+      '--json',
+    ]))
     expect(prompt.data.items.find((item: any) => item.key === 'app.title')).toMatchObject({ source: 'My Great App', previousSource: 'My App' })
   })
 
   it('keeps the JSON contract of every read command', async () => {
     const dir = await fixture('vue-i18n')
     const name = basename(dir)
-    for (const args of [['status'], ['keys', '--values'], ['get', 'app.greeting'], ['usages'], ['locales'], ['check'], ['prompt', 'translate', '--to', 'de', '--format', 'json']]) {
+    for (const args of [
+      ['status'],
+      ['keys', '--values'],
+      ['get', 'app.greeting'],
+      ['usages'],
+      ['locales'],
+      ['check'],
+      [
+        'prompt',
+        'translate',
+        '--to',
+        'de',
+        '--format',
+        'json',
+      ],
+    ]) {
       const result = await x18n(dir, [...args, '--json'])
       expect(result.stdout.replaceAll(name, '<fixture>')).toMatchSnapshot(args.join(' '))
     }

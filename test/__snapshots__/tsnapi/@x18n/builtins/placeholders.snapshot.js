@@ -17,4 +17,5 @@ export var linked /* const */
 export var nesting /* const */
 export var percentBraces /* const */
 export var printf /* const */
+export var typedBraces /* const */
 // #endregion

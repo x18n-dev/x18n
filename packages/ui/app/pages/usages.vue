@@ -28,10 +28,22 @@ const dynamic = computed(() => (usages.value ?? []).filter(u => u.dynamic !== fa
 const all = computed(() => (usages.value ?? []).filter(u => !filter.value || u.path.includes(filter.value) || (u.key ?? u.raw).includes(filter.value)))
 
 const tabs = computed(() => [
-  { value: 'missing' as const, label: t('usages.missing', { count: undefinedByKey.value.length }) },
-  { value: 'unused' as const, label: t('usages.unused', { count: analysis.value?.unused.length ?? 0 }) },
-  { value: 'dynamic' as const, label: t('usages.dynamic', { count: dynamic.value.length }) },
-  { value: 'all' as const, label: t('usages.all', { count: usages.value?.length ?? 0 }) },
+  {
+    value: 'missing' as const,
+    label: t('usages.missing', { count: undefinedByKey.value.length }),
+  },
+  {
+    value: 'unused' as const,
+    label: t('usages.unused', { count: analysis.value?.unused.length ?? 0 }),
+  },
+  {
+    value: 'dynamic' as const,
+    label: t('usages.dynamic', { count: dynamic.value.length }),
+  },
+  {
+    value: 'all' as const,
+    label: t('usages.all', { count: usages.value?.length ?? 0 }),
+  },
 ])
 </script>
 

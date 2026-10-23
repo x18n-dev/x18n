@@ -32,7 +32,14 @@ async function checkout(name: string, url: string, commit: string): Promise<stri
   await rm(dir, { recursive: true, force: true })
   await mkdir(dir, { recursive: true })
   git(dir, ['init', '-q'])
-  git(dir, ['fetch', '-q', '--depth', '1', url, commit])
+  git(dir, [
+    'fetch',
+    '-q',
+    '--depth',
+    '1',
+    url,
+    commit,
+  ])
   git(dir, ['checkout', '-q', 'FETCH_HEAD'])
   return dir
 }
@@ -77,7 +84,9 @@ async function summary(dir: string): Promise<object> {
 
 /** Go to definition from a usage, through the language server binary. */
 async function definition(dir: string, usage: Usage): Promise<string[]> {
-  const child = spawn(process.execPath, [lsp, '--stdio'], { stdio: ['pipe', 'pipe', 'inherit'] })
+  const child = spawn(process.execPath, [lsp, '--stdio'], {
+    stdio: ['pipe', 'pipe', 'inherit'],
+  })
   const connection = createMessageConnection(new StreamMessageReader(child.stdout), new StreamMessageWriter(child.stdin))
   connection.listen()
   try {

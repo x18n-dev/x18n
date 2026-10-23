@@ -7,7 +7,11 @@ interface At {
   readonly line?: number | undefined
 }
 
-const at = (p: At): string => p.line === undefined ? p.path : `${p.path}:${p.line}`
+function at(p: At): string {
+  return p.line === undefined
+    ? p.path
+    : `${p.path}:${p.line}`
+}
 
 /**
  * Every coded error. Groups: 0xxx config, 1xxx plugin, 2xxx discovery and parse,
@@ -24,7 +28,9 @@ export const errorDefinitions = {
   },
   X18N0003: {
     why: (p: { name: string | undefined, available: readonly string[] }): string =>
-      `${p.name === undefined ? 'Pick a project' : `Unknown project "${p.name}"`} (${p.available.join(', ')})`,
+      `${p.name === undefined
+        ? 'Pick a project'
+        : `Unknown project "${p.name}"`} (${p.available.join(', ')})`,
     fix: 'Pick a project name listed by `x18n status`, for example with `--project`.',
   },
   X18N1001: {
@@ -52,7 +58,9 @@ export const errorDefinitions = {
     fix: 'Fix the syntax error in the file.',
   },
   X18N2003: {
-    why: (p: At & { reason?: string | undefined }): string => `Resource ${at(p)} is not an object of messages${p.reason ? `: ${p.reason}` : ''}`,
+    why: (p: At & { reason?: string | undefined }): string => `Resource ${at(p)} is not an object of messages${p.reason
+      ? `: ${p.reason}`
+      : ''}`,
     fix: 'Locale files hold nested objects of strings, numbers, booleans or null.',
   },
   X18N2004: {
@@ -68,7 +76,9 @@ export const errorDefinitions = {
     fix: 'Edit the source of computed values, or use a writable format.',
   },
   X18N4002: {
-    why: (p: { key: string, files: readonly string[] }): string => `Rename target "${p.key}" already exists${p.files.length ? ` in ${p.files.join(', ')}` : ''}`,
+    why: (p: { key: string, files: readonly string[] }): string => `Rename target "${p.key}" already exists${p.files.length
+      ? ` in ${p.files.join(', ')}`
+      : ''}`,
     fix: 'Delete or rename the existing key first.',
   },
   X18N4003: {
@@ -76,7 +86,9 @@ export const errorDefinitions = {
     fix: 'Answer the listed decisions, or pass `--yes` to accept defaults.',
   },
   X18N4004: {
-    why: (p: { path?: string | undefined }): string => p.path === undefined ? 'Plan is stale' : `Plan is stale: ${p.path} changed since the plan was made`,
+    why: (p: { path?: string | undefined }): string => p.path === undefined
+      ? 'Plan is stale'
+      : `Plan is stale: ${p.path} changed since the plan was made`,
     fix: 'Files changed since the plan was made. Plan again.',
   },
   X18N4005: {
@@ -123,7 +135,18 @@ export function isX18nError(error: unknown): error is X18nError {
 }
 
 export function toErrorInfo(error: unknown): ErrorInfo {
-  if (isX18nError(error))
-    return { name: error.name, why: error.why, fix: error.fix, docs: error.docs }
-  return error instanceof Error ? { name: error.name, why: error.message } : { name: 'Error', why: String(error) }
+  if (isX18nError(error)) {
+    return {
+      name: error.name,
+      why: error.why,
+      fix: error.fix,
+      docs: error.docs,
+    }
+  }
+  return error instanceof Error
+    ? { name: error.name, why: error.message }
+    : {
+        name: 'Error',
+        why: String(error),
+      }
 }

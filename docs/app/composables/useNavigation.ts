@@ -31,7 +31,9 @@ function firstLeaf(item: NavigationItem): string {
 
 /** Logical top-level segment of a path, ignoring the active version `base`. */
 function segmentOf(path: string, base: string): string {
-  const rel = base && path.startsWith(base) ? path.slice(base.length) : path
+  const rel = base && path.startsWith(base)
+    ? path.slice(base.length)
+    : path
   return rel.split('/').filter(Boolean)[0] ?? ''
 }
 
@@ -42,7 +44,9 @@ function childIsActive(target: string, route: RouteLocationNormalizedLoaded): bo
 
   for (const [key, value] of new URLSearchParams(search ?? '')) {
     const current = route.query[key]
-    const currentValue = Array.isArray(current) ? current[0] : current
+    const currentValue = Array.isArray(current)
+      ? current[0]
+      : current
     if (currentValue !== value)
       return false
   }
@@ -61,7 +65,9 @@ function navGroups(navigation: NavigationItem[], base: string): NavGroup[] {
 
   return navigation.map(item => ({
     label: item.title,
-    sections: [segmentOf(item.path, base)],
+    sections: [
+      segmentOf(item.path, base),
+    ],
   }))
 }
 
@@ -86,7 +92,9 @@ export function useMainNavigation(): ComputedRef<NavigationMenuItem[]> {
       const node = group.sections?.map(s => bySegment.get(s)).find(Boolean)
       if (!group.to && !node)
         continue
-      const to = group.to ?? (group.link === 'section' ? node!.path : firstLeaf(node!))
+      const to = group.to ?? (group.link === 'section'
+        ? node!.path
+        : firstLeaf(node!))
       items.push({
         label: group.label,
         to,
@@ -97,7 +105,9 @@ export function useMainNavigation(): ComputedRef<NavigationMenuItem[]> {
           children: group.children.map(child => ({
             label: child.label,
             to: child.to,
-            target: child.to.startsWith('http') ? '_blank' : undefined,
+            target: child.to.startsWith('http')
+              ? '_blank'
+              : undefined,
             active: !child.to.startsWith('http') && childIsActive(child.activePath ?? child.to, route),
           })),
         }),
@@ -105,7 +115,9 @@ export function useMainNavigation(): ComputedRef<NavigationMenuItem[]> {
     }
 
     const githubUrl
-      = github?.url || (github?.owner && github?.name ? `https://github.com/${github.owner}/${github.name}` : '')
+      = github?.url || (github?.owner && github?.name
+        ? `https://github.com/${github.owner}/${github.name}`
+        : '')
     if (githubUrl) {
       items.push({
         label: 'GitHub',

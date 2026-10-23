@@ -2,7 +2,9 @@ import type { ManifestReader, Plugin } from '@x18n/core'
 import { parse as parseYaml } from 'yaml'
 
 function keysOf(value: unknown): string[] {
-  return typeof value === 'object' && value !== null && !Array.isArray(value) ? Object.keys(value) : []
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? Object.keys(value)
+    : []
 }
 
 function fieldsOf(data: unknown, fields: readonly string[]): string[] {
@@ -35,9 +37,19 @@ export const pubspecYaml: ManifestReader = {
 export const gemfile: ManifestReader = {
   id: 'Gemfile',
   file: 'Gemfile',
-  read: text => [...text.matchAll(/^\s*gem\s+["']([^"']+)["']/gm)].map(match => match[1]!),
+  read: text => [
+    ...text.matchAll(/^\s*gem\s+["']([^"']+)["']/gm),
+  ].map(match => match[1]!),
 }
 
 export function manifests(): Plugin {
-  return { name: 'x18n:manifests', manifests: [packageJson, composerJson, pubspecYaml, gemfile] }
+  return {
+    name: 'x18n:manifests',
+    manifests: [
+      packageJson,
+      composerJson,
+      pubspecYaml,
+      gemfile,
+    ],
+  }
 }
