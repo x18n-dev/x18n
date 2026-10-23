@@ -92,6 +92,21 @@ describe('tier 1 presets', () => {
     expect(project.keys()).toEqual(['title'])
   })
 
+  it.each([
+    ['a dotted key', '[dependencies]\ni18n-embed-fl.workspace = true\n'],
+    ['a quoted dotted key', '[dependencies]\n"i18n-embed".version = "0.16"\n'],
+    ['build-dependencies', '[build-dependencies]\ni18n-embed = "0.16"\n'],
+    ['target build-dependencies', '[target.\'cfg(unix)\'.build-dependencies]\ni18n-embed-fl = "0.10"\n'],
+  ])('cargo-i18n: detected from %s', async (_, cargo) => {
+    const { project } = await createTestProject({ 'Cargo.toml': `[package]\nname = "app"\n\n${cargo}` })
+    expect(project.explain().presets.find(p => p.name === 'cargo-i18n')?.reason).toBe('detected')
+  })
+
+  it('cargo-i18n: a renamed dependency reports its alias', async () => {
+    const { project } = await createTestProject({ 'Cargo.toml': '[dependencies]\nfl = { package = "i18n-embed-fl", version = "0.10" }\n' })
+    expect(project.explain().presets.find(p => p.name === 'cargo-i18n')?.reason).not.toBe('detected')
+  })
+
   it('vscode-extension: package.nls files and %key% references', async () => {
     const { project } = await createTestProject({
       'package.json': json({ devDependencies: { '@types/vscode': '*' }, contributes: { commands: [{ title: '%cmd.open%' }] } }),

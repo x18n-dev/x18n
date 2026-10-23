@@ -38,12 +38,13 @@ export const gemfile: ManifestReader = {
   read: text => [...text.matchAll(/^\s*gem\s+["']([^"']+)["']/gm)].map(match => match[1]!),
 }
 
-const cargoSection = /^\[\s*((?:workspace\.|target\.[^\]]+\.)?(?:dev-)?dependencies)(?:\.([\w-]+))?\s*\]/
-const cargoKey = /^\s*"?([\w-]+)"?\s*=/
+const cargoSection = /^\[\s*((?:workspace\.|target\.[^\]]+\.)?(?:dev-|build-)?dependencies)(?:\.([\w-]+))?\s*\]/
+// `name = ...` or a dotted key: `name.workspace = true`, `"name".version = "1"`.
+const cargoKey = /^\s*"?([\w-]+)"?\s*[.=]/
 
 /**
- * Dependency names from `[dependencies]`, `[dev-dependencies]`, `[workspace.dependencies]` and target tables,
- * and `[dependencies.name]` headers. TOML puts each key on its own line, so a line scan is enough.
+ * Dependency names from `[dependencies]`, `[dev-dependencies]`, `[build-dependencies]`, `[workspace.dependencies]`
+ * and target tables, and `[dependencies.name]` headers. A renamed dependency reports its alias, not `package`. TOML puts each key on its own line, so a line scan is enough.
  */
 export const cargoToml: ManifestReader = {
   id: 'Cargo.toml',
