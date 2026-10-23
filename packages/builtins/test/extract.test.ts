@@ -1,7 +1,7 @@
 import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
 import { extractableHardStrings, extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
-import { reactI18next, reactIntl, svelteI18n, typesafeI18n, vueI18n } from '../src/presets'
+import { paraglide, reactI18next, reactIntl, svelteI18n, typesafeI18n, vueI18n } from '../src/presets'
 import { createTestProject, json } from './_utils'
 
 async function extractAll(project: Project): Promise<void> {
@@ -232,8 +232,26 @@ describe('extraction per preset', () => {
     await extractAll(project)
     expect(files.get('src/App.tsx')).toBe('const A = () => <button>{LL.saveChanges()}</button>\nconst msg = LL.signedInAs({ name: user.name })\n')
     expect(files.get('src/Page.svelte')).toBe('<p>{$LL.welcomeBackHome()}</p>\n')
-    expect(files.get('src/i18n/en/index.ts')).toContain('} satisfies BaseTranslation\nexport default en\n')
+    expect(files.get('src/i18n/en/index.ts')).toBe([
+      'const en = {',
+      '  title: \'Title\',',
+      '  saveChanges: \'Save changes\',',
+      '  signedInAs: \'Signed in as {name}\',',
+      '  welcomeBackHome: \'Welcome back home\',',
+      '} satisfies BaseTranslation',
+      'export default en',
+      '',
+    ].join('\n'))
     expect(project.keys()).toEqual(['saveChanges', 'signedInAs', 'title', 'welcomeBackHome'])
+  })
+
+  it('paraglide: arguments are the first argument of the message function', async () => {
+    const { project, files } = await createTestProject({
+      'messages/en.json': json({}),
+      'src/greet.ts': 'export const msg = `Signed in as ${user.name}`\n', // eslint-disable-line no-template-curly-in-string
+    }, { presets: [paraglide()] })
+    await extractAll(project)
+    expect(files.get('src/greet.ts')).toBe('import { m } from \'$lib/paraglide/messages\'\nexport const msg = m.signedInAs({ name: user.name })\n')
   })
 
   it('refuses a plan whose source changed', async () => {

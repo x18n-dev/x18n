@@ -320,7 +320,7 @@ export function typesafeI18n(): Preset {
       library({
         name: 'typesafe-i18n',
         // Messages are functions on the `LL` proxy: `LL.hello({ name })`, `$LL.a.b()` in Svelte.
-        regex: [{ extensions: [...scriptExtensions, 'vue', 'svelte', 'html'], patterns: ['\\bLL\\.({key})\\('] }],
+        regex: [{ extensions: [...scriptExtensions, 'vue', 'svelte'], patterns: ['\\bLL\\.({key})\\('] }],
         // Namespace folders merge into the key path: `LL.dashboard.title()`.
         resources: [{ pattern: 'src/i18n/{locale}/index.{ext}' }, { pattern: 'src/i18n/{locale}/{namespace}/index.{ext}' }],
         keyStyle: 'nested',
