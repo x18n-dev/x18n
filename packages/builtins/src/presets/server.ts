@@ -1,7 +1,7 @@
 // Detection and syntax adapted from i18n-ally (MIT), src/frameworks/laravel.ts, php-joomla.ts, php-gettext.ts, ruby-rails.ts and jekyll.ts
 import type { MessageTree, Preset } from '@x18n/core'
 import { isMessageLeaf } from '@x18n/core'
-import { colon, percentBraces, placeholders, printf } from '../placeholders'
+import { braces, colon, percentBraces, placeholders, printf } from '../placeholders'
 import { dependsOn, library } from './shared'
 
 /** Laravel: `lang/{locale}/{file}.php` arrays and `lang/{locale}.json`; keys are `file.key`. Exclusive like i18n-ally. */
@@ -125,5 +125,35 @@ export function jekyll(): Preset {
       keyStyle: 'nested',
       templates: [{ template: '{% t {key} %}' }],
     })],
+  }
+}
+
+/** .NET `IStringLocalizer` and strongly typed resources over `.resx` files: `Strings.resx` holds the source locale, `Strings.de.resx` German. */
+export function dotnetResx(): Preset {
+  return {
+    name: 'dotnet-resx',
+    detect: async ctx => await ctx.fileExists('**/*.csproj') && ctx.fileExists('**/*.resx'),
+    plugins: [
+      library({
+        name: 'dotnet-resx',
+        // Keys are often the source text (`Localizer["Hello world"]`), so anything inside the quotes.
+        regex: [{
+          extensions: ['cs', 'cshtml', 'razor'],
+          patterns: [
+            '\\b(?:\\w*[Ll]ocali[sz]er|L|Loc)\\[\\s*"([^"]+)"',
+            '\\b\\w*[Ll]ocali[sz]er\\.Get(?:String|Html)\\(\\s*"([^"]+)"',
+            // `Resources.Hello` on the generated designer class, not its own members or a `App.Resources` namespace.
+            '(?<![\\w.])(?:Properties\\.)?Resources\\.(?!ResourceManager\\b|Culture\\b)([A-Za-z_]\\w*)\\b(?![.(<])',
+          ],
+        }],
+        resources: [{ pattern: '**/*.{locale}.resx' }, { pattern: '**/*.resx' }],
+        keyStyle: 'flat',
+        templates: [
+          { template: '@Localizer["{key}"]', files: ['**/*.cshtml', '**/*.razor'] },
+          { template: '_localizer["{key}"]', files: ['**/*.cs'] },
+        ],
+      }),
+      placeholders(braces),
+    ],
   }
 }

@@ -18,6 +18,7 @@ const frameworks: { name: string, icon: string, to: string, mono?: boolean, colo
   { name: 'Rails', icon: 'logos:rails', to: '/presets/ruby-rails' },
   { name: 'Jekyll', icon: 'devicon:jekyll', to: '/presets/jekyll' },
   { name: 'Flutter', icon: 'logos:flutter-icon', to: '/presets/flutter' },
+  { name: '.NET', icon: 'logos:dotnet', to: '/presets/dotnet-resx' },
   { name: 'Chrome', icon: 'logos:chrome', to: '/presets/chrome-extension' },
   { name: 'Firefox', icon: 'logos:firefox', to: '/presets/chrome-extension' },
   { name: 'VS Code', icon: 'logos:visual-studio-code', to: '/presets/vscode-extension' },

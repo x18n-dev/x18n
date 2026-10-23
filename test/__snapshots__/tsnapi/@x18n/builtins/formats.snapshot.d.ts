@@ -17,5 +17,6 @@ export declare function jsonc(_?: JsonOptions): Plugin;
 export declare function php(): Plugin;
 export declare function po(): Plugin;
 export declare function properties(): Plugin;
+export declare function resx(): Plugin;
 export declare function yaml(): Plugin;
 // #endregion

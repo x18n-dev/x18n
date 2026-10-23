@@ -34,7 +34,7 @@ Tiers decide the release: tier 1 ships in 1.0 with full parity tests, tier 2 in 
 | `ini` | ini | yes | serialize | `ini` | 3 |
 | `strings` | strings (Apple) | yes | in place | own parser | 3 |
 | `android-xml` | xml (`res/values*/strings.xml`) | yes | in place | small XML parser | 3 |
-| `resx` | resx | yes | in place | small XML parser | 3 |
+| `resx` | resx | yes | in place | own parser | 2 |
 
 By default the `js` / `ts` format never runs user code. A file that is not a static literal is reported as `X18N2004`, with a hint to use JSON or YAML or to opt in to execution.
 
@@ -61,7 +61,7 @@ Execution is opt-in per resource pattern (`resources: [{ pattern: 'src/locales/{
 | `html` | html, and attributes inside other templates | small HTML tokenizer |
 | `regex` | any configured | RegExp, i18n-ally compatible |
 
-Other languages (PHP, Ruby, Dart, Blade, ERB) start with `regex` scanners in their presets, with the i18n-ally patterns. AST scanners for them are tier 3.
+Other languages (PHP, Ruby, Dart, Blade, ERB, C#, Razor) start with `regex` scanners in their presets, with the i18n-ally patterns. AST scanners for them are tier 3.
 
 ## Presets
 
@@ -90,6 +90,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `laravel` | composer: laravel/framework | `php` format, `lang/{locale}/{namespace}.php`, `__()`, `trans()`, `@lang` | 2 |
 | `ruby-rails` | Gemfile: rails | `yaml` with top-level locale transform, `t('.lazy')` from view path | 2 |
 | `flutter` | pubspec: flutter_localizations, intl, flutter_i18n | `arb` format, `AppLocalizations.of(context).key` | 2 |
+| `dotnet-resx` | a `*.csproj` and a `*.resx` | `resx` format, `Name.resx` (source) and `Name.{locale}.resx`, `Localizer["key"]`, `GetString("key")`, `Resources.Key` | 2 |
 | `chrome-extension` | manifest.json with `default_locale` | `_locales/{locale}/messages.json`, `.message` transform, `chrome.i18n.getMessage` | 2 |
 | `angular` | @angular/localize | `xliff`, `$localize` | 3 |
 | `ember-intl` | ember-intl | `t` helper | 3 |

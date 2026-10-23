@@ -100,6 +100,53 @@ describe('tier 1 presets', () => {
 })
 
 // Cases that i18n-ally-next fixed after the fork of i18n-ally.
+describe('dotnet-resx', () => {
+  const data = (entries: Record<string, string>): string => `<?xml version="1.0" encoding="utf-8"?>
+<root>
+${Object.entries(entries).map(([name, value]) => `  <data name="${name}" xml:space="preserve">\n    <value>${value}</value>\n  </data>\n`).join('')}</root>
+`
+  const files = {
+    'src/App/App.csproj': '<Project Sdk="Microsoft.NET.Sdk.Web" />',
+    'src/App/Resources/SharedResource.resx': data({ 'Hello': 'Hello {0}', 'Save changes': 'Save changes', 'Title': 'Title', 'Nav.Home': 'Home' }),
+    'src/App/Resources/SharedResource.de.resx': data({ Hello: 'Hallo {0}' }),
+    'src/App/Resources/SharedResource.pt-BR.resx': data({ Hello: 'Olá {0}' }),
+    'src/App/Resources/Views.Home.Index.resx': data({ Welcome: 'Welcome' }),
+    'src/App/Views/Home/Index.cshtml': '@inject IViewLocalizer Localizer\n<h1>@Localizer["Hello", name]</h1>\n<p>@Localizer["Welcome"]</p>',
+    'src/App/Pages/Nav.razor': '@inject IStringLocalizer<SharedResource> Loc\n<a>@Loc["Nav.Home"]</a>',
+    'src/App/Controllers/HomeController.cs': [
+      'var a = _localizer["Save changes"];',
+      'var b = localizer.GetString("Title");',
+      'var c = Properties.Resources.Hello;',
+      'var d = Resources.ResourceManager.GetString(name);',
+      'using App.Resources.Shared;',
+    ].join('\n'),
+  }
+
+  it('detects the project, reads locales from file names and finds usages in .cs, .cshtml and .razor', async () => {
+    const { project } = await createTestProject(files)
+    expect(project.explain().presets.find(p => p.name === 'dotnet-resx')?.reason).toBe('detected')
+    expect(project.locales).toEqual(['en', 'de', 'pt-BR'])
+    expect(project.keys()).toEqual(['Hello', 'Nav.Home', 'Save changes', 'Title', 'Welcome'])
+    expect(project.usages().map(m => m.usage.key).sort()).toEqual(['Hello', 'Hello', 'Nav.Home', 'Save changes', 'Title', 'Welcome'])
+    expect(project.analyze().unused).toEqual([])
+  })
+
+  it('is not detected without a .csproj', async () => {
+    const { project } = await createTestProject({ 'Resources/Strings.resx': data({ a: 'A' }) })
+    expect(project.explain().presets.find(p => p.name === 'dotnet-resx')?.reason).toBe('not-detected')
+  })
+
+  it('writes into existing files and creates new locale files next to the source', async () => {
+    const { project, files: written } = await createTestProject(files)
+    await project.apply(project.plan([
+      { type: 'set', key: 'Title', locale: 'de', value: 'Titel' },
+      { type: 'set', key: 'Title', locale: 'fr', value: 'Titre' },
+    ]))
+    expect(written.get('src/App/Resources/SharedResource.de.resx')).toBe(data({ Hello: 'Hallo {0}', Title: 'Titel' }))
+    expect(written.get('src/App/Resources/SharedResource.fr.resx')).toContain('  <data name="Title" xml:space="preserve">\n    <value>Titre</value>\n  </data>\n</root>\n')
+  })
+})
+
 describe('namespaces', () => {
   it('react-i18next: folders, keyPrefix, flat dotted keys and withTranslation', async () => {
     const { project } = await createTestProject({

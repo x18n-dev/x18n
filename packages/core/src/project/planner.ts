@@ -209,6 +209,9 @@ class PlanBuilder {
       ?? resources.find(s => s.resource.locale === sourceLocale && fits(s)) ?? resources.find(fits) ?? resources.find(sibling)
     const format = model && this.options.registry.formatById(model.resource.format)
     let path = model && mirrorPath(model.resource.path, model.resource.locale, locale)
+    // A source file without a locale in its path (`Strings.resx`, `package.nls.json`) gets one before its extension.
+    if (model && path === model.resource.path && model.resource.locale === sourceLocale)
+      path = path.replace(/(?=\.[^./]+$)/, `.${locale}`)
     if (model && path && namespace !== undefined && model.resource.namespace !== undefined && model.resource.namespace !== namespace)
       path = mirrorPath(path, model.resource.namespace, namespace)
     if (!model || !format?.serialize || model.resource.block || !path || exists(path))

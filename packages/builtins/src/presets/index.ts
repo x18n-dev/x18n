@@ -2,13 +2,13 @@ import type { PresetFactory } from '@x18n/core'
 import { ngxTranslate, transloco } from './angular'
 import { general, i18next, nextIntl, nuxtI18n, reactI18next, reactIntl, svelteI18n, vscodeExtension, vueI18n } from './js'
 import { flutter } from './mobile'
-import { jekyll, laravel, phpGettext, phpJoomla, rubyRails } from './server'
+import { dotnetResx, jekyll, laravel, phpGettext, phpJoomla, rubyRails } from './server'
 import { chromeExtension, emberIntl, fluentVue, globalize, i18nextShopify, i18nJs, i18nTag, lingui, nextInternational, nextTranslate, paraglide, polyglot, solidPrimitivesI18n, ui5 } from './web'
 
 export { ngxTranslate, transloco } from './angular'
 export { general, i18next, nextIntl, nuxtI18n, reactI18next, reactIntl, svelteI18n, vscodeExtension, vueI18n } from './js'
 export { flutter } from './mobile'
-export { jekyll, laravel, phpGettext, phpJoomla, railsLazyKey, rubyRails } from './server'
+export { dotnetResx, jekyll, laravel, phpGettext, phpJoomla, railsLazyKey, rubyRails } from './server'
 export { chromeExtension, emberIntl, fluentVue, globalize, i18nextShopify, i18nJs, i18nTag, lingui, nextInternational, nextTranslate, paraglide, polyglot, solidPrimitivesI18n, ui5 } from './web'
 
 /**
@@ -46,5 +46,6 @@ export const presets: { readonly [name: string]: PresetFactory } = {
   'ruby-rails': () => rubyRails(),
   'jekyll': () => jekyll(),
   'flutter': () => flutter(),
+  'dotnet-resx': () => dotnetResx(),
   'general': () => general(),
 }

@@ -145,6 +145,8 @@ export function namespaceFromPath(path: string, style: NamespaceFromPath): strin
 
 async function findBySpecs(ctx: FinderContext, specs: readonly ResourceSpec[], strictLocales: boolean): Promise<ResourceCandidate[]> {
   const out: ResourceCandidate[] = []
+  // A file belongs to the first spec that takes it: `**/*.{locale}.resx` before `**/*.resx`.
+  const taken = new Set<string>()
   for (const spec of specs) {
     const compiled = compilePattern(spec.pattern, ctx.extensions)
     // A pattern without a locale token holds the source locale (`package.nls.json`, `i18n.properties`).
@@ -156,8 +158,9 @@ async function findBySpecs(ctx: FinderContext, specs: readonly ResourceSpec[], s
         continue
       const locale = fixed ?? matched.locale ?? (spec.pattern.includes('{locale?}') ? ctx.config.sourceLocale : undefined)
       // A `{locale}` the user did not write must look like a locale code, so `locales/index.ts` is not a resource.
-      if (!locale || (strictLocales && !isLocaleCode(locale)))
+      if (!locale || (strictLocales && !isLocaleCode(locale)) || taken.has(path))
         continue
+      taken.add(path)
       const namespace = spec.namespace ?? (matched.namespace === undefined ? undefined : namespaceFromPath(matched.namespace, ctx.config.namespace.fromPath))
       out.push({ path, locale, namespace, format: spec.format, readonly: spec.execute === true })
     }

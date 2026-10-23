@@ -3,6 +3,7 @@
  */
 // #region Functions
 export declare function chromeExtension(): Preset;
+export declare function dotnetResx(): Preset;
 export declare function emberIntl(): Preset;
 export declare function fluentVue(): Preset;
 export declare function flutter(): Preset;
