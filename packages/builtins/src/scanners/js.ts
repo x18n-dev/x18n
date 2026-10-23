@@ -1,5 +1,5 @@
 import type { ArgSource, CallSpec, HardString, Plugin, Scanner, ScanResult, TextRange, UsageCandidate } from '@x18n/core'
-import type { CallExpression, Comment, JSXOpeningElement, Node, ObjectExpression, Program } from 'oxc-parser'
+import type { CallExpression, Comment, JSXElement, JSXOpeningElement, Node, ObjectExpression, Program, TSSignature } from 'oxc-parser'
 
 /** Where a callee name came from: a declared spec, or a factory binding with its namespace and prefix. */
 interface Binding {
@@ -96,7 +96,11 @@ class FileScan {
   readonly declared = new Map<string, CallSpec[]>()
   readonly factories = new Map<string, CallSpec[]>()
   readonly typed = new Map<string, CallSpec>()
+  /** Members of the file's top-level interfaces and object type aliases, for typed props (`({ t }: Props)`). */
+  readonly typeMembers = new Map<string, readonly TSSignature[]>()
   readonly consumed = new Set<number>()
+  /** Render-prop functions of factory components (`<Translation>{t => ...}</Translation>`), by start offset. */
+  readonly renderProps = new Map<number, Binding>()
 
   constructor(readonly text: string, readonly offset: number, calls: readonly CallSpec[], readonly collectHardStrings: boolean, readonly ignoredCallees: ReadonlySet<string> = new Set(), readonly textAttributes: readonly string[] = []) {
     for (const spec of calls) {
@@ -173,6 +177,13 @@ class FileScan {
       return constant && isStringLiteral(constant) ? constant.value : undefined
     }
     return undefined
+  }
+
+  /** A fixed namespace, or the one an argument holds. */
+  namespaceArg(args: readonly ArgValue[], source: CallSpec['namespace'], fallback: number): string | undefined {
+    if (typeof source === 'string')
+      return source
+    return source ? this.stringArg(this.argValues(args, source, fallback)[0]) : undefined
   }
 
   argValues(args: readonly ArgValue[], source: ArgSource | number | undefined, fallback: number): ArgValue[] {
@@ -267,7 +278,7 @@ class FileScan {
   handleCall(name: string, args: readonly ArgValue[], expression?: TextRange): boolean {
     const bindings = this.lookupAll(name).filter(binding => !binding.spec.factory)
     for (const binding of bindings) {
-      const namespace = binding.spec.namespace ? this.stringArg(this.argValues(args, binding.spec.namespace, 1)[0]) : undefined
+      const namespace = this.namespaceArg(args, binding.spec.namespace, 1)
       for (const value of this.argValues(args, binding.spec.key, 0)) {
         // With several specs per callee, only the one whose key position holds a key counts.
         if (bindings.length > 1 && !('props' in value) && unwrap(value).type === 'ObjectExpression')
@@ -284,10 +295,7 @@ class FileScan {
       this.handleCall(name, node.arguments, { start: node.start, end: node.end })
   }
 
-  jsx(node: JSXOpeningElement): void {
-    const name = jsxName(node.name)
-    if (!name || !this.lookup(name))
-      return
+  jsxProps(node: JSXOpeningElement): ArgValue {
     const props = new Map<string, Node>()
     for (const attribute of node.attributes) {
       if (attribute.type === 'JSXAttribute' && attribute.value && attribute.name.type === 'JSXIdentifier') {
@@ -296,7 +304,25 @@ class FileScan {
           this.consumed.add(attribute.value.start)
       }
     }
-    this.handleCall(name, [{ props }])
+    return { props }
+  }
+
+  jsx(node: JSXOpeningElement): void {
+    const name = jsxName(node.name)
+    if (name && this.lookup(name))
+      this.handleCall(name, [this.jsxProps(node)])
+  }
+
+  jsxElement(node: JSXElement): void {
+    const name = jsxName(node.openingElement.name)
+    const specs = name ? this.factories.get(name) : undefined
+    if (!specs)
+      return
+    const binding = this.pickFactory([this.jsxProps(node.openingElement)], specs)
+    for (const child of node.children) {
+      if (child.type === 'JSXExpressionContainer' && (child.expression.type === 'ArrowFunctionExpression' || child.expression.type === 'FunctionExpression'))
+        this.renderProps.set(child.expression.start, binding)
+    }
   }
 
   /** ---- Bindings ---- */
@@ -310,7 +336,7 @@ class FileScan {
       const factory = calleeName(value.callee)
       const specs = factory ? this.factories.get(factory) : undefined
       if (specs)
-        this.bindFactory(id, value, specs)
+        this.bindFactory(id, value.arguments, specs)
       return
     }
     // `const tt = t`
@@ -323,18 +349,18 @@ class FileScan {
   }
 
   /** The first factory spec whose namespace and prefix sources all resolve, else the first spec. */
-  pickFactory(call: CallExpression, specs: readonly CallSpec[]): Binding {
+  pickFactory(args: readonly ArgValue[], specs: readonly CallSpec[]): Binding {
     const resolved = specs.map((spec) => {
-      const namespace = spec.namespace ? this.stringArg(this.argValues(call.arguments, spec.namespace, 0)[0]) : undefined
-      const keyPrefix = spec.keyPrefix ? this.stringArg(this.argValues(call.arguments, spec.keyPrefix, 0)[0]) : undefined
+      const namespace = this.namespaceArg(args, spec.namespace, 0)
+      const keyPrefix = spec.keyPrefix ? this.stringArg(this.argValues(args, spec.keyPrefix, 0)[0]) : undefined
       const complete = (!spec.namespace || namespace !== undefined) && (!spec.keyPrefix || keyPrefix !== undefined)
       return { binding: { spec: { callee: spec.callee, returns: spec.returns }, namespace, keyPrefix }, complete }
     })
     return (resolved.find(r => r.complete) ?? resolved[0]!).binding
   }
 
-  bindFactory(id: Node, call: CallExpression, specs: readonly CallSpec[]): void {
-    const binding = this.pickFactory(call, specs)
+  bindFactory(id: Node, args: readonly ArgValue[], specs: readonly CallSpec[]): void {
+    const binding = this.pickFactory(args, specs)
     const returns = (binding.spec.returns ?? ['t']).filter(name => !name.includes('.'))
     if (id.type === 'Identifier') {
       this.bind(id.name, binding)
@@ -355,16 +381,57 @@ class FileScan {
     }
   }
 
+  /** Parameters typed as a translate function (`t: TFunction<'ns'>`), also as destructured props. */
   params(params: readonly Node[]): void {
     for (const param of params) {
       const target = param.type === 'TSParameterProperty' ? param.parameter : param
-      if (target.type !== 'Identifier' || !target.typeAnnotation)
+      const annotation = target.type === 'Identifier' || target.type === 'ObjectPattern' ? target.typeAnnotation?.typeAnnotation : undefined
+      if (!annotation)
         continue
-      const annotation = target.typeAnnotation.typeAnnotation
-      const typeName = annotation.type === 'TSTypeReference' && annotation.typeName.type === 'Identifier' ? annotation.typeName.name : undefined
-      const spec = typeName ? this.typed.get(typeName) : undefined
-      if (spec)
-        this.bind(target.name, { spec: { ...spec, types: undefined } })
+      if (target.type === 'Identifier')
+        this.bindTyped(target.name, annotation)
+      else if (target.type === 'ObjectPattern')
+        this.props(target, annotation)
+    }
+  }
+
+  /** `({ t }: { t: TFunction<'ns'> })`, or with an interface or type of the file. */
+  props(pattern: Extract<Node, { type: 'ObjectPattern' }>, annotation: Node): void {
+    const members = annotation.type === 'TSTypeLiteral'
+      ? annotation.members
+      : annotation.type === 'TSTypeReference' && annotation.typeName.type === 'Identifier' ? this.typeMembers.get(annotation.typeName.name) ?? [] : []
+    for (const property of pattern.properties) {
+      if (property.type !== 'Property')
+        continue
+      const local = unwrap(property.value)
+      const name = propertyName(property.key)
+      const member = members.find(m => m.type === 'TSPropertySignature' && !m.computed && propertyName(m.key) === name)
+      const type = member?.type === 'TSPropertySignature' ? member.typeAnnotation?.typeAnnotation : undefined
+      if (local.type === 'Identifier' && type)
+        this.bindTyped(local.name, type)
+    }
+  }
+
+  /** The namespace is the first type argument: `TFunction<'shared'>` or `TFunction<['shared', 'common']>`. */
+  bindTyped(name: string, annotation: Node): void {
+    if (annotation.type !== 'TSTypeReference' || annotation.typeName.type !== 'Identifier')
+      return
+    const spec = this.typed.get(annotation.typeName.name)
+    if (!spec)
+      return
+    const arg = annotation.typeArguments?.params[0]
+    const first = arg?.type === 'TSTupleType' ? arg.elementTypes[0] : arg
+    const namespace = first?.type === 'TSLiteralType' && isStringLiteral(first.literal) ? first.literal.value : undefined
+    this.bind(name, { spec: { ...spec, types: undefined }, namespace })
+  }
+
+  types(program: Program): void {
+    for (const statement of program.body) {
+      const node = statement.type === 'ExportNamedDeclaration' && statement.declaration ? statement.declaration : statement
+      if (node.type === 'TSInterfaceDeclaration')
+        this.typeMembers.set(node.id.name, node.body.body)
+      else if (node.type === 'TSTypeAliasDeclaration' && node.typeAnnotation.type === 'TSTypeLiteral')
+        this.typeMembers.set(node.id.name, node.typeAnnotation.members)
     }
   }
 
@@ -414,6 +481,9 @@ class FileScan {
       case 'CallExpression':
         this.call(node)
         break
+      case 'JSXElement':
+        this.jsxElement(node)
+        break
       case 'JSXOpeningElement':
         this.jsx(node)
         break
@@ -422,9 +492,13 @@ class FileScan {
         break
       case 'FunctionDeclaration':
       case 'FunctionExpression':
-      case 'ArrowFunctionExpression':
+      case 'ArrowFunctionExpression': {
         this.params(node.params)
+        const binding = this.renderProps.get(node.start)
+        if (binding && node.params[0]?.type === 'Identifier')
+          this.bind(node.params[0].name, binding)
         break
+      }
       case 'ImportSpecifier':
         this.importSpecifier(node)
         break
@@ -561,6 +635,7 @@ export function scanSource(parse: ParseSync, text: string, options: ScanSourceOp
   const shift = options.expression ? -1 : 0
   const result = parse(options.filename, source, { sourceType: 'module', range: false })
   const scan = new FileScan(source, (options.offset ?? 0) + shift, options.calls, options.hardStrings !== false, new Set(options.ignoreCallees), options.textAttributes)
+  scan.types(result.program)
   scan.walk(result.program, undefined, '')
   scan.markers(result.program, result.comments)
   return scan.result()

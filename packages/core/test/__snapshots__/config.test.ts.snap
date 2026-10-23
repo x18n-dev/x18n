@@ -272,8 +272,23 @@ exports[`schemas > config schema 1`] = `
     "namespace": {
       "additionalProperties": false,
       "properties": {
+        "byFile": {
+          "additionalProperties": {
+            "type": "string",
+          },
+          "propertyNames": {
+            "type": "string",
+          },
+          "type": "object",
+        },
         "default": {
           "type": "string",
+        },
+        "fallback": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
         },
         "fromPath": {
           "enum": [
@@ -452,19 +467,26 @@ exports[`schemas > config schema 1`] = `
                 "type": "string",
               },
               "namespace": {
-                "additionalProperties": false,
-                "properties": {
-                  "arg": {
-                    "type": "number",
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "arg": {
+                        "type": "number",
+                      },
+                      "property": {
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "arg",
+                    ],
+                    "type": "object",
                   },
-                  "property": {
+                  {
                     "type": "string",
                   },
-                },
-                "required": [
-                  "arg",
                 ],
-                "type": "object",
               },
               "returns": {
                 "items": {
@@ -614,8 +636,23 @@ exports[`schemas > plugin schema 1`] = `
         "namespace": {
           "additionalProperties": false,
           "properties": {
+            "byFile": {
+              "additionalProperties": {
+                "type": "string",
+              },
+              "propertyNames": {
+                "type": "string",
+              },
+              "type": "object",
+            },
             "default": {
               "type": "string",
+            },
+            "fallback": {
+              "items": {
+                "type": "string",
+              },
+              "type": "array",
             },
             "fromPath": {
               "enum": [
@@ -879,19 +916,26 @@ exports[`schemas > plugin schema 1`] = `
                 "type": "string",
               },
               "namespace": {
-                "additionalProperties": false,
-                "properties": {
-                  "arg": {
-                    "type": "number",
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "arg": {
+                        "type": "number",
+                      },
+                      "property": {
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "arg",
+                    ],
+                    "type": "object",
                   },
-                  "property": {
+                  {
                     "type": "string",
                   },
-                },
-                "required": [
-                  "arg",
                 ],
-                "type": "object",
               },
               "returns": {
                 "items": {

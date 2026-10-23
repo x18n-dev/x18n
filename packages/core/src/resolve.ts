@@ -64,7 +64,7 @@ function defaultDraft(): ConfigDraft {
     resources: [],
     formats: {},
     keyStyle: 'auto',
-    namespace: { separator: '.', default: undefined, fromPath: 'dot' },
+    namespace: { separator: '.', default: undefined, fallback: [], byFile: {}, fromPath: 'dot' },
     usage: {
       include: ['**/*'],
       exclude: defaultExclude,
@@ -134,6 +134,8 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
     draft.namespace = {
       separator: layer.namespace.separator ?? draft.namespace.separator,
       default: layer.namespace.default ?? draft.namespace.default,
+      fallback: layer.namespace.fallback ?? draft.namespace.fallback,
+      byFile: { ...draft.namespace.byFile, ...layer.namespace.byFile },
       fromPath: layer.namespace.fromPath ?? draft.namespace.fromPath,
     }
     mark('namespace')

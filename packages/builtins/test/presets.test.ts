@@ -155,7 +155,7 @@ describe('tier 1 presets', () => {
 
 // Cases that i18n-ally-next fixed after the fork of i18n-ally.
 describe('namespaces', () => {
-  it('react-i18next: folders, keyPrefix, flat dotted keys and withTranslation', async () => {
+  it('react-i18next: folders, keyPrefix, flat dotted keys, Translation and withTranslation', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('react-i18next', 'i18next'),
       'locales/en/translation.json': json({ 'common.stackTrace': 'Stack', 'title': 'T' }),
@@ -165,8 +165,11 @@ describe('namespaces', () => {
         `function A() { const { t } = useTranslation(); return t('common.stackTrace') + t('errors:notFound') }`,
         `function B() { const { t } = useTranslation('pages/home', { keyPrefix: 'foo.bar' }); return t('baz') + t('translation:title') }`,
         `function C() { const { t } = useTranslation('pages/home'); return t('title') + t('pages/home:foo.bar.baz') }`,
+        `function E() { const { t } = useTranslation(undefined, { keyPrefix: 'common' }); return t('stackTrace') }`,
+        `function F() { return <Translation ns="pages/home" keyPrefix="foo.bar">{t => <p>{t('baz')}</p>}</Translation> }`,
       ].join('\n'),
       'src/D.tsx': `function D({ t }) { return t('notFound') }\nexport default withTranslation('errors')(D)\n`,
+      'src/G.tsx': `function G({ t }) { return t('baz') }\nexport default withTranslation('pages/home', { keyPrefix: 'foo.bar' })(G)\n`,
     }, { resources: [{ pattern: 'locales/{locale}/{namespaces}.json' }], keyStyle: 'flat' })
     expect(project.usages().map(m => m.usage.key)).toEqual([
       'translation:common.stackTrace',
@@ -175,7 +178,10 @@ describe('namespaces', () => {
       'translation:title',
       'pages/home:title',
       'pages/home:foo.bar.baz',
+      'translation:common.stackTrace',
+      'pages/home:foo.bar.baz',
       'errors:notFound',
+      'pages/home:foo.bar.baz',
     ])
     expect(project.analyze().undefinedUsages).toEqual([])
   })
@@ -189,6 +195,52 @@ describe('namespaces', () => {
     }, { resources: [{ pattern: 'locales/{locale}/{namespace}.json' }], namespace: { default: 'errors' } })
     expect(project.usages().map(m => m.usage.key)).toEqual(['errors:x', 'errors:x', 'translation:a'])
     expect(project.analyze().undefinedUsages).toEqual([])
+  })
+
+  it('i18next: fallbackNS from the init code finds keys missing in the scope namespace', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('react-i18next', 'i18next'),
+      'src/i18n.ts': `i18next.init({ defaultNS: 'app', fallbackNS: ['common'] })`,
+      'locales/en/app.json': json({ title: 'App', save: 'Save app' }),
+      'locales/en/common.json': json({ save: 'Save', delete: 'Delete' }),
+      'locales/en/event.json': json({ name: 'Name' }),
+      'src/Event.tsx': `const { t } = useTranslation('event'); t('name'); t('delete'); t('nope'); t('app:title')`,
+      'src/App.tsx': `const { t } = useTranslation(); t('save'); t('delete')`,
+    }, { resources: [{ pattern: 'locales/{locale}/{namespace}.json' }] })
+    expect(project.config.namespace).toMatchObject({ default: 'app', fallback: ['common'] })
+    expect(project.usages().map(m => m.usage.key)).toEqual(['app:save', 'common:delete', 'event:name', 'common:delete', 'event:nope', 'app:title'])
+    expect(project.analyze().undefinedUsages.map(u => u.key)).toEqual(['event:nope'])
+  })
+
+  it('namespace.byFile names the namespace of keys per source folder', async () => {
+    const { project } = await createTestProject({
+      'locales/en/a.json': json({ productName: 'A' }),
+      'locales/en/b.json': json({ productName: 'B' }),
+      'a/src/index.js': `t('productName'); t('b:productName')`,
+      'b/src/index.js': `t('productName')`,
+    }, {
+      resources: [{ pattern: 'locales/{locale}/{namespace}.json' }],
+      namespace: { separator: ':', byFile: { 'a/**': 'a', 'b/**': 'b' } },
+      usage: { calls: [{ callee: 't' }] },
+    })
+    expect(project.usages().map(m => m.usage.key)).toEqual(['a:productName', 'b:productName', 'b:productName'])
+    expect(project.analyze().unused).toEqual([])
+  })
+
+  it('a custom separator and a hook with a fixed namespace', async () => {
+    const { project, files } = await createTestProject({
+      'locales/en/shared.json': json({ type: { bug: 'Bug' } }),
+      'locales/en/common.json': json({ ok: 'OK' }),
+      'src/a.ts': `const { t } = useSharedTranslation(); t('type.bug'); t('common|ok')`,
+    }, {
+      resources: [{ pattern: 'locales/{locale}/{namespace}.json' }],
+      namespace: { separator: '|' },
+      usage: { calls: [{ callee: 'useSharedTranslation', factory: true, namespace: 'shared' }] },
+    })
+    expect(project.usages().map(m => m.usage.key)).toEqual(['shared:type.bug', 'common:ok'])
+    expect(project.parseKey('common|ok')).toBe('common:ok')
+    await project.apply(project.plan([{ type: 'rename', from: 'shared:type.bug', to: 'common:bug' }]))
+    expect(files.get('src/a.ts')).toBe(`const { t } = useSharedTranslation(); t('common|bug'); t('common|ok')`)
   })
 
   it('transloco: a kebab-case scope folder is a camelCase key prefix', async () => {

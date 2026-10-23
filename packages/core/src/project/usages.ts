@@ -1,10 +1,11 @@
 import type { ResolvedConfig } from '../types/config'
 import type { KeyString, LocaleInfo, TextRange, Usage } from '../types/model'
 import type { KeyContext, PluralForm, Scope, UsageCandidate } from '../types/plugin'
-import { joinKey } from '../keys'
+import { joinKey, pathMatcher } from '../keys'
 
 export interface UsageResolver {
-  readonly resolve: (candidate: UsageCandidate, scopes: readonly Scope[], path: string, scanner: string) => Usage
+  /** `has` tells whether a key exists, for the fallback namespaces. */
+  readonly resolve: (candidate: UsageCandidate, scopes: readonly Scope[], path: string, scanner: string, has: (key: KeyString) => boolean) => Usage
 }
 
 function innermost(scopes: readonly Scope[], range: TextRange): Scope | undefined {
@@ -22,9 +23,10 @@ export function createUsageResolver(
   namespaced: boolean,
   normalizers: readonly ((raw: string, ctx: KeyContext) => string | undefined)[],
 ): UsageResolver {
-  const separator = config.namespace.separator
+  const { separator, fallback } = config.namespace
+  const byFile = Object.entries(config.namespace.byFile).map(([glob, namespace]) => ({ matches: pathMatcher([glob]), namespace }))
   return {
-    resolve(candidate, scopes, path, scanner) {
+    resolve(candidate, scopes, path, scanner, has) {
       const scope = innermost(scopes, candidate.range)
       const ctx = { path }
       let text = candidate.raw
@@ -35,7 +37,7 @@ export function createUsageResolver(
           break
         }
       }
-      const scopeNamespace = candidate.namespace ?? scope?.namespace
+      const scopeNamespace = candidate.namespace ?? scope?.namespace ?? byFile.find(rule => rule.matches(path))?.namespace
       const scopePrefix = candidate.keyPrefix ?? scope?.keyPrefix
       let namespace: string | undefined
       let explicit = false
@@ -53,11 +55,14 @@ export function createUsageResolver(
       // An explicit namespace (`t('common:save')`) leaves the scope's key prefix out.
       if (scopePrefix && !explicit)
         text = text ? `${scopePrefix}.${text}` : scopePrefix
+      const keyPath = text === '' ? [] : text.split('.')
       let key: KeyString | undefined
       if (candidate.dynamic === 'unknown')
         key = undefined
       else
-        key = joinKey(namespace, text === '' ? [] : text.split('.'))
+        key = joinKey(namespace, keyPath)
+      if (key !== undefined && namespaced && !explicit && candidate.dynamic === false && !has(key))
+        key = fallback.map(ns => joinKey(ns, keyPath)).find(has) ?? key
       return {
         key,
         raw: candidate.raw,

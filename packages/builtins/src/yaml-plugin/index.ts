@@ -25,6 +25,8 @@ export function compileYamlPlugin(data: PluginFile): Plugin | Preset {
         draft.namespace = {
           separator: defaults.namespace.separator ?? draft.namespace.separator,
           default: defaults.namespace.default ?? draft.namespace.default,
+          fallback: defaults.namespace.fallback ?? draft.namespace.fallback,
+          byFile: { ...draft.namespace.byFile, ...defaults.namespace.byFile },
           fromPath: defaults.namespace.fromPath ?? draft.namespace.fromPath,
         }
       }
