@@ -20,6 +20,7 @@ export declare function nextIntl(): Preset;
 export declare function nextTranslate(): Preset;
 export declare function ngxTranslate(): Preset;
 export declare function nuxtI18n(): Preset;
+export declare function nuxtI18nMicro(): Preset;
 export declare function paraglide(): Preset;
 export declare function phpGettext(): Preset;
 export declare function phpJoomla(): Preset;

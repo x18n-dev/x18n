@@ -4,7 +4,8 @@ import type { KeyContext, Scope, UsageCandidate } from '../types/plugin'
 import { joinKey } from '../keys'
 
 export interface UsageResolver {
-  readonly resolve: (candidate: UsageCandidate, scopes: readonly Scope[], path: string, scanner: string) => Usage
+  /** `defined` tells whether a resource defines a key, for scopes with an optional key prefix. */
+  readonly resolve: (candidate: UsageCandidate, scopes: readonly Scope[], path: string, scanner: string, defined: (key: KeyString) => boolean) => Usage
 }
 
 function innermost(scopes: readonly Scope[], range: TextRange): Scope | undefined {
@@ -24,7 +25,7 @@ export function createUsageResolver(
 ): UsageResolver {
   const separator = config.namespace.separator
   return {
-    resolve(candidate, scopes, path, scanner) {
+    resolve(candidate, scopes, path, scanner, defined) {
       const scope = innermost(scopes, candidate.range)
       const ctx = { path }
       let text = candidate.raw
@@ -36,7 +37,7 @@ export function createUsageResolver(
         }
       }
       const scopeNamespace = candidate.namespace ?? scope?.namespace
-      const scopePrefix = candidate.keyPrefix ?? scope?.keyPrefix
+      let scopePrefix = candidate.keyPrefix ?? scope?.keyPrefix
       let namespace: string | undefined
       let explicit = false
       if (namespaced) {
@@ -51,8 +52,13 @@ export function createUsageResolver(
         }
       }
       // An explicit namespace (`t('common:save')`) leaves the scope's key prefix out.
-      if (scopePrefix && !explicit)
-        text = text ? `${scopePrefix}.${text}` : scopePrefix
+      if (scopePrefix && !explicit) {
+        const prefixed = text ? `${scopePrefix}.${text}` : scopePrefix
+        if (candidate.keyPrefix || !scope?.optionalPrefix || defined(joinKey(namespace, prefixed.split('.'))))
+          text = prefixed
+        else
+          scopePrefix = undefined
+      }
       let key: KeyString | undefined
       if (candidate.dynamic === 'unknown')
         key = undefined

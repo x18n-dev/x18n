@@ -8,6 +8,7 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | Preset | Library | Detected from |
 | --- | --- | --- |
 | [`nuxt-i18n`](/presets/nuxt-i18n) | @nuxtjs/i18n | `@nuxtjs/i18n`, `nuxt-i18n` |
+| [`nuxt-i18n-micro`](/presets/nuxt-i18n-micro) | Nuxt I18n Micro | `nuxt-i18n-micro` |
 | [`vue-i18n`](/presets/vue-i18n) | vue-i18n | `vue-i18n`, `vuex-i18n`, `petite-vue-i18n`, `vue-i18n-bridge`, `@intlify/*` |
 | [`fluent-vue`](/presets/fluent-vue) | fluent-vue | `fluent-vue`, `fluent-vue-loader`, `rollup-plugin-fluent-vue`, `unplugin-fluent-vue` |
 | [`i18next-shopify`](/presets/i18next-shopify) | i18next-shopify | `@shopify/i18next-shopify` |
@@ -70,7 +71,7 @@ presets: [vue-i18n, general]
 
 ::
 
-In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
+In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `nuxtI18nMicro`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
 
 ## What a preset adds
 
@@ -97,7 +98,7 @@ A placeholder syntax tells x18n how placeholders look in messages. The [`placeho
 
 | Syntax | Example | Used by |
 | --- | --- | --- |
-| braces | `{name}`, `{0}` | vue-i18n, nuxt-i18n, i18next-shopify, next-international, ui5, vscode-extension, flutter |
+| braces | `{name}`, `{0}` | vue-i18n, nuxt-i18n, nuxt-i18n-micro, i18next-shopify, next-international, ui5, vscode-extension, flutter |
 | linked | `@:key`, `@.lower:key` | vue-i18n, nuxt-i18n |
 | double braces | `{{name}}`, `{{name, format}}`, `{{- raw}}` | i18next, react-i18next, i18next-shopify, next-translate, ngx-translate, transloco |
 | nesting | `$t(key)` | i18next, react-i18next, i18next-shopify |

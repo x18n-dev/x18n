@@ -42,12 +42,68 @@ export function nuxtI18n(): Preset {
       {
         name: 'x18n:nuxt-i18n',
         async config(draft, ctx) {
-          const nuxtConfig = await ctx.host.readFile('nuxt.config.ts') ?? await ctx.host.readFile('nuxt.config.js')
+          const nuxtConfig = await readNuxtConfig(ctx.host)
           const langDir = nuxtConfig ? /langDir:\s*['"]([^'"]+)['"]/.exec(nuxtConfig)?.[1]?.replace(/^\.\/|\/$/g, '') : undefined
           const dirs = langDir ? [`i18n/${langDir}`, langDir] : ['i18n/locales', 'locales', 'lang']
           draft.resources = [...draft.resources, ...dirs.map(dir => ({ pattern: `${dir}/{locale}.{ext}` }))]
         },
       },
+    ],
+  }
+}
+
+async function readNuxtConfig(host: ConfigContext['host']): Promise<string | undefined> {
+  return await host.readFile('nuxt.config.ts') ?? await host.readFile('nuxt.config.js')
+}
+
+/** Nuxt's route name of a page component, which names its translation folder: `pages/products/[id].vue` is `products-id`. */
+function routeName(path: string): string | undefined {
+  const segments = /(?:^|\/)pages\/(.+)\.vue$/.exec(path)?.[1]?.split('/')
+  if (!segments)
+    return undefined
+  if (segments.length > 1 && segments.at(-1) === 'index')
+    segments.pop()
+  return segments.join('-').replace(/[[\].]/g, '')
+}
+
+export function nuxtI18nMicro(): Preset {
+  const returns = ['$t', '$ts', '$tc', '$has']
+  return {
+    name: 'nuxt-i18n-micro',
+    detect: dependsOn(['nuxt-i18n-micro']),
+    plugins: [
+      library({
+        name: 'nuxt-i18n-micro',
+        // `$tn` and `$td` take format names, not message keys.
+        calls: [
+          { callee: returns },
+          { callee: ['useI18n', 'useNuxtApp'], factory: true, returns },
+        ],
+        templates: [
+          { template: '{{ $t(\'{key}\'{args}) }}', kinds: ['vue-template-text'] },
+          { template: ':{attr}="$t(\'{key}\'{args})"', kinds: ['vue-attribute'] },
+          { template: '$t(\'{key}\'{args})', kinds: ['js-string', 'js-template'], files: ['**/*.vue'], imports: ['import { useI18n } from \'#imports\'', 'const { $t } = useI18n()'] },
+        ],
+        extra: async (draft, ctx) => {
+          const nuxtConfig = await readNuxtConfig(ctx.host)
+          const dir = (nuxtConfig && /translationDir:\s*['"]([^'"]+)['"]/.exec(nuxtConfig)?.[1]?.replace(/^\.\/|\/$/g, '')) || 'locales'
+          // Page files `pages/{route}/{locale}.json` read as keys under `pages.{route}`.
+          draft.resources = [...draft.resources, { pattern: `${dir}/{locale}.json` }, { pattern: `${dir}/{namespaces}/{locale}.json` }]
+        },
+      }),
+      {
+        name: 'x18n:nuxt-i18n-micro-pages',
+        scanners: [{
+          id: 'nuxt-i18n-micro-pages',
+          extensions: ['vue'],
+          // A page sees its own messages over the global ones.
+          scan(file) {
+            const route = routeName(file.path)
+            return { usages: [], scopes: route ? [{ range: { start: 0, end: file.text.length }, keyPrefix: `pages.${route}`, optionalPrefix: true }] : [] }
+          },
+        }],
+      },
+      placeholders({ ...braces, implicit: ['count'] }),
     ],
   }
 }

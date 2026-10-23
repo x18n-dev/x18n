@@ -1076,6 +1076,10 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "nuxt-i18n-micro",
+          "reason": "not-detected",
+        },
+        {
           "name": "vue-i18n",
           "reason": "detected",
         },
