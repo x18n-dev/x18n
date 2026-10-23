@@ -53,6 +53,7 @@ exports[`x18n check finds the planted problems > react-i18next 1`] = `
   "missing-translation auth:login.forgot public/locales/en/auth.json:7",
   "missing-translation auth:login.submit public/locales/en/auth.json:6",
   "missing-translation auth:logout public/locales/en/auth.json:9",
+  "missing-translation common:item_many public/locales/en/common.json:5",
   "placeholder-mismatch common:welcome public/locales/fr/common.json:6",
 ]
 `;

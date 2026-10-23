@@ -1,11 +1,11 @@
 import type { ResolvedConfig } from '../types/config'
-import type { KeyString, TextRange, Usage } from '../types/model'
-import type { KeyContext, Scope, UsageCandidate } from '../types/plugin'
-import { joinKey } from '../keys'
+import type { KeyString, LocaleInfo, TextRange, Usage } from '../types/model'
+import type { KeyContext, PluralForm, Scope, UsageCandidate } from '../types/plugin'
+import { joinKey, pathMatcher } from '../keys'
 
 export interface UsageResolver {
-  /** `defined` tells whether a resource defines a key, for scopes with an optional key prefix. */
-  readonly resolve: (candidate: UsageCandidate, scopes: readonly Scope[], path: string, scanner: string, defined: (key: KeyString) => boolean) => Usage
+  /** `has` tells whether a key exists, for optional key prefixes and the fallback namespaces. */
+  readonly resolve: (candidate: UsageCandidate, scopes: readonly Scope[], path: string, scanner: string, has: (key: KeyString) => boolean) => Usage
 }
 
 function innermost(scopes: readonly Scope[], range: TextRange): Scope | undefined {
@@ -23,9 +23,10 @@ export function createUsageResolver(
   namespaced: boolean,
   normalizers: readonly ((raw: string, ctx: KeyContext) => string | undefined)[],
 ): UsageResolver {
-  const separator = config.namespace.separator
+  const { separator, fallback } = config.namespace
+  const byFile = Object.entries(config.namespace.byFile).map(([glob, namespace]) => ({ matches: pathMatcher([glob]), namespace }))
   return {
-    resolve(candidate, scopes, path, scanner, defined) {
+    resolve(candidate, scopes, path, scanner, has) {
       const scope = innermost(scopes, candidate.range)
       const ctx = { path }
       let text = candidate.raw
@@ -36,7 +37,7 @@ export function createUsageResolver(
           break
         }
       }
-      const scopeNamespace = candidate.namespace ?? scope?.namespace
+      const scopeNamespace = candidate.namespace ?? scope?.namespace ?? byFile.find(rule => rule.matches(path))?.namespace
       let scopePrefix = candidate.keyPrefix ?? scope?.keyPrefix
       let namespace: string | undefined
       let explicit = false
@@ -54,16 +55,21 @@ export function createUsageResolver(
       // An explicit namespace (`t('common:save')`) leaves the scope's key prefix out.
       if (scopePrefix && !explicit) {
         const prefixed = text ? `${scopePrefix}.${text}` : scopePrefix
-        if (candidate.keyPrefix || !scope?.optionalPrefix || defined(joinKey(namespace, prefixed.split('.'))))
+        // A prefix usage (`items.${id}`) ends in an empty segment, so its parent key decides.
+        const lookup = candidate.dynamic === 'prefix' ? prefixed.replace(/\.$/, '') : prefixed
+        if (candidate.keyPrefix || !scope?.optionalPrefix || has(joinKey(namespace, lookup.split('.'))))
           text = prefixed
         else
           scopePrefix = undefined
       }
+      const keyPath = text === '' ? [] : text.split('.')
       let key: KeyString | undefined
       if (candidate.dynamic === 'unknown')
         key = undefined
       else
-        key = joinKey(namespace, text === '' ? [] : text.split('.'))
+        key = joinKey(namespace, keyPath)
+      if (key !== undefined && namespaced && !explicit && candidate.dynamic === false && !has(key))
+        key = fallback.map(ns => joinKey(ns, keyPath)).find(has) ?? key
       return {
         key,
         raw: candidate.raw,
@@ -107,21 +113,70 @@ export function suppressedRanges(text: string): TextRange[] {
   return ranges
 }
 
-/** Compiles derived-key rules (`{key}_plural`, `{key}_*`) into a function from a key to its base key. */
-export function derivedBase(rules: readonly string[]): (key: KeyString) => KeyString | undefined {
-  const regexes = rules.map((rule) => {
-    const source = rule
-      .split('{key}')
-      .map(part => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^.:]+'))
-      .join('(.+)')
-    return new RegExp(`^${source}$`)
+/** The plural categories of a locale's language: Japanese has only `other`. */
+export function categoriesOf(info: LocaleInfo, type: Intl.PluralRuleType): readonly Intl.LDMLPluralRule[] {
+  return type === 'ordinal' ? info.ordinalCategories : info.pluralCategories
+}
+
+export interface DerivedKeys {
+  /** Base keys of a key, nearest first. Suffixes stack, so `friend_male_one` derives from `friend_male` and `friend`. */
+  readonly basesOf: (key: KeyString) => KeyString[]
+  readonly formOf: (key: KeyString) => PluralForm | undefined
+}
+
+const tokens = /(\{key\}|\{plural\}|\{ordinal\}|\*)/
+const categories: readonly Intl.LDMLPluralRule[] = ['zero', 'one', 'two', 'few', 'many', 'other']
+
+/**
+ * Compiles derived-key rules (`{key}_plural`, `{key}_*`, `{key}_{plural}`). `*` is any key segment;
+ * `{plural}` and `{ordinal}` are CLDR plural categories, which each locale needs its own set of.
+ */
+export function derivedKeys(rules: readonly string[]): DerivedKeys {
+  const compiled = rules.map((rule) => {
+    const parts = rule.split(tokens)
+    const type: Intl.PluralRuleType | undefined = parts.includes('{ordinal}') ? 'ordinal' : parts.includes('{plural}') ? 'cardinal' : undefined
+    const source = parts.map((part) => {
+      if (part === '{key}')
+        return '(?<key>.+)'
+      if (part === '{plural}' || part === '{ordinal}')
+        return `(?<category>${categories.join('|')})`
+      if (part === '*')
+        return '[^.:]+'
+      return part.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    }).join('')
+    return { type, re: new RegExp(`^${source}$`, 'd') }
   })
-  return (key) => {
-    for (const re of regexes) {
-      const match = re.exec(key)
-      if (match?.[1])
-        return match[1]
+  const baseOf = (key: KeyString): KeyString | undefined => {
+    for (const { re } of compiled) {
+      const base = re.exec(key)?.groups?.key
+      if (base)
+        return base
     }
     return undefined
+  }
+  return {
+    basesOf(key) {
+      const bases: KeyString[] = []
+      for (let base = baseOf(key); base !== undefined; base = baseOf(base))
+        bases.push(base)
+      return bases
+    },
+    formOf(key) {
+      let best: (PluralForm & { readonly base: string }) | undefined
+      for (const { type, re } of compiled) {
+        const match = type && re.exec(key)
+        if (!type || !match)
+          continue
+        const base = match.groups?.key
+        const category = categories.find(c => c === match.groups?.category)
+        const at = match.indices?.groups?.category
+        // The rule that takes the longest suffix wins: `place_ordinal_one` is an ordinal of `place`.
+        if (!base || !category || !at || (best && best.base.length <= base.length))
+          continue
+        const [start, end] = at
+        best = { base, type, category, keyOf: other => `${key.slice(0, start)}${other}${key.slice(end)}` }
+      }
+      return best
+    },
   }
 }

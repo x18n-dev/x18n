@@ -56,10 +56,10 @@ async function readNuxtConfig(host: ConfigContext['host']): Promise<string | und
   return await host.readFile('nuxt.config.ts') ?? await host.readFile('nuxt.config.js')
 }
 
-/** Nuxt's route name of a page component, which names its translation folder: `pages/products/[id].vue` is `products-id`. */
+/** Nuxt's route name of a page component, which names its translation folder: `pages/products/[id].vue` is `products-id`. Route groups like `(admin)` are not part of it. */
 function routeName(path: string): string | undefined {
-  const segments = /(?:^|\/)pages\/(.+)\.vue$/.exec(path)?.[1]?.split('/')
-  if (!segments)
+  const segments = /^(?:app\/)?pages\/(.+)\.vue$/.exec(path)?.[1]?.split('/').filter(segment => !/^\(.+\)$/.test(segment))
+  if (!segments?.length)
     return undefined
   if (segments.length > 1 && segments.at(-1) === 'index')
     segments.pop()
@@ -108,15 +108,17 @@ export function nuxtI18nMicro(): Preset {
   }
 }
 
-/** `defaultNS` from the i18next init code (`i18n.ts`, `next-i18next.config.js`), as keys without a namespace use it. */
-async function findDefaultNamespace(host: ConfigContext['host']): Promise<string | undefined> {
+/** `defaultNS` and `fallbackNS` from the i18next init code (`i18n.ts`, `next-i18next.config.js`), as keys without a namespace use them. */
+async function findNamespaces(host: ConfigContext['host']): Promise<{ default: string | undefined, fallback: string[] | undefined }> {
   const files = await host.glob(['**/*i18n*.{js,mjs,cjs,ts,mts,cts}', '**/i18n/index.{js,ts}'], { ignore: ['**/node_modules/**', '**/dist/**'], gitignore: true })
+  const found: { default: string | undefined, fallback: string[] | undefined } = { default: undefined, fallback: undefined }
   for (const file of files.slice(0, 20)) {
-    const found = /\bdefaultNS\s*:\s*['"`]([^'"`]+)['"`]/.exec(await host.readFile(file) ?? '')
-    if (found)
-      return found[1]
+    const text = await host.readFile(file) ?? ''
+    found.default ??= /\bdefaultNS\s*:\s*['"`]([^'"`]+)['"`]/.exec(text)?.[1]
+    const fallback = /\bfallbackNS\s*:\s*(\[[^\]]*\]|['"`][^'"`]+['"`])/.exec(text)?.[1]
+    found.fallback ??= fallback ? [...fallback.matchAll(/['"`]([^'"`]+)['"`]/g)].map(m => m[1]!) : undefined
   }
-  return undefined
+  return found
 }
 
 const i18nextPlugin = library({
@@ -124,16 +126,23 @@ const i18nextPlugin = library({
   // i18next names a namespace in a folder by its path: `useTranslation('pages/home')`.
   namespace: { separator: ':', default: 'translation', fromPath: 'slash' },
   extra: async (draft, ctx) => {
-    const found = ctx.user.namespace?.default ? undefined : await findDefaultNamespace(ctx.host)
-    if (found)
-      draft.namespace = { ...draft.namespace, default: found }
+    const user = ctx.user.namespace
+    if (user?.default && user.fallback)
+      return
+    const found = await findNamespaces(ctx.host)
+    draft.namespace = {
+      ...draft.namespace,
+      default: user?.default ?? found.default ?? draft.namespace.default,
+      fallback: user?.fallback ?? found.fallback ?? draft.namespace.fallback,
+    }
   },
   calls: [
     { callee: ['t', 'i18next.t', 'i18n.t'], namespace: { arg: 1, property: 'ns' } },
     { callee: ['getFixedT', 'i18next.getFixedT', 'i18n.getFixedT'], factory: true, returns: ['t'], namespace: { arg: 1 }, keyPrefix: { arg: 2 } },
     { callee: 'tr', types: ['TFunction'] },
   ],
-  derivedKeys: ['{key}_*'],
+  // Plural forms first, so each locale needs its own categories; `*` covers contexts and the v3 `_plural`.
+  derivedKeys: ['{key}_ordinal_{ordinal}', '{key}_{plural}', '{key}_*'],
   translatePrompt: (draft, ctx) => {
     draft.notes.push(`i18next plural keys end in _${ctx.localeInfo.pluralCategories.join(', _')} for ${ctx.targetLocale}; write one key per category.`)
   },
@@ -162,15 +171,15 @@ export function reactI18next(): Preset {
         calls: [
           { callee: 'useTranslation', factory: true, returns: ['t'], namespace: { arg: 0 }, keyPrefix: { arg: 1, property: 'keyPrefix' } },
           { callee: 'Trans', key: { arg: 0, property: 'i18nKey' }, namespace: { arg: 0, property: 'ns' } },
-          { callee: 'Translation', factory: true, returns: ['t'], namespace: { arg: 0, property: 'ns' } },
+          { callee: 'Translation', factory: true, returns: ['t'], namespace: { arg: 0, property: 'ns' }, keyPrefix: { arg: 0, property: 'keyPrefix' } },
         ],
         templates: [
           { template: '<Trans i18nKey="{key}" />', kinds: ['jsx-text'], imports: ['import { Trans } from \'react-i18next\''] },
           { template: '{attr}={i18next.t(\'{key}\'{args})}', kinds: ['jsx-attribute'], imports: ['import i18next from \'i18next\''] },
         ],
       }),
-      // `withTranslation('ns')(Component)` passes `t` through props, usually below the component.
-      regexScopes('\\bwithTranslation\\(\\s*\\[?\\s*[\'"`]([^\'"`]+)[\'"`]', 'react-i18next-hoc', { wholeFile: true, extensions: scriptExtensions }),
+      // `withTranslation('ns', { keyPrefix })(Component)` passes `t` through props, usually below the component.
+      regexScopes('\\bwithTranslation\\(\\s*(?:\\[?\\s*[\'"`](?<namespace>[^\'"`]+)[\'"`])?(?:[^)]*?\\bkeyPrefix\\s*:\\s*[\'"`](?<keyPrefix>[^\'"`]+)[\'"`])?', 'react-i18next-hoc', { wholeFile: true, extensions: scriptExtensions }),
     ],
   }
 }

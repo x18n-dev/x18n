@@ -26,7 +26,7 @@ export const missingKey: Check = {
 export const missingTranslation: Check = {
   id: 'missing-translation',
   defaultSeverity: 'warning',
-  description: 'A source-locale key that target locales lack. One diagnostic per key, at the source entry.',
+  description: 'A source-locale key that target locales lack, or a plural form their language needs. One diagnostic per key, at the source entry.',
   * run(ctx) {
     const missing = new Map<KeyString, string[]>()
     for (const coverage of ctx.coverage()) {
@@ -39,7 +39,8 @@ export const missingTranslation: Check = {
       }
     }
     for (const [key, locales] of missing) {
-      const source = ctx.message(key, ctx.sourceLocale)
+      const other = ctx.formOf(key)?.keyOf('other')
+      const source = ctx.message(key, ctx.sourceLocale) ?? (other === undefined ? undefined : ctx.message(other, ctx.sourceLocale))
       yield {
         key,
         locale: ctx.sourceLocale,

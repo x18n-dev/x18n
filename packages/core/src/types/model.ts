@@ -46,6 +46,8 @@ export interface LocaleInfo {
   readonly displayName: string | undefined
   readonly flag: string | undefined
   readonly pluralCategories: readonly Intl.LDMLPluralRule[]
+  /** Categories of ordinal numbers (1st, 2nd), which differ from the cardinal ones. */
+  readonly ordinalCategories: readonly Intl.LDMLPluralRule[]
 }
 
 /** Embedded resource inside a file, for example a Vue `<i18n>` block. */

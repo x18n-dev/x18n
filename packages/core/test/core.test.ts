@@ -52,6 +52,7 @@ describe('locale info', () => {
     expect(parseLocaleInfo('de').flag).toBe('🇩🇪')
     expect([parseLocaleInfo('zh-Hans').flag, parseLocaleInfo('zh-Hant').flag]).toEqual(['🇨🇳', '🇹🇼'])
     expect(parseLocaleInfo('ru').pluralCategories).toEqual(['one', 'few', 'many', 'other'])
+    expect(parseLocaleInfo('en').ordinalCategories).toEqual(['one', 'two', 'few', 'other'])
     expect(parseLocaleInfo('not a code')).toMatchObject({ code: 'not a code', language: undefined })
   })
 })
