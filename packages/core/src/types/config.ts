@@ -15,8 +15,8 @@ export interface CallSpec {
   readonly kind?: 'call' | 'selector' | 'accessor' | undefined
   /** Which argument holds the key. Default 0. */
   readonly key?: number | ArgSource | undefined
-  /** Where the namespace comes from (call option, or factory argument when `factory` is true). */
-  readonly namespace?: ArgSource | undefined
+  /** Where the namespace comes from (call option, or factory argument when `factory` is true), or a fixed namespace such as `'shared'` for a hook that wraps `useTranslation('shared')`. */
+  readonly namespace?: ArgSource | string | undefined
   /** Where a key prefix comes from (`keyPrefix` option, or next-intl `useTranslations('a.b')`). */
   readonly keyPrefix?: ArgSource | undefined
   /** The callee is a factory that returns the translate function, for example `useI18n()` returning `{ t }`. */
@@ -113,6 +113,10 @@ export interface NamespaceOptions {
   readonly separator?: string | undefined
   /** Namespace of keys written without one. */
   readonly default?: string | undefined
+  /** Namespaces searched in order when a key written without a namespace is not in its own (i18next `fallbackNS`). */
+  readonly fallback?: readonly string[] | undefined
+  /** Namespace of keys written without one, per glob of source files, before `default`: `{ 'packages/admin/**': 'admin' }`. */
+  readonly byFile?: { readonly [glob: string]: string } | undefined
   /** How `{namespaces}` folders name a namespace: `dot` makes `pages/home` into `pages.home`, `slash` keeps `pages/home`, `camel` makes `todos-page` into `todosPage`. Default `dot`. */
   readonly fromPath?: 'dot' | 'slash' | 'camel' | undefined
 }
@@ -202,7 +206,13 @@ export interface ResolvedConfig {
   readonly resources: readonly ResourceSpec[]
   readonly formats: { readonly [extension: string]: string }
   readonly keyStyle: 'auto' | 'nested' | 'flat'
-  readonly namespace: { readonly separator: string, readonly default: string | undefined, readonly fromPath: NamespaceFromPath }
+  readonly namespace: {
+    readonly separator: string
+    readonly default: string | undefined
+    readonly fallback: readonly string[]
+    readonly byFile: { readonly [glob: string]: string }
+    readonly fromPath: NamespaceFromPath
+  }
   readonly usage: {
     readonly include: readonly string[]
     readonly exclude: readonly string[]
