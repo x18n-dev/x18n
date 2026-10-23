@@ -19,7 +19,12 @@ interface Node {
 
 /** Ends of the segments of a key: `ns:a.b` gives `ns`, `ns:a`, `ns:a.b`. */
 function prefixes(key: string): { id: string, label: string }[] {
-  return [...key.matchAll(/[^.:]+/g)].map(m => ({ id: key.slice(0, m.index + m[0].length), label: m[0] }))
+  return [
+    ...key.matchAll(/[^.:]+/g),
+  ].map(m => ({
+    id: key.slice(0, m.index + m[0].length),
+    label: m[0],
+  }))
 }
 
 /** Keys as a tree, folders by `.` and `:`; `all` opens every folder, otherwise only those in `open`. */
@@ -29,7 +34,12 @@ export function treeRows(keys: readonly string[], open: ReadonlySet<string>, all
     let level = root
     let node: Node | undefined
     for (const { id, label } of prefixes(key)) {
-      node = level.get(label) ?? { id, label, key: undefined, children: new Map() }
+      node = level.get(label) ?? {
+        id,
+        label,
+        key: undefined,
+        children: new Map(),
+      }
       level.set(label, node)
       level = node.children
     }
@@ -38,10 +48,19 @@ export function treeRows(keys: readonly string[], open: ReadonlySet<string>, all
   }
   const rows: KeyRowItem[] = []
   const walk = (level: Map<string, Node>, depth: number): void => {
-    for (const node of [...level.values()].sort((a, b) => a.label.localeCompare(b.label))) {
+    for (const node of [
+      ...level.values(),
+    ].sort((a, b) => a.label.localeCompare(b.label))) {
       const branch = node.children.size > 0
       const isOpen = all || open.has(node.id)
-      rows.push({ id: node.id, label: node.label, depth, key: node.key, branch, open: branch && isOpen })
+      rows.push({
+        id: node.id,
+        label: node.label,
+        depth,
+        key: node.key,
+        branch,
+        open: branch && isOpen,
+      })
       if (branch && isOpen)
         walk(node.children, depth + 1)
     }

@@ -1,5 +1,11 @@
-export { calleeName, js, loadParser, scanSource } from './js'
-export type { ScanSourceOptions } from './js'
-export { compileUsagePattern, regex, regexScopes, scanWithRegex } from './regex'
-export { svelte } from './svelte'
-export { vue } from './vue'
+import type { ScannerEntry } from '@x18n/core'
+import js from './js/entry'
+import svelte from './svelte/entry'
+import vue from './vue/entry'
+
+/**
+ * Built-in scanners by id, in scan order. A scanner is a folder: `<name>/entry.ts` holds its extensions and a
+ * `load` for `<name>/index.ts`, imported when a file it scans is first scanned. `regex` is not here: its
+ * extensions come from `usage.regex`, so it is always loaded.
+ */
+export const scanners: { readonly [id: string]: ScannerEntry } = { js, vue, svelte }

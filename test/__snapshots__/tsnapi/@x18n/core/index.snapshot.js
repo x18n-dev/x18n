@@ -5,6 +5,7 @@
 export function applyMessageOps(_, _) {}
 export function applyTextEdits(_, _) {}
 export function buildTree(_) {}
+export function createLibraryPlugin(_) {}
 export function createLineIndex(_) {}
 export function createMemoryHost(_, _) {}
 export function createOverlayHost(_) {}

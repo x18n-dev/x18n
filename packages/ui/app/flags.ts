@@ -13,7 +13,7 @@ watchEffect(() => {
 })
 
 /** The region of a flag emoji (`🇩🇪` is `DE`), as core writes `LocaleSummary.flag`. */
-export function regionOfFlag(flag: string): string {
+function regionOfFlag(flag: string): string {
   return [...flag].map(c => String.fromCharCode(c.codePointAt(0)! - 0x1F1E6 + 65)).join('')
 }
 
@@ -30,14 +30,22 @@ export function flagCandidates(tag: string, coreFlag?: string): string[] {
   }
   catch {}
   const names = [
-    ...coreFlag ? [regionOfFlag(coreFlag)] : [],
+    ...coreFlag
+      ? [
+          regionOfFlag(coreFlag),
+        ]
+      : [],
     // `001` and `419` are world regions, not countries.
-    ...region && /^[A-Z]{2}$/.test(region) ? [region] : [],
+    ...region && /^[A-Z]{2}$/.test(region)
+      ? [region]
+      : [],
     `lang-${code}`,
     `lang-${code.split('-')[0]}`,
     'xx',
   ].map(name => name.toLowerCase())
-  return [...new Set(names)]
+  return [
+    ...new Set(names),
+  ]
 }
 
 /** A data URL of the first known icon of `names`, or undefined while the set loads. */

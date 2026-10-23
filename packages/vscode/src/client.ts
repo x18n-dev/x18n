@@ -20,16 +20,30 @@ export interface ClientHooks {
 export function createClient(context: ExtensionContext, hooks: ClientHooks): LanguageClient {
   const folder = workspace.workspaceFolders?.[0]?.uri
   // A server installed in the project wins over the bundled one, so the project's own x18n version (and its native parser) is used.
-  const local = config.useLocalServer && folder?.scheme === 'file' ? findLocalServer(folder.fsPath) : undefined
+  const local = config.useLocalServer && folder?.scheme === 'file'
+    ? findLocalServer(folder.fsPath)
+    : undefined
   const module = local ?? Uri.joinPath(context.extensionUri, 'dist', 'server.cjs').fsPath
   const serverOptions: ServerOptions = {
     run: { module, transport: TransportKind.ipc },
-    debug: { module, transport: TransportKind.ipc, options: { execArgv: ['--nolazy', '--inspect=6009'] } },
+    debug: {
+      module,
+      transport: TransportKind.ipc,
+      options: {
+        execArgv: ['--nolazy', '--inspect=6009'],
+      },
+    },
   }
   const clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: 'file' }],
+    documentSelector: [
+      { scheme: 'file' },
+    ],
     // Hovers link to these commands; untrusted markdown would not run them.
-    markdown: { isTrusted: { enabledCommands: [commands.openKey, commands.copyTranslatePrompt, commands.translateWithAgent] } },
+    markdown: {
+      isTrusted: {
+        enabledCommands: [commands.openKey, commands.copyTranslatePrompt, commands.translateWithAgent],
+      },
+    },
     // Read on every (re)start, so a restart after a settings change picks up new values.
     initializationOptions: () => ({
       displayLocale: config.displayLocale || undefined,
@@ -54,10 +68,14 @@ export function createClient(context: ExtensionContext, hooks: ClientHooks): Lan
         return hints.filter(hint => !hintCovered(hint.position, decorations, config.annotationMaxLength))
       },
       // The client registers the server's `x18n.extract` as a VS Code command, so the palette entry lands here too.
-      executeCommand: (command, args, next) => command === 'x18n.extract' && args.length === 0 ? hooks.extractAtCursor() : next(command, args),
+      executeCommand: (command, args, next) => command === 'x18n.extract' && args.length === 0
+        ? hooks.extractAtCursor()
+        : next(command, args),
     },
   }
   const client = new LanguageClient('x18n', displayName, serverOptions, clientOptions)
-  client.outputChannel.appendLine(stamp(local ? `Using the project's language server: ${local}` : 'Using the bundled language server.'))
+  client.outputChannel.appendLine(stamp(local
+    ? `Using the project's language server: ${local}`
+    : 'Using the bundled language server.'))
   return client
 }

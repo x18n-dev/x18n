@@ -62,6 +62,7 @@
     "@x18n/node": "workspace:*",
     "bumpp": "catalog:cli",
     "eslint": "catalog:cli",
+    "eslint-plugin-antfu": "catalog:cli",
     "eslint-plugin-slop": "catalog:cli",
     "eslint-plugin-sonarjs": "catalog:cli",
     "knip": "catalog:cli",

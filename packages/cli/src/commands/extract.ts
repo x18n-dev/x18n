@@ -19,7 +19,13 @@ type PlanItem = Parameters<typeof extractItems>[1][number]
 function isPlanItem(value: unknown): value is PlanItem {
   if (!isJsonObject(value) || !isJsonObject(value.range))
     return false
-  const strings = ['path', 'original', 'key', 'value', 'replacement'].every(field => typeof value[field] === 'string')
+  const strings = [
+    'path',
+    'original',
+    'key',
+    'value',
+    'replacement',
+  ].every(field => typeof value[field] === 'string')
   return strings && typeof value.range.start === 'number' && typeof value.range.end === 'number' && Array.isArray(value.imports) && value.imports.every(line => typeof line === 'string')
 }
 
@@ -42,7 +48,13 @@ async function review(candidates: readonly ExtractCandidate[], root: string): Pr
         break
       if (reply === 'n')
         continue
-      picked.push(reply && reply !== 'y' ? { ...candidate, key: reply, replacement: candidate.replacement.replace(candidate.key, reply) } : candidate)
+      picked.push(reply && reply !== 'y'
+        ? {
+            ...candidate,
+            key: reply,
+            replacement: candidate.replacement.replace(candidate.key, reply),
+          }
+        : candidate)
     }
   }
   finally {
@@ -56,7 +68,9 @@ export async function extract(files: readonly string[], options: ExtractCommandO
   const { project } = loaded
   if (options.apply) {
     const items = extractItems(project, await readPlan(options.apply))
-    await runPlan('extract', loaded, project.plan([{ type: 'extract', items }]), options)
+    await runPlan('extract', loaded, project.plan([
+      { type: 'extract', items },
+    ]), options)
     return
   }
   const candidates = findCandidates(project, { files })
@@ -71,7 +85,12 @@ export async function extract(files: readonly string[], options: ExtractCommandO
   const interactive = !options.list && !options.yes && !options.json && process.stdin.isTTY
   if (options.list || (!interactive && !options.yes)) {
     if (options.json) {
-      printJson('extract', { items: candidates.map(c => ({ ...c, file: displayPath(loaded.root, c.path) })) })
+      printJson('extract', {
+        items: candidates.map(c => ({
+          ...c,
+          file: displayPath(loaded.root, c.path),
+        })),
+      })
       return
     }
     for (const c of candidates)
@@ -79,10 +98,17 @@ export async function extract(files: readonly string[], options: ExtractCommandO
     out(`${candidates.length} strings. Apply with \`x18n extract --yes\`, or review with \`x18n extract --plan plan.json\`.`)
     return
   }
-  const chosen = interactive ? await review(candidates, loaded.root) : candidates
+  const chosen = interactive
+    ? await review(candidates, loaded.root)
+    : candidates
   if (chosen.length === 0) {
     out('Nothing to extract.')
     return
   }
-  await runPlan('extract', loaded, project.plan([{ type: 'extract', items: extractItems(project, chosen) }]), options)
+  await runPlan('extract', loaded, project.plan([
+    {
+      type: 'extract',
+      items: extractItems(project, chosen),
+    },
+  ]), options)
 }

@@ -5,8 +5,14 @@ describe('keys', () => {
   it('joins and splits keys with namespaces', () => {
     expect(joinKey('common', ['a', 'b'])).toBe('common:a.b')
     expect(joinKey(undefined, ['a', 'b'])).toBe('a.b')
-    expect(splitKey('common:a.b')).toEqual({ namespace: 'common', path: ['a', 'b'] })
-    expect(splitKey('Note: x', false)).toEqual({ namespace: undefined, path: ['Note: x'] })
+    expect(splitKey('common:a.b')).toEqual({
+      namespace: 'common',
+      path: ['a', 'b'],
+    })
+    expect(splitKey('Note: x', false)).toEqual({
+      namespace: undefined,
+      path: ['Note: x'],
+    })
   })
 
   it('knows subtrees', () => {
@@ -34,7 +40,12 @@ describe('text', () => {
     const before = '{\n  "a": "x",\n  "b": "y"\n}\n'
     const after = '{\n  "a": "z",\n  "b": "y"\n}\n'
     const edits = diffText(before, after)
-    expect(edits).toEqual([{ range: { start: 10, end: 11 }, text: 'z' }])
+    expect(edits).toEqual([
+      {
+        range: { start: 10, end: 11 },
+        text: 'z',
+      },
+    ])
     expect(applyTextEdits(before, edits)).toBe(after)
   })
 
@@ -48,7 +59,12 @@ describe('text', () => {
 
 describe('locale info', () => {
   it('parses codes leniently without changing them', () => {
-    expect(parseLocaleInfo('pt-BR')).toMatchObject({ code: 'pt-BR', language: 'pt', region: 'BR', displayName: 'Brazilian Portuguese' })
+    expect(parseLocaleInfo('pt-BR')).toMatchObject({
+      code: 'pt-BR',
+      language: 'pt',
+      region: 'BR',
+      displayName: 'Brazilian Portuguese',
+    })
     expect(parseLocaleInfo('de').flag).toBe('🇩🇪')
     expect([parseLocaleInfo('zh-Hans').flag, parseLocaleInfo('zh-Hant').flag]).toEqual(['🇨🇳', '🇹🇼'])
     expect(parseLocaleInfo('ru').pluralCategories).toEqual(['one', 'few', 'many', 'other'])
@@ -59,9 +75,14 @@ describe('locale info', () => {
 
 describe('isMessageTree', () => {
   it('accepts nested objects of leaves only', () => {
-    expect(isMessageTree({ a: 'x', b: { c: 1, d: null, e: true } })).toBe(true)
+    expect(isMessageTree({
+      a: 'x',
+      b: { c: 1, d: null, e: true },
+    })).toBe(true)
     expect(isMessageTree(['a'])).toBe(false)
-    expect(isMessageTree({ a: ['x'] })).toBe(false)
+    expect(isMessageTree({
+      a: ['x'],
+    })).toBe(false)
   })
 })
 

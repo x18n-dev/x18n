@@ -20,7 +20,18 @@ function flatten(tree: Tree, prefix = '', out = new Map<string, string>()): Map<
 }
 
 /** The UI's own languages; each has `locales/<code>.json`, which `x18n check --strict` keeps complete. */
-export const uiLocales = ['en', 'zh-Hans', 'zh-Hant', 'ja', 'ko', 'de', 'fr', 'es', 'pt-BR', 'ru'] as const
+export const uiLocales = [
+  'en',
+  'zh-Hans',
+  'zh-Hant',
+  'ja',
+  'ko',
+  'de',
+  'fr',
+  'es',
+  'pt-BR',
+  'ru',
+] as const
 type UiLocale = typeof uiLocales[number]
 
 const loaders = import.meta.glob<Tree>(['./locales/*.json', '!./locales/en.json'], { import: 'default' })
@@ -40,8 +51,11 @@ function matchUiLocale(tag: string): UiLocale | undefined {
   catch {
     return undefined
   }
-  if (locale.language === 'zh')
-    return locale.script === 'Hant' ? 'zh-Hant' : 'zh-Hans'
+  if (locale.language === 'zh') {
+    return locale.script === 'Hant'
+      ? 'zh-Hant'
+      : 'zh-Hans'
+  }
   if (locale.language === 'pt')
     return 'pt-BR'
   return uiLocales.find(code => code === locale.language)
@@ -54,14 +68,25 @@ export function endonym(code: UiLocale): string {
 
 /** `?lang=` (the VS Code panel sets it) wins, then the visitor's pick, then the browser's languages. */
 export function setupI18n(): void {
-  const tags = [new URLSearchParams(location.search).get('lang'), localStorage.getItem(STORAGE_KEY), ...navigator.languages]
-  uiLocale.value = tags.map(tag => tag ? matchUiLocale(tag) : undefined).find(code => code !== undefined) ?? 'en'
+  const tags = [
+    new URLSearchParams(location.search).get('lang'),
+    localStorage.getItem(STORAGE_KEY),
+    ...navigator.languages,
+  ]
+  uiLocale.value = tags.map(tag => tag
+    ? matchUiLocale(tag)
+    : undefined).find(code => code !== undefined) ?? 'en'
   watchEffect(async () => {
     const code = uiLocale.value
     document.documentElement.lang = code
-    const tree = code === 'en' ? undefined : await loaders[`./locales/${code}.json`]?.()
-    if (code === uiLocale.value)
-      messages.value = tree ? flatten(tree) : fallback
+    const tree = code === 'en'
+      ? undefined
+      : await loaders[`./locales/${code}.json`]?.()
+    if (code === uiLocale.value) {
+      messages.value = tree
+        ? flatten(tree)
+        : fallback
+    }
   })
 }
 
@@ -75,7 +100,11 @@ export function t(key: MessageKey, params: Readonly<Record<string, string | numb
   const text = messages.value.get(key) ?? fallback.get(key) ?? key
   return text.replace(/\{(\w+)\}/g, (match, name: string) => {
     const value = params[name]
-    return value === undefined ? match : typeof value === 'number' ? value.toLocaleString(uiLocale.value) : value
+    return value === undefined
+      ? match
+      : typeof value === 'number'
+        ? value.toLocaleString(uiLocale.value)
+        : value
   })
 }
 
@@ -94,7 +123,14 @@ export function languageName(code: string): string | undefined {
   }
 }
 
-const timeUnits = [['year', 31_536e6], ['month', 2_592e6], ['week', 6_048e5], ['day', 864e5], ['hour', 36e5], ['minute', 6e4]] as const
+const timeUnits = [
+  ['year', 31_536e6],
+  ['month', 2_592e6],
+  ['week', 6_048e5],
+  ['day', 864e5],
+  ['hour', 36e5],
+  ['minute', 6e4],
+] as const
 
 /** "3 weeks ago" in the UI language. */
 export function formatAgo(at: number): string {

@@ -86,6 +86,32 @@ export type MessageOp
   = | { readonly type: 'set', readonly path: readonly string[], readonly value: MessageLeaf }
     | { readonly type: 'delete', readonly path: readonly string[] }
 
+/** A built-in format known by its extensions only: the module behind `load` is imported when a file of that format is read. */
+export interface FormatEntry {
+  /** File extensions without the dot. */
+  readonly extensions: readonly string[]
+  /** The module's default export creates a plugin that holds the format. */
+  readonly load: PluginLoader
+}
+
+/** A format entry under its id, as plugins list it. */
+export interface LazyFormat extends FormatEntry {
+  readonly id: string
+}
+
+/** A built-in scanner known by its extensions only: the module behind `load` is imported when a file it scans is first scanned. */
+export interface ScannerEntry {
+  /** File extensions without dot. `*` matches every file. */
+  readonly extensions: readonly string[]
+  /** The module's default export creates a plugin that holds the scanner. */
+  readonly load: PluginLoader
+}
+
+/** A scanner entry under its id, as plugins list it. */
+export interface LazyScanner extends ScannerEntry {
+  readonly id: string
+}
+
 export interface Format {
   readonly id: string
   /** File extensions without the dot. */
@@ -355,6 +381,10 @@ export interface Plugin {
   readonly manifests?: readonly ManifestReader[] | undefined
   readonly localeFinders?: readonly LocaleFinder[] | undefined
   readonly formats?: readonly Format[] | undefined
+  /** Formats that load their module when a file of that format is first read. */
+  readonly lazyFormats?: readonly LazyFormat[] | undefined
+  /** Scanners that load their module when a file they scan is first scanned. */
+  readonly lazyScanners?: readonly LazyScanner[] | undefined
   readonly scanners?: readonly Scanner[] | undefined
   readonly extractors?: readonly Extractor[] | undefined
   readonly checks?: readonly Check[] | undefined
@@ -382,3 +412,28 @@ export interface Preset {
 
 /** A preset factory as referenced by name from YAML and JSON configs. */
 export type PresetFactory = (options?: JsonObject) => Preset
+
+/** Loads a plugin on demand, usually `() => import('./plugin')`: the module's default export creates it. */
+export type PluginLoader = () => Promise<{ readonly default: () => Plugin }>
+
+/** Loads a reporter on demand, usually `() => import('./reporter')`: the module's default export is the reporter. */
+export type ReporterLoader = () => Promise<{ readonly default: Reporter }>
+
+/** Loads a preset on demand, usually `() => import('./preset')`: the module's default export is the factory. */
+export type PresetLoader = () => Promise<{ readonly default: PresetFactory }>
+
+/** When a built-in preset applies. Cheap, so it stays loaded while the preset module does not. */
+export interface PresetDetection {
+  /** Without `detect`, the preset applies only when listed in config. */
+  readonly detect?: ((ctx: DetectContext) => boolean | Promise<boolean>) | undefined
+  /** When true and detected, presets that come after it are not applied. */
+  readonly exclusive?: boolean | undefined
+}
+
+/**
+ * A built-in preset split in two: the detection is always loaded; the module behind `load`
+ * is imported only when it passes or the preset is listed in config.
+ */
+export interface PresetEntry extends PresetDetection {
+  readonly load: PresetLoader
+}

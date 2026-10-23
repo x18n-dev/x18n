@@ -76,13 +76,23 @@ function readBlobs(cwd: string, shas: readonly string[]): Promise<Map<string, st
       }
       resolve(out)
     })
-    child.stdin.end(shas.length ? `${shas.join('\n')}\n` : '')
+    child.stdin.end(shas.length
+      ? `${shas.join('\n')}\n`
+      : '')
   })
 }
 
 /** The path a file added in `commit` was renamed from, with its blob. */
 async function renamedFrom(top: string, commit: string, path: string): Promise<{ path: string, blob: string } | undefined> {
-  const out = await git(top, ['diff-tree', '-r', '-M', '--raw', '--no-abbrev', '--no-commit-id', commit])
+  const out = await git(top, [
+    'diff-tree',
+    '-r',
+    '-M',
+    '--raw',
+    '--no-abbrev',
+    '--no-commit-id',
+    commit,
+  ])
   for (const line of out.split('\n')) {
     const [meta, from, to] = line.split('\t')
     if (to === path && meta?.split(' ')[4]?.startsWith('R'))
@@ -116,27 +126,47 @@ function parseLog(out: string): LogEntry[] {
     const files = lines.filter(line => line.startsWith(':')).map((line) => {
       const [meta = '', ...paths] = line.split('\t')
       const [, , before = '', after = '', status = ''] = meta.split(' ')
-      return { path: paths.at(-1) ?? '', status, before: noBlob.test(before) ? undefined : before, after: noBlob.test(after) ? undefined : after }
+      return {
+        path: paths.at(-1) ?? '',
+        status,
+        before: noBlob.test(before)
+          ? undefined
+          : before,
+        after: noBlob.test(after)
+          ? undefined
+          : after,
+      }
     })
-    return { sha, at: Number(time) * 1000, author, files }
+    return {
+      sha,
+      at: Number(time) * 1000,
+      author,
+      files,
+    }
   })
 }
 
 async function collectCommits(input: WalkInput): Promise<Map<string, Commit>> {
   const commits = new Map<string, Commit>()
-  const queue = [{ from: input.head, paths: input.resources }]
+  const queue = [
+    { from: input.head, paths: input.resources },
+  ]
   for (let item = queue.shift(); item; item = queue.shift()) {
     const out = await git(input.top, [
       'log',
       item.from,
-      ...input.base ? [`^${input.base}`] : [],
+      ...input.base
+        ? [`^${input.base}`]
+        : [],
       '--no-merges',
       '--raw',
       '--no-abbrev',
       '--format=%x01%H%x00%ct%x00%an',
       ...input.window,
       '--',
-      ...[...item.paths.keys()].map(path => `:(literal)${path}`),
+      ...[
+        ...item.paths.keys(),
+      ].map(path => `:(literal)${path}`),
     ])
     for (const entry of parseLog(out)) {
       const commit = commits.get(entry.sha) ?? { at: entry.at, author: entry.author, files: [] }
@@ -146,9 +176,17 @@ async function collectCommits(input: WalkInput): Promise<Map<string, Commit>> {
         if (!resource)
           continue
         // Path-limited logs see a renamed file as added; follow it to its old path.
-        const renamed = file.status === 'A' ? await renamedFrom(input.top, entry.sha, file.path) : undefined
-        if (renamed)
-          queue.push({ from: `${entry.sha}^`, paths: new Map([[renamed.path, resource]]) })
+        const renamed = file.status === 'A'
+          ? await renamedFrom(input.top, entry.sha, file.path)
+          : undefined
+        if (renamed) {
+          queue.push({
+            from: `${entry.sha}^`,
+            paths: new Map([
+              [renamed.path, resource],
+            ]),
+          })
+        }
         commit.files.push({ resource, before: renamed?.blob ?? file.before, after: file.after })
       }
     }
@@ -159,7 +197,9 @@ async function collectCommits(input: WalkInput): Promise<Map<string, Commit>> {
 /** Message changes per key and locale: in each commit, the messages of a locale's changed files before and after. */
 async function walk(input: WalkInput): Promise<Changes> {
   const commits = await collectCommits(input)
-  const shas = new Set([...commits.values()].flatMap(commit => commit.files.flatMap(file => [file.before, file.after].filter(sha => sha !== undefined))))
+  const shas = new Set([
+    ...commits.values(),
+  ].flatMap(commit => commit.files.flatMap(file => [file.before, file.after].filter(sha => sha !== undefined))))
   const blobs = await readBlobs(input.top, [...shas])
   const parsed = new Map<string, ReadonlyMap<KeyString, MessageLeaf> | undefined>()
   const messagesOf = (resource: Resource, sha: string | undefined): ReadonlyMap<KeyString, MessageLeaf> | undefined => {
@@ -168,7 +208,9 @@ async function walk(input: WalkInput): Promise<Changes> {
     const id = `${resource.id}\0${sha}`
     if (!parsed.has(id)) {
       const text = blobs.get(sha)
-      parsed.set(id, text === undefined ? undefined : input.ctx.messagesIn(resource, text))
+      parsed.set(id, text === undefined
+        ? undefined
+        : input.ctx.messagesIn(resource, text))
     }
     return parsed.get(id)
   }
@@ -193,7 +235,10 @@ async function walk(input: WalkInput): Promise<Changes> {
           continue
         const byKey = changes.get(key) ?? new Map<LocaleCode, Change[]>()
         changes.set(key, byKey)
-        byKey.set(locale, [...byKey.get(locale) ?? [], [commit.at, sha, commit.author, value]])
+        byKey.set(locale, [
+          ...byKey.get(locale) ?? [],
+          [commit.at, sha, commit.author, value],
+        ])
       }
     }
   }
@@ -206,11 +251,21 @@ async function walk(input: WalkInput): Promise<Changes> {
 
 /** Messages at HEAD per locale, to tell uncommitted edits. */
 async function headValues(ctx: HistoryContext, top: string, resources: ReadonlyMap<string, Resource>): Promise<Map<LocaleCode, Map<KeyString, MessageLeaf>>> {
-  const out = await git(top, ['ls-tree', '-r', 'HEAD', '--', ...resources.keys()])
+  const out = await git(top, [
+    'ls-tree',
+    '-r',
+    'HEAD',
+    '--',
+    ...resources.keys(),
+  ])
   const files = out.split('\n').flatMap((line) => {
     const [meta = '', path = ''] = line.split('\t')
     const resource = resources.get(path)
-    return resource ? [{ resource, sha: meta.split(' ')[2]! }] : []
+    return resource
+      ? [
+          { resource, sha: meta.split(' ')[2]! },
+        ]
+      : []
   })
   const blobs = await readBlobs(top, files.map(file => file.sha))
   const values = new Map<LocaleCode, Map<KeyString, MessageLeaf>>()
@@ -232,7 +287,14 @@ function toHistory(changes: Changes, head: ReadonlyMap<LocaleCode, ReadonlyMap<K
     for (const [locale, [newest]] of byLocale) {
       if (newest) {
         const value = head.get(locale)?.get(key)
-        entries.set(locale, { updatedAt: newest[0], revision: newest[1], author: newest[2], value: value === undefined ? newest[3] : value })
+        entries.set(locale, {
+          updatedAt: newest[0],
+          revision: newest[1],
+          author: newest[2],
+          value: value === undefined
+            ? newest[3]
+            : value,
+        })
       }
     }
   }
@@ -243,11 +305,20 @@ function toHistory(changes: Changes, head: ReadonlyMap<LocaleCode, ReadonlyMap<K
 }
 
 function fromWalked(walked: Walked): Changes {
-  return new Map(walked.changes.map(([key, byLocale]) => [key, new Map(byLocale)]))
+  return new Map(walked.changes.map(([key, byLocale]) => [
+    key,
+    new Map(byLocale),
+  ]))
 }
 
 function toWalked(head: string, changes: Changes): Walked {
-  return { head, changes: [...changes].map(([key, byLocale]) => [key, [...byLocale]]) }
+  return {
+    head,
+    changes: [...changes].map(([key, byLocale]) => [
+      key,
+      [...byLocale],
+    ]),
+  }
 }
 
 /** Fresh changes first, so lists stay newest first. */
@@ -255,8 +326,12 @@ function mergeChanges(fresh: Changes, older: Changes): Changes {
   for (const [key, byLocale] of older) {
     const target = fresh.get(key) ?? new Map<LocaleCode, Change[]>()
     fresh.set(key, target)
-    for (const [locale, list] of byLocale)
-      target.set(locale, [...target.get(locale) ?? [], ...list])
+    for (const [locale, list] of byLocale) {
+      target.set(locale, [
+        ...target.get(locale) ?? [],
+        ...list,
+      ])
+    }
   }
   return fresh
 }
@@ -276,7 +351,9 @@ export function gitHistory(): Plugin {
   }
 
   async function load(ctx: HistoryContext): Promise<MessageHistory | undefined> {
-    const options = ctx.config.history === false ? false : ctx.config.history.git
+    const options = ctx.config.history === false
+      ? false
+      : ctx.config.history.git
     if (options === false)
       return undefined
     const run = (args: readonly string[]): Promise<string> => git(ctx.host.root, args)
@@ -293,30 +370,64 @@ export function gitHistory(): Plugin {
       warnOnce(ctx, 'The git clone is shallow, so stale translations are not reported. Fetch the full history (`fetch-depth: 0` in GitHub Actions).')
       return undefined
     }
-    const head = (await run(['rev-parse', '--verify', '--quiet', 'HEAD']).catch(() => '')).trim()
+    const head = (await run([
+      'rev-parse',
+      '--verify',
+      '--quiet',
+      'HEAD',
+    ]).catch(() => '')).trim()
     const prefix = (await run(['rev-parse', '--show-prefix'])).trim()
     const resources = new Map(ctx.resources.filter(resource => !resource.block).map(resource => [`${prefix}${resource.path}`, resource]))
     if (!head || resources.size === 0)
       return undefined
 
     const window = [
-      ...options?.maxDepth === undefined ? [] : [`--max-count=${options.maxDepth}`],
-      ...options?.since === undefined ? [] : [`--since=${options.since instanceof Date ? options.since.toISOString() : options.since}`],
+      ...options?.maxDepth === undefined
+        ? []
+        : [`--max-count=${options.maxDepth}`],
+      ...options?.since === undefined
+        ? []
+        : [`--since=${options.since instanceof Date
+            ? options.since.toISOString()
+            : options.since}`],
     ]
     // A window moves with time, so only full walks are cached.
-    const cache = window.length === 0 ? ctx.host.cache : undefined
-    const signature = [1, [...resources].map(([path, r]) => [path, r.locale, r.namespace, r.format]).sort(), ctx.config.namespace, ctx.config.keyStyle]
+    const cache = window.length === 0
+      ? ctx.host.cache
+      : undefined
+    const signature = [
+      1,
+      [...resources].map(([path, r]) => [path, r.locale, r.namespace, r.format]).sort(),
+      ctx.config.namespace,
+      ctx.config.keyStyle,
+    ]
     const cacheKey = `git-history:${hashText(JSON.stringify(signature))}`
     const cachedText = await cache?.get(cacheKey)
-    const cached = cachedText === undefined ? undefined : JSON.parse(cachedText) as Walked // written below
+    const cached = cachedText === undefined
+      ? undefined
+      : JSON.parse(cachedText) as Walked // written below
     let changes: Changes
     if (cached?.head === head) {
       changes = fromWalked(cached)
     }
     else {
-      const base = cached && await run(['merge-base', '--is-ancestor', cached.head, head]).then(() => cached, () => undefined)
-      const fresh = await walk({ ctx, top, resources, head, base: base?.head, window })
-      changes = base ? mergeChanges(fresh, fromWalked(base)) : fresh
+      const base = cached && await run([
+        'merge-base',
+        '--is-ancestor',
+        cached.head,
+        head,
+      ]).then(() => cached, () => undefined)
+      const fresh = await walk({
+        ctx,
+        top,
+        resources,
+        head,
+        base: base?.head,
+        window,
+      })
+      changes = base
+        ? mergeChanges(fresh, fromWalked(base))
+        : fresh
       await cache?.set(cacheKey, JSON.stringify(toWalked(head, changes)))
     }
     return toHistory(changes, await headValues(ctx, top, resources))
@@ -327,10 +438,17 @@ export function gitHistory(): Plugin {
     let timer: ReturnType<typeof setTimeout> | undefined
     let disposed = false
     const run = (args: readonly string[]): Promise<string> => git(ctx.host.root, args)
-    void Promise.all([run(['rev-parse', '--absolute-git-dir']), run(['rev-parse', '--path-format=absolute', '--git-common-dir'])]).then(([dir, common]) => {
+    void Promise.all([
+      run(['rev-parse', '--absolute-git-dir']),
+      run(['rev-parse', '--path-format=absolute', '--git-common-dir']),
+    ]).then(([dir, common]) => {
       if (disposed)
         return
-      watcher = chokidar([join(dir.trim(), 'HEAD'), join(common.trim(), 'refs/heads'), join(common.trim(), 'packed-refs')], { ignoreInitial: true })
+      watcher = chokidar([
+        join(dir.trim(), 'HEAD'),
+        join(common.trim(), 'refs/heads'),
+        join(common.trim(), 'packed-refs'),
+      ], { ignoreInitial: true })
       watcher.on('all', () => {
         clearTimeout(timer)
         timer = setTimeout(onChange, 100)
@@ -346,5 +464,9 @@ export function gitHistory(): Plugin {
   }
 
   const provider: HistoryProvider = { id: 'git', load, watch }
-  return { name: 'x18n:git-history', runtime: 'node', histories: [provider] }
+  return {
+    name: 'x18n:git-history',
+    runtime: 'node',
+    histories: [provider],
+  }
 }

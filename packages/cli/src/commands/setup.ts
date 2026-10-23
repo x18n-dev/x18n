@@ -16,10 +16,15 @@ export async function schema(name: string | undefined, options: GlobalOptions): 
     throw errors.X18N0001({ issue: `unknown schema "${which}" (config, plugin)` })
   const require = createRequire(import.meta.url)
   const text = await readFile(require.resolve(`@x18n/core/schema/${which}.json`), 'utf8')
-  if (options.json)
-    printJson('schema', { name: which, schema: JSON.parse(text) })
-  else
+  if (options.json) {
+    printJson('schema', {
+      name: which,
+      schema: JSON.parse(text),
+    })
+  }
+  else {
     out(text)
+  }
 }
 
 const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -37,7 +42,9 @@ function namespaceSpan(parts: readonly string[], namespace: string, fromPath: Na
 /** The resource pattern that matches a found file: `public/locales/en/common.json` → `public/locales/{locale}/{namespaces}.{ext}`. */
 function patternOf(resource: { readonly path: string, readonly locale: string, readonly namespace: string | undefined }, fromPath: NamespaceFromPath): string {
   const parts = resource.path.replace(/\.[^./]+$/, '').split('/')
-  const span = resource.namespace === undefined ? undefined : namespaceSpan(parts, resource.namespace, fromPath)
+  const span = resource.namespace === undefined
+    ? undefined
+    : namespaceSpan(parts, resource.namespace, fromPath)
   if (span)
     parts.splice(span.start, span.end - span.start, '{namespaces}')
   const pattern = `${parts.join('/')}.{ext}`
@@ -55,8 +62,13 @@ export async function init(options: GlobalOptions & { readonly format?: string |
   const explanation = project.explain()
   const detected = explanation.presets.filter(p => p.reason === 'detected' && p.name !== 'general').map(p => p.name)
   // Patterns of the files found, not every default of the detected presets.
-  const resources = [...new Set(project.resources.filter(r => !r.block).map(r => patternOf(r, project.config.namespace.fromPath)))]
-  const config = { sourceLocale: project.sourceLocale, resources: resources.map(pattern => ({ pattern })) }
+  const resources = [
+    ...new Set(project.resources.filter(r => !r.block).map(r => patternOf(r, project.config.namespace.fromPath))),
+  ]
+  const config = {
+    sourceLocale: project.sourceLocale,
+    resources: resources.map(pattern => ({ pattern })),
+  }
   const format = options.format ?? 'ts'
   let file: string
   let content: string
@@ -112,20 +124,33 @@ function ejectPlugin(data: PluginFile): string {
   }
   if (data.localeInfo)
     fields.push(`  localeInfo: code => (${literal(data.localeInfo)} as Record<string, { flag?: string, displayName?: string }>)[code],`)
-  const imports = ['definePlugin', ...data.detect ? ['definePreset'] : []]
+  const imports = [
+    'definePlugin',
+    ...data.detect
+      ? ['definePreset']
+      : [],
+  ]
   lines.push(`import { ${imports.join(', ')} } from '@x18n/core'`)
   if (data.placeholders)
     lines.push(`import { placeholderFromShape } from '@x18n/builtins/placeholders'`)
   if (data.scopes)
-    lines.push(`import { regexScopes } from '@x18n/builtins/scanners'`)
+    lines.push(`import regexScopes from '@x18n/builtins/scanners/regex-scopes'`)
   lines.push('', `const plugin = definePlugin({`, ...fields, `})`, '')
-  const plugins = `[plugin${data.scopes ? `, regexScopes(${literal(data.scopes.regex)})` : ''}]`
+  const plugins = `[plugin${data.scopes
+    ? `, regexScopes(${literal(data.scopes.regex)})`
+    : ''}]`
   if (data.detect) {
     const any = data.detect.dependencies?.any
-    lines.push(`export default definePreset({`, `  name: ${literal(data.name)},`, ...data.exclusive ? [`  exclusive: true,`] : [], `  detect: ctx => ${any ? `ctx.hasAnyDependency(${literal(any)})` : 'true'},`, `  plugins: ${plugins},`, `})`)
+    lines.push(`export default definePreset({`, `  name: ${literal(data.name)},`, ...data.exclusive
+      ? [`  exclusive: true,`]
+      : [], `  detect: ctx => ${any
+      ? `ctx.hasAnyDependency(${literal(any)})`
+      : 'true'},`, `  plugins: ${plugins},`, `})`)
   }
   else {
-    lines.push(data.scopes ? `export default ${plugins}` : 'export default plugin')
+    lines.push(data.scopes
+      ? `export default ${plugins}`
+      : 'export default plugin')
   }
   return `${lines.join('\n')}\n`
 }
@@ -135,8 +160,12 @@ export async function eject(file: string, options: GlobalOptions): Promise<void>
   if (!existsSync(path))
     throw errors.X18N1001({ specifier: path, reason: 'the file does not exist' })
   const result = validate(PluginFileSchema, parseYaml(await readFile(path, 'utf8')))
-  if (!result.success)
-    throw errors.X18N1004({ file: path, issues: result.issues.map(i => `${i.path}: ${i.message}`).join('; ') })
+  if (!result.success) {
+    throw errors.X18N1004({
+      file: path,
+      issues: result.issues.map(i => `${i.path}: ${i.message}`).join('; '),
+    })
+  }
   const code = ejectPlugin(result.output)
   if (options.json)
     printJson('plugin eject', { file: path, code })
