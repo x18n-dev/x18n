@@ -34,7 +34,7 @@ export interface CallSpec {
   readonly callee: string | readonly string[];
   readonly kind?: "call" | "selector" | "accessor" | undefined;
   readonly key?: number | ArgSource | undefined;
-  readonly namespace?: ArgSource | undefined;
+  readonly namespace?: ArgSource | string | undefined;
   readonly keyPrefix?: ArgSource | undefined;
   readonly factory?: boolean | undefined;
   readonly returns?: readonly string[] | undefined;
@@ -353,6 +353,10 @@ export interface MessageTree {
 export interface NamespaceOptions {
   readonly separator?: string | undefined;
   readonly default?: string | undefined;
+  readonly fallback?: readonly string[] | undefined;
+  readonly byFile?: {
+    readonly [glob: string]: string;
+  } | undefined;
   readonly fromPath?: "dot" | "slash" | "camel" | undefined;
 }
 export interface NodeRange {
@@ -679,6 +683,10 @@ export interface ResolvedConfig {
   readonly namespace: {
     readonly separator: string;
     readonly default: string | undefined;
+    readonly fallback: readonly string[];
+    readonly byFile: {
+      readonly [glob: string]: string;
+    };
     readonly fromPath: NamespaceFromPath;
   };
   readonly usage: {
