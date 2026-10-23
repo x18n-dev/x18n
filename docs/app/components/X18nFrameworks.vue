@@ -28,6 +28,14 @@ const frameworks: { name: string, icon: string, to: string, mono?: boolean, colo
   { name: 'Rails', icon: 'logos:rails', to: '/presets/ruby-rails' },
   { name: 'Jekyll', icon: 'devicon:jekyll', to: '/presets/jekyll' },
   { name: 'Flutter', icon: 'logos:flutter-icon', to: '/presets/flutter' },
+  { name: 'Python', icon: 'logos:python', to: '/presets/python-gettext' },
+  { name: 'Django', icon: 'logos:django-icon', to: '/presets/python-gettext' },
+  {
+    name: 'Flask',
+    icon: 'logos:flask',
+    to: '/presets/python-gettext',
+    mono: true,
+  },
   {
     name: 'Rust',
     icon: 'logos:rust',

@@ -11,4 +11,6 @@ export declare const composerJson: ManifestReader;
 export declare const gemfile: ManifestReader;
 export declare const packageJson: ManifestReader;
 export declare const pubspecYaml: ManifestReader;
+export declare const pyprojectToml: ManifestReader;
+export declare const requirementsTxt: ManifestReader;
 // #endregion

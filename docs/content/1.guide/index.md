@@ -47,6 +47,7 @@ x18n knows no i18n library and no file format by itself. Plugins add that knowle
 - PHP: [Laravel](/presets/laravel), [Joomla](/presets/php-joomla) and [gettext](/presets/php-gettext)
 - Ruby: [Rails](/presets/ruby-rails) and [Jekyll](/presets/jekyll)
 - Dart: [flutter_i18n](/presets/flutter), [easy_localization](/presets/easy-localization) and [flutter_translate](/presets/flutter-translate)
+- Python: [gettext](/presets/python-gettext) (Django, Flask-Babel, Babel) and [i18nice](/presets/i18nice) (also python-i18n)
 - Rust: [cargo-i18n](/presets/cargo-i18n) (Fluent)
 
 The built-in formats read JSON, JSONC, JSON5, YAML, gettext PO, Java properties, Fluent FTL, INI, PHP arrays and static JS or TS modules. They also read Vue `<i18n>` and `<fluent>` blocks. For a library or format that x18n does not support, [write a plugin](/plugins) in YAML or TypeScript.

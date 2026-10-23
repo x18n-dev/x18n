@@ -63,7 +63,7 @@ Execution is opt-in per resource pattern (`resources: [{ pattern: 'src/locales/{
 | `html` | html, and attributes inside other templates | small HTML tokenizer |
 | `regex` | any configured | RegExp, i18n-ally compatible |
 
-Other languages (PHP, Ruby, Dart, Blade, ERB) start with `regex` scanners in their presets, with the i18n-ally patterns. AST scanners for them are tier 3.
+Other languages (PHP, Ruby, Dart, Python, Blade, ERB, Django and Jinja templates) start with `regex` scanners in their presets, with the i18n-ally patterns. AST scanners for them are tier 3.
 
 ## Presets
 
@@ -95,6 +95,8 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `flutter` | pubspec: flutter_localizations, intl, flutter_i18n | `arb` format, `AppLocalizations.of(context).key` | 2 |
 | `easy-localization` | pubspec: easy_localization | `assets/translations/{locale}`, `'key'.tr()`, `tr`, `plural`, `context.tr`, nested plural and gender keys, `{}` placeholders | 2 |
 | `flutter-translate` | pubspec: flutter_translate | `assets/i18n/{locale}`, `translate`, `translatePlural`, nested plural keys | 2 |
+| `python-gettext` | pyproject / requirements: django, flask-babel | `po` format, `locale/{locale}/LC_MESSAGES/*.po`, `_()`, `gettext()`, `ngettext()`, Django `{% translate %}`, source-message keys | 2 |
+| `i18nice` | pyproject / requirements: i18nice, python-i18n | `{namespaces}.{locale}.yml` with top-level locale transform, `i18n.t()`, `%{name}` | 2 |
 | `cargo-i18n` | Cargo.toml: i18n-embed-fl, i18n-embed | `ftl`, `fallback_language` and `assets_dir` from `i18n.toml`, `{assets_dir}/{locale}/*.ftl`, `fl!` macro | 2 |
 | `chrome-extension` | manifest.json with `default_locale` | `_locales/{locale}/messages.json`, `.message` transform, `chrome.i18n.getMessage` | 2 |
 | `angular` | @angular/localize | `xliff`, `$localize` | 3 |
