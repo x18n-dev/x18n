@@ -27,7 +27,6 @@ const uri = (path: string): string => pathToFileURL(join(root, path)).href
 
 beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'x18n-lsp-monorepo-'))
-  await mkdir(join(root, '.git'))
   for (const [path, content] of Object.entries(files)) {
     await mkdir(dirname(join(root, path)), { recursive: true })
     await writeFile(join(root, path), content)
