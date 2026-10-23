@@ -363,6 +363,12 @@ exports[`x18n binary > keeps the JSON contract of every read command > locales 1
               "one",
               "other"
             ],
+            "ordinalCategories": [
+              "one",
+              "two",
+              "few",
+              "other"
+            ],
             "resources": [
               "src/locales/en.json"
             ]
@@ -374,6 +380,9 @@ exports[`x18n binary > keeps the JSON contract of every read command > locales 1
             "flag": "🇩🇪",
             "pluralCategories": [
               "one",
+              "other"
+            ],
+            "ordinalCategories": [
               "other"
             ],
             "resources": [

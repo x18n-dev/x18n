@@ -23,7 +23,7 @@ import type { UiServers } from './ui'
 import { relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { extractItems, findCandidates } from '@x18n/builtins/extractors'
-import { createLineIndex, createOverlayHost, isX18nError, renderPrompt } from '@x18n/core'
+import { createLineIndex, createOverlayHost, isX18nError, joinKey, renderPrompt, splitKey } from '@x18n/core'
 import { loadWorkspace, migrateI18nAlly } from '@x18n/node'
 import {
   CodeActionKind,
@@ -446,10 +446,18 @@ class Server {
     const scopeNs = usage?.scopeNamespace ?? project.config.namespace.default
     const prefix = usage?.scopePrefix ? `${usage.scopePrefix}.` : ''
     const range = this.range(at.entry, at.path, slot)
-    return project.keys().flatMap((key) => {
+    const { separator, fallback } = project.config.namespace
+    const keys = project.keys()
+    const known = new Set(keys)
+    return keys.flatMap((key) => {
       let insert = key
-      if (project.namespaced && key.startsWith(`${scopeNs}:`))
-        insert = key.slice(scopeNs!.length + 1)
+      if (project.namespaced) {
+        const { namespace, path } = splitKey(key)
+        const bare = path.join('.')
+        // A key of a fallback namespace needs no namespace unless the scope's namespace has it too.
+        const implied = namespace === scopeNs || (namespace !== undefined && fallback.includes(namespace) && !known.has(joinKey(scopeNs, path)))
+        insert = implied || namespace === undefined ? bare : `${namespace}${separator}${bare}`
+      }
       if (prefix) {
         if (!insert.startsWith(prefix))
           return []

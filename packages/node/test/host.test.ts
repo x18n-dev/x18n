@@ -100,6 +100,23 @@ describe('loadWorkspace', () => {
     expect(only.projects.map(p => p.name)).toEqual(['apps/web'])
   })
 
+  it('loads each config below a root without one as its own project', async () => {
+    await write({
+      'apps/web/x18n.config.json': '{ "sourceLocale": "de" }',
+      'apps/web/locales/de.json': '{"a":"A"}',
+      'apps/shop/x18n.config.json': '{ "projects": ["packages/*"], "sourceLocale": "fr" }',
+      'apps/shop/packages/cart/x18n.config.json': '{ "name": "cart" }',
+      'apps/shop/packages/cart/locales/fr.json': '{"b":"B"}',
+      'node_modules/lib/x18n.config.json': '{}',
+    })
+    const workspace = await loadWorkspace({ cwd: root, cache: false })
+    expect(workspace.root).toBe(root)
+    expect(workspace.projects.map(p => [p.name, p.project.sourceLocale, p.project.keys()])).toEqual([
+      ['cart', 'fr', ['b']],
+      ['apps/web', 'de', ['a']],
+    ])
+  })
+
   it('loads YAML plugins referenced from the config', async () => {
     await write({
       ...locales,

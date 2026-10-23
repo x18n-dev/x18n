@@ -2,11 +2,12 @@ import type { X18nError } from '../errors'
 import type { PluginRegistry } from '../plugins'
 import type { CheckSetting, ResolvedConfig } from '../types/config'
 import type { Diagnostic, JsonObject, KeyString, LocaleCode, LocaleInfo, Message, MessageTree, NodeRange, Placeholder, Resource, Severity, Usage } from '../types/model'
-import type { Check, CheckContext, DiagnosticInput, HardString, LocaleCoverage, MessageChange, ScanResult } from '../types/plugin'
+import type { Check, CheckContext, DiagnosticInput, HardString, LocaleCoverage, MessageChange, PluralForm, ScanResult } from '../types/plugin'
 import type { Analysis } from '../types/project'
 import { keyMatcher } from '../keys'
 import { fallbackChain } from '../locale'
 import { isOutdated } from './history'
+import { categoriesOf } from './usages'
 
 export interface ResourceState {
   readonly resource: Resource
@@ -47,7 +48,8 @@ export interface AnalyzerOptions {
   readonly config: ResolvedConfig
   readonly registry: PluginRegistry
   readonly state: () => AnalyzerState
-  readonly baseOf: (key: KeyString) => KeyString | undefined
+  readonly basesOf: (key: KeyString) => readonly KeyString[]
+  readonly formOf: (key: KeyString) => PluralForm | undefined
   readonly localeInfo: (code: LocaleCode) => LocaleInfo
   readonly text: (path: string) => string | undefined
 }
@@ -60,9 +62,26 @@ function levelOf(setting: CheckSetting | undefined): { level: Severity | 'off', 
   return { level: setting[0], options: setting[1] }
 }
 
-function computeCoverage(state: AnalyzerState, reference: readonly KeyString[]): LocaleCoverage[] {
+/**
+ * The keys a locale needs: the reference keys, with plural forms swapped for the categories of the locale's
+ * language. Forms the language lacks (`item_zero` in English) count only where they exist.
+ */
+function expectedKeys(state: AnalyzerState, options: AnalyzerOptions, reference: readonly KeyString[], locale: LocaleCode): KeyString[] {
+  const info = options.localeInfo(locale)
+  const keys = new Set<KeyString>()
+  for (const key of reference) {
+    const form = options.formOf(key)
+    if (!form || state.messages.get(key)?.has(locale))
+      keys.add(key)
+    form && categoriesOf(info, form.type).forEach(category => keys.add(form.keyOf(category)))
+  }
+  return [...keys].sort()
+}
+
+function computeCoverage(state: AnalyzerState, options: AnalyzerOptions, sourceKeys: readonly KeyString[]): LocaleCoverage[] {
   const { messages, sourceLocale } = state
   return state.locales.map((locale) => {
+    const reference = expectedKeys(state, options, sourceKeys, locale)
     const chain = fallbackChain(state.fallbacks, locale)
     // A variant holds overrides only: what its fallbacks have is inherited, not missing.
     const inherited = (key: KeyString): boolean => chain.some((code) => {
@@ -116,7 +135,8 @@ function* runCheck(check: Check, level: Severity, inputs: Iterable<DiagnosticInp
     const severity = config.strict && (item.severity ?? level) === 'warning' ? 'error' : item.severity ?? level
     let location = item.location
     if (!location && item.key !== undefined) {
-      const byLocale = state.messages.get(item.key)
+      // A plural form only a target locale needs (`item_few`) sits at the source's `other` form.
+      const byLocale = state.messages.get(item.key) ?? state.messages.get(input.ctx.formOf(item.key)?.keyOf('other') ?? item.key)
       const found = byLocale?.get(item.locale ?? state.sourceLocale)?.[0] ?? byLocale?.get(state.sourceLocale)?.[0]
       if (found)
         location = { path: resourcePath(found.resource), range: found.range?.key ?? { start: 0, end: 0 } }
@@ -166,7 +186,7 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
     const allKeys = [...messages.keys()].sort()
     const reference = sourceKeys.length > 0 ? sourceKeys : allKeys
 
-    const coverage = computeCoverage(state, reference)
+    const coverage = computeCoverage(state, options, reference)
 
     const isDefined = (key: KeyString): boolean =>
       messages.get(key)?.has(sourceLocale) === true
@@ -189,8 +209,7 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
     const isUsed = (key: KeyString): boolean => {
       if (state.usagesByKey.has(key) || inUse(key) || referenced.has(key))
         return true
-      const base = options.baseOf(key)
-      if (base !== undefined && (state.usagesByKey.has(base) || inUse(base)))
+      if (options.basesOf(key).some(base => state.usagesByKey.has(base) || inUse(base)))
         return true
       return prefixes.some(prefix => key.startsWith(prefix))
     }
@@ -227,6 +246,7 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
       },
       message: (key, locale) => messages.get(key)?.get(locale)?.[0],
       duplicates: (key, locale) => messages.get(key)?.get(locale) ?? [],
+      formOf: options.formOf,
       usages: () => state.usages,
       coverage: () => coverage,
       unused: () => unused,
