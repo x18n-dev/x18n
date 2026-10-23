@@ -86,6 +86,22 @@ describe('tier 1 presets', () => {
     expect(project.analyze().unused).toEqual([])
   })
 
+  it('nuxt-i18n: .js and .ts locale files, plain or with defineI18nLocale', async () => {
+    const { project, files } = await createTestProject({
+      'package.json': pkg('@nuxtjs/i18n'),
+      'i18n/locales/en.ts': `export default defineI18nLocale(async locale => ({\n  hi: 'Hi',\n}))\n`,
+      'i18n/locales/de.js': `export default defineI18nLocale(() => {\n  return {\n    hi: 'Hallo',\n  }\n})\n`,
+      'i18n/locales/fr.js': `export default {\n  hi: 'Salut',\n}\n`,
+      'pages/index.vue': `<template><p>{{ $t('hi') }}</p></template>`,
+    })
+    expect(project.locales).toEqual(['en', 'de', 'fr'])
+    expect(['en', 'de', 'fr'].map(locale => project.message('hi', locale)?.value)).toEqual(['Hi', 'Hallo', 'Salut'])
+    expect(project.analyze().undefinedUsages).toEqual([])
+    const plan = project.plan([{ type: 'set', key: 'bye', locale: 'en', value: 'Bye' }])
+    await project.apply(plan, { answers: Object.fromEntries(plan.decisions.map(d => [d.id, d.default])) })
+    expect(files.get('i18n/locales/en.ts')).toBe(`export default defineI18nLocale(async locale => ({\n  hi: 'Hi',\n  bye: 'Bye',\n}))\n`)
+  })
+
   it('i18next: plural suffixes count as the base key', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('i18next'),
@@ -246,5 +262,50 @@ describe('placeholder-mismatch', () => {
       '"days" in fr has different placeholders than en: unexpected v.',
       '"hi" in fr has different placeholders than en: missing name.',
     ])
+  })
+})
+
+describe('vue-i18n <i18n src> blocks', () => {
+  async function write(project: Awaited<ReturnType<typeof createTestProject>>['project'], ops: Parameters<typeof project.plan>[0]): Promise<void> {
+    const plan = project.plan(ops)
+    await project.apply(plan, { answers: Object.fromEntries(plan.decisions.map(d => [d.id, d.default])) })
+  }
+
+  it('reads every locale of the referenced file and writes edits to it', async () => {
+    const { project, files } = await createTestProject({
+      'package.json': pkg('vue-i18n'),
+      'src/components/Hello.vue': `<script setup>\nconst { t } = useI18n()\n</script>\n<template><p>{{ t('hello') }}</p></template>\n<i18n src="./Hello.i18n.json"></i18n>\n`,
+      'src/components/Hello.i18n.json': json({ en: { hello: 'Hello' }, de: { hello: 'Hallo' } }),
+    })
+    expect(project.locales).toEqual(['en', 'de'])
+    expect(project.message('hello', 'de')?.value).toBe('Hallo')
+    expect(project.analyze().undefinedUsages).toEqual([])
+    await write(project, [{ type: 'set', key: 'bye', locale: 'de', value: 'Tschüss' }])
+    await write(project, [{ type: 'set', key: 'hello', locale: 'en', value: 'Hi' }])
+    expect(JSON.parse(files.get('src/components/Hello.i18n.json')!)).toEqual({ en: { hello: 'Hi' }, de: { hello: 'Hallo', bye: 'Tschüss' } })
+    expect(project.analyze().diagnostics.filter(d => d.severity === 'error')).toEqual([])
+    expect(files.get('src/components/Hello.vue')).toContain('<i18n src="./Hello.i18n.json"></i18n>')
+  })
+
+  it('keeps reading every block after an edit moves them', async () => {
+    const { project, files } = await createTestProject({
+      'package.json': pkg('vue-i18n'),
+      'src/Hello.vue': `<template><p>{{ $t('a') }}</p></template>\n<i18n locale="en">{ "a": "A" }</i18n>\n<i18n locale="de">{ "a": "B" }</i18n>\n`,
+    })
+    await write(project, [{ type: 'set', key: 'a', locale: 'en', value: 'A longer value' }])
+    expect(files.get('src/Hello.vue')).toContain('<i18n locale="de">{ "a": "B" }</i18n>')
+    expect(['en', 'de'].map(locale => project.message('a', locale)?.value)).toEqual(['A longer value', 'B'])
+  })
+
+  it('takes the locale attribute and the format from the src extension', async () => {
+    const { project, files } = await createTestProject({
+      'package.json': pkg('vue-i18n'),
+      'src/Hello.vue': `<template><p>{{ $t('hello') }}</p></template>\n<i18n locale="en" src="../messages/hello.en.yaml"></i18n>\n`,
+      'messages/hello.en.yaml': 'hello: Hello\n',
+    })
+    expect(project.message('hello', 'en')?.value).toBe('Hello')
+    expect(project.analyze().undefinedUsages).toEqual([])
+    await write(project, [{ type: 'set', key: 'hello', locale: 'en', value: 'Hi' }])
+    expect(files.get('messages/hello.en.yaml')).toBe('hello: Hi\n')
   })
 })

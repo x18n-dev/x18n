@@ -19,10 +19,17 @@ interface Module {
 
 type Fail = (code: 'X18N2003' | 'X18N2004', node: Node, reason: string) => never
 
-/** Type-only wrappers and `defineX({ ... })` helpers that return their argument. */
+/** Type-only wrappers, `defineX({ ... })` helpers that return their argument, and loaders that only return an object (`defineI18nLocale(() => ({ ... }))`). */
 function unwrap(node: Expression): Expression {
   if (node.type === 'TSAsExpression' || node.type === 'TSSatisfiesExpression' || node.type === 'TSTypeAssertion' || node.type === 'TSNonNullExpression' || node.type === 'ParenthesizedExpression')
     return unwrap(node.expression)
+  if (node.type === 'ArrowFunctionExpression' && node.body.type !== 'BlockStatement')
+    return unwrap(node.body)
+  if ((node.type === 'ArrowFunctionExpression' || node.type === 'FunctionExpression') && node.body?.type === 'BlockStatement') {
+    const [only, ...rest] = node.body.body
+    if (only?.type === 'ReturnStatement' && only.argument && rest.length === 0)
+      return unwrap(only.argument)
+  }
   const argument = node.type === 'CallExpression' && node.arguments.length === 1 ? node.arguments[0] : undefined
   if (node.type === 'CallExpression' && node.callee.type === 'Identifier' && /^define[A-Z]/.test(node.callee.name) && argument && argument.type !== 'SpreadElement')
     return unwrap(argument)

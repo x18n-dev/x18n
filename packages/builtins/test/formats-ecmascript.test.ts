@@ -50,6 +50,9 @@ describe('ecmascript format', () => {
     expect(format.parse('const messages = { a: \'A\' } as const\nexport default messages\n', ctx).tree).toEqual(tree)
     expect(format.parse('import type { M } from \'./m\'\nexport default { a: \'A\' } satisfies M\n', ctx).tree).toEqual(tree)
     expect(format.parse('export default defineMessages({ a: \'A\' })\n', ctx).tree).toEqual(tree)
+    expect(format.parse('export default defineI18nLocale(async locale => ({ a: \'A\' }))\n', ctx).tree).toEqual(tree)
+    expect(format.parse('export default defineI18nLocale(function () {\n  return { a: \'A\' }\n})\n', ctx).tree).toEqual(tree)
+    expect(code('export default defineI18nLocale(async () => {\n  const a = await load()\n  return a\n})\n')).toBe('X18N2004')
     expect(format.parse('', ctx).tree).toEqual({})
   })
 
