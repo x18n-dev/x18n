@@ -3,17 +3,21 @@
  */
 // #region Other
 export { chromeExtension }
+export { easyLocalization }
 export { emberIntl }
 export { fluentVue }
 export { flutter }
+export { flutterTranslate }
 export { general }
 export { globalize }
 export { i18next }
 export { i18nextShopify }
+export { i18nice }
 export { i18nJs }
 export { i18nTag }
 export { jekyll }
 export { laravel }
+export { laravelVueI18n }
 export { lingui }
 export { nextInternational }
 export { nextIntl }
@@ -24,6 +28,7 @@ export { paraglide }
 export { phpGettext }
 export { phpJoomla }
 export { polyglot }
+export { pythonGettext }
 export { railsLazyKey }
 export { reactI18next }
 export { reactIntl }

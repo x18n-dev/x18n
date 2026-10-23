@@ -1209,6 +1209,14 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "python-gettext",
+          "reason": "not-detected",
+        },
+        {
+          "name": "i18nice",
+          "reason": "not-detected",
+        },
+        {
           "name": "general",
           "reason": "detected",
         },
