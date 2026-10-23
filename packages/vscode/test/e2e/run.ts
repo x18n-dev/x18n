@@ -19,7 +19,13 @@ async function main(): Promise<void> {
     timeout: 600_000,
     extensionDevelopmentPath: root,
     extensionTestsPath: join(root, 'test/e2e/dist/suite.cjs'),
-    launchArgs: [workspace, '--disable-extensions', '--skip-welcome', '--skip-release-notes', `--user-data-dir=${join(temp, 'user')}`],
+    launchArgs: [
+      workspace,
+      '--disable-extensions',
+      '--skip-welcome',
+      '--skip-release-notes',
+      `--user-data-dir=${join(temp, 'user')}`,
+    ],
   })
 }
 

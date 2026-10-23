@@ -30,7 +30,9 @@ function connect(child: ChildProcess) {
     buffer = Buffer.concat([buffer, chunk])
     while (true) {
       const end = buffer.indexOf('\r\n\r\n')
-      const length = end < 0 ? 0 : Number(/Content-Length: (\d+)/i.exec(buffer.subarray(0, end).toString())?.[1])
+      const length = end < 0
+        ? 0
+        : Number(/Content-Length: (\d+)/i.exec(buffer.subarray(0, end).toString())?.[1])
       if (!length || buffer.length < end + 4 + length)
         return
       const message = JSON.parse(buffer.subarray(end + 4, end + 4 + length).toString())
@@ -46,7 +48,13 @@ function connect(child: ChildProcess) {
         settle()
       }
       else if (message.method && message.id !== undefined) {
-        write({ jsonrpc: '2.0', id: message.id, result: message.method === 'workspace/configuration' ? [] : null })
+        write({
+          jsonrpc: '2.0',
+          id: message.id,
+          result: message.method === 'workspace/configuration'
+            ? []
+            : null,
+        })
       }
       else if (message.id !== undefined) {
         pending.get(message.id)?.(message.result ?? message.error)
@@ -86,10 +94,20 @@ afterAll(async () => {
 
 it('serves a project from the bundle alone', async () => {
   const project = join(dir, 'project')
-  child = spawn(process.execPath, [join(dir, 'dist', 'server.cjs'), '--stdio'], { cwd: dir })
+  child = spawn(process.execPath, [
+    join(dir, 'dist', 'server.cjs'),
+    '--stdio',
+  ], { cwd: dir })
   const client = connect(child)
   const rootUri = pathToFileURL(project).href
-  await client.request('initialize', { processId: process.pid, rootUri, workspaceFolders: [{ uri: rootUri, name: 'project' }], capabilities: {} })
+  await client.request('initialize', {
+    processId: process.pid,
+    rootUri,
+    workspaceFolders: [
+      { uri: rootUri, name: 'project' },
+    ],
+    capabilities: {},
+  })
   client.notify('initialized', {})
 
   await client.loaded
@@ -97,9 +115,24 @@ it('serves a project from the bundle alone', async () => {
   // One Vue SFC and one TS file cover the template and script parsers.
   for (const file of ['src/App.vue', 'src/main.ts']) {
     const uri = pathToFileURL(join(project, file)).href
-    client.notify('textDocument/didOpen', { textDocument: { uri, languageId: file.endsWith('.vue') ? 'vue' : 'typescript', version: 1, text: await readFile(join(project, file), 'utf8') } })
-    const range = { start: { line: 0, character: 0 }, end: { line: 999, character: 0 } }
-    const hints = await client.request('textDocument/inlayHint', { textDocument: { uri }, range })
+    client.notify('textDocument/didOpen', {
+      textDocument: {
+        uri,
+        languageId: file.endsWith('.vue')
+          ? 'vue'
+          : 'typescript',
+        version: 1,
+        text: await readFile(join(project, file), 'utf8'),
+      },
+    })
+    const range = {
+      start: { line: 0, character: 0 },
+      end: { line: 999, character: 0 },
+    }
+    const hints = await client.request('textDocument/inlayHint', {
+      textDocument: { uri },
+      range,
+    })
     expect(Array.isArray(hints), file).toBe(true)
     if (file.endsWith('.vue'))
       expect(hints.length, file).toBeGreaterThan(0)

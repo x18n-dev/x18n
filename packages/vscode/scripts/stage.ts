@@ -6,10 +6,20 @@ const root = new URL('../', import.meta.url)
 const out = new URL('.vsce/', root)
 
 const manifest: { name: string } = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
-const staged = { ...manifest, name: 'x18n', scripts: undefined, devDependencies: undefined }
+const staged = {
+  ...manifest,
+  name: 'x18n',
+  scripts: undefined,
+  devDependencies: undefined,
+}
 
 await rm(out, { recursive: true, force: true })
 await mkdir(out)
 await writeFile(new URL('package.json', out), `${JSON.stringify(staged, null, 2)}\n`)
-for (const file of ['README.md', 'LICENSE.md', 'dist', 'res'])
+for (const file of [
+  'README.md',
+  'LICENSE.md',
+  'dist',
+  'res',
+])
   await cp(new URL(file, root), new URL(file, out), { recursive: true })

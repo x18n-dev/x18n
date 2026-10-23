@@ -20,16 +20,29 @@ const table = useLive((b, project) => b.keys(project))
 
 const search = ref('')
 const namespace = ref('')
-const missingIn = ref(typeof route.query.missing === 'string' ? route.query.missing : '')
+const missingIn = ref(typeof route.query.missing === 'string'
+  ? route.query.missing
+  : '')
 const unusedOnly = ref(false)
 const withDiagnostics = ref(false)
 const outdatedOnly = ref(route.query.outdated !== undefined)
 const sort = ref<'key' | 'recent'>('key')
-const sorts = computed(() => [{ value: 'key' as const, label: t('keys.sortKey') }, { value: 'recent' as const, label: t('keys.sortRecent') }])
+const sorts = computed(() => [
+  {
+    value: 'key' as const,
+    label: t('keys.sortKey'),
+  },
+  {
+    value: 'recent' as const,
+    label: t('keys.sortRecent'),
+  },
+])
 const hasHistory = computed(() => (table.value?.rows ?? []).some(row => row.changedAt !== undefined))
 
 const locales = computed(() => visibleLocales.value.map(l => l.code))
-const namespaces = computed(() => [...new Set((table.value?.rows ?? []).flatMap(r => r.namespace ?? []))].sort())
+const namespaces = computed(() => [
+  ...new Set((table.value?.rows ?? []).flatMap(r => r.namespace ?? [])),
+].sort())
 
 const rows = computed<KeyRow[]>(() => {
   const query = search.value.trim()
@@ -39,11 +52,17 @@ const rows = computed<KeyRow[]>(() => {
     && (!unusedOnly.value || row.unused)
     && (!withDiagnostics.value || row.diagnostics > 0)
     && (!outdatedOnly.value || row.outdated.some(locale => locales.value.includes(locale))))
-  if (!query)
-    return sort.value === 'recent' ? [...filtered].sort((a, b) => (b.changedAt ?? 0) - (a.changedAt ?? 0)) : filtered
+  if (!query) {
+    return sort.value === 'recent'
+      ? [...filtered].sort((a, b) => (b.changedAt ?? 0) - (a.changedAt ?? 0))
+      : filtered
+  }
   const scored = filtered.map((row) => {
     const values = Object.values(row.values).map(v => fuzzyScore(query, String(v)) / 2)
-    return { row, score: Math.max(fuzzyScore(query, row.key), ...values) }
+    return {
+      row,
+      score: Math.max(fuzzyScore(query, row.key), ...values),
+    }
   })
   return scored.filter(s => s.score >= 0).sort((a, b) => b.score - a.score).map(s => s.row)
 })
@@ -58,13 +77,21 @@ const searchInput = useTemplateRef<HTMLInputElement>('searchInput')
 const editor = useTemplateRef<HTMLInputElement[]>('editor')
 
 watch(rows, () => {
-  active.value = { row: Math.min(active.value.row, Math.max(rows.value.length - 1, 0)), col: active.value.col }
+  active.value = {
+    row: Math.min(active.value.row, Math.max(rows.value.length - 1, 0)),
+    col: active.value.col,
+  }
 })
 
-const columns = computed(() => locales.value.length ? `minmax(16rem, 1.2fr) repeat(${locales.value.length}, minmax(12rem, 1fr))` : '1fr')
+const columns = computed(() => locales.value.length
+  ? `minmax(16rem, 1.2fr) repeat(${locales.value.length}, minmax(12rem, 1fr))`
+  : '1fr')
 
 function move(row: number, col: number): void {
-  const next = { row: Math.max(0, Math.min(rows.value.length - 1, row)), col: Math.max(0, Math.min(locales.value.length, col)) }
+  const next = {
+    row: Math.max(0, Math.min(rows.value.length - 1, row)),
+    col: Math.max(0, Math.min(locales.value.length, col)),
+  }
   active.value = next
   const el = containerProps.ref.value
   if (el) {
@@ -78,7 +105,13 @@ async function startEdit(row: KeyRow, locale: string): Promise<void> {
   if (!backend.value?.capabilities.write)
     return
   const value = row.values[locale]
-  editing.value = { key: row.key, locale, draft: value === undefined || value === null ? '' : String(value) }
+  editing.value = {
+    key: row.key,
+    locale,
+    draft: value === undefined || value === null
+      ? ''
+      : String(value),
+  }
   await nextTick()
   editor.value?.[0]?.focus()
 }
@@ -91,7 +124,12 @@ async function commit(force = false): Promise<void> {
   const result = await setMessage(edit.key, edit.locale, edit.draft, force)
   problem.value = result.applied
     ? undefined
-    : { key: edit.key, locale: edit.locale, value: edit.draft, message: result.problems.map(describeProblem).join('; ') }
+    : {
+        key: edit.key,
+        locale: edit.locale,
+        value: edit.draft,
+        message: result.problems.map(describeProblem).join('; '),
+      }
   containerProps.ref.value?.focus()
 }
 

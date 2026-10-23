@@ -25,11 +25,17 @@ it('loads the workspace from the hub root', async () => {
   const ctx = await createHostContext({
     cwd: root,
     mode: 'build',
-    host: { mountStatic: () => {}, resolveOrigin: () => 'http://localhost', getStorageDir: () => join(dir, '.devframe') },
+    host: {
+      mountStatic: () => {},
+      resolveOrigin: () => 'http://localhost',
+      getStorageDir: () => join(dir, '.devframe'),
+    },
   })
   await createX18nDevframe().setup(ctx)
   const { projects } = await ctx.scope('x18n').rpc.call('project')
-  expect(projects).toMatchObject([{ name: 'vue-i18n', keys: 8 }])
+  expect(projects).toMatchObject([
+    { name: 'vue-i18n', keys: 8 },
+  ])
 })
 
 it('serves the UI inside Vite DevTools', async () => {

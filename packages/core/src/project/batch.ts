@@ -27,7 +27,12 @@ export function parseMessageBatch(project: Project, data: JsonValue): EditOp[] {
     for (const [raw, value] of Object.entries(entries)) {
       if (!isLeaf(value))
         throw errors.X18N4008({ reason: `"${locale}.${raw}" must be a string, number, boolean or null` })
-      ops.push({ type: 'set', key: project.parseKey(raw), locale, value })
+      ops.push({
+        type: 'set',
+        key: project.parseKey(raw),
+        locale,
+        value,
+      })
     }
   }
   return ops
@@ -75,6 +80,15 @@ export function placeholderProblems(project: Project, ops: readonly EditOp[]): P
     if (typeof source !== 'string')
       return []
     const { missing, extra } = compare(source, op.value)
-    return missing.length || extra.length ? [{ key: op.key, locale: op.locale, missing, extra }] : []
+    return missing.length || extra.length
+      ? [
+          {
+            key: op.key,
+            locale: op.locale,
+            missing,
+            extra,
+          },
+        ]
+      : []
   })
 }

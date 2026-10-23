@@ -72,11 +72,22 @@ export function createProject(options: CreateProjectOptions): Project {
   let resourceIndex: ResourceIndex | undefined
   let resolved = new WeakMap<FileState, Usage[]>()
 
-  const normalizers = registry.plugins.flatMap(plugin => plugin.normalizeKey ? [plugin.normalizeKey] : [])
-  const transforms = registry.plugins.flatMap(plugin => plugin.transformResource ? [plugin.transformResource] : [])
-  const localeInfoHooks = registry.plugins.flatMap(plugin => plugin.localeInfo ? [plugin.localeInfo] : [])
+  const normalizers = registry.plugins.flatMap(plugin => plugin.normalizeKey
+    ? [plugin.normalizeKey]
+    : [])
+  const transforms = registry.plugins.flatMap(plugin => plugin.transformResource
+    ? [plugin.transformResource]
+    : [])
+  const localeInfoHooks = registry.plugins.flatMap(plugin => plugin.localeInfo
+    ? [plugin.localeInfo]
+    : [])
   const { basesOf, formOf } = derivedKeys(config.usage.derivedKeys)
-  const scanSignature = hashText(JSON.stringify({ usage: config.usage, namespace: config.namespace, scanners: registry.scanners.map(s => s.id), v: 1 }))
+  const scanSignature = hashText(JSON.stringify({
+    usage: config.usage,
+    namespace: config.namespace,
+    scanners: registry.scanners.map(s => s.id),
+    v: 1,
+  }))
   const localeFilter = (code: LocaleCode): boolean =>
     (!config.locales || config.locales.includes(code)) && !config.ignoreLocales.includes(code)
 
@@ -88,7 +99,11 @@ export function createProject(options: CreateProjectOptions): Project {
       for (const hook of localeInfoHooks) {
         const result = hook(code)
         if (result) {
-          info = { ...info, ...result, code }
+          info = {
+            ...info,
+            ...result,
+            code,
+          }
           break
         }
       }
@@ -106,7 +121,13 @@ export function createProject(options: CreateProjectOptions): Project {
   // ---- Discovery and parse ----
 
   async function discover(): Promise<Candidate[]> {
-    const ctx = { host, config, extensions: [...new Set(registry.formats.flatMap(format => format.extensions))] }
+    const ctx = {
+      host,
+      config,
+      extensions: [
+        ...new Set(registry.formats.flatMap(format => format.extensions)),
+      ],
+    }
     const seen = new Map<string, string>()
     const out: Candidate[] = []
     duplicates = []
@@ -115,7 +136,9 @@ export function createProject(options: CreateProjectOptions): Project {
       const found = await finder.find(ctx)
       const kept: string[] = []
       for (const candidate of found) {
-        const id = candidate.block ? `${candidate.path}#${candidate.block.index}` : candidate.path
+        const id = candidate.block
+          ? `${candidate.path}#${candidate.block.index}`
+          : candidate.path
         const previous = seen.get(id)
         if (previous) {
           duplicates.push({ path: id, finder: finder.id, keptFrom: previous })
@@ -144,8 +167,13 @@ export function createProject(options: CreateProjectOptions): Project {
     const logical = stored.flatMap(segment => segment.split('.'))
     if (namespaced)
       return joinKey(resource.namespace ?? config.namespace.default, logical)
-    const prefix = resource.namespace ? resource.namespace.split('.') : []
-    return joinKey(undefined, [...prefix, ...logical])
+    const prefix = resource.namespace
+      ? resource.namespace.split('.')
+      : []
+    return joinKey(undefined, [
+      ...prefix,
+      ...logical,
+    ])
   }
 
   /** Key path to stored path through the transforms that apply to a resource, last first. */
@@ -158,7 +186,9 @@ export function createProject(options: CreateProjectOptions): Project {
 
   function parseResource(candidate: Candidate, text: string): ResourceState {
     const format = registry.formatFor(candidate.path, candidate.format)
-    const id = candidate.block ? `${candidate.path}#${candidate.block.index}` : candidate.path
+    const id = candidate.block
+      ? `${candidate.path}#${candidate.block.index}`
+      : candidate.path
     const resource: Resource = {
       id,
       path: candidate.path,
@@ -169,12 +199,32 @@ export function createProject(options: CreateProjectOptions): Project {
       readonly: candidate.readonly || !format || (!format.edit && !format.serialize),
       finder: candidate.finder,
     }
-    const content = candidate.block ? text.slice(candidate.block.range.start, candidate.block.range.end) : text
+    const content = candidate.block
+      ? text.slice(candidate.block.range.start, candidate.block.range.end)
+      : text
     const offset = candidate.block?.range.start ?? 0
-    const ctx = { path: candidate.path, locale: candidate.locale, namespace: candidate.namespace, indent: config.write.indent }
-    const base = { resource, hash: hashText(content), content, offset, toStored: storedPathOf(ctx) }
-    if (!format)
-      return { ...base, tree: {}, rawTree: {}, ranges: new Map(), error: errors.X18N2001({ path: candidate.path }) }
+    const ctx = {
+      path: candidate.path,
+      locale: candidate.locale,
+      namespace: candidate.namespace,
+      indent: config.write.indent,
+    }
+    const base = {
+      resource,
+      hash: hashText(content),
+      content,
+      offset,
+      toStored: storedPathOf(ctx),
+    }
+    if (!format) {
+      return {
+        ...base,
+        tree: {},
+        rawTree: {},
+        ranges: new Map(),
+        error: errors.X18N2001({ path: candidate.path }),
+      }
+    }
     try {
       const parsed = format.parse(content, ctx)
       let tree: MessageTree = parsed.tree
@@ -184,27 +234,73 @@ export function createProject(options: CreateProjectOptions): Project {
       }
       if (!isMessageTree(tree))
         throw errors.X18N2003({ path: candidate.path })
-      return { ...base, tree, rawTree: parsed.tree, ranges: parsed.ranges ?? new Map(), error: undefined }
+      return {
+        ...base,
+        tree,
+        rawTree: parsed.tree,
+        ranges: parsed.ranges ?? new Map(),
+        error: undefined,
+      }
     }
     catch (error) {
-      const coded = isX18nError(error) ? error : errors.X18N2002({ path: candidate.path, reason: error instanceof Error ? error.message : String(error), cause: error })
-      return { ...base, tree: {}, rawTree: {}, ranges: new Map(), error: coded }
+      const coded = isX18nError(error)
+        ? error
+        : errors.X18N2002({
+            path: candidate.path,
+            reason: error instanceof Error
+              ? error.message
+              : String(error),
+            cause: error,
+          })
+      return {
+        ...base,
+        tree: {},
+        rawTree: {},
+        ranges: new Map(),
+        error: coded,
+      }
     }
   }
 
   function messagesIn(resource: Resource, text: string): ReadonlyMap<KeyString, MessageLeaf> | undefined {
     if (resource.block)
       return undefined
-    const format = resource.format === 'unknown' ? undefined : resource.format
+    const format = resource.format === 'unknown'
+      ? undefined
+      : resource.format
     const state = parseResource({ ...resource, format, block: undefined }, text)
     if (state.error)
       return undefined
-    return new Map([...walkLeaves(state.tree)].map(leaf => [keyFor(state.resource, leaf.path), leaf.value]))
+    return new Map([
+      ...walkLeaves(state.tree),
+    ].map(leaf => [
+      keyFor(state.resource, leaf.path),
+      leaf.value,
+    ]))
+  }
+
+  /** A path for a new resource, from the locale finders. */
+  function newResourcePath(locale: LocaleCode, namespace: string | undefined, model: Resource | undefined): string | undefined {
+    const ctx = {
+      host,
+      config,
+      extensions: [
+        ...new Set(registry.formats.flatMap(format => format.extensions)),
+      ],
+    }
+    for (const finder of registry.finders) {
+      const path = finder.resolveNew?.({ locale, namespace, model }, ctx)
+      if (path)
+        return path
+    }
+    return undefined
   }
 
   async function loadResources(candidates: readonly Candidate[], reread: ReadonlySet<string> | 'all'): Promise<void> {
     const next = new Map<string, ResourceState>()
-    const paths = [...new Set(candidates.map(c => c.path))]
+    const paths = [
+      ...new Set(candidates.map(c => c.path)),
+    ]
     await Promise.all(paths.map(async (path) => {
       if (reread === 'all' || reread.has(path) || !fileTexts.has(path)) {
         const text = await host.readFile(path)
@@ -215,13 +311,18 @@ export function createProject(options: CreateProjectOptions): Project {
       }
     }))
     namespaced = config.namespace.separator !== '.' && candidates.some(c => c.namespace !== undefined)
+    await Promise.all(candidates.map(candidate => registry.loadFormatFor(candidate.path, candidate.format)))
     for (const candidate of candidates) {
       const text = fileTexts.get(candidate.path)
       if (text === undefined)
         continue
-      const id = candidate.block ? `${candidate.path}#${candidate.block.index}` : candidate.path
+      const id = candidate.block
+        ? `${candidate.path}#${candidate.block.index}`
+        : candidate.path
       const previous = resourceStates.get(id)
-      const content = candidate.block ? text.slice(candidate.block.range.start, candidate.block.range.end) : text
+      const content = candidate.block
+        ? text.slice(candidate.block.range.start, candidate.block.range.end)
+        : text
       if (previous && previous.hash === hashText(content) && previous.resource.locale === candidate.locale && previous.resource.namespace === candidate.namespace && previous.offset === (candidate.block?.range.start ?? 0))
         next.set(id, previous)
       else
@@ -231,17 +332,37 @@ export function createProject(options: CreateProjectOptions): Project {
     for (const [id, state] of next)
       resourceStates.set(id, state)
 
-    const found = [...new Set([...resourceStates.values()].map(state => state.resource.locale))]
+    const found = [
+      ...new Set([
+        ...resourceStates.values(),
+      ].map(state => state.resource.locale)),
+    ]
     sourceLocale = config.sourceLocale
     if (!found.includes(sourceLocale) && config.origins.sourceLocale === undefined && found.length > 0)
       sourceLocale = found.find(code => code.toLowerCase().startsWith('en')) ?? [...found].sort()[0]!
-    locales = [sourceLocale, ...found.filter(code => code !== sourceLocale).sort()]
+    locales = [
+      sourceLocale,
+      ...found.filter(code => code !== sourceLocale).sort(),
+    ]
     if (!found.includes(sourceLocale) && found.length === 0)
       locales = [sourceLocale]
     fallbacks = resolveFallbacks(config.localeFallbacks, locales, sourceLocale)
     resolver = createUsageResolver(config, namespaced, normalizers)
     resolved = new WeakMap()
     resourceIndex = undefined
+    // The planner is synchronous: a new file's format has to be loaded before it asks for it.
+    const namespaces = new Set([
+      undefined,
+      ...[
+        ...resourceStates.values(),
+      ].map(state => state.resource.namespace),
+    ])
+    await Promise.all([...namespaces].map((namespace) => {
+      const path = newResourcePath(sourceLocale, namespace, undefined)
+      return path
+        ? registry.loadFormatFor(path)
+        : undefined
+    }))
   }
 
   // ---- Scanning ----
@@ -252,7 +373,7 @@ export function createProject(options: CreateProjectOptions): Project {
     const keySlots: TextRange[] = []
     const hardStrings: HardString[] = []
     const calls = config.usage.calls.filter(spec => ![spec.callee].flat().some(name => config.usage.ignoreCallees.includes(name)))
-    for (const scanner of registry.scannersFor(file.path)) {
+    for (const scanner of await registry.loadScannersFor(file.path)) {
       const result = await scanner.scan(file, { config, calls })
       usages.push(...result.usages)
       scopes.push(...result.scopes ?? [])
@@ -269,7 +390,12 @@ export function createProject(options: CreateProjectOptions): Project {
       return !suppressed.some(range => usage.range.start >= range.start && usage.range.end <= range.end)
     })
     kept.sort((a, b) => a.range.start - b.range.start)
-    return { usages: kept, scopes, keySlots, hardStrings }
+    return {
+      usages: kept,
+      scopes,
+      keySlots,
+      hardStrings,
+    }
   }
 
   async function scanPaths(paths: readonly string[]): Promise<void> {
@@ -290,15 +416,29 @@ export function createProject(options: CreateProjectOptions): Project {
         cacheKeys.set(path, cacheKey)
         const cached = await host.cache.get(cacheKey)
         if (cached !== undefined) {
-          files.set(path, { hash, text, result: JSON.parse(cached) as ScanResult, error: undefined }) // written by this function below
+          files.set(path, {
+            hash,
+            text,
+            result: JSON.parse(cached) as ScanResult,
+            error: undefined,
+          }) // written by this function below
           return
         }
       }
-      pending.push({ path, text, extension: extensionOf(path) })
+      pending.push({
+        path,
+        text,
+        extension: extensionOf(path),
+      })
     }))
 
     const store = (file: SourceFile, result: ScanResult | undefined, error?: X18nError): void => {
-      files.set(file.path, { hash: hashText(file.text), text: file.text, result: result ?? { usages: [] }, error })
+      files.set(file.path, {
+        hash: hashText(file.text),
+        text: file.text,
+        result: result ?? { usages: [] },
+        error,
+      })
       const cacheKey = cacheKeys.get(file.path)
       if (result && cacheKey && host.cache)
         void host.cache.set(cacheKey, JSON.stringify(result))
@@ -310,7 +450,13 @@ export function createProject(options: CreateProjectOptions): Project {
           store(file, await scanOne(file))
         }
         catch (error) {
-          store(file, undefined, errors.X18N3001({ path: file.path, reason: error instanceof Error ? error.message : String(error), cause: error }))
+          store(file, undefined, errors.X18N3001({
+            path: file.path,
+            reason: error instanceof Error
+              ? error.message
+              : String(error),
+            cause: error,
+          }))
         }
       }))
     }
@@ -358,20 +504,47 @@ export function createProject(options: CreateProjectOptions): Project {
           const key = keyFor(resource, path)
           const storedPath = state.toStored(path)
           const raw = state.ranges.get(pathId(storedPath))
-          const range = raw ? { key: shift(raw.key), value: shift(raw.value) } : undefined
-          if (range)
-            fileNodes.push({ key, range, leaf: isMessageLeaf(child), locale: resource.locale, path: resource.path })
+          const range = raw
+            ? {
+                key: shift(raw.key),
+                value: shift(raw.value),
+              }
+            : undefined
+          if (range) {
+            fileNodes.push({
+              key,
+              range,
+              leaf: isMessageLeaf(child),
+              locale: resource.locale,
+              path: resource.path,
+            })
+          }
           if (isMessageLeaf(child)) {
             const byLocale = messages.get(key) ?? new Map<LocaleCode, Message[]>()
             messages.set(key, byLocale)
             const list = byLocale.get(resource.locale) ?? []
             byLocale.set(resource.locale, list)
-            list.push({ key, locale: resource.locale, value: child, resource: resource.id, storedPath, range })
+            list.push({
+              key,
+              locale: resource.locale,
+              value: child,
+              resource: resource.id,
+              storedPath,
+              range,
+            })
             if (!keyPaths.has(key)) {
               const logical = path.flatMap(s => s.split('.'))
               keyPaths.set(key, namespaced
                 ? { namespace: resource.namespace ?? config.namespace.default, path: logical }
-                : { namespace: undefined, path: [...resource.namespace ? resource.namespace.split('.') : [], ...logical] })
+                : {
+                    namespace: undefined,
+                    path: [
+                      ...resource.namespace
+                        ? resource.namespace.split('.')
+                        : [],
+                      ...logical,
+                    ],
+                  })
             }
           }
           else {
@@ -397,7 +570,13 @@ export function createProject(options: CreateProjectOptions): Project {
         }
       }
     }
-    return { messages, keyPaths, nodes, parents, derived }
+    return {
+      messages,
+      keyPaths,
+      nodes,
+      parents,
+      derived,
+    }
   }
 
   function buildIndex(): Index {
@@ -405,7 +584,11 @@ export function createProject(options: CreateProjectOptions): Project {
     const has = (key: KeyString): boolean => messages.has(key) || parents.has(key) || derived.has(key)
     const usages: Usage[] = []
     // Files are read concurrently; sort so results do not depend on I/O timing.
-    for (const [path, state] of [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    for (const [path, state] of [...files].sort(([a], [b]) => (a < b
+      ? -1
+      : a > b
+        ? 1
+        : 0))) {
       let list = resolved.get(state)
       if (!list) {
         list = state.result.usages.map(candidate => resolver.resolve(candidate, state.result.scopes ?? [], path, 'scanner', has))
@@ -426,7 +609,13 @@ export function createProject(options: CreateProjectOptions): Project {
       usagesByKey.set(usage.key, list)
       list.push(usage)
     }
-    return { revision, ...resourceIndex, usages, usagesByKey, prefixUsages }
+    return {
+      revision,
+      ...resourceIndex,
+      usages,
+      usagesByKey,
+      prefixUsages,
+    }
   }
 
   function idx(): Index {
@@ -440,8 +629,20 @@ export function createProject(options: CreateProjectOptions): Project {
   }
 
   const history = createHistory({
-    providers: config.history === false ? [] : [...config.history.providers, ...registry.histories],
-    context: (): HistoryContext => ({ host, config, resources: [...resourceStates.values()].map(state => state.resource), messagesIn }),
+    providers: config.history === false
+      ? []
+      : [
+          ...config.history.providers,
+          ...registry.histories,
+        ],
+    context: (): HistoryContext => ({
+      host,
+      config,
+      resources: [
+        ...resourceStates.values(),
+      ].map(state => state.resource),
+      messagesIn,
+    }),
     current: (key, locale) => message(key, locale)?.value,
     onLoad() {
       revision++
@@ -455,7 +656,10 @@ export function createProject(options: CreateProjectOptions): Project {
     const inPath = (usage: Usage): boolean => query.path === undefined || usage.path === query.path
     if (query.key !== undefined) {
       const key = query.key
-      const direct = [key, ...basesOf(key)].flatMap(k => usagesByKey.get(k) ?? [])
+      const direct = [
+        key,
+        ...basesOf(key),
+      ].flatMap(k => usagesByKey.get(k) ?? [])
       return [
         ...direct.filter(inPath).map(usage => ({ usage, possible: false })),
         ...prefixUsages.filter(usage => inPath(usage) && prefixMatches(usage, key)).map(usage => ({ usage, possible: true })),
@@ -479,9 +683,21 @@ export function createProject(options: CreateProjectOptions): Project {
       sourceLocale,
       locales,
       fallbacks,
-      resources: [...resourceStates.values()],
-      resourceErrors: [...resourceStates.values()].flatMap(s => s.error ? [{ error: s.error, path: s.resource.path }] : []),
-      scanErrors: [...files].flatMap(([path, s]) => s.error ? [{ error: s.error, path }] : []),
+      resources: [
+        ...resourceStates.values(),
+      ],
+      resourceErrors: [
+        ...resourceStates.values(),
+      ].flatMap(s => s.error
+        ? [
+            { error: s.error, path: s.resource.path },
+          ]
+        : []),
+      scanErrors: [...files].flatMap(([path, s]) => s.error
+        ? [
+            { error: s.error, path },
+          ]
+        : []),
       discoveryErrors,
       messages: idx().messages,
       parents: idx().parents,
@@ -500,8 +716,12 @@ export function createProject(options: CreateProjectOptions): Project {
 
   function keys(query: Parameters<Project['keys']>[0] = {}): KeyString[] {
     const { messages, keyPaths } = idx()
-    const match = query.glob ? keyMatcher([query.glob]) : undefined
-    let list = [...messages.keys()]
+    const match = query.glob
+      ? keyMatcher([query.glob])
+      : undefined
+    let list = [
+      ...messages.keys(),
+    ]
     if (match)
       list = list.filter(key => match(key))
     if (query.namespace !== undefined)
@@ -549,21 +769,40 @@ export function createProject(options: CreateProjectOptions): Project {
       }
       if (best) {
         return best.leaf
-          ? { type: 'key', key: best.key, range: best.range.key, source: 'resource' }
-          : { type: 'subtree', key: best.key, range: best.range.key, source: 'resource' }
+          ? {
+              type: 'key',
+              key: best.key,
+              range: best.range.key,
+              source: 'resource',
+            }
+          : {
+              type: 'subtree',
+              key: best.key,
+              range: best.range.key,
+              source: 'resource',
+            }
       }
     }
     const state = files.get(path)
     if (state) {
       const usage = idx().usages.find(u => u.path === path && u.key !== undefined && rangeContains(u.range, offset))
-      if (usage?.key !== undefined)
-        return { type: 'key', key: usage.key, range: usage.range, source: 'usage', usage }
+      if (usage?.key !== undefined) {
+        return {
+          type: 'key',
+          key: usage.key,
+          range: usage.range,
+          source: 'usage',
+          usage,
+        }
+      }
     }
     return undefined
   }
 
   function explain(): ProjectExplanation {
-    const resources = [...resourceStates.values()]
+    const resources = [
+      ...resourceStates.values(),
+    ]
     return {
       name: config.name,
       root: host.root,
@@ -580,14 +819,27 @@ export function createProject(options: CreateProjectOptions): Project {
       scanners: registry.scanners.map(scanner => ({
         id: scanner.id,
         extensions: scanner.extensions,
-        files: [...files.keys()].filter(path => registry.scannersFor(path).includes(scanner)).length,
+        files: [
+          ...files.keys(),
+        ].filter(path => registry.scannersFor(path).includes(scanner)).length,
       })),
       conflicts: registry.conflicts,
       errors: [
         ...discoveryErrors,
-        ...resources.flatMap(state => state.error ? [{ error: state.error, path: state.resource.path }] : []),
-        ...[...files].flatMap(([path, state]) => state.error ? [{ error: state.error, path }] : []),
-      ].map(({ error, path }) => ({ ...toErrorInfo(error), path })),
+        ...resources.flatMap(state => state.error
+          ? [
+              { error: state.error, path: state.resource.path },
+            ]
+          : []),
+        ...[...files].flatMap(([path, state]) => state.error
+          ? [
+              { error: state.error, path },
+            ]
+          : []),
+      ].map(({ error, path }) => ({
+        ...toErrorInfo(error),
+        path,
+      })),
       config,
     }
   }
@@ -623,13 +875,28 @@ export function createProject(options: CreateProjectOptions): Project {
         return undefined
       const before = idx()
       const paths = new Set(events.map(event => event.path))
-      const resourcePaths = new Set([...resourceStates.values()].map(state => state.resource.path))
+      const resourcePaths = new Set([
+        ...resourceStates.values(),
+      ].map(state => state.resource.path))
       // An edited source file stays a source file; only other files with a format may have become resources.
-      const maybeResource = (path: string): boolean => !resourcePaths.has(path) && registry.formatFor(path) !== undefined && !usageEligible(path)
-      const structural = events.some(event => event.type !== 'change' || maybeResource(event.path))
+      const maybeResource = (path: string): boolean => !resourcePaths.has(path) && registry.formatIdFor(path) !== undefined && !usageEligible(path)
+      // Block ranges move when their file changes; only the finders know the new ones.
+      const blockPaths = new Set([
+        ...resourceStates.values(),
+      ].filter(state => state.resource.block).map(state => state.resource.path))
+      const structural = events.some(event => event.type !== 'change' || maybeResource(event.path) || blockPaths.has(event.path))
       const touchesResources = structural || [...paths].some(path => resourcePaths.has(path))
       if (touchesResources) {
-        const candidates = structural ? await discover() : [...resourceStates.values()].map(state => ({ ...state.resource, format: state.resource.format === 'unknown' ? undefined : state.resource.format }))
+        const candidates = structural
+          ? await discover()
+          : [
+              ...resourceStates.values(),
+            ].map(state => ({
+              ...state.resource,
+              format: state.resource.format === 'unknown'
+                ? undefined
+                : state.resource.format,
+            }))
         await loadResources(candidates, paths)
       }
       const scanTargets = [...paths].filter(path => usageEligible(path) || files.has(path))
@@ -639,7 +906,11 @@ export function createProject(options: CreateProjectOptions): Project {
       }
       await scanPaths(scanTargets.filter(path => events.some(event => event.path === path && event.type !== 'delete')))
       revision++
-      const change: ProjectChange = { revision, paths: [...paths], keys: touchedKeys(paths, before) }
+      const change: ProjectChange = {
+        revision,
+        paths: [...paths],
+        keys: touchedKeys(paths, before),
+      }
       emit(change)
       return change
     })
@@ -651,24 +922,28 @@ export function createProject(options: CreateProjectOptions): Project {
     host,
     config,
     registry,
-    state: () => ({ revision, sourceLocale, locales, fallbacks, namespaced, resources: [...resourceStates.values()], fileTexts }),
+    state: () => ({
+      revision,
+      sourceLocale,
+      locales,
+      fallbacks,
+      namespaced,
+      resources: [
+        ...resourceStates.values(),
+      ],
+      fileTexts,
+    }),
     message: (key, locale) => message(key, locale),
     messages: key => idx().messages.get(key),
-    allKeys: () => [...idx().messages.keys()],
+    allKeys: () => [
+      ...idx().messages.keys(),
+    ],
     parents: () => idx().parents,
     usageMatches,
     text: path => fileTexts.get(path) ?? files.get(path)?.text,
     basesOf,
     toStored: (target, path) => storedPathOf(target)(path),
-    resolveNew(locale, namespace, model) {
-      const ctx = { host, config, extensions: [...new Set(registry.formats.flatMap(format => format.extensions))] }
-      for (const finder of registry.finders) {
-        const path = finder.resolveNew?.({ locale, namespace, model }, ctx)
-        if (path)
-          return path
-      }
-      return undefined
-    },
+    resolveNew: newResourcePath,
     update,
   })
 
@@ -695,7 +970,9 @@ export function createProject(options: CreateProjectOptions): Project {
       return sourceLocale
     },
     get resources() {
-      return [...resourceStates.values()].map(state => state.resource)
+      return [
+        ...resourceStates.values(),
+      ].map(state => state.resource)
     },
     get namespaced() {
       return namespaced
@@ -703,7 +980,9 @@ export function createProject(options: CreateProjectOptions): Project {
     reporters: registry.reporters,
     placeholderSyntaxes: registry.placeholders,
     extractTemplates: [
-      ...(config.extract.templates ?? []).map(template => typeof template === 'string' ? { template } : template),
+      ...(config.extract.templates ?? []).map(template => typeof template === 'string'
+        ? { template }
+        : template),
       ...registry.extractors.flatMap(extractor => extractor.templates),
     ],
     keys,
@@ -716,17 +995,23 @@ export function createProject(options: CreateProjectOptions): Project {
       const index = input.indexOf(':')
       if (index > 0)
         return input
-      const custom = separator !== ':' ? input.indexOf(separator) : -1
+      const custom = separator !== ':'
+        ? input.indexOf(separator)
+        : -1
       if (custom > 0)
         return `${input.slice(0, custom)}:${input.slice(custom + separator.length)}`
-      return config.namespace.default ? `${config.namespace.default}:${input}` : input
+      return config.namespace.default
+        ? `${config.namespace.default}:${input}`
+        : input
     },
     usages: usageMatches,
     keyAt,
     nodes: path => idx().nodes.get(path) ?? [],
     locations(key) {
       const order = new Map(locales.map((locale, i) => [locale, i]))
-      const all = [...idx().nodes.values()].flat()
+      const all = [
+        ...idx().nodes.values(),
+      ].flat()
       let found = all.filter(node => node.key === key)
       // A base key used with plural or context suffixes lives in its derived keys.
       if (found.length === 0) {
@@ -744,10 +1029,16 @@ export function createProject(options: CreateProjectOptions): Project {
         .filter(k => message(k, locale) !== undefined)
         .sort((a, b) => a.length - b.length || a.localeCompare(b))
       const other = derived.find(k => /[._-]other$/.test(k)) ?? derived[0]
-      return other === undefined ? undefined : message(other, locale)
+      return other === undefined
+        ? undefined
+        : message(other, locale)
     },
     keySlots: path => files.get(path)?.result.keySlots ?? [],
-    hardStrings: path => [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).filter(([p]) => path === undefined || p === path).flatMap(([p, state]) => (state.result.hardStrings ?? []).map(h => ({ ...h, path: p }))),
+    hardStrings: path => [...files].sort(([a], [b]) => (a < b
+      ? -1
+      : a > b
+        ? 1
+        : 0)).filter(([p]) => path === undefined || p === path).flatMap(([p, state]) => (state.result.hardStrings ?? []).map(h => ({ ...h, path: p }))),
     analyze: (): Analysis => analyzer.analyze(),
     async loadHistory(historyOptions = {}) {
       await ready
@@ -757,7 +1048,9 @@ export function createProject(options: CreateProjectOptions): Project {
     valueAt: history.valueAt,
     prompt: (kind, locale, promptOptions = {}) => buildPrompt(project, kind, locale, promptOptions, {
       config,
-      hooks: registry.plugins.flatMap(plugin => plugin.translatePrompt ? [plugin.translatePrompt] : []),
+      hooks: registry.plugins.flatMap(plugin => plugin.translatePrompt
+        ? [plugin.translatePrompt]
+        : []),
     }),
     explain,
     localeInfo,

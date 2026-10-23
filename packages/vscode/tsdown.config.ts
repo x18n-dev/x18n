@@ -20,7 +20,11 @@ export default defineConfig([
       { from: '../node/node_modules/jiti/dist/babel.cjs', to: 'dist' },
     ],
     // Prefer ESM entries: UMD `main` builds (jsonc-parser) `require` relative files that are not bundled.
-    inputOptions: { resolve: { mainFields: ['module', 'main'] } },
+    inputOptions: {
+      resolve: {
+        mainFields: ['module', 'main'],
+      },
+    },
   },
   {
     // The e2e suite, loaded with `require` by the VS Code extension host; not packaged.

@@ -21,6 +21,10 @@ function byRegex(id: string, regex: RegExp, example: string): PlaceholderSyntax 
 
 /** `{name}`: vue-i18n named interpolation and similar. */
 export const braces: PlaceholderSyntax = byRegex('braces', /(?<![{$])\{\s*([\w.-]+)\s*\}(?!\})/g, '{name}')
+/** `{}`: easy_localization positional arguments. */
+export const positionalBraces: PlaceholderSyntax = byRegex('positional-braces', /\{\}/g, '{}')
+/** `{name}` with an optional type, formatters or switch-case: `{name:string}`, `{date|weekday}`, `{gender|{male: his, *: their}}`. `{{a|b}}` plurals are not placeholders. */
+export const typedBraces: PlaceholderSyntax = byRegex('typed-braces', /(?<![{$])\{\s*(\w+)\??\s*(?::[^{}|]*)?(?:\|(?:\{[^{}]*\}|[^{}]*))?\}(?!\})/g, '{name}')
 /** `{{name}}`: i18next interpolation, including `{{name, format}}` and `{{- raw}}`. */
 export const doubleBraces: PlaceholderSyntax = byRegex('double-braces', /\{\{-?\s*([\w.]+)\s*(?:,[^}]*)?\}\}/g, '{{name}}')
 /** `%{name}`: Rails, Polyglot. */
@@ -28,7 +32,10 @@ export const percentBraces: PlaceholderSyntax = byRegex('percent-braces', /%\{(\
 /** `%s`, `%d`, `%1$s`: printf. */
 export const printf: PlaceholderSyntax = byRegex('printf', /%(?:(\d+)\$)?[-+ 0#]*(?:[1-9]\d*)?(?:\.\d+)?[sdifoxXeEgGc@]/g, '%s')
 /** `@:key` and `@.modifier:key`: vue-i18n linked messages. */
-export const linked: PlaceholderSyntax = { ...byRegex('linked', /@(?:\.\w+)?:\(?([\w.-]+)\)?/g, '@:key'), reference: true }
+export const linked: PlaceholderSyntax = {
+  ...byRegex('linked', /@(?:\.\w+)?:\(?([\w.-]+)\)?/g, '@:key'),
+  reference: true,
+}
 /** `{ $name }`: Fluent variables. */
 export const fluent: PlaceholderSyntax = byRegex('fluent', /\{\s*\$([\w-]+)(?:\s[^}]*)?\}/g, '{ $name }')
 /** `:name`: Laravel. */
@@ -43,15 +50,24 @@ export const dotnet: PlaceholderSyntax = {
   find(value) {
     const out: Placeholder[] = []
     for (const match of value.matchAll(/\{\{|\}\}|\{\s*(\w+)\s*(?:,\s*-?\d+\s*)?(?::[^{}]*)?\}/g)) {
-      if (match[1] !== undefined)
-        out.push({ syntax: 'dotnet', text: match[0], name: match[1], range: { start: match.index, end: match.index + match[0].length } })
+      if (match[1] !== undefined) {
+        out.push({
+          syntax: 'dotnet',
+          text: match[0],
+          name: match[1],
+          range: { start: match.index, end: match.index + match[0].length },
+        })
+      }
     }
     return out
   },
 }
 
 /** `$t(key)` nesting in i18next. */
-export const nesting: PlaceholderSyntax = { ...byRegex('nesting', /\$t\(([\w.:-]+)(?:,[^)]*)?\)/g, '$t(key)'), reference: true }
+export const nesting: PlaceholderSyntax = {
+  ...byRegex('nesting', /\$t\(([\w.:-]+)(?:,[^)]*)?\)/g, '$t(key)'),
+  reference: true,
+}
 
 /** Offset after the `}` that closes the `{` at `start`, or -1. */
 function closingBrace(value: string, start: number, to: number): number {
@@ -64,7 +80,9 @@ function closingBrace(value: string, start: number, to: number): number {
       depth--
     j++
   }
-  return depth > 0 ? -1 : j
+  return depth > 0
+    ? -1
+    : j
 }
 
 /** ICU MessageFormat arguments: `{name}`, `{count, plural, ...}`. Nested sub-messages are scanned too. */
@@ -80,10 +98,14 @@ export const icu: PlaceholderSyntax = {
         if (char === '\'') {
           // `'{'` is a quoted literal brace; `''` is an apostrophe.
           const close = value.indexOf('\'', i + 1)
-          if (value[i + 1] === '{' || value[i + 1] === '}')
-            i = close === -1 ? to : close + 1
-          else
+          if (value[i + 1] === '{' || value[i + 1] === '}') {
+            i = close === -1
+              ? to
+              : close + 1
+          }
+          else {
             i++
+          }
           continue
         }
         if (char !== '{') {
@@ -95,8 +117,14 @@ export const icu: PlaceholderSyntax = {
           return
         const body = value.slice(i + 1, j - 1)
         const name = /^\s*([\w.-]+)/.exec(body)?.[1]
-        if (name)
-          out.push({ syntax: 'icu', text: value.slice(i, j), name, range: { start: i, end: j } })
+        if (name) {
+          out.push({
+            syntax: 'icu',
+            text: value.slice(i, j),
+            name,
+            range: { start: i, end: j },
+          })
+        }
         const firstSub = body.indexOf('{')
         if (firstSub !== -1)
           scan(i + 1 + firstSub, j - 1)

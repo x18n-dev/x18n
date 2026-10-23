@@ -4,11 +4,28 @@ export default defineAppConfig({
   header: {
     title: 'x18n',
     nav: [
-      { label: 'Guide', sections: ['guide', 'migration'] },
-      { label: 'Surfaces', sections: ['surfaces'] },
-      { label: 'Agents', sections: ['agents'] },
-      { label: 'Presets', sections: ['presets'], link: 'section' as const },
-      { label: 'Plugins', sections: ['plugins'], link: 'section' as const },
+      {
+        label: 'Guide',
+        sections: ['guide', 'migration'],
+      },
+      {
+        label: 'Surfaces',
+        sections: ['surfaces'],
+      },
+      {
+        label: 'Agents',
+        sections: ['agents'],
+      },
+      {
+        label: 'Presets',
+        sections: ['presets'],
+        link: 'section' as const,
+      },
+      {
+        label: 'Plugins',
+        sections: ['plugins'],
+        link: 'section' as const,
+      },
       {
         label: 'Reference',
         sections: ['references', 'checks', 'errors'],

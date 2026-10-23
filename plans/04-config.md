@@ -20,8 +20,12 @@ import { defineConfig } from '@x18n/core'
 
 export default defineConfig({
   sourceLocale: 'en',
-  presets: [vueI18n({ sfc: true })],
-  resources: [{ pattern: 'src/locales/{locale}.json' }],
+  presets: [
+    vueI18n({ sfc: true })
+  ],
+  resources: [
+    { pattern: 'src/locales/{locale}.json' }
+  ],
   checks: { 'unused-key': 'error' },
 })
 ```

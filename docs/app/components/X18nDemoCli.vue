@@ -22,7 +22,10 @@ const blocks: Block[] = [
     level: 'error',
     rule: 'missing-key',
     text: '"app.titel" is not defined in en.',
-    frame: [16, ['  <main>', `    <p>{{ $t('app.titel') }}</p>`, '  </main>']],
+    frame: [
+      16,
+      ['  <main>', `    <p>{{ $t('app.titel') }}</p>`, '  </main>'],
+    ],
     mark: `${' '.repeat(14)}${'~'.repeat(9)}`,
   },
   {
@@ -31,7 +34,10 @@ const blocks: Block[] = [
     level: 'warning',
     rule: 'unused-key',
     text: '"unused" is not used.',
-    frame: [17, ['  "app.save": "Save",', '  "unused": "Nobody uses me",', '  "app.title": "Welcome back"']],
+    frame: [
+      17,
+      ['  "app.save": "Save",', '  "unused": "Nobody uses me",', '  "app.title": "Welcome back"'],
+    ],
     mark: `${' '.repeat(3)}${'~'.repeat(6)}`,
   },
 ]
@@ -55,10 +61,15 @@ useDemoLoop(async (sleep) => {
   running.value = false
   for (let i = 1; i <= blocks.length + 1; i++) {
     shown.value = i
-    await sleep(i <= blocks.length ? 650 : 0)
+    await sleep(i <= blocks.length
+      ? 650
+      : 0)
   }
   await sleep(5000)
-}, undefined, { start: ms => emit('start', ms), done: () => emit('done') })
+}, undefined, {
+  start: ms => emit('start', ms),
+  done: () => emit('done'),
+})
 
 function tone(level: Block['level']) {
   return level === 'error'
