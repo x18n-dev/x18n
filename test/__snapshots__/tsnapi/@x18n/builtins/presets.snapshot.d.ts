@@ -8,6 +8,7 @@ export declare function fluentVue(): Preset;
 export declare function flutter(): Preset;
 export declare function general(): Preset;
 export declare function globalize(): Preset;
+export declare function gravityUiI18n(): Preset;
 export declare function i18next(): Preset;
 export declare function i18nextShopify(): Preset;
 export declare function i18nJs(): Preset;

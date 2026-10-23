@@ -203,11 +203,11 @@ class FileScan {
 
   /** ---- Usages ---- */
   /** `expression` is the call holding `value`, kept only when the key is the call's own literal. */
-  addKey(value: ArgValue, binding: Binding, namespace: string | undefined, expression?: TextRange): void {
+  addKey(value: ArgValue, binding: Binding, namespace: string | undefined, expression?: TextRange, keyPrefix?: string): void {
     if ('props' in value)
       return
     const node = unwrap(value)
-    const base = { namespace: namespace ?? binding.namespace, keyPrefix: binding.keyPrefix }
+    const base = { namespace: namespace ?? binding.namespace, keyPrefix: keyPrefix ?? binding.keyPrefix }
     const call = expression ? { expression: this.range(expression) } : {}
     if (isStringLiteral(node)) {
       this.consumed.add(node.start)
@@ -217,7 +217,7 @@ class FileScan {
     }
     if (node.type === 'JSXExpressionContainer') {
       if (node.expression.type !== 'JSXEmptyExpression')
-        this.addKey(node.expression, binding, namespace)
+        this.addKey(node.expression, binding, namespace, undefined, keyPrefix)
       return
     }
     if (node.type === 'TemplateLiteral') {
@@ -229,8 +229,8 @@ class FileScan {
       return
     }
     if (node.type === 'ConditionalExpression') {
-      this.addKey(node.consequent, binding, namespace)
-      this.addKey(node.alternate, binding, namespace)
+      this.addKey(node.consequent, binding, namespace, undefined, keyPrefix)
+      this.addKey(node.alternate, binding, namespace, undefined, keyPrefix)
       return
     }
     if (node.type === 'ArrowFunctionExpression' && node.params[0]?.type === 'Identifier')
@@ -270,11 +270,13 @@ class FileScan {
     const bindings = this.lookupAll(name).filter(binding => !binding.spec.factory)
     for (const binding of bindings) {
       const namespace = binding.spec.namespace ? this.stringArg(this.argValues(args, binding.spec.namespace, 1)[0]) : undefined
+      const keyPrefix = binding.spec.keyPrefix ? this.stringArg(this.argValues(args, binding.spec.keyPrefix, 1)[0]) : undefined
       for (const value of this.argValues(args, binding.spec.key, 0)) {
-        // With several specs per callee, only the one whose key position holds a key counts.
-        if (bindings.length > 1 && !('props' in value) && unwrap(value).type === 'ObjectExpression')
+        // An object is never a key: another spec of the callee reads it (lingui `t({ id })`), or the call
+        // passes params where this spec expects the key (a gravity keyset function `i18n('key', { count })`).
+        if (!('props' in value) && unwrap(value).type === 'ObjectExpression')
           continue
-        this.addKey(value, binding, namespace, expression)
+        this.addKey(value, binding, namespace, expression, keyPrefix)
       }
     }
     return bindings.length > 0

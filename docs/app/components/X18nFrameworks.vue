@@ -9,6 +9,7 @@ const frameworks: { name: string, icon: string, to: string, mono?: boolean, colo
   { name: 'Angular', icon: 'logos:angular-icon', to: '/presets/ngx-translate' },
   { name: 'i18next', icon: 'simple-icons:i18next', to: '/presets/i18next', color: '#26a69a' },
   { name: 'Astro', icon: 'logos:astro-icon', to: '/presets/paraglide' },
+  { name: 'Gravity UI', icon: 'ph:planet-bold', to: '/presets/gravity-ui-i18n' },
   { name: 'Ember', icon: 'logos:ember', to: '/presets/ember-intl' },
   { name: 'Shopify', icon: 'logos:shopify', to: '/presets/i18next-shopify' },
   { name: 'SAP', icon: 'logos:sap', to: '/presets/ui5' },
