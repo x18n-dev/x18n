@@ -23,7 +23,14 @@ const uiCommands = (): Promise<typeof import('./commands/ui')> => import('./comm
 type Action = (...args: never[]) => Promise<number | void>
 
 const paint = (format: Parameters<typeof styleText>[0]) => (text: string): string => styleText(format, text, { validateStream: false })
-const formatColored = ansiFormatter({ red: paint('red'), yellow: paint('yellow'), cyan: paint('cyan'), gray: paint('gray'), bold: paint('bold'), dim: paint('dim') })
+const formatColored = ansiFormatter({
+  red: paint('red'),
+  yellow: paint('yellow'),
+  cyan: paint('cyan'),
+  gray: paint('gray'),
+  bold: paint('bold'),
+  dim: paint('dim'),
+})
 
 /** Runs a command and turns errors into the JSON envelope or a printed diagnostic, with the matching exit code. */
 function run(command: string, action: Action): (...args: unknown[]) => Promise<void> {
@@ -34,12 +41,21 @@ function run(command: string, action: Action): (...args: unknown[]) => Promise<v
       process.exitCode = code ?? 0
     }
     catch (error) {
-      if (options.json)
-        printJson(command, null, [], [toErrorInfo(error)])
-      else if (isX18nError(error))
-        process.stderr.write(`${(useColor(options) ? formatColored : formatDiagnostic)(error)}\n`)
-      else
-        process.stderr.write(`${error instanceof Error && process.env.DEBUG ? error.stack : `error: ${toErrorInfo(error).why}`}\n`)
+      if (options.json) {
+        printJson(command, null, [], [
+          toErrorInfo(error),
+        ])
+      }
+      else if (isX18nError(error)) {
+        process.stderr.write(`${(useColor(options)
+          ? formatColored
+          : formatDiagnostic)(error)}\n`)
+      }
+      else {
+        process.stderr.write(`${error instanceof Error && process.env.DEBUG
+          ? error.stack
+          : `error: ${toErrorInfo(error).why}`}\n`)
+      }
       process.exitCode = exitCodeOf(error)
     }
   }
@@ -175,11 +191,15 @@ process.stdout.on('error', (error: NodeJS.ErrnoException) => {
 })
 
 // mri drops a lone `-`; keep it as a sentinel that `readInput` maps to stdin.
-const argv = process.argv.map(arg => arg === '-' ? stdinArg : arg)
+const argv = process.argv.map(arg => arg === '-'
+  ? stdinArg
+  : arg)
 try {
   createCli().parse(argv)
 }
 catch (error) {
-  process.stderr.write(`error: ${error instanceof Error ? error.message : String(error)}\n`)
+  process.stderr.write(`error: ${error instanceof Error
+    ? error.message
+    : String(error)}\n`)
   process.exitCode = 2
 }

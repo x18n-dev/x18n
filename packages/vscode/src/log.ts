@@ -27,7 +27,10 @@ export function useLog(client: LanguageClient, x18n: X18nClient, refresh: Event<
     let projects: ProjectInfo[]
     let progress: ProgressResult
     try {
-      [projects, progress] = await Promise.all([x18n.request('x18n/projects', undefined), x18n.request('x18n/progress', undefined)])
+      [projects, progress] = await Promise.all([
+        x18n.request('x18n/projects', undefined),
+        x18n.request('x18n/progress', undefined),
+      ])
     }
     catch {
       last = ''

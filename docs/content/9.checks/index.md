@@ -16,7 +16,10 @@ export default defineConfig({
   checks: {
     'unused-key': 'error',
     'identical-to-source': 'warning',
-    'key-style': ['warning', { case: 'camel' }],
+    'key-style': [
+      'warning',
+      { case: 'camel' }
+    ],
   },
 })
 ```

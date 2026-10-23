@@ -85,14 +85,19 @@ function isFlatTree(tree: MessageTree): boolean | undefined {
     return undefined
   if (entries.some(([, value]) => !isMessageLeaf(value)))
     return false
-  return entries.some(([key]) => key.includes('.')) ? true : undefined
+  return entries.some(([key]) => key.includes('.'))
+    ? true
+    : undefined
 }
 
 /** The longest key prefix a tree shares with `path`. */
 function longestPrefix(tree: MessageTree, prefix: readonly string[], path: readonly string[]): number {
   let best = 0
   for (const [segment, child] of Object.entries(tree)) {
-    const next = [...prefix, ...segment.split('.')]
+    const next = [
+      ...prefix,
+      ...segment.split('.'),
+    ]
     best = Math.max(best, commonPrefix(next, path))
     if (!isMessageLeaf(child))
       best = Math.max(best, longestPrefix(child, next, path))
@@ -115,11 +120,16 @@ function importEdit(text: string, lines: readonly string[]): TextEdit | undefine
     at = script.index + script[0].length
   }
   else {
-    const last = [...text.matchAll(/^import\s.*$/gm)].at(-1)
+    const last = [
+      ...text.matchAll(/^import\s.*$/gm),
+    ].at(-1)
     if (last)
       at = last.index + last[0].length + 1
   }
-  return { range: { start: at, end: at }, text: `${missing.join('\n')}\n` }
+  return {
+    range: { start: at, end: at },
+    text: `${missing.join('\n')}\n`,
+  }
 }
 
 class PlanBuilder {
@@ -143,13 +153,26 @@ class PlanBuilder {
     const format = this.options.registry.formatById(s.resource.format)
     if (!format)
       throw errors.X18N2001({ path: s.resource.path })
-    return { id: s.resource.id, path: s.resource.path, locale: s.resource.locale, namespace: s.resource.namespace, format, state: s }
+    return {
+      id: s.resource.id,
+      path: s.resource.path,
+      locale: s.resource.locale,
+      namespace: s.resource.namespace,
+      format,
+      state: s,
+    }
   }
 
   workFor(target: Target): Work {
     let entry = this.work.get(target.id)
     if (!entry) {
-      entry = { target, tree: target.state?.rawTree ?? {}, ops: [], keyRenames: [], formatOnly: false }
+      entry = {
+        target,
+        tree: target.state?.rawTree ?? {},
+        ops: [],
+        keyRenames: [],
+        formatOnly: false,
+      }
       this.work.set(target.id, entry)
     }
     return entry
@@ -164,16 +187,24 @@ class PlanBuilder {
 
   keyId(key: KeyString): { namespace: string | undefined, path: string[] } {
     const id = splitKey(key, this.state.namespaced)
-    return { namespace: id.namespace, path: [...id.path] }
+    return {
+      namespace: id.namespace,
+      path: [...id.path],
+    }
   }
 
   /** Key path relative to a resource, or undefined when the key does not belong there. */
   relativePath(key: KeyString, target: { readonly namespace: string | undefined }): string[] | undefined {
     const { namespace, path } = this.keyId(key)
     const fallback = this.config.namespace.default
-    if (this.state.namespaced)
-      return (namespace ?? fallback) === (target.namespace ?? fallback) ? path : undefined
-    const prefix = target.namespace ? target.namespace.split('.') : []
+    if (this.state.namespaced) {
+      return (namespace ?? fallback) === (target.namespace ?? fallback)
+        ? path
+        : undefined
+    }
+    const prefix = target.namespace
+      ? target.namespace.split('.')
+      : []
     if (path.length <= prefix.length || prefix.some((segment, i) => path[i] !== segment))
       return undefined
     return path.slice(prefix.length)
@@ -183,7 +214,11 @@ class PlanBuilder {
     const stored = this.options.toStored(entry.target, relative)
     // Transforms (Rails, Chrome) fix the nesting; otherwise follow the file's style.
     const flat = stored.length === relative.length && (isFlatTree(entry.tree) ?? (this.config.keyStyle === 'flat'))
-    return flat ? [stored.join('.')] : stored
+    return flat
+      ? [
+          stored.join('.'),
+        ]
+      : stored
   }
 
   createTarget(key: KeyString, locale: LocaleCode): Target {
@@ -192,28 +227,46 @@ class PlanBuilder {
     const source = this.options.message(key, sourceLocale)
     const sourceState = source && this.stateById.get(source.resource)
     // In prefix mode the namespace is the one of the source file holding the key (`lang/en/messages.php`).
-    const namespace = namespaced ? this.keyId(key).namespace ?? this.config.namespace.default : sourceState?.resource.namespace
+    const namespace = namespaced
+      ? this.keyId(key).namespace ?? this.config.namespace.default
+      : sourceState?.resource.namespace
     const exists = (path: string): boolean => resources.some(r => r.resource.path === path)
     const resolved = this.options.resolveNew(locale, namespace)
     if (resolved && !exists(resolved)) {
       const format = this.options.registry.formatFor(resolved)
       if (format?.serialize) {
-        const target: Target = { id: resolved, path: resolved, locale, namespace, format, state: undefined }
+        const target: Target = {
+          id: resolved,
+          path: resolved,
+          locale,
+          namespace,
+          format,
+          state: undefined,
+        }
         this.created.set(resolved, target)
         return target
       }
     }
     // Next to a resource of the key's namespace in another locale, else next to one of another namespace in this locale.
     const sibling = (r: ResourceState): boolean => r.resource.locale === locale && r.resource.namespace !== undefined && namespace !== undefined
-    const model = (sourceState && fits(sourceState) ? sourceState : undefined)
-      ?? resources.find(s => s.resource.locale === sourceLocale && fits(s)) ?? resources.find(fits) ?? resources.find(sibling)
+    const model = (sourceState && fits(sourceState)
+      ? sourceState
+      : undefined)
+    ?? resources.find(s => s.resource.locale === sourceLocale && fits(s)) ?? resources.find(fits) ?? resources.find(sibling)
     const format = model && this.options.registry.formatById(model.resource.format)
     let path = model && mirrorPath(model.resource.path, model.resource.locale, locale)
     if (model && path && namespace !== undefined && model.resource.namespace !== undefined && model.resource.namespace !== namespace)
       path = mirrorPath(path, model.resource.namespace, namespace)
     if (!model || !format?.serialize || model.resource.block || !path || exists(path))
       throw errors.X18N4005({ key, locale })
-    const target: Target = { id: path, path, locale, namespace: namespace ?? model.resource.namespace, format, state: undefined }
+    const target: Target = {
+      id: path,
+      path,
+      locale,
+      namespace: namespace ?? model.resource.namespace,
+      format,
+      state: undefined,
+    }
     this.created.set(path, target)
     return target
   }
@@ -228,15 +281,22 @@ class PlanBuilder {
     if (sourceNamespace !== undefined && !this.state.namespaced)
       inLocale = inLocale.filter(s => s.resource.namespace === sourceNamespace)
     if (inLocale.length === 0) {
-      const pending = [...this.created.values()].find(t => t.locale === locale && this.relativePath(key, t) !== undefined)
+      const pending = [
+        ...this.created.values(),
+      ].find(t => t.locale === locale && this.relativePath(key, t) !== undefined)
       return pending ?? this.createTarget(key, locale)
     }
     if (inLocale.length === 1)
       return this.targetOf(inLocale[0]!)
     const path = this.keyId(key).path
     const scores = inLocale.map((s) => {
-      const prefix = s.resource.namespace && !this.state.namespaced ? path.slice(0, s.resource.namespace.split('.').length) : []
-      return { s, best: longestPrefix(s.tree, prefix, path) }
+      const prefix = s.resource.namespace && !this.state.namespaced
+        ? path.slice(0, s.resource.namespace.split('.').length)
+        : []
+      return {
+        s,
+        best: longestPrefix(s.tree, prefix, path),
+      }
     })
     const top = Math.max(...scores.map(x => x.best))
     const winners = scores.filter(x => x.best === top)
@@ -310,11 +370,23 @@ class PlanBuilder {
       if (node === undefined || isMessageLeaf(node) || !range || !sameParent || !safeSegment.test(last))
         continue
       const entry = this.workFor(this.targetOf(s))
-      entry.keyRenames.push({ range: { start: range.key.start + s.offset, end: range.key.end + s.offset }, text: last })
-      const leaves = [...walkLeaves(node, stored)]
+      entry.keyRenames.push({
+        range: { start: range.key.start + s.offset, end: range.key.end + s.offset },
+        text: last,
+      })
+      const leaves = [
+        ...walkLeaves(node, stored),
+      ]
       entry.tree = applyMessageOps(entry.tree, [
         ...leaves.map(leaf => ({ type: 'delete' as const, path: leaf.path })),
-        ...leaves.map(leaf => ({ type: 'set' as const, path: [...next, ...leaf.path.slice(stored.length)], value: leaf.value })),
+        ...leaves.map(leaf => ({
+          type: 'set' as const,
+          path: [
+            ...next,
+            ...leaf.path.slice(stored.length),
+          ],
+          value: leaf.value,
+        })),
       ])
       handled.add(s.resource.id)
     }
@@ -337,16 +409,27 @@ class PlanBuilder {
       }
       const entry = this.workFor(this.targetOf(s))
       const flat = m.storedPath.length === 1 && m.storedPath[0]!.includes('.')
-      const next = flat ? [relative.join('.')] : this.options.toStored(s.resource, relative)
+      const next = flat
+        ? [
+            relative.join('.'),
+          ]
+        : this.options.toStored(s.resource, relative)
       const sameParent = next.length === m.storedPath.length && next.slice(0, -1).every((segment, i) => segment === m.storedPath[i])
       const last = next.at(-1)!
       if (sameParent && m.range && (flat ? safeFlat : safeSegment).test(last)) {
         entry.keyRenames.push({ range: m.range.key, text: last })
-        entry.tree = applyMessageOps(entry.tree, [{ type: 'delete', path: m.storedPath }, { type: 'set', path: next, value: m.value }])
+        entry.tree = applyMessageOps(entry.tree, [
+          { type: 'delete', path: m.storedPath },
+          { type: 'set', path: next, value: m.value },
+        ])
         continue
       }
       this.deleteMessage(m)
-      this.pushOp(entry, { type: 'set', path: this.storedPathFor(entry, relative), value: m.value })
+      this.pushOp(entry, {
+        type: 'set',
+        path: this.storedPathFor(entry, relative),
+        value: m.value,
+      })
     }
   }
 
@@ -400,7 +483,9 @@ class PlanBuilder {
     for (const { usage, possible } of this.options.usageMatches({ prefix: from })) {
       if (!possible || usage.key === undefined)
         continue
-      const raw = usage.key.startsWith(from) ? this.rawFor(usage, to + usage.key.slice(from.length)) : undefined
+      const raw = usage.key.startsWith(from)
+        ? this.rawFor(usage, to + usage.key.slice(from.length))
+        : undefined
       if (raw === undefined)
         this.warnings.push(`${usage.path}: dynamic usage "${usage.raw}" may refer to renamed keys and was not updated.`)
       else
@@ -413,7 +498,11 @@ class PlanBuilder {
     const existing = this.options.messages(to)
     if (!existing && !this.options.parents().has(to))
       return
-    const files = [...new Set([...existing?.values() ?? []].flatMap(list => list.map(m => this.stateById.get(m.resource)?.resource.path ?? m.resource)))]
+    const files = [
+      ...new Set([
+        ...existing?.values() ?? [],
+      ].flatMap(list => list.map(m => this.stateById.get(m.resource)?.resource.path ?? m.resource))),
+    ]
     throw errors.X18N4002({ key: to, files })
   }
 
@@ -426,18 +515,28 @@ class PlanBuilder {
     // Derived keys (`item_one`) move with their base key (`item`).
     const derived = all.filter(key => this.options.basesOf(key).includes(op.from))
     let keys: KeyString[]
-    if (op.type === 'rename-prefix')
+    if (op.type === 'rename-prefix') {
       keys = under
-    else if (isLeaf)
+    }
+    else if (isLeaf) {
       keys = [op.from, ...derived]
-    else
-      keys = under.length > 0 ? under : derived
+    }
+    else {
+      keys = under.length > 0
+        ? under
+        : derived
+    }
     if (keys.length === 0)
       throw errors.X18N4006({ key: op.from })
-    const pairs = keys.map(key => [key, replaceKeyPrefix(key, op.from, op.to)] as const)
+    const pairs = keys.map(key => [
+      key,
+      replaceKeyPrefix(key, op.from, op.to),
+    ] as const)
     for (const [, to] of pairs)
       this.conflictCheck(to)
-    const renamed = keys.includes(op.from) ? new Set<string>() : this.renameNode(op.from, op.to)
+    const renamed = keys.includes(op.from)
+      ? new Set<string>()
+      : this.renameNode(op.from, op.to)
     for (const [from, to] of pairs) {
       this.moveKey(from, to, renamed)
       if (op.usages !== false)
@@ -451,7 +550,9 @@ class PlanBuilder {
   }
 
   delete(op: Extract<EditOp, { type: 'delete' }>): void {
-    const keys = this.options.messages(op.key) ? [op.key] : this.options.allKeys().filter(key => isKeyUnder(key, op.key))
+    const keys = this.options.messages(op.key)
+      ? [op.key]
+      : this.options.allKeys().filter(key => isKeyUnder(key, op.key))
     if (keys.length === 0)
       throw errors.X18N4006({ key: op.key })
     for (const key of keys) {
@@ -461,8 +562,11 @@ class PlanBuilder {
           list.forEach(m => this.deleteMessage(m))
       }
       const used = this.options.usageMatches({ key }).filter(match => !match.possible).length
-      if (used > 0)
-        this.warnings.push(`"${key}" still has ${used} usage${used === 1 ? '' : 's'}.`)
+      if (used > 0) {
+        this.warnings.push(`"${key}" still has ${used} usage${used === 1
+          ? ''
+          : 's'}.`)
+      }
     }
   }
 
@@ -515,13 +619,22 @@ class PlanBuilder {
   compare(): (a: string, b: string) => number {
     return this.config.write.sort === 'locale'
       ? (a, b) => a.localeCompare(b)
-      : (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+      : (a, b) => (a < b
+          ? -1
+          : a > b
+            ? 1
+            : 0)
   }
 
   /** The new content of one existing resource. */
   nextContent(entry: Work, s: ResourceState): string {
     const { target } = entry
-    const ctx = { path: target.path, locale: target.locale, namespace: target.namespace, indent: this.config.write.indent }
+    const ctx = {
+      path: target.path,
+      locale: target.locale,
+      namespace: target.namespace,
+      indent: this.config.write.indent,
+    }
     const sort = this.config.write.sort !== false
     const edit = target.format.edit
     if (entry.formatOnly || sort || !edit) {
@@ -529,9 +642,16 @@ class PlanBuilder {
         throw errors.X18N4001({ path: target.path })
       if (!entry.formatOnly && !edit)
         this.warnings.push(`${target.path} was re-written in full (the ${target.format.id} format cannot edit in place); formatting was reset.`)
-      return target.format.serialize(sort || entry.formatOnly ? sortTree(entry.tree, sort ? this.compare() : () => 0) : entry.tree, ctx)
+      return target.format.serialize(sort || entry.formatOnly
+        ? sortTree(entry.tree, sort
+            ? this.compare()
+            : () => 0)
+        : entry.tree, ctx)
     }
-    const local = (e: TextEdit): TextEdit => ({ range: { start: e.range.start - s.offset, end: e.range.end - s.offset }, text: e.text })
+    const local = (e: TextEdit): TextEdit => ({
+      range: { start: e.range.start - s.offset, end: e.range.end - s.offset },
+      text: e.text,
+    })
     if (entry.ops.length === 0)
       return applyTextEdits(s.content, entry.keyRenames.map(local))
     // Key renames mixed with other ops become delete + set, so one edit pass sees consistent offsets.
@@ -541,15 +661,25 @@ class PlanBuilder {
       if (!node)
         continue
       const oldPath = node[0].split('\u0000')
-      const newPath = [...oldPath.slice(0, -1), rename.text]
+      const newPath = [
+        ...oldPath.slice(0, -1),
+        rename.text,
+      ]
       const value = nodeAt(entry.tree, newPath)
       renameOps.push({ type: 'delete', path: oldPath })
-      if (value !== undefined && isMessageLeaf(value))
+      if (value !== undefined && isMessageLeaf(value)) {
         renameOps.push({ type: 'set', path: newPath, value })
-      else if (value !== undefined)
-        renameOps.push(...[...walkLeaves(value, newPath)].map(leaf => ({ type: 'set' as const, path: leaf.path, value: leaf.value })))
+      }
+      else if (value !== undefined) {
+        renameOps.push(...[
+          ...walkLeaves(value, newPath),
+        ].map(leaf => ({ type: 'set' as const, path: leaf.path, value: leaf.value })))
+      }
     }
-    return applyTextEdits(s.content, edit(s.content, [...renameOps, ...entry.ops], ctx))
+    return applyTextEdits(s.content, edit(s.content, [
+      ...renameOps,
+      ...entry.ops,
+    ], ctx))
   }
 
   changes(): { changes: FileChange[], texts: Map<string, string | undefined> } {
@@ -560,14 +690,28 @@ class PlanBuilder {
       const { target } = entry
       const s = target.state
       if (!s) {
-        const ctx = { path: target.path, locale: target.locale, namespace: target.namespace, indent: this.config.write.indent }
-        const tree = this.config.write.sort === false ? entry.tree : sortTree(entry.tree, this.compare())
-        changes.push({ type: 'create', path: target.path, content: target.format.serialize!(tree, ctx) })
+        const ctx = {
+          path: target.path,
+          locale: target.locale,
+          namespace: target.namespace,
+          indent: this.config.write.indent,
+        }
+        const tree = this.config.write.sort === false
+          ? entry.tree
+          : sortTree(entry.tree, this.compare())
+        changes.push({
+          type: 'create',
+          path: target.path,
+          content: target.format.serialize!(tree, ctx),
+        })
         texts.set(target.path, undefined)
         continue
       }
       const edits = diffText(s.content, this.nextContent(entry, s))
-        .map(e => ({ range: { start: e.range.start + s.offset, end: e.range.end + s.offset }, text: e.text }))
+        .map(e => ({
+          range: { start: e.range.start + s.offset, end: e.range.end + s.offset },
+          text: e.text,
+        }))
       if (edits.length === 0)
         continue
       const list = resourceEdits.get(target.path) ?? []
@@ -581,8 +725,19 @@ class PlanBuilder {
     for (const [path, edits] of this.sourceEdits) {
       const text = this.options.text(path)
       const imports = this.sourceImports.get(path)
-      const extra = imports && text !== undefined ? importEdit(text, [...imports]) : undefined
-      changes.push({ type: 'edit', path, edits: [...edits, ...extra ? [extra] : []].sort((a, b) => a.range.start - b.range.start) })
+      const extra = imports && text !== undefined
+        ? importEdit(text, [...imports])
+        : undefined
+      changes.push({
+        type: 'edit',
+        path,
+        edits: [
+          ...edits,
+          ...extra
+            ? [extra]
+            : [],
+        ].sort((a, b) => a.range.start - b.range.start),
+      })
       texts.set(path, text)
     }
     return { changes, texts }
@@ -604,7 +759,15 @@ export function createPlanner(options: PlannerOptions): Planner {
     const result = builder.changes()
     const id = hashText(JSON.stringify({ revision: state.revision, ops, answers }))
     return {
-      plan: { id, revision: state.revision, ops, changes: result.changes, decisions: builder.decisions, warnings: builder.warnings, keys: [...builder.touched].sort() },
+      plan: {
+        id,
+        revision: state.revision,
+        ops,
+        changes: result.changes,
+        decisions: builder.decisions,
+        warnings: builder.warnings,
+        keys: [...builder.touched].sort(),
+      },
       texts: result.texts,
     }
   }
@@ -631,11 +794,16 @@ export function createPlanner(options: PlannerOptions): Planner {
     },
     async apply(plan, answers) {
       const unanswered = plan.decisions.filter(d => answers[d.id] === undefined)
-      if (unanswered.length > 0)
-        throw errors.X18N4003({ decisions: unanswered.map(d => d.message) })
+      if (unanswered.length > 0) {
+        throw errors.X18N4003({
+          decisions: unanswered.map(d => d.message),
+        })
+      }
       if (plan.revision !== options.state().revision)
         throw errors.X18N4004()
-      const fresh = plan.decisions.length > 0 ? planWith(plan.ops, answers) : { plan, texts: texts.get(plan.id) ?? new Map() }
+      const fresh = plan.decisions.length > 0
+        ? planWith(plan.ops, answers)
+        : { plan, texts: texts.get(plan.id) ?? new Map() }
       for (const change of fresh.plan.changes) {
         const current = await options.host.readFile(change.path)
         const expected = fresh.texts.get(change.path)

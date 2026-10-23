@@ -26,8 +26,15 @@ watch(candidates, (list) => {
     seen.set(base, n + 1)
     const id = `${base}\0${n}`
     const before = previous.get(id)
-    const key = before && before.key !== before.candidate.key ? before.key : candidate.key
-    return { id, candidate, key, picked: before?.picked ?? false }
+    const key = before && before.key !== before.candidate.key
+      ? before.key
+      : candidate.key
+    return {
+      id,
+      candidate,
+      key,
+      picked: before?.picked ?? false,
+    }
   })
 })
 

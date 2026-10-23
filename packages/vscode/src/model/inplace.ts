@@ -38,10 +38,17 @@ export function computeInPlace(decorations: readonly Decoration[], selections: r
     if (decoration.value === undefined || !coveredByInPlace(decoration, options.maxLength))
       continue
     // A call over several lines cannot be hidden cleanly; such keys keep the key-only replacement.
-    const call = options.fullMatch && decoration.expression && singleLine(decoration.expression) ? decoration.expression : undefined
+    const call = options.fullMatch && decoration.expression && singleLine(decoration.expression)
+      ? decoration.expression
+      : undefined
     const range = call ?? decoration.range
-    if (!revealed(range, selections))
-      replaced.push({ range, text: decoration.value.replace(/\s*\n\s*/g, ' '), fullMatch: call !== undefined })
+    if (!revealed(range, selections)) {
+      replaced.push({
+        range,
+        text: decoration.value.replace(/\s*\n\s*/g, ' '),
+        fullMatch: call !== undefined,
+      })
+    }
   }
   return { replaced, missing }
 }

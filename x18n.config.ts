@@ -3,10 +3,16 @@ import { defineConfig } from '@x18n/core'
 /** The UI's own messages; `x18n check --strict` runs on them in CI. */
 export default defineConfig({
   sourceLocale: 'en',
-  resources: [{ pattern: 'packages/ui/app/locales/{locale}.json' }],
+  resources: [
+    { pattern: 'packages/ui/app/locales/{locale}.json' },
+  ],
   usage: {
     include: ['packages/ui/app/**/*.vue', 'packages/ui/app/**/*.ts'],
-    calls: [{ callee: ['t', '$t'] }],
+    calls: [
+      {
+        callee: ['t', '$t'],
+      },
+    ],
   },
   // Terms of plans/glossary.md, so translators of the UI name things the same way everywhere.
   glossary: [

@@ -14,7 +14,12 @@ export function diffText(before: string, after: string): TextEdit[] {
     endBefore--
     endAfter--
   }
-  return [{ range: { start, end: endBefore }, text: after.slice(start, endAfter) }]
+  return [
+    {
+      range: { start, end: endBefore },
+      text: after.slice(start, endAfter),
+    },
+  ]
 }
 
 /** Applies non-overlapping edits given against the same text. */

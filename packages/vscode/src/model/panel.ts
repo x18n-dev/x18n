@@ -2,7 +2,11 @@ export type UiTheme = 'dark' | 'light' | 'high-contrast'
 
 /** Maps `vscode.ColorThemeKind` (1 light, 2 dark, 3 high contrast, 4 high contrast light). */
 export function uiTheme(kind: number): UiTheme {
-  return kind === 1 ? 'light' : kind === 2 ? 'dark' : 'high-contrast'
+  return kind === 1
+    ? 'light'
+    : kind === 2
+      ? 'dark'
+      : 'high-contrast'
 }
 
 /**

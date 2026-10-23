@@ -27,12 +27,22 @@ interface ColorTypes {
 function colorTypes(): ColorTypes {
   const { theme } = config
   // `border` is raw CSS, so the radius rides along, as in i18n-ally.
-  const border = (color: string): ThemableDecorationRenderOptions => color ? { border: `0.5px solid ${color}; border-radius: 2px;` } : {}
-  const value = (color: string): TextEditorDecorationType => window.createTextEditorDecorationType({ before: { color: color || new ThemeColor('editorInlayHint.foreground'), ...border(theme.annotationBorder) } })
+  const border = (color: string): ThemableDecorationRenderOptions => color
+    ? { border: `0.5px solid ${color}; border-radius: 2px;` }
+    : {}
+  const value = (color: string): TextEditorDecorationType => window.createTextEditorDecorationType({
+    before: {
+      color: color || new ThemeColor('editorInlayHint.foreground'),
+      ...border(theme.annotationBorder),
+    },
+  })
   return {
     value: value(theme.annotation),
     fullMatch: value(theme.annotationInPlaceFullMatch || theme.annotation),
-    missing: window.createTextEditorDecorationType({ color: theme.annotationMissing || new ThemeColor('editorWarning.foreground'), ...border(theme.annotationMissingBorder) }),
+    missing: window.createTextEditorDecorationType({
+      color: theme.annotationMissing || new ThemeColor('editorWarning.foreground'),
+      ...border(theme.annotationMissingBorder),
+    }),
   }
 }
 
@@ -59,12 +69,19 @@ export function useAnnotations(x18n: X18nClient, refresh: Event<void>): Annotati
 
   const state = new Map<string, readonly Decoration[]>()
   function inPlace(uri: string, editor?: TextEditor): InPlace {
-    return computeInPlace(enabled() ? state.get(uri) ?? [] : [], editor?.selections ?? [], { maxLength: config.annotationMaxLength, fullMatch: config.annotationInPlaceFullMatch })
+    return computeInPlace(enabled()
+      ? state.get(uri) ?? []
+      : [], editor?.selections ?? [], { maxLength: config.annotationMaxLength, fullMatch: config.annotationInPlaceFullMatch })
   }
 
   function render(editor: TextEditor): void {
     const { replaced, missing } = inPlace(editor.document.uri.toString(), editor)
-    const values = (fullMatch: boolean): DecorationOptions[] => replaced.filter(r => r.fullMatch === fullMatch).map(r => ({ range: toRange(r.range), renderOptions: { before: { contentText: r.text } } }))
+    const values = (fullMatch: boolean): DecorationOptions[] => replaced.filter(r => r.fullMatch === fullMatch).map(r => ({
+      range: toRange(r.range),
+      renderOptions: {
+        before: { contentText: r.text },
+      },
+    }))
     editor.setDecorations(colors.value, values(false))
     editor.setDecorations(colors.fullMatch, values(true))
     editor.setDecorations(hideType, replaced.map(r => toRange(r.range)))
@@ -103,13 +120,27 @@ export function useAnnotations(x18n: X18nClient, refresh: Event<void>): Annotati
     cache.delete(uri.toString())
     state.delete(uri.toString())
   }))
-  watch(() => [config.annotations, annotationInPlace(), config.annotationInPlaceFullMatch, config.annotationMaxLength], () => window.visibleTextEditors.forEach(render))
+  watch(() => [
+    config.annotations,
+    annotationInPlace(),
+    config.annotationInPlaceFullMatch,
+    config.annotationMaxLength,
+  ], () => window.visibleTextEditors.forEach(render))
   // Separate sources, so other `x18n.*` changes do not recreate the types.
-  watch([() => config.theme.annotation, () => config.theme.annotationMissing, () => config.theme.annotationBorder, () => config.theme.annotationMissingBorder, () => config.theme.annotationInPlaceFullMatch], () => {
+  watch([
+    () => config.theme.annotation,
+    () => config.theme.annotationMissing,
+    () => config.theme.annotationBorder,
+    () => config.theme.annotationMissingBorder,
+    () => config.theme.annotationInPlaceFullMatch,
+  ], () => {
     disposeColors()
     colors = colorTypes()
     window.visibleTextEditors.forEach(render)
   })
 
-  return { decorations, inPlace: uri => inPlace(uri) }
+  return {
+    decorations,
+    inPlace: uri => inPlace(uri),
+  }
 }

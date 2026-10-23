@@ -2,7 +2,7 @@ import type { PluginRegistry } from './plugins'
 import type { ConfigDraft, ConfigOrigin, PluginOption, PresetOption, ResolvedConfig, SerializableConfig, UserConfig } from './types/config'
 import type { Host } from './types/host'
 import type { JsonObject } from './types/model'
-import type { ConfigContext, DetectContext, ManifestReader, Plugin, Preset, PresetFactory } from './types/plugin'
+import type { ConfigContext, DetectContext, ManifestReader, Plugin, Preset, PresetEntry } from './types/plugin'
 import { errors } from './errors'
 import { createRegistry, isPreset } from './plugins'
 import { ConfigSchema, validate } from './schema'
@@ -10,7 +10,7 @@ import { ConfigSchema, validate } from './schema'
 /** Plugins that are always on, and presets that `'auto'` and names refer to. Passed in by the caller. */
 export interface Builtins {
   readonly plugins: readonly Plugin[]
-  readonly presets: { readonly [name: string]: PresetFactory }
+  readonly presets: { readonly [name: string]: PresetEntry }
 }
 
 export interface ResolveConfigOptions {
@@ -64,7 +64,13 @@ function defaultDraft(): ConfigDraft {
     resources: [],
     formats: {},
     keyStyle: 'auto',
-    namespace: { separator: '.', default: undefined, fallback: [], byFile: {}, fromPath: 'dot' },
+    namespace: {
+      separator: '.',
+      default: undefined,
+      fallback: [],
+      byFile: {},
+      fromPath: 'dot',
+    },
     usage: {
       include: ['**/*'],
       exclude: defaultExclude,
@@ -94,7 +100,12 @@ function serializablePart(config: UserConfig): SerializableConfig {
 }
 
 function mergeFallbacks(base: ResolvedConfig['localeFallbacks'], layer: ResolvedConfig['localeFallbacks']): ResolvedConfig['localeFallbacks'] {
-  return base === 'auto' || layer === 'auto' ? layer : { ...base, ...layer }
+  return base === 'auto' || layer === 'auto'
+    ? layer
+    : {
+        ...base,
+        ...layer,
+      }
 }
 
 /** Applies a user config layer: scalars replace, lists of rules append. */
@@ -111,7 +122,10 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
     mark('locales')
   }
   if (layer.ignoreLocales !== undefined) {
-    draft.ignoreLocales = [...draft.ignoreLocales, ...layer.ignoreLocales]
+    draft.ignoreLocales = [
+      ...draft.ignoreLocales,
+      ...layer.ignoreLocales,
+    ]
     mark('ignoreLocales')
   }
   if (layer.localeFallbacks !== undefined) {
@@ -123,7 +137,10 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
     mark('resources')
   }
   if (layer.formats !== undefined) {
-    draft.formats = { ...draft.formats, ...layer.formats }
+    draft.formats = {
+      ...draft.formats,
+      ...layer.formats,
+    }
     mark('formats')
   }
   if (layer.keyStyle !== undefined) {
@@ -135,7 +152,10 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
       separator: layer.namespace.separator ?? draft.namespace.separator,
       default: layer.namespace.default ?? draft.namespace.default,
       fallback: layer.namespace.fallback ?? draft.namespace.fallback,
-      byFile: { ...draft.namespace.byFile, ...layer.namespace.byFile },
+      byFile: {
+        ...draft.namespace.byFile,
+        ...layer.namespace.byFile,
+      },
       fromPath: layer.namespace.fromPath ?? draft.namespace.fromPath,
     }
     mark('namespace')
@@ -144,12 +164,30 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
   if (usage !== undefined) {
     draft.usage = {
       include: usage.include ?? draft.usage.include,
-      exclude: [...draft.usage.exclude, ...usage.exclude ?? []],
-      calls: [...draft.usage.calls, ...usage.calls ?? []],
-      regex: [...draft.usage.regex, ...usage.regex ?? []],
-      ignoreCallees: [...draft.usage.ignoreCallees, ...usage.ignoreCallees ?? []],
-      keysInUse: [...draft.usage.keysInUse, ...usage.keysInUse ?? []],
-      derivedKeys: [...draft.usage.derivedKeys, ...usage.derivedKeys ?? []],
+      exclude: [
+        ...draft.usage.exclude,
+        ...usage.exclude ?? [],
+      ],
+      calls: [
+        ...draft.usage.calls,
+        ...usage.calls ?? [],
+      ],
+      regex: [
+        ...draft.usage.regex,
+        ...usage.regex ?? [],
+      ],
+      ignoreCallees: [
+        ...draft.usage.ignoreCallees,
+        ...usage.ignoreCallees ?? [],
+      ],
+      keysInUse: [
+        ...draft.usage.keysInUse,
+        ...usage.keysInUse ?? [],
+      ],
+      derivedKeys: [
+        ...draft.usage.derivedKeys,
+        ...usage.derivedKeys ?? [],
+      ],
     }
     mark('usage')
   }
@@ -165,12 +203,18 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
     draft.extract = {
       ...draft.extract,
       ...layer.extract,
-      templates: [...draft.extract.templates ?? [], ...layer.extract.templates ?? []],
+      templates: [
+        ...draft.extract.templates ?? [],
+        ...layer.extract.templates ?? [],
+      ],
     }
     mark('extract')
   }
   if (layer.checks !== undefined) {
-    draft.checks = { ...draft.checks, ...layer.checks }
+    draft.checks = {
+      ...draft.checks,
+      ...layer.checks,
+    }
     mark('checks')
   }
   if (layer.strict !== undefined) {
@@ -178,11 +222,17 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
     mark('strict')
   }
   if (layer.ignoreKeys !== undefined) {
-    draft.ignoreKeys = [...draft.ignoreKeys, ...layer.ignoreKeys]
+    draft.ignoreKeys = [
+      ...draft.ignoreKeys,
+      ...layer.ignoreKeys,
+    ]
     mark('ignoreKeys')
   }
   if (layer.glossary !== undefined) {
-    draft.glossary = [...draft.glossary, ...layer.glossary]
+    draft.glossary = [
+      ...draft.glossary,
+      ...layer.glossary,
+    ]
     mark('glossary')
   }
   if (layer.history !== undefined) {
@@ -191,11 +241,21 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
       ? false
       : layer.history === true
         ? previous
-        : { ...previous, ...layer.history, providers: [...previous.providers, ...layer.history.providers ?? []] }
+        : {
+            ...previous,
+            ...layer.history,
+            providers: [
+              ...previous.providers,
+              ...layer.history.providers ?? [],
+            ],
+          }
     mark('history')
   }
   if (layer.pluginConfigs !== undefined) {
-    draft.pluginConfigs = { ...draft.pluginConfigs, ...layer.pluginConfigs }
+    draft.pluginConfigs = {
+      ...draft.pluginConfigs,
+      ...layer.pluginConfigs,
+    }
     mark('pluginConfigs')
   }
 }
@@ -205,7 +265,9 @@ async function createDetectContext(host: Host, readers: readonly ManifestReader[
   const seen = new Set<string>()
   for (const root of ['', ...roots]) {
     for (const reader of readers) {
-      const path = root ? `${root.replace(/\/$/, '')}/${reader.file}` : reader.file
+      const path = root
+        ? `${root.replace(/\/$/, '')}/${reader.file}`
+        : reader.file
       if (seen.has(path))
         continue
       seen.add(path)
@@ -237,8 +299,11 @@ function validateLayers(layers: readonly (UserConfig | undefined)[]): void {
     if (!layer)
       continue
     const result = validate(ConfigSchema, serializablePart(layer))
-    if (!result.success)
-      throw errors.X18N0001({ issue: result.issues.map(issue => `${issue.path || '(root)'}: ${issue.message}`).join('; ') })
+    if (!result.success) {
+      throw errors.X18N0001({
+        issue: result.issues.map(issue => `${issue.path || '(root)'}: ${issue.message}`).join('; '),
+      })
+    }
   }
 }
 
@@ -248,10 +313,12 @@ function createLoader(options: ResolveConfigOptions): (option: PresetOption | Pl
       return undefined
     if (typeof option === 'object' && !Array.isArray(option))
       return option as Loaded // the only object members of the option unions are plugins and presets
-    const [specifier, pluginOptions] = typeof option === 'string' ? [option, undefined] : [option[0], option[1]]
-    const factory = options.builtins.presets[specifier]
-    if (factory)
-      return factory(pluginOptions)
+    const [specifier, pluginOptions] = typeof option === 'string'
+      ? [option, undefined]
+      : [option[0], option[1]]
+    const entry = options.builtins.presets[specifier]
+    if (entry)
+      return (await entry.load()).default(pluginOptions)
     if (!options.loadPlugin)
       throw errors.X18N1003({ preset: specifier })
     return options.loadPlugin(specifier, pluginOptions)
@@ -268,8 +335,14 @@ async function loadAll(load: (option: PresetOption | PluginOption) => Promise<Lo
   return out
 }
 
+/** A built-in preset that is not loaded yet: only its `detect` has run. */
+interface LazyPreset {
+  readonly name: string
+  readonly entry: PresetEntry
+}
+
 /** Expands presets depth-first: listed presets always apply, others only when detected; an exclusive one stops the rest. */
-async function expandPresets(presets: readonly Preset[], userPlugins: readonly Loaded[], listed: boolean, detectCtx: DetectContext): Promise<{ plugins: Plugin[], explanations: PresetExplanation[] }> {
+async function expandPresets(presets: readonly (Preset | LazyPreset)[], userPlugins: readonly Loaded[], listed: boolean, detectCtx: DetectContext): Promise<{ plugins: Plugin[], explanations: PresetExplanation[] }> {
   const explanations: PresetExplanation[] = []
   const plugins: Plugin[] = []
   const flatten = async (item: Loaded, force: boolean): Promise<boolean> => {
@@ -279,8 +352,15 @@ async function expandPresets(presets: readonly Preset[], userPlugins: readonly L
         plugins.push(item)
       return false
     }
-    const applies = force || (item.detect ? await item.detect(detectCtx) : false)
-    explanations.push({ name: item.name, reason: applies ? (force ? 'listed' : 'detected') : 'not-detected' })
+    const applies = force || (item.detect
+      ? await item.detect(detectCtx)
+      : false)
+    explanations.push({
+      name: item.name,
+      reason: applies
+        ? (force ? 'listed' : 'detected')
+        : 'not-detected',
+    })
     if (!applies)
       return false
     for (const child of item.plugins)
@@ -289,10 +369,29 @@ async function expandPresets(presets: readonly Preset[], userPlugins: readonly L
   }
   let stopped = false
   for (const preset of presets) {
-    if (stopped)
+    if (stopped) {
       explanations.push({ name: preset.name, reason: 'after-exclusive' })
-    else
+    }
+    else if ('entry' in preset) {
+      const applies = listed || (preset.entry.detect
+        ? await preset.entry.detect(detectCtx)
+        : false)
+      explanations.push({
+        name: preset.name,
+        reason: applies
+          ? (listed ? 'listed' : 'detected')
+          : 'not-detected',
+      })
+      if (!applies)
+        continue
+      const loaded = (await preset.entry.load()).default()
+      for (const child of loaded.plugins)
+        await flatten(child, false)
+      stopped = preset.entry.exclusive === true || loaded.exclusive === true
+    }
+    else {
       stopped = await flatten(preset, listed)
+    }
   }
   for (const plugin of userPlugins)
     await flatten(plugin, true)
@@ -303,7 +402,10 @@ async function runConfigHooks(plugins: readonly Plugin[], draft: ConfigDraft, ct
   for (const plugin of plugins) {
     if (!plugin.config)
       continue
-    const snapshot = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, JSON.stringify(value)]))
+    const snapshot = Object.fromEntries(Object.entries(draft).map(([key, value]) => [
+      key,
+      JSON.stringify(value),
+    ]))
     await plugin.config(draft, ctx)
     for (const [key, value] of Object.entries(draft)) {
       if (snapshot[key] !== JSON.stringify(value))
@@ -318,19 +420,35 @@ export async function resolveConfig(options: ResolveConfigOptions): Promise<Setu
   validateLayers([options.parent, user])
 
   const load = createLoader(options)
-  const userPlugins = await loadAll(load, [...options.parent?.plugins ?? [], ...user.plugins ?? []])
+  const userPlugins = await loadAll(load, [
+    ...options.parent?.plugins ?? [],
+    ...user.plugins ?? [],
+  ])
   const presetOption = user.presets ?? options.parent?.presets ?? 'auto'
   const auto = presetOption === 'auto'
   const presets = auto
-    ? Object.values(builtins.presets).map(factory => factory())
-    : (await loadAll(load, presetOption)).map(item => isPreset(item) ? item : { name: item.name, plugins: [item] })
+    ? Object.entries(builtins.presets).map(([name, entry]): LazyPreset => ({ name, entry }))
+    : (await loadAll(load, presetOption)).map(item => isPreset(item)
+        ? item
+        : {
+            name: item.name,
+            plugins: [item],
+          })
 
-  const readers = [...builtins.plugins, ...userPlugins].flatMap(item => isPreset(item) ? [] : item.manifests ?? [])
+  const readers = [
+    ...builtins.plugins,
+    ...userPlugins,
+  ].flatMap(item => isPreset(item)
+    ? []
+    : item.manifests ?? [])
   const detectCtx = await createDetectContext(host, readers, options.manifestRoots ?? [])
   const expanded = await expandPresets(presets, userPlugins, !auto, detectCtx)
 
   const skipped: { name: string, reason: string }[] = []
-  const finalPlugins = [...builtins.plugins, ...expanded.plugins].filter((plugin) => {
+  const finalPlugins = [
+    ...builtins.plugins,
+    ...expanded.plugins,
+  ].filter((plugin) => {
     const skip = options.runtime === 'browser' && plugin.runtime === 'node'
     if (skip)
       skipped.push({ name: plugin.name, reason: 'node only' })
@@ -339,7 +457,10 @@ export async function resolveConfig(options: ResolveConfigOptions): Promise<Setu
 
   const draft = defaultDraft()
   const origins: Record<string, ConfigOrigin> = {}
-  await runConfigHooks(finalPlugins, draft, { host, user: serializablePart(user) }, origins)
+  await runConfigHooks(finalPlugins, draft, {
+    host,
+    user: serializablePart(user),
+  }, origins)
   if (options.parent)
     applyLayer(draft, options.parent, 'parent', origins)
   applyLayer(draft, user, 'user', origins)
@@ -349,12 +470,20 @@ export async function resolveConfig(options: ResolveConfigOptions): Promise<Setu
     name: user.name ?? options.name ?? 'default',
     usage: {
       ...draft.usage,
-      derivedKeys: [...draft.usage.derivedKeys, ...finalPlugins.flatMap(plugin => plugin.derivedKeys ?? [])],
+      derivedKeys: [
+        ...draft.usage.derivedKeys,
+        ...finalPlugins.flatMap(plugin => plugin.derivedKeys ?? []),
+      ],
     },
     origins,
   })
   for (const plugin of finalPlugins)
     plugin.configResolved?.(config)
 
-  return { config, registry: createRegistry(finalPlugins, config), presets: expanded.explanations, skipped }
+  return {
+    config,
+    registry: createRegistry(finalPlugins, config),
+    presets: expanded.explanations,
+    skipped,
+  }
 }

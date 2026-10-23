@@ -41,7 +41,9 @@ const { activate, deactivate } = defineExtension((context): X18nExtensionApi => 
   }
   const log = createLog(client)
   const folders = workspace.workspaceFolders?.map(f => f.name) ?? []
-  log(`x18n ${version} activated${folders.length ? ` in ${folders.join(', ')}` : ' without a workspace folder'}.`)
+  log(`x18n ${version} activated${folders.length
+    ? ` in ${folders.join(', ')}`
+    : ' without a workspace folder'}.`)
   useLog(client, x18n, refresh.event, log)
   annotations = useAnnotations(x18n, refresh.event)
   useViews(x18n, refresh.event)
@@ -54,7 +56,9 @@ const { activate, deactivate } = defineExtension((context): X18nExtensionApi => 
     if (newState === State.Running)
       refresh.fire()
   }))
-  useDisposable({ dispose: () => void client.stop() })
+  useDisposable({
+    dispose: () => void client.stop(),
+  })
 
   watch(() => config.enabled, async (enabled) => {
     if (!enabled) {
@@ -66,7 +70,9 @@ const { activate, deactivate } = defineExtension((context): X18nExtensionApi => 
       await client.start()
     }
     catch (error) {
-      log(`The language server failed to start: ${error instanceof Error ? error.message : String(error)}`)
+      log(`The language server failed to start: ${error instanceof Error
+        ? error.message
+        : String(error)}`)
       return
     }
     void offerMigration()
@@ -77,7 +83,11 @@ const { activate, deactivate } = defineExtension((context): X18nExtensionApi => 
     log('Annotation settings changed; restarting the language server.')
     void client.restart()
   })
-  watch(() => [config.displayLocale, config.annotations, annotationInPlace()], () => {
+  watch(() => [
+    config.displayLocale,
+    config.annotations,
+    annotationInPlace(),
+  ], () => {
     if (!client.isRunning())
       return
     log(`Display locale: ${config.displayLocale || 'default'}.`)
@@ -92,20 +102,26 @@ const { activate, deactivate } = defineExtension((context): X18nExtensionApi => 
   const editor = useActiveTextEditor()
   const current = computed(() => {
     const path = editor.value?.document.uri.fsPath
-    return (path === undefined ? undefined : projectFor(projects.value, path)) ?? projects.value[0]
+    return (path === undefined
+      ? undefined
+      : projectFor(projects.value, path)) ?? projects.value[0]
   })
   const status = useStatusBarItem({
     id: 'x18n.displayLocale',
     alignment: StatusBarAlignment.Right,
     text: () => {
       const locale = current.value?.displayLocale ?? ''
-      const flag = config.showFlags ? current.value?.locales.find(l => l.code === locale)?.flag : undefined
+      const flag = config.showFlags
+        ? current.value?.locales.find(l => l.code === locale)?.flag
+        : undefined
       return `${flag ?? '$(globe)'} ${locale}`
     },
     tooltip: 'x18n display locale',
     command: commands.setDisplayLocale,
   })
-  watch(current, value => value ? status.show() : status.hide(), { immediate: true })
+  watch(current, value => value
+    ? status.show()
+    : status.hide(), { immediate: true })
 
   async function offerMigration(): Promise<void> {
     const [folder] = await migratableFolders()

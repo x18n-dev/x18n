@@ -22,7 +22,11 @@ function middlewareApi(exports: unknown): RegisterLspMiddleware | undefined {
     if (typeof disposable !== 'object' || disposable === null || !('dispose' in disposable))
       return undefined
     const { dispose } = disposable
-    return typeof dispose === 'function' ? { dispose: () => void dispose.call(disposable) } : undefined
+    return typeof dispose === 'function'
+      ? {
+          dispose: () => void dispose.call(disposable),
+        }
+      : undefined
   }
 }
 
@@ -34,12 +38,16 @@ function isPositionRequest(params: unknown): params is PositionRequest {
 /** With TS 7 active, rename on a key goes to x18n: TS's prepareRename and rename results are dropped there. */
 export function registerNativePreviewMiddleware(x18n: X18nClient): Disposable[] {
   const extension = extensions.getExtension('TypeScriptTeam.native-preview')
-  const register = extension?.isActive ? middlewareApi(extension.exports) : undefined
+  const register = extension?.isActive
+    ? middlewareApi(extension.exports)
+    : undefined
   if (!register)
     return []
   const onKey = async (params: unknown): Promise<boolean> => isPositionRequest(params)
     && await x18n.request('x18n/keyAt', { uri: params.textDocument.uri, position: params.position }).then(r => r !== null, () => false)
-  const transform = async (params: unknown, result: unknown): Promise<unknown> => await onKey(params) ? null : result
+  const transform = async (params: unknown, result: unknown): Promise<unknown> => await onKey(params)
+    ? null
+    : result
   try {
     return ['textDocument/prepareRename', 'textDocument/rename'].flatMap(method => register(method, transform) ?? [])
   }

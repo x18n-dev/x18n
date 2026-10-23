@@ -5,27 +5,45 @@ import { createLineIndex, errors, placeholderProblems, toWireDiagnostic } from '
 /** The named project, or the only one. */
 export function pickProject(projects: readonly UiProject[], name: string | undefined): UiProject {
   const found = name === undefined
-    ? (projects.length === 1 ? projects[0] : undefined)
+    ? (projects.length === 1
+        ? projects[0]
+        : undefined)
     : projects.find(p => p.name === name)
-  if (!found)
-    throw errors.X18N0003({ name, available: projects.map(p => p.name) })
+  if (!found) {
+    throw errors.X18N0003({
+      name,
+      available: projects.map(p => p.name),
+    })
+  }
   return found
 }
 
 function percent(coverage: LocaleCoverage): number {
-  return coverage.total === 0 ? 100 : Math.floor((coverage.translated / coverage.total) * 1000) / 10
+  return coverage.total === 0
+    ? 100
+    : Math.floor((coverage.translated / coverage.total) * 1000) / 10
 }
 
 function historyView(change: MessageChange): HistoryView {
-  return { at: Number.isFinite(change.updatedAt) ? change.updatedAt : null, revision: change.revision, author: change.author }
+  return {
+    at: Number.isFinite(change.updatedAt)
+      ? change.updatedAt
+      : null,
+    revision: change.revision,
+    author: change.author,
+  }
 }
 
 /** Locales with an outdated translation, per key. */
 function outdatedByKey(coverage: readonly LocaleCoverage[]): Map<KeyString, LocaleCode[]> {
   const out = new Map<KeyString, LocaleCode[]>()
   for (const c of coverage) {
-    for (const key of c.outdated)
-      out.set(key, [...out.get(key) ?? [], c.locale])
+    for (const key of c.outdated) {
+      out.set(key, [
+        ...out.get(key) ?? [],
+        c.locale,
+      ])
+    }
   }
   return out
 }
@@ -42,13 +60,26 @@ function recentChangeGroups(project: UiProject['project']): ProjectSummary['chan
       if (!change)
         continue
       const id = change.revision ?? 'local'
-      const group = groups.get(id) ?? { updatedAt: change.updatedAt, view: historyView(change), keys: new Map() }
-      group.keys.set(key, [...group.keys.get(key) ?? [], locale])
+      const group = groups.get(id) ?? {
+        updatedAt: change.updatedAt,
+        view: historyView(change),
+        keys: new Map(),
+      }
+      group.keys.set(key, [
+        ...group.keys.get(key) ?? [],
+        locale,
+      ])
       groups.set(id, group)
     }
   }
-  return [...groups.values()]
-    .sort((a, b) => b.updatedAt === a.updatedAt ? 0 : b.updatedAt > a.updatedAt ? 1 : -1)
+  return [
+    ...groups.values(),
+  ]
+    .sort((a, b) => b.updatedAt === a.updatedAt
+      ? 0
+      : b.updatedAt > a.updatedAt
+        ? 1
+        : -1)
     .slice(0, recentRevisions)
     .map(({ view, keys }) => ({
       ...view,
@@ -71,7 +102,17 @@ export function summarize({ name, project }: UiProject): ProjectSummary {
     namespaced: project.namespaced,
     locales: analysis.coverage.map((c) => {
       const info = project.localeInfo(c.locale)
-      return { code: c.locale, displayName: info.displayName, flag: info.flag, total: c.total, translated: c.translated, missing: c.missing.length, empty: c.empty.length, outdated: c.outdated.length, percent: percent(c) }
+      return {
+        code: c.locale,
+        displayName: info.displayName,
+        flag: info.flag,
+        total: c.total,
+        translated: c.translated,
+        missing: c.missing.length,
+        empty: c.empty.length,
+        outdated: c.outdated.length,
+        percent: percent(c),
+      }
     }),
     resources: project.resources.length,
     keys: project.keys().length,
@@ -80,7 +121,9 @@ export function summarize({ name, project }: UiProject): ProjectSummary {
       errors: count(['error']),
       warnings: count(['warning']),
       infos: count(['info', 'hint']),
-      byCode: [...byCode.values()].sort((a, b) => b.count - a.count || a.code.localeCompare(b.code)),
+      byCode: [
+        ...byCode.values(),
+      ].sort((a, b) => b.count - a.count || a.code.localeCompare(b.code)),
     },
     presets: project.explain().presets.filter(p => p.reason === 'listed' || p.reason === 'detected').map(p => p.name),
     changes: recentChangeGroups(project),
@@ -97,7 +140,10 @@ export function keyTable({ name, project }: UiProject): KeyTable {
   }
   const missing = new Map<KeyString, string[]>()
   for (const c of analysis.coverage) {
-    for (const key of [...c.missing, ...c.empty]) {
+    for (const key of [
+      ...c.missing,
+      ...c.empty,
+    ]) {
       const list = missing.get(key) ?? []
       missing.set(key, list)
       list.push(c.locale)
@@ -120,7 +166,9 @@ export function keyTable({ name, project }: UiProject): KeyTable {
         unused: unused.has(key),
         diagnostics: diagnostics.get(key) ?? 0,
         outdated: outdated.get(key) ?? [],
-        changedAt: times.length ? Math.max(...times) : undefined,
+        changedAt: times.length
+          ? Math.max(...times)
+          : undefined,
       }
     }),
   }
@@ -144,7 +192,10 @@ function lineIndex(p: UiProject, path: string): LineIndex {
 function snippet(index: LineIndex, line: number, around = 2): Snippet {
   const first = Math.max(0, line - around)
   const last = Math.min(index.lineCount - 1, line + around)
-  return { line: first + 1, lines: Array.from({ length: last - first + 1 }, (_, i) => index.line(first + i)) }
+  return {
+    line: first + 1,
+    lines: Array.from({ length: last - first + 1 }, (_, i) => index.line(first + i)),
+  }
 }
 
 function usageView(p: UiProject, usage: Usage, possible = false): UsageView {
@@ -182,7 +233,9 @@ export function keyDetail(p: UiProject, key: KeyString): KeyDetail | null {
   const source = project.message(info.key, project.sourceLocale)?.value
   const sourceThen = (change: MessageChange | undefined): string | undefined => {
     const then = change && project.valueAt(info.key, project.sourceLocale, change.updatedAt)
-    return then === undefined || then === source ? undefined : String(then)
+    return then === undefined || then === source
+      ? undefined
+      : String(then)
   }
   return {
     project: p.name,
@@ -201,7 +254,9 @@ export function keyDetail(p: UiProject, key: KeyString): KeyDetail | null {
           : [],
         changed: change && historyView(change),
         outdated: outdated.has(m.locale),
-        sourceThen: outdated.has(m.locale) ? sourceThen(change) : undefined,
+        sourceThen: outdated.has(m.locale)
+          ? sourceThen(change)
+          : undefined,
       }
     }),
     missing: info.missing,
@@ -243,9 +298,18 @@ export function previewOps(p: UiProject, ops: readonly EditOp[]): PlanView {
 export async function applyOps(p: UiProject, ops: readonly EditOp[], options: { readonly answers?: Answers | undefined, readonly force?: boolean | undefined } = {}): Promise<ApplyView> {
   const plan = p.project.plan(ops)
   const problems = placeholderProblems(p.project, ops)
-  if (problems.length > 0 && !options.force)
-    return { ...planView(plan, problems), applied: false, revision: p.project.revision }
+  if (problems.length > 0 && !options.force) {
+    return {
+      ...planView(plan, problems),
+      applied: false,
+      revision: p.project.revision,
+    }
+  }
   const answers: Record<string, string> = Object.fromEntries(plan.decisions.map(d => [d.id, options.answers?.[d.id] ?? d.default]))
   const result = await p.project.apply(plan, { answers })
-  return { ...planView(plan, problems), applied: true, revision: result.revision }
+  return {
+    ...planView(plan, problems),
+    applied: true,
+    revision: result.revision,
+  }
 }
