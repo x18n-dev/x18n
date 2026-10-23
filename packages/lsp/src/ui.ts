@@ -26,15 +26,26 @@ export function createUiServers(connection: Connection): UiServers {
         server = createDevServer(createX18nDevframe([entry], {
           openInEditor: async ({ path, line, column }) => {
             const position = { line: line - 1, character: column - 1 }
-            await connection.window.showDocument({ uri: pathToFileURL(join(entry.root, path)).href, takeFocus: true, selection: { start: position, end: position } })
+            await connection.window.showDocument({
+              uri: pathToFileURL(join(entry.root, path)).href,
+              takeFocus: true,
+              selection: { start: position, end: position },
+            })
           },
-        }), { host: '127.0.0.1', port: 0, auth: true, openBrowser: false })
+        }), {
+          host: '127.0.0.1',
+          port: 0,
+          auth: true,
+          openBrowser: false,
+        })
         servers.set(entry, server)
       }
       return { url: `${(await server).origin}/`, token: getTempAuthCodeInfo().code }
     },
     async close() {
-      await Promise.all([...servers.values()].map(async server => (await server).close()))
+      await Promise.all([
+        ...servers.values(),
+      ].map(async server => (await server).close()))
       servers.clear()
     },
   }

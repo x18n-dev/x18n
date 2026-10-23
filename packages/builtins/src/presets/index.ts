@@ -1,51 +1,84 @@
-import type { PresetFactory } from '@x18n/core'
-import { ngxTranslate, transloco } from './angular'
-import { general, i18next, nextIntl, nuxtI18n, reactI18next, reactIntl, svelteI18n, svelteI18next, vscodeExtension, vueI18n } from './js'
-import { flutter } from './mobile'
-import { jekyll, laravel, phpGettext, phpJoomla, rubyRails } from './server'
-import { chromeExtension, emberIntl, fluentVue, globalize, i18nextShopify, i18nJs, i18nTag, lingui, nextInternational, nextTranslate, paraglide, polyglot, solidPrimitivesI18n, ui5 } from './web'
-
-export { ngxTranslate, transloco } from './angular'
-export { general, i18next, nextIntl, nuxtI18n, reactI18next, reactIntl, svelteI18n, svelteI18next, vscodeExtension, vueI18n } from './js'
-export { flutter } from './mobile'
-export { jekyll, laravel, phpGettext, phpJoomla, railsLazyKey, rubyRails } from './server'
-export { chromeExtension, emberIntl, fluentVue, globalize, i18nextShopify, i18nJs, i18nTag, lingui, nextInternational, nextTranslate, paraglide, polyglot, solidPrimitivesI18n, ui5 } from './web'
+import type { PresetEntry } from '@x18n/core'
+import chromeExtension from './chrome-extension/entry'
+import easyLocalization from './easy-localization/entry'
+import emberIntl from './ember-intl/entry'
+import fluentVue from './fluent-vue/entry'
+import flutterTranslate from './flutter-translate/entry'
+import flutter from './flutter/entry'
+import general from './general/entry'
+import globalize from './globalize/entry'
+import i18nJs from './i18n-js/entry'
+import i18nTag from './i18n-tag/entry'
+import i18nextShopify from './i18next-shopify/entry'
+import i18next from './i18next/entry'
+import jekyll from './jekyll/entry'
+import laravelVueI18n from './laravel-vue-i18n/entry'
+import laravel from './laravel/entry'
+import lingui from './lingui/entry'
+import nextInternational from './next-international/entry'
+import nextIntl from './next-intl/entry'
+import nextTranslate from './next-translate/entry'
+import ngxTranslate from './ngx-translate/entry'
+import nuxtI18n from './nuxt-i18n/entry'
+import paraglide from './paraglide/entry'
+import phpGettext from './php-gettext/entry'
+import phpJoomla from './php-joomla/entry'
+import polyglot from './polyglot/entry'
+import reactI18next from './react-i18next/entry'
+import reactIntl from './react-intl/entry'
+import rubyRails from './ruby-rails/entry'
+import solidPrimitivesI18n from './solid-primitives-i18n/entry'
+import svelteI18n from './svelte-i18n/entry'
+import svelteI18next from './svelte-i18next/entry'
+import transloco from './transloco/entry'
+import typesafeI18n from './typesafe-i18n/entry'
+import ui5 from './ui5/entry'
+import vscodeExtension from './vscode-extension/entry'
+import vueI18n from './vue-i18n/entry'
 
 /**
- * Presets by name, in detection order: every i18n-ally framework has one.
+ * Built-in presets by name, in detection order: every i18n-ally framework has one.
+ * A preset is a folder. `<name>/entry.ts` holds its detection and a `load` for `<name>/index.ts`,
+ * the preset itself; it is cheap and always loaded, while the preset is imported only when detection passes
+ * or the config lists it.
  * Presets that share plugins (react-i18next, svelte-i18next and i18next) apply them once.
  */
-export const presets: { readonly [name: string]: PresetFactory } = {
-  'nuxt-i18n': () => nuxtI18n(),
-  'vue-i18n': () => vueI18n(),
-  'fluent-vue': () => fluentVue(),
-  'i18next-shopify': () => i18nextShopify(),
-  'react-i18next': () => reactI18next(),
-  'svelte-i18next': () => svelteI18next(),
-  'next-translate': () => nextTranslate(),
-  'next-international': () => nextInternational(),
-  'i18next': () => i18next(),
-  'next-intl': () => nextIntl(),
-  'react-intl': () => reactIntl(),
-  'svelte-i18n': () => svelteI18n(),
-  'solid-primitives-i18n': () => solidPrimitivesI18n(),
-  'paraglide': () => paraglide(),
-  'ngx-translate': () => ngxTranslate(),
-  'transloco': () => transloco(),
-  'lingui': () => lingui(),
-  'ember-intl': () => emberIntl(),
-  'polyglot': () => polyglot(),
-  'globalize': () => globalize(),
-  'i18n-tag': () => i18nTag(),
-  'i18n-js': () => i18nJs(),
-  'ui5': () => ui5(),
-  'chrome-extension': () => chromeExtension(),
-  'vscode-extension': () => vscodeExtension(),
-  'laravel': () => laravel(),
-  'php-joomla': () => phpJoomla(),
-  'php-gettext': () => phpGettext(),
-  'ruby-rails': () => rubyRails(),
-  'jekyll': () => jekyll(),
-  'flutter': () => flutter(),
-  'general': () => general(),
+export const presets: { readonly [name: string]: PresetEntry } = {
+  'nuxt-i18n': nuxtI18n,
+  'vue-i18n': vueI18n,
+  'fluent-vue': fluentVue,
+  'i18next-shopify': i18nextShopify,
+  'react-i18next': reactI18next,
+  'svelte-i18next': svelteI18next,
+  'next-translate': nextTranslate,
+  'next-international': nextInternational,
+  'i18next': i18next,
+  'next-intl': nextIntl,
+  'react-intl': reactIntl,
+  'svelte-i18n': svelteI18n,
+  'solid-primitives-i18n': solidPrimitivesI18n,
+  'paraglide': paraglide,
+  'typesafe-i18n': typesafeI18n,
+  'ngx-translate': ngxTranslate,
+  'transloco': transloco,
+  'lingui': lingui,
+  'ember-intl': emberIntl,
+  'polyglot': polyglot,
+  'globalize': globalize,
+  'i18n-tag': i18nTag,
+  'i18n-js': i18nJs,
+  'ui5': ui5,
+  'chrome-extension': chromeExtension,
+  'vscode-extension': vscodeExtension,
+  // Before the exclusive `laravel`, which stops the presets after it.
+  'laravel-vue-i18n': laravelVueI18n,
+  'laravel': laravel,
+  'php-joomla': phpJoomla,
+  'php-gettext': phpGettext,
+  'ruby-rails': rubyRails,
+  'jekyll': jekyll,
+  'flutter': flutter,
+  'easy-localization': easyLocalization,
+  'flutter-translate': flutterTranslate,
+  'general': general,
 }

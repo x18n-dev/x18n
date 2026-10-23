@@ -39,9 +39,13 @@ describe('migrate i18n-ally', () => {
       $schema: 'https://x18n.antfu.dev/schema/config.json',
       sourceLocale: 'en',
       presets: ['vue-i18n'],
-      resources: [{ pattern: 'lang/{locale}/{namespaces}.json' }],
+      resources: [
+        { pattern: 'lang/{locale}/{namespaces}.json' },
+      ],
       keyStyle: 'nested',
-      usage: { keysInUse: ['dynamic.*'] },
+      usage: {
+        keysInUse: ['dynamic.*'],
+      },
       extract: { keyCase: 'snake' },
       plugins: ['./x18n/custom.x18n-plugin.yml'],
     })
@@ -84,13 +88,22 @@ describe('migrate i18n-ally', () => {
     const config = JSON.parse(files.find(f => f.path === 'x18n.config.json')!.content)
     expect(config.sourceLocale).toBe('en')
     expect(config.presets).toEqual([])
-    expect(removable).toEqual(['i18n-ally.sourceLanguage', 'i18n-ally-next.localesPaths', 'i18n-ally-next.sourceLanguage', '.vscode/i18n-ally-next-custom-framework.yml'])
+    expect(removable).toEqual([
+      'i18n-ally.sourceLanguage',
+      'i18n-ally-next.localesPaths',
+      'i18n-ally-next.sourceLanguage',
+      '.vscode/i18n-ally-next-custom-framework.yml',
+    ])
     expect(project.usages().map(m => m.usage.key)).toEqual(['welcome'])
   })
 
   it('reports when there is nothing to migrate', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'x18n-migrate-empty-'))
     dirs.push(dir)
-    expect(await migrateI18nAlly(dir)).toEqual({ files: [], notes: ['No i18n-ally settings found.'], removable: [] })
+    expect(await migrateI18nAlly(dir)).toEqual({
+      files: [],
+      notes: ['No i18n-ally settings found.'],
+      removable: [],
+    })
   })
 })

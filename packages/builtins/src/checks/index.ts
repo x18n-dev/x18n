@@ -17,7 +17,19 @@ export const missingKey: Check = {
         locale: ctx.sourceLocale,
         location: { path: usage.path, range: usage.range },
         message: `"${usage.key}" is not defined in ${ctx.sourceLocale}.`,
-        fixes: [{ title: `Add "${usage.key}" to ${ctx.sourceLocale}`, ops: [{ type: 'set', key: usage.key!, locale: ctx.sourceLocale, value: '' }] }],
+        fixes: [
+          {
+            title: `Add "${usage.key}" to ${ctx.sourceLocale}`,
+            ops: [
+              {
+                type: 'set',
+                key: usage.key!,
+                locale: ctx.sourceLocale,
+                value: '',
+              },
+            ],
+          },
+        ],
       }
     }
   },
@@ -40,14 +52,36 @@ export const missingTranslation: Check = {
     }
     for (const [key, locales] of missing) {
       const other = ctx.formOf(key)?.keyOf('other')
-      const source = ctx.message(key, ctx.sourceLocale) ?? (other === undefined ? undefined : ctx.message(other, ctx.sourceLocale))
+      const source = ctx.message(key, ctx.sourceLocale) ?? (other === undefined
+        ? undefined
+        : ctx.message(other, ctx.sourceLocale))
       yield {
         key,
         locale: ctx.sourceLocale,
         message: `"${key}" is missing in ${list(locales)}.`,
         fixes: [
-          { title: `Add empty values in ${list(locales)}`, ops: locales.map(locale => ({ type: 'set' as const, key, locale, value: '' })) },
-          ...source ? [{ title: 'Copy the source value', ops: locales.map(locale => ({ type: 'set' as const, key, locale, value: source.value })) }] : [],
+          {
+            title: `Add empty values in ${list(locales)}`,
+            ops: locales.map(locale => ({
+              type: 'set' as const,
+              key,
+              locale,
+              value: '',
+            })),
+          },
+          ...source
+            ? [
+                {
+                  title: 'Copy the source value',
+                  ops: locales.map(locale => ({
+                    type: 'set' as const,
+                    key,
+                    locale,
+                    value: source.value,
+                  })),
+                },
+              ]
+            : [],
         ],
       }
     }
@@ -57,7 +91,9 @@ export const missingTranslation: Check = {
 function changed(change: MessageChange): string {
   if (!Number.isFinite(change.updatedAt))
     return 'changed locally'
-  const revision = change.revision ? ` in ${change.revision.slice(0, 7)}` : ''
+  const revision = change.revision
+    ? ` in ${change.revision.slice(0, 7)}`
+    : ''
   return `changed ${new Date(change.updatedAt).toISOString().slice(0, 10)}${revision}`
 }
 
@@ -108,7 +144,18 @@ export const redundantTranslation: Check = {
             key: message.key,
             locale: message.locale,
             message: `"${message.key}" in ${message.locale} is the same as in ${code}, which it falls back to.`,
-            fixes: [{ title: `Remove "${message.key}" from ${message.locale}`, ops: [{ type: 'delete', key: message.key, locales: [message.locale] }] }],
+            fixes: [
+              {
+                title: `Remove "${message.key}" from ${message.locale}`,
+                ops: [
+                  {
+                    type: 'delete',
+                    key: message.key,
+                    locales: [message.locale],
+                  },
+                ],
+              },
+            ],
           }
         }
         break
@@ -133,7 +180,9 @@ export const keyConflict: Check = {
       for (const locale of ctx.locales) {
         const copies = ctx.duplicates(key, locale)
         if (copies.length > 1) {
-          const files = [...new Set(copies.map(m => ctx.resources.find(r => r.id === m.resource)?.path ?? m.resource))]
+          const files = [
+            ...new Set(copies.map(m => ctx.resources.find(r => r.id === m.resource)?.path ?? m.resource)),
+          ]
           yield { key, locale, message: `"${key}" is defined ${copies.length} times in ${locale} (${list(files)}).` }
         }
       }
@@ -158,7 +207,12 @@ export const localeCodeConflict: Check = {
         const resource = ctx.resources.find(r => r.locale === group[1])
         yield {
           locale: group[1],
-          location: resource ? { path: resource.path, range: { start: 0, end: 0 } } : undefined,
+          location: resource
+            ? {
+                path: resource.path,
+                range: { start: 0, end: 0 },
+              }
+            : undefined,
           message: `Locale codes ${list(group)} differ only in spelling; they are separate locales.`,
         }
       }
@@ -177,7 +231,14 @@ export const unusedKey: Check = {
       yield {
         key,
         message: `"${key}" is not used.`,
-        fixes: [{ title: `Delete "${key}" in every locale`, ops: [{ type: 'delete', key, locales: 'all' }] }],
+        fixes: [
+          {
+            title: `Delete "${key}" in every locale`,
+            ops: [
+              { type: 'delete', key, locales: 'all' },
+            ],
+          },
+        ],
       }
     }
   },
@@ -202,8 +263,12 @@ export const placeholderMismatch: Check = {
         const { missing, extra } = compare(source.value, target.value)
         if (missing.length || extra.length) {
           const parts = [
-            missing.length ? `missing ${list(missing)}` : '',
-            extra.length ? `unexpected ${list(extra)}` : '',
+            missing.length
+              ? `missing ${list(missing)}`
+              : '',
+            extra.length
+              ? `unexpected ${list(extra)}`
+              : '',
           ].filter(Boolean)
           yield { key, locale, message: `"${key}" in ${locale} has different placeholders than ${ctx.sourceLocale}: ${parts.join('; ')}.` }
         }
@@ -222,7 +287,9 @@ export const invalidSyntax: Check = {
     for (const message of ctx.messages()) {
       if (typeof message.value !== 'string')
         continue
-      const errors = [...ctx.syntaxErrors(message.value)]
+      const errors = [
+        ...ctx.syntaxErrors(message.value),
+      ]
       for (const placeholder of ctx.placeholders(message.value)) {
         if (placeholder.syntax === 'linked' && !exists(placeholder.name))
           errors.push(`linked message "${placeholder.name}" does not exist`)
@@ -239,8 +306,12 @@ export const dynamicKey: Check = {
   description: 'A fully dynamic key that no check can follow.',
   * run(ctx) {
     for (const usage of ctx.usages()) {
-      if (usage.dynamic === 'unknown')
-        yield { location: { path: usage.path, range: usage.range }, message: `Dynamic key "${usage.raw}" cannot be checked.` }
+      if (usage.dynamic === 'unknown') {
+        yield {
+          location: { path: usage.path, range: usage.range },
+          message: `Dynamic key "${usage.raw}" cannot be checked.`,
+        }
+      }
     }
   },
 }
@@ -271,8 +342,12 @@ export const keyStyle: Check = {
   defaultSeverity: 'off',
   description: 'A key that does not match a naming rule (options: case, pattern).',
   * run(ctx) {
-    const rule = typeof ctx.options.case === 'string' ? caseRules[ctx.options.case] : undefined
-    const pattern = typeof ctx.options.pattern === 'string' ? new RegExp(ctx.options.pattern) : undefined
+    const rule = typeof ctx.options.case === 'string'
+      ? caseRules[ctx.options.case]
+      : undefined
+    const pattern = typeof ctx.options.pattern === 'string'
+      ? new RegExp(ctx.options.pattern)
+      : undefined
     for (const key of ctx.keys()) {
       const path = key.slice(key.indexOf(':') + 1)
       if (rule && !path.split('.').every(segment => rule.test(segment)))
@@ -290,8 +365,12 @@ export const hardString: Check = {
   * run(ctx) {
     if (!ctx.config.extract.autoDetect && ctx.config.checks['hard-string'] === undefined)
       return
-    for (const hard of extractableHardStrings(ctx.config.extract, ctx.hardStrings(), ctx.text))
-      yield { location: { path: hard.path, range: hard.range }, message: `Hard-coded string "${hard.text}".` }
+    for (const hard of extractableHardStrings(ctx.config.extract, ctx.hardStrings(), ctx.text)) {
+      yield {
+        location: { path: hard.path, range: hard.range },
+        message: `Hard-coded string "${hard.text}".`,
+      }
+    }
   },
 }
 
@@ -303,8 +382,12 @@ const endsUnspaced = new RegExp(`[${unspaced}]$`, 'u')
 
 /** A term as a whole word, so "Home" does not match "Homepage"; a plain substring at edges in unspaced scripts. */
 function wordPattern(term: string): RegExp {
-  const before = startsUnspaced.test(term) ? '' : '(?<![\\p{L}\\p{N}])'
-  const after = endsUnspaced.test(term) ? '' : '(?![\\p{L}\\p{N}])'
+  const before = startsUnspaced.test(term)
+    ? ''
+    : '(?<![\\p{L}\\p{N}])'
+  const after = endsUnspaced.test(term)
+    ? ''
+    : '(?![\\p{L}\\p{N}])'
   return new RegExp(`${before}${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${after}`, 'iu')
 }
 
