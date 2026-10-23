@@ -3,9 +3,11 @@
  */
 // #region Other
 export { chromeExtension }
+export { easyLocalization }
 export { emberIntl }
 export { fluentVue }
 export { flutter }
+export { flutterTranslate }
 export { general }
 export { globalize }
 export { i18next }
@@ -14,6 +16,7 @@ export { i18nJs }
 export { i18nTag }
 export { jekyll }
 export { laravel }
+export { laravelVueI18n }
 export { lingui }
 export { nextInternational }
 export { nextIntl }
