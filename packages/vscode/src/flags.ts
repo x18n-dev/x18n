@@ -12,5 +12,7 @@ export async function flagIcon(code: string, flag: string | undefined): Promise<
     return undefined
   flags ??= import('@iconify-json/circle-flags').then(m => m.icons)
   const svg = flagSvg(await flags, flagNames(code, flag))
-  return svg === undefined ? undefined : Uri.parse(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`)
+  return svg === undefined
+    ? undefined
+    : Uri.parse(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`)
 }

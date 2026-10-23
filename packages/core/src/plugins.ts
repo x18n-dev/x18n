@@ -4,6 +4,8 @@ import type {
   Extractor,
   Format,
   HistoryProvider,
+  LazyFormat,
+  LazyScanner,
   LocaleFinder,
   ManifestReader,
   PlaceholderSyntax,
@@ -28,9 +30,11 @@ export interface CapabilityConflict {
 /** The capabilities of the final plugin list, indexed for the project engine. */
 export interface PluginRegistry {
   readonly plugins: readonly Plugin[]
-  readonly formats: readonly Format[]
+  /** Every format, loaded or not; use `formatFor` and `loadFormatFor` to run one. */
+  readonly formats: readonly (Format | LazyFormat)[]
   readonly finders: readonly LocaleFinder[]
-  readonly scanners: readonly Scanner[]
+  /** Every scanner, loaded or not. */
+  readonly scanners: readonly (Scanner | LazyScanner)[]
   readonly checks: ReadonlyMap<string, Check>
   readonly reporters: ReadonlyMap<string, Reporter>
   readonly placeholders: readonly PlaceholderSyntax[]
@@ -38,20 +42,34 @@ export interface PluginRegistry {
   readonly extractors: readonly Extractor[]
   readonly histories: readonly HistoryProvider[]
   readonly conflicts: readonly CapabilityConflict[]
-  /** Format for a file path: config `formats` first, then the first format that claims the extension. */
+  /** The loaded format for a file path: config `formats` first, then the first format that claims the extension. */
   readonly formatFor: (path: string, hint?: string) => Format | undefined
+  /** The id of the format `formatFor` would pick, loaded or not. */
+  readonly formatIdFor: (path: string, hint?: string) => string | undefined
+  /** The loaded format with this id. */
   readonly formatById: (id: string) => Format | undefined
-  readonly scannersFor: (path: string) => readonly Scanner[]
+  /** Loads the format of a file path, once, and returns it. */
+  readonly loadFormatFor: (path: string, hint?: string) => Promise<Format | undefined>
+  /** The scanners that handle a file path, loaded or not. */
+  readonly scannersFor: (path: string) => readonly (Scanner | LazyScanner)[]
+  /** Loads the scanners of a file path, once each, and returns them. */
+  readonly loadScannersFor: (path: string) => Promise<readonly Scanner[]>
 }
 
 export function extensionOf(path: string): string {
   const base = path.slice(path.lastIndexOf('/') + 1)
   const dot = base.lastIndexOf('.')
-  return dot <= 0 ? '' : base.slice(dot + 1).toLowerCase()
+  return dot <= 0
+    ? ''
+    : base.slice(dot + 1).toLowerCase()
 }
 
 function sortByEnforce(plugins: readonly Plugin[]): Plugin[] {
-  const rank = (plugin: Plugin): number => plugin.enforce === 'pre' ? 0 : plugin.enforce === 'post' ? 2 : 1
+  const rank = (plugin: Plugin): number => plugin.enforce === 'pre'
+    ? 0
+    : plugin.enforce === 'post'
+      ? 2
+      : 1
   return [...plugins].sort((a, b) => rank(a) - rank(b))
 }
 
@@ -67,26 +85,101 @@ function uniqueById<T extends { readonly id: string, readonly override?: boolean
 
 export function createRegistry(input: readonly Plugin[], config: Pick<ResolvedConfig, 'formats'>): PluginRegistry {
   const plugins = sortByEnforce(input)
-  const formats = plugins.flatMap(plugin => plugin.formats ?? [])
-  const scanners = plugins.flatMap(plugin => plugin.scanners ?? [])
-  const finders = [...uniqueById(plugins.flatMap(plugin => plugin.localeFinders ?? []), 'Locale finder').values()]
+  const formats = plugins.flatMap(plugin => [
+    ...plugin.formats ?? [],
+    ...plugin.lazyFormats ?? [],
+  ])
+  const scanners = plugins.flatMap(plugin => [
+    ...plugin.scanners ?? [],
+    ...plugin.lazyScanners ?? [],
+  ])
+  const finders = [
+    ...uniqueById(plugins.flatMap(plugin => plugin.localeFinders ?? []), 'Locale finder').values(),
+  ]
   const checks = uniqueById(plugins.flatMap(plugin => plugin.checks ?? []), 'Check')
   const reporters = uniqueById(plugins.flatMap(plugin => plugin.reporters ?? []), 'Reporter')
   const conflicts: CapabilityConflict[] = []
 
-  const byExtension = new Map<string, Format>()
+  const byExtension = new Map<string, Format | LazyFormat>()
   for (const format of formats) {
     for (const extension of format.extensions) {
       const winner = byExtension.get(extension)
-      if (winner)
-        conflicts.push({ capability: 'format', extension, winner: winner.id, loser: format.id })
-      else
+      if (winner) {
+        conflicts.push({
+          capability: 'format',
+          extension,
+          winner: winner.id,
+          loser: format.id,
+        })
+      }
+      else {
         byExtension.set(extension, format)
+      }
     }
   }
-  const formatById = (id: string): Format | undefined => formats.find(format => format.id === id)
+  const isLazy = (format: Format | LazyFormat): format is LazyFormat => 'load' in format
+  const loaded = new Map<string, Format>(formats.filter((format): format is Format => !isLazy(format)).map(format => [format.id, format]))
+  const loading = new Map<string, Promise<Format | undefined>>()
+  const formatById = (id: string): Format | undefined => loaded.get(id)
+  const formatIdFor = (path: string, hint?: string): string | undefined => {
+    if (hint)
+      return hint
+    const extension = extensionOf(path)
+    return config.formats[extension] ?? byExtension.get(extension)?.id
+  }
+  const loadFormat = (id: string): Promise<Format | undefined> => {
+    const ready = loaded.get(id)
+    if (ready)
+      return Promise.resolve(ready)
+    const lazy = formats.find(format => format.id === id)
+    if (!lazy || !isLazy(lazy))
+      return Promise.resolve(undefined)
+    let pending = loading.get(id)
+    if (!pending) {
+      pending = lazy.load().then((mod) => {
+        const format = mod.default().formats?.find((item): item is Format => item.id === id && !isLazy(item))
+        if (format)
+          loaded.set(id, format)
+        return format
+      })
+      loading.set(id, pending)
+    }
+    return pending
+  }
 
-  const scannerCache = new Map<string, Scanner[]>()
+  const scannerCache = new Map<string, (Scanner | LazyScanner)[]>()
+  const loadedScanners = new Map<string, Scanner>(scanners.filter((scanner): scanner is Scanner => !('load' in scanner)).map(scanner => [scanner.id, scanner]))
+  const loadingScanners = new Map<string, Promise<Scanner | undefined>>()
+  const loadScanner = (entry: Scanner | LazyScanner): Promise<Scanner | undefined> => {
+    if (!('load' in entry))
+      return Promise.resolve(entry)
+    const ready = loadedScanners.get(entry.id)
+    if (ready)
+      return Promise.resolve(ready)
+    let pending = loadingScanners.get(entry.id)
+    if (!pending) {
+      pending = entry.load().then((mod) => {
+        const scanner = mod.default().scanners?.find(item => item.id === entry.id)
+        if (scanner)
+          loadedScanners.set(entry.id, scanner)
+        return scanner
+      })
+      loadingScanners.set(entry.id, pending)
+    }
+    return pending
+  }
+
+  const scannersFor = (path: string): readonly (Scanner | LazyScanner)[] => {
+    const extension = extensionOf(path)
+    let list = scannerCache.get(extension)
+    if (!list) {
+      list = extension
+        ? scanners.filter(scanner => scanner.extensions.includes(extension) || scanner.extensions.includes('*'))
+        : []
+      scannerCache.set(extension, list)
+    }
+    return list
+  }
 
   return {
     plugins,
@@ -101,21 +194,23 @@ export function createRegistry(input: readonly Plugin[], config: Pick<ResolvedCo
     histories: plugins.flatMap(plugin => plugin.histories ?? []),
     conflicts,
     formatById,
+    formatIdFor,
     formatFor(path, hint) {
-      if (hint)
-        return formatById(hint)
-      const extension = extensionOf(path)
-      const mapped = config.formats[extension]
-      return mapped ? formatById(mapped) : byExtension.get(extension)
+      const id = formatIdFor(path, hint)
+      return id === undefined
+        ? undefined
+        : formatById(id)
     },
-    scannersFor(path) {
-      const extension = extensionOf(path)
-      let list = scannerCache.get(extension)
-      if (!list) {
-        list = extension ? scanners.filter(scanner => scanner.extensions.includes(extension) || scanner.extensions.includes('*')) : []
-        scannerCache.set(extension, list)
-      }
-      return list
+    async loadFormatFor(path, hint) {
+      const id = formatIdFor(path, hint)
+      return id === undefined
+        ? undefined
+        : loadFormat(id)
+    },
+    scannersFor,
+    async loadScannersFor(path) {
+      const loaded = await Promise.all(scannersFor(path).map(loadScanner))
+      return loaded.filter((scanner): scanner is Scanner => scanner !== undefined)
     },
   }
 }

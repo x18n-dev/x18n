@@ -18,7 +18,9 @@ export interface CheckOptions extends GlobalOptions {
 }
 
 function list(value: string | readonly string[] | undefined): string[] {
-  return value === undefined ? [] : [value].flat().flatMap(item => String(item).split(',')).map(item => item.trim()).filter(Boolean)
+  return value === undefined
+    ? []
+    : [value].flat().flatMap(item => String(item).split(',')).map(item => item.trim()).filter(Boolean)
 }
 
 function filterDiagnostics(diagnostics: readonly Diagnostic[], options: CheckOptions): Diagnostic[] {
@@ -29,7 +31,9 @@ function filterDiagnostics(diagnostics: readonly Diagnostic[], options: CheckOpt
     .filter(d => locales.length === 0 || d.locale === undefined || locales.includes(d.locale) || (d.code === 'missing-translation' && locales.some(l => d.message.includes(l))))
     .filter(d => only.length === 0 || only.includes(d.code))
     .filter(d => !skip.includes(d.code))
-    .map(d => options.strict && d.severity === 'warning' ? { ...d, severity: 'error' as const } : d)
+    .map(d => options.strict && d.severity === 'warning'
+      ? { ...d, severity: 'error' as const }
+      : d)
 }
 
 function reportInputs(workspace: Workspace, options: CheckOptions): ReportInput[] {
@@ -45,7 +49,9 @@ function reportInputs(workspace: Workspace, options: CheckOptions): ReportInput[
         errors: diagnostics.filter(d => d.severity === 'error').length,
         warnings: diagnostics.filter(d => d.severity === 'warning').length,
         infos: diagnostics.filter(d => d.severity === 'info' || d.severity === 'hint').length,
-        files: new Set(diagnostics.flatMap(d => d.location ? [d.location.path] : [])).size,
+        files: new Set(diagnostics.flatMap(d => d.location
+          ? [d.location.path]
+          : [])).size,
       },
     }
   })
@@ -54,7 +60,9 @@ function reportInputs(workspace: Workspace, options: CheckOptions): ReportInput[
 /** History costs a git walk, so it loads only when `stale-translation` runs. */
 function needsHistory(loaded: LoadedProject, options: CheckOptions): boolean {
   const setting = loaded.project.config.checks['stale-translation']
-  const level = typeof setting === 'string' ? setting : setting?.[0]
+  const level = typeof setting === 'string'
+    ? setting
+    : setting?.[0]
   const only = list(options.only)
   return level !== 'off' && (only.length === 0 || only.includes('stale-translation')) && !list(options.skip).includes('stale-translation')
 }
@@ -62,14 +70,21 @@ function needsHistory(loaded: LoadedProject, options: CheckOptions): boolean {
 async function report(workspace: Workspace, options: CheckOptions): Promise<number> {
   const inputs = reportInputs(workspace, options)
   const reporterIds = list(options.reporter)
-  const ids = reporterIds.length ? reporterIds : [options.json ? 'json' : 'pretty']
+  const ids = reporterIds.length
+    ? reporterIds
+    : [
+        options.json ? 'json' : 'pretty',
+      ]
   const outputs = list(options.output)
   const available: ReadonlyMap<string, Reporter> = workspace.projects[0]?.project.reporters ?? new Map()
   const roots = new Map(workspace.projects.map(p => [p.name, p.root]))
   for (const [i, id] of ids.entries()) {
     const reporter = available.get(id)
-    if (!reporter)
-      throw errors.X18N0001({ issue: `unknown reporter "${id}" (${[...available.keys()].join(', ')})` })
+    if (!reporter) {
+      throw errors.X18N0001({ issue: `unknown reporter "${id}" (${[
+        ...available.keys(),
+      ].join(', ')})` })
+    }
     const text = await reporter.report(inputs, {
       color: !outputs[i] && useColor(options) && id === 'pretty',
       displayPath: (path, project) => displayPath(roots.get(project) ?? '', path),
@@ -82,7 +97,9 @@ async function report(workspace: Workspace, options: CheckOptions): Promise<numb
   const errorCount = inputs.reduce((sum, input) => sum + input.summary.errors, 0)
   const warnings = inputs.reduce((sum, input) => sum + input.summary.warnings, 0)
   const tooManyWarnings = options.maxWarnings !== undefined && warnings > Number(options.maxWarnings)
-  return errorCount > 0 || tooManyWarnings ? 1 : 0
+  return errorCount > 0 || tooManyWarnings
+    ? 1
+    : 0
 }
 
 export async function check(options: CheckOptions): Promise<number> {

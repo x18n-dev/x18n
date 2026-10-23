@@ -317,17 +317,21 @@ import { definePlugin } from '@x18n/core'
 
 export default definePlugin((options: { prefix: string }) => ({
   name: 'acme-keys',
-  normalizeKey: raw => raw.startsWith(options.prefix) ? raw.slice(options.prefix.length) : undefined,
-  checks: [{
-    id: 'acme/no-todo',
-    defaultSeverity: 'warning',
-    * run(ctx) {
-      for (const m of ctx.messages()) {
-        if (typeof m.value === 'string' && m.value.includes('TODO'))
-          yield { key: m.key, locale: m.locale, message: 'Message contains TODO' }
-      }
-    },
-  }],
+  normalizeKey: raw => raw.startsWith(options.prefix)
+    ? raw.slice(options.prefix.length)
+    : undefined,
+  checks: [
+    {
+      id: 'acme/no-todo',
+      defaultSeverity: 'warning',
+      * run(ctx) {
+        for (const m of ctx.messages()) {
+          if (typeof m.value === 'string' && m.value.includes('TODO'))
+            yield { key: m.key, locale: m.locale, message: 'Message contains TODO' }
+        }
+      },
+    }
+  ],
 }))
 ```
 

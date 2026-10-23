@@ -11,7 +11,9 @@ export function fuzzyScore(query: string, text: string): number {
     const next = s.indexOf(char, at + 1)
     if (next === -1)
       return -1
-    score += next === at + 1 ? 2 : 1
+    score += next === at + 1
+      ? 2
+      : 1
     at = next
   }
   return score

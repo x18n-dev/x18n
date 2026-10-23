@@ -21,7 +21,10 @@ const open = ref(new Set<string>())
 
 // Opening a key reveals it: its folders open.
 watch(activeKey, (key) => {
-  open.value = new Set([...open.value, ...folderIds(key)])
+  open.value = new Set([
+    ...open.value,
+    ...folderIds(key),
+  ])
 }, { immediate: true })
 
 const keys = computed(() => table.value?.rows.map(r => r.key) ?? [])
@@ -29,11 +32,21 @@ const matched = computed(() => {
   const query = filter.value.trim()
   if (!query)
     return keys.value
-  return keys.value.map(key => ({ key, score: fuzzyScore(query, key) })).filter(m => m.score >= 0).sort((a, b) => b.score - a.score).map(m => m.key)
+  return keys.value.map(key => ({
+    key,
+    score: fuzzyScore(query, key),
+  })).filter(m => m.score >= 0).sort((a, b) => b.score - a.score).map(m => m.key)
 })
 const items = computed<KeyRowItem[]>(() => view.value === 'tree'
   ? treeRows(matched.value, open.value, filter.value.trim() !== '')
-  : matched.value.map(key => ({ id: key, label: key, depth: 0, key, branch: false, open: false })))
+  : matched.value.map(key => ({
+      id: key,
+      label: key,
+      depth: 0,
+      key,
+      branch: false,
+      open: false,
+    })))
 
 const { list, containerProps, wrapperProps } = useVirtualList(items, { itemHeight: ROW_HEIGHT, overscan: 10 })
 
@@ -56,7 +69,11 @@ async function reveal(): Promise<void> {
     el.scrollTop = Math.max(0, top - el.clientHeight / 2)
 }
 
-watch([activeKey, view, () => table.value?.rows.length], reveal, { flush: 'post' })
+watch([
+  activeKey,
+  view,
+  () => table.value?.rows.length,
+], reveal, { flush: 'post' })
 </script>
 
 <template>

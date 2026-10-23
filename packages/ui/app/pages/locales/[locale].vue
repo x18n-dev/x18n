@@ -22,7 +22,9 @@ const analysis = useLive((b, project) => b.analysis(project))
 const missing = computed(() => (table.value?.rows ?? []).filter(r => r.missing.includes(code.value) && r.values[code.value] === undefined))
 const empty = computed(() => (table.value?.rows ?? []).filter(r => r.missing.includes(code.value) && r.values[code.value] !== undefined))
 const outdated = computed(() => (table.value?.rows ?? []).filter(r => r.outdated.includes(code.value)))
-const outdatedPercent = computed(() => summary.value && summary.value.total ? (summary.value.outdated / summary.value.total) * 100 : 0)
+const outdatedPercent = computed(() => summary.value && summary.value.total
+  ? (summary.value.outdated / summary.value.total) * 100
+  : 0)
 const problems = computed(() => (analysis.value?.diagnostics ?? []).filter(d => d.locale === code.value && (d.code === 'placeholder-mismatch' || d.code === 'invalid-syntax')))
 
 function showInGrid(): void {

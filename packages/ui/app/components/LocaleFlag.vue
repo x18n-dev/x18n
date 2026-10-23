@@ -7,7 +7,9 @@ import { locales } from '../state'
 const { code } = defineProps<{ code: string }>()
 
 const source = computed(() =>
-  showFlags.value ? flagSource(flagCandidates(code, locales.value.find(l => l.code === code)?.flag)) : undefined)
+  showFlags.value
+    ? flagSource(flagCandidates(code, locales.value.find(l => l.code === code)?.flag))
+    : undefined)
 </script>
 
 <template>

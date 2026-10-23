@@ -33,8 +33,11 @@ export async function migrate(source: string, options: MigrateCommandOptions): P
     printJson('migrate', { ...result, written: !options.dryRun })
     return
   }
-  for (const file of result.files)
-    out(options.dryRun ? `--- ${file.path}\n${file.content}` : `wrote ${file.path}`)
+  for (const file of result.files) {
+    out(options.dryRun
+      ? `--- ${file.path}\n${file.content}`
+      : `wrote ${file.path}`)
+  }
   for (const note of result.notes)
     out(`note: ${note}`)
   if (result.removable.length)

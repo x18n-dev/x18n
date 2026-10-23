@@ -7,7 +7,9 @@ export function findLocalServer(folder: string): string | undefined {
   try {
     const manifest = createRequire(join(folder, 'package.json')).resolve('@x18n/lsp/package.json')
     const entry = join(dirname(manifest), 'bin.mjs')
-    return existsSync(entry) ? entry : undefined
+    return existsSync(entry)
+      ? entry
+      : undefined
   }
   catch {
     return undefined

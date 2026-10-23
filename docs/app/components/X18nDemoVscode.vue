@@ -5,8 +5,14 @@ const emit = defineEmits<{ start: [ms: number], done: [] }>()
 
 // `missing` keys have no value and show as a warning.
 const keys: Record<string, { id: string, values: Record<string, string>, missing?: boolean }> = {
-  title: { id: 'welcome.title', values: { 'zh-Hans': '欢迎回来,{{name}}', 'ja': 'おかえりなさい、{{name}}', 'fr': 'Bon retour, {{name}}' } },
-  subtitle: { id: 'welcome.subtitle', values: { 'zh-Hans': '查看你的消息', 'ja': 'メッセージを確認', 'fr': 'Vérifiez vos messages' } },
+  title: {
+    id: 'welcome.title',
+    values: { 'zh-Hans': '欢迎回来,{{name}}', 'ja': 'おかえりなさい、{{name}}', 'fr': 'Bon retour, {{name}}' },
+  },
+  subtitle: {
+    id: 'welcome.subtitle',
+    values: { 'zh-Hans': '查看你的消息', 'ja': 'メッセージを確認', 'fr': 'Vérifiez vos messages' },
+  },
   save: { id: 'actions.sve', values: {}, missing: true },
 }
 
@@ -36,19 +42,93 @@ const fn = 'text-(--vs-fn)'
 const str = 'text-(--vs-str)'
 
 const lines: Token[][] = [
-  [['import', ctrl], [' { ', text], ['useTranslation', fn], [' } ', text], ['from', ctrl], [' \'react-i18next\'', str]],
+  [
+    ['import', ctrl],
+    [' { ', text],
+    ['useTranslation', fn],
+    [' } ', text],
+    ['from', ctrl],
+    [' \'react-i18next\'', str],
+  ],
   [],
-  [['export', ctrl], [' function ', decl], ['Welcome', fn], ['({ ', text], ['user', vari], [' }: ', text], ['Props', type], [') {', text]],
-  [['  const', decl], [' { ', text], ['t', vari], [' } = ', text], ['useTranslation', fn], ['()', text]],
+  [
+    ['export', ctrl],
+    [' function ', decl],
+    ['Welcome', fn],
+    ['({ ', text],
+    ['user', vari],
+    [' }: ', text],
+    ['Props', type],
+    [') {', text],
+  ],
+  [
+    ['  const', decl],
+    [' { ', text],
+    ['t', vari],
+    [' } = ', text],
+    ['useTranslation', fn],
+    ['()', text],
+  ],
   [],
-  [['  return', ctrl], [' (', text]],
-  [['    <', text], ['header', decl], ['>', text]],
-  [['      <', text], ['h1', decl], ['>{', text], ['t', fn], ['(\'', text], { key: 'title' }, ['\', { ', text], ['name', vari], [': ', text], ['user', vari], ['.', text], ['name', vari], [' })}</', text], ['h1', decl], ['>', text]],
-  [['      <', text], ['p', decl], ['>{', text], ['t', fn], ['(\'', text], { key: 'subtitle' }, ['\')}</', text], ['p', decl], ['>', text]],
-  [['      <', text], ['button', decl], ['>{', text], ['t', fn], ['(\'', text], { key: 'save' }, ['\')}</', text], ['button', decl], ['>', text]],
-  [['    </', text], ['header', decl], ['>', text]],
-  [['  )', text]],
-  [['}', text]],
+  [
+    ['  return', ctrl],
+    [' (', text],
+  ],
+  [
+    ['    <', text],
+    ['header', decl],
+    ['>', text],
+  ],
+  [
+    ['      <', text],
+    ['h1', decl],
+    ['>{', text],
+    ['t', fn],
+    ['(\'', text],
+    { key: 'title' },
+    ['\', { ', text],
+    ['name', vari],
+    [': ', text],
+    ['user', vari],
+    ['.', text],
+    ['name', vari],
+    [' })}</', text],
+    ['h1', decl],
+    ['>', text],
+  ],
+  [
+    ['      <', text],
+    ['p', decl],
+    ['>{', text],
+    ['t', fn],
+    ['(\'', text],
+    { key: 'subtitle' },
+    ['\')}</', text],
+    ['p', decl],
+    ['>', text],
+  ],
+  [
+    ['      <', text],
+    ['button', decl],
+    ['>{', text],
+    ['t', fn],
+    ['(\'', text],
+    { key: 'save' },
+    ['\')}</', text],
+    ['button', decl],
+    ['>', text],
+  ],
+  [
+    ['    </', text],
+    ['header', decl],
+    ['>', text],
+  ],
+  [
+    ['  )', text],
+  ],
+  [
+    ['}', text],
+  ],
 ]
 
 const cursorLine = ref(0)
@@ -76,7 +156,10 @@ useDemoLoop(async (sleep) => {
   await sleep(600)
 }, () => {
   hover.value = true
-}, { start: ms => emit('start', ms), done: () => emit('done') })
+}, {
+  start: ms => emit('start', ms),
+  done: () => emit('done'),
+})
 </script>
 
 <template>

@@ -6,12 +6,23 @@ function text(description: string): v.SchemaWithPipe<readonly [v.StringSchema<un
 }
 
 const project = v.optional(text('Project name from `x18n_status`. Required only in a monorepo with several projects.'))
-const leaf = v.union([v.string(), v.number(), v.boolean(), v.null()])
-const textRange = v.object({ start: v.number(), end: v.number() })
+const leaf = v.union([
+  v.string(),
+  v.number(),
+  v.boolean(),
+  v.null(),
+])
+const textRange = v.object({
+  start: v.number(),
+  end: v.number(),
+})
 
 export const ProjectQuerySchema: v.GenericSchema<ProjectQuery> = v.object({ project })
 
-export const KeyQuerySchema: v.GenericSchema<KeyQuery> = v.object({ project, key: text('Full key, for example `nav.home` or `common:save`.') })
+export const KeyQuerySchema: v.GenericSchema<KeyQuery> = v.object({
+  project,
+  key: text('Full key, for example `nav.home` or `common:save`.'),
+})
 
 export const UsageQuerySchema: v.GenericSchema<UsageQuery> = v.object({
   project,
@@ -22,7 +33,10 @@ export const UsageQuerySchema: v.GenericSchema<UsageQuery> = v.object({
 export const PromptQuerySchema: v.GenericSchema<PromptQuery> = v.object({
   project,
   locale: text('Target locale code, as listed by `x18n_status`.'),
-  keys: v.optional(v.union([text('Key glob: `*` inside a segment, `**` across segments.'), v.array(v.string())])),
+  keys: v.optional(v.union([
+    text('Key glob: `*` inside a segment, `**` across segments.'),
+    v.array(v.string()),
+  ])),
   namespace: v.optional(v.string()),
   limit: v.optional(v.pipe(v.number(), v.description('Messages per prompt. Default 50.'))),
   cursor: v.optional(text('`nextCursor` of the previous prompt.')),
@@ -30,13 +44,38 @@ export const PromptQuerySchema: v.GenericSchema<PromptQuery> = v.object({
 })
 
 const EditOpSchema = v.variant('type', [
-  v.object({ type: v.literal('set'), key: v.string(), locale: v.string(), value: leaf }),
-  v.object({ type: v.literal('rename'), from: v.string(), to: v.string(), usages: v.exactOptional(v.boolean()) }),
-  v.object({ type: v.literal('rename-prefix'), from: v.string(), to: v.string(), usages: v.exactOptional(v.boolean()) }),
-  v.object({ type: v.literal('delete'), key: v.string(), locales: v.exactOptional(v.union([v.literal('all'), v.array(v.string())])) }),
+  v.object({
+    type: v.literal('set'),
+    key: v.string(),
+    locale: v.string(),
+    value: leaf,
+  }),
+  v.object({
+    type: v.literal('rename'),
+    from: v.string(),
+    to: v.string(),
+    usages: v.exactOptional(v.boolean()),
+  }),
+  v.object({
+    type: v.literal('rename-prefix'),
+    from: v.string(),
+    to: v.string(),
+    usages: v.exactOptional(v.boolean()),
+  }),
+  v.object({
+    type: v.literal('delete'),
+    key: v.string(),
+    locales: v.exactOptional(v.union([
+      v.literal('all'),
+      v.array(v.string()),
+    ])),
+  }),
 ])
 
-export const PlanQuerySchema: v.GenericSchema<PlanQuery> = v.object({ project, ops: v.array(EditOpSchema) })
+export const PlanQuerySchema: v.GenericSchema<PlanQuery> = v.object({
+  project,
+  ops: v.array(EditOpSchema),
+})
 
 export const ApplyQuerySchema: v.GenericSchema<ApplyQuery> = v.object({
   project,
@@ -65,7 +104,12 @@ export const ExtractApplySchema: v.GenericSchema<ExtractApplyQuery> = v.object({
   items: v.pipe(v.array(ExtractItemSchema), v.description('Items from `x18n_extract_plan`, keys and replacements edited as needed; drop items to skip them.')),
 })
 
-export const OpenQuerySchema: v.GenericSchema<OpenQuery> = v.object({ project, path: v.string(), line: v.number(), column: v.number() })
+export const OpenQuerySchema: v.GenericSchema<OpenQuery> = v.object({
+  project,
+  path: v.string(),
+  line: v.number(),
+  column: v.number(),
+})
 
 /** Agent tools only. */
 export const AgentKeysSchema: v.GenericSchema<AgentKeysQuery> = v.object({
