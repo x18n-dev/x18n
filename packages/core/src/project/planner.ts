@@ -31,7 +31,7 @@ export interface PlannerOptions {
   readonly parents: () => ReadonlySet<KeyString>
   readonly usageMatches: (query: { key?: KeyString, prefix?: KeyString }) => UsageMatch[]
   readonly text: (path: string) => string | undefined
-  readonly baseOf: (key: KeyString) => KeyString | undefined
+  readonly basesOf: (key: KeyString) => readonly KeyString[]
   /** Stored path of a key path in a (maybe new) resource, through resource transforms. */
   readonly toStored: (target: { readonly path: string, readonly locale: LocaleCode, readonly namespace: string | undefined }, path: readonly string[]) => string[]
   /** A path for a new resource from the locale finders' `resolveNew`. */
@@ -424,7 +424,7 @@ class PlanBuilder {
     const isLeaf = this.options.messages(op.from) !== undefined
     const under = all.filter(key => isKeyUnder(key, op.from))
     // Derived keys (`item_one`) move with their base key (`item`).
-    const derived = all.filter(key => this.options.baseOf(key) === op.from)
+    const derived = all.filter(key => this.options.basesOf(key).includes(op.from))
     let keys: KeyString[]
     if (op.type === 'rename-prefix')
       keys = under

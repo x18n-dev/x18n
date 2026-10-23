@@ -47,7 +47,7 @@ export interface AnalyzerOptions {
   readonly config: ResolvedConfig
   readonly registry: PluginRegistry
   readonly state: () => AnalyzerState
-  readonly baseOf: (key: KeyString) => KeyString | undefined
+  readonly basesOf: (key: KeyString) => readonly KeyString[]
   readonly localeInfo: (code: LocaleCode) => LocaleInfo
   readonly text: (path: string) => string | undefined
 }
@@ -189,8 +189,7 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
     const isUsed = (key: KeyString): boolean => {
       if (state.usagesByKey.has(key) || inUse(key) || referenced.has(key))
         return true
-      const base = options.baseOf(key)
-      if (base !== undefined && (state.usagesByKey.has(base) || inUse(base)))
+      if (options.basesOf(key).some(base => state.usagesByKey.has(base) || inUse(base)))
         return true
       return prefixes.some(prefix => key.startsWith(prefix))
     }

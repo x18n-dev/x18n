@@ -101,8 +101,11 @@ export function suppressedRanges(text: string): TextRange[] {
   return ranges
 }
 
-/** Compiles derived-key rules (`{key}_plural`, `{key}_*`) into a function from a key to its base key. */
-export function derivedBase(rules: readonly string[]): (key: KeyString) => KeyString | undefined {
+/**
+ * Compiles derived-key rules (`{key}_plural`, `{key}_*`) into a function from a key to its base keys,
+ * nearest first. Suffixes stack, so `friend_male_one` (context, then plural) derives from `friend_male` and `friend`.
+ */
+export function derivedBases(rules: readonly string[]): (key: KeyString) => KeyString[] {
   const regexes = rules.map((rule) => {
     const source = rule
       .split('{key}')
@@ -110,12 +113,18 @@ export function derivedBase(rules: readonly string[]): (key: KeyString) => KeySt
       .join('(.+)')
     return new RegExp(`^${source}$`)
   })
-  return (key) => {
+  const baseOf = (key: KeyString): KeyString | undefined => {
     for (const re of regexes) {
       const match = re.exec(key)
       if (match?.[1])
         return match[1]
     }
     return undefined
+  }
+  return (key) => {
+    const bases: KeyString[] = []
+    for (let base = baseOf(key); base !== undefined; base = baseOf(base))
+      bases.push(base)
+    return bases
   }
 }

@@ -97,6 +97,25 @@ describe('tier 1 presets', () => {
     expect(analysis.unused).toEqual([])
     expect(analysis.undefinedUsages).toEqual([])
   })
+
+  it('i18next: context, ordinal and plural suffixes stack on the base key', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('i18next'),
+      'locales/en/translation.json': json({
+        friend_other: 'friends',
+        friend_male_one: 'a boyfriend',
+        friend_male_other: 'boyfriends',
+        place_ordinal_one: '{{count}}st',
+        place_ordinal_other: '{{count}}th',
+      }),
+      'src/a.ts': `i18next.t('friend', { context: 'male', count: 2 }); i18next.t('place', { count: 1, ordinal: true })`,
+    })
+    const analysis = project.analyze()
+    expect(analysis.unused).toEqual([])
+    expect(analysis.undefinedUsages).toEqual([])
+    expect(project.lookup('translation:friend', 'en')?.value).toBe('friends')
+    expect(project.lookup('translation:place', 'en')?.value).toBe('{{count}}th')
+  })
 })
 
 // Cases that i18n-ally-next fixed after the fork of i18n-ally.
