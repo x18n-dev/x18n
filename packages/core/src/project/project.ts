@@ -401,13 +401,14 @@ export function createProject(options: CreateProjectOptions): Project {
   }
 
   function buildIndex(): Index {
-    resourceIndex ??= buildResourceIndex()
+    const { messages, parents, derived } = resourceIndex ??= buildResourceIndex()
+    const has = (key: KeyString): boolean => messages.has(key) || parents.has(key) || derived.has(key)
     const usages: Usage[] = []
     // Files are read concurrently; sort so results do not depend on I/O timing.
     for (const [path, state] of [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
       let list = resolved.get(state)
       if (!list) {
-        list = state.result.usages.map(candidate => resolver.resolve(candidate, state.result.scopes ?? [], path, 'scanner'))
+        list = state.result.usages.map(candidate => resolver.resolve(candidate, state.result.scopes ?? [], path, 'scanner', has))
         resolved.set(state, list)
       }
       usages.push(...list)
