@@ -65,8 +65,10 @@ export function flutterTranslate(): Preset {
       library({
         name: 'flutter-translate',
         regex: [{ extensions: ['dart'], patterns: ['(?<![\\w$.])translate(?:Plural)?\\(\\s*[\'"]({key})[\'"]'] }],
-        derivedKeys: pluralForms.map(form => `{key}.${form}`),
+        // flutter_translate 4 uses the Intl plural names; before 4.0 the forms were `0`, `1`, `2` and `else`.
+        derivedKeys: [...pluralForms, '0', '1', '2', 'else'].map(form => `{key}.${form}`),
         resources: [{ pattern: 'assets/i18n/{locale}.{ext}' }],
+        keyStyle: 'nested',
         templates: [{ template: 'translate(\'{key}\')' }],
       }),
       // `{{value}}` is the count in plural forms.

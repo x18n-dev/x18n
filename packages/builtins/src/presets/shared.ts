@@ -25,6 +25,7 @@ export function library(options: LibraryOptions): Plugin {
     async config(draft, ctx) {
       if (options.namespace) {
         draft.namespace = {
+          ...draft.namespace,
           separator: options.namespace.separator ?? draft.namespace.separator,
           default: draft.namespace.default ?? options.namespace.default,
           fromPath: options.namespace.fromPath ?? draft.namespace.fromPath,

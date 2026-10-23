@@ -249,11 +249,17 @@ describe('every i18n-ally framework is detected and understood', () => {
   it('flutter_translate, with plural forms', async () => {
     const { project } = await createTestProject({
       'pubspec.yaml': 'name: app\ndependencies:\n  flutter_translate: ^4.0.0\n',
-      'assets/i18n/en.json': json({ app_bar: { title: 'Hi {name}' }, plural: { demo: { zero: 'None', one: 'One', other: '{{value}} times' } } }),
-      'lib/main.dart': 'Text(translate(\'app_bar.title\', args: {\'name\': n})); Text(translatePlural("plural.demo", _counter));',
+      'assets/i18n/en.json': json({
+        app_bar: { title: 'Hi {name}' },
+        plural: {
+          demo: { zero: 'None', one: 'One', two: 'Two', other: '{{value}} times' },
+          legacy: { 0: 'None', 1: 'One', 2: 'Two', else: '{{value}} times' },
+        },
+      }),
+      'lib/main.dart': 'Text(translate(\'app_bar.title\', args: {\'name\': n})); Text(translatePlural("plural.demo", _counter)); translatePlural(\'plural.legacy\', 3);',
     })
     expect(detected(project)).toEqual(['flutter-translate'])
-    expect(usedKeys(project)).toEqual(['app_bar.title', 'plural.demo'])
+    expect(usedKeys(project)).toEqual(['app_bar.title', 'plural.demo', 'plural.legacy'])
     expect(project.analyze().unused).toEqual([])
   })
 
