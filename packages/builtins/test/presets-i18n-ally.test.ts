@@ -200,6 +200,17 @@ describe('every i18n-ally framework is detected and understood', () => {
     expect(analysis.diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:Welcome, :name!')
   })
 
+  it('laravel-vue-i18n ignores the lang/php_{locale}.json files its Vite plugin writes', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('vue', 'laravel-vue-i18n'),
+      'lang/en/auth.php': '<?php return [\'failed\' => \'Failed\'];',
+      'lang/en.json': json({ 'Welcome back!': 'Welcome back!' }),
+      'lang/php_en.json': json({ 'auth.failed': 'Failed' }),
+    })
+    expect(project.locales).toEqual(['en'])
+    expect(project.analyze().diagnostics.filter(d => d.code === 'missing-translation')).toEqual([])
+  })
+
   it('joomla ini files', async () => {
     const { project } = await createTestProject({
       'composer.json': json({ require: { 'joomla/application': '*' } }),

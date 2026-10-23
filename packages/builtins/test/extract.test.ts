@@ -179,7 +179,7 @@ describe('extraction per preset', () => {
     expect(JSON.parse(files.get('src/locales/en.json')!)).toEqual({ existing: 'Already here', clickToContinue: 'Click to continue', mainTitle: 'Main title', welcomeBack: 'Welcome back' })
   })
 
-  it('laravel-vue-i18n with laravel: $t in templates, trans in scripts, :name placeholders', async () => {
+  it('laravel-vue-i18n with laravel: sentence keys, $t in templates, trans in scripts, :name placeholders', async () => {
     const { project, files } = await createTestProject({
       'lang/en.json': json({}),
       'resources/js/App.vue': [
@@ -196,14 +196,14 @@ describe('extraction per preset', () => {
     expect(files.get('resources/js/App.vue')).toBe([
       '<script setup lang="ts">',
       'import { trans } from \'laravel-vue-i18n\'',
-      'const msg = trans(\'signedInAs\', { name })',
+      'const msg = trans(\'Signed in as :name\', { name })',
       '</script>',
       '',
       '<template>',
-      '  <h1 :title="$t(\'mainTitle\')">{{ $t(\'welcomeBack\') }}</h1>',
+      '  <h1 :title="$t(\'Main title\')">{{ $t(\'Welcome back\') }}</h1>',
       '</template>',
     ].join('\n'))
-    expect(JSON.parse(files.get('lang/en.json')!)).toEqual({ mainTitle: 'Main title', signedInAs: 'Signed in as :name', welcomeBack: 'Welcome back' })
+    expect(JSON.parse(files.get('lang/en.json')!)).toEqual({ 'Main title': 'Main title', 'Signed in as :name': 'Signed in as :name', 'Welcome back': 'Welcome back' })
   })
 
   it('react-i18next: JSX text through Trans, attributes through i18next.t, template arguments', async () => {
