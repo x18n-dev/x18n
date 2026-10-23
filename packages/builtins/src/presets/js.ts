@@ -52,15 +52,17 @@ export function nuxtI18n(): Preset {
   }
 }
 
-/** `defaultNS` from the i18next init code (`i18n.ts`, `next-i18next.config.js`), as keys without a namespace use it. */
-async function findDefaultNamespace(host: ConfigContext['host']): Promise<string | undefined> {
+/** `defaultNS` and `fallbackNS` from the i18next init code (`i18n.ts`, `next-i18next.config.js`), as keys without a namespace use them. */
+async function findNamespaces(host: ConfigContext['host']): Promise<{ default: string | undefined, fallback: string[] | undefined }> {
   const files = await host.glob(['**/*i18n*.{js,mjs,cjs,ts,mts,cts}', '**/i18n/index.{js,ts}'], { ignore: ['**/node_modules/**', '**/dist/**'], gitignore: true })
+  const found: { default: string | undefined, fallback: string[] | undefined } = { default: undefined, fallback: undefined }
   for (const file of files.slice(0, 20)) {
-    const found = /\bdefaultNS\s*:\s*['"`]([^'"`]+)['"`]/.exec(await host.readFile(file) ?? '')
-    if (found)
-      return found[1]
+    const text = await host.readFile(file) ?? ''
+    found.default ??= /\bdefaultNS\s*:\s*['"`]([^'"`]+)['"`]/.exec(text)?.[1]
+    const fallback = /\bfallbackNS\s*:\s*(\[[^\]]*\]|['"`][^'"`]+['"`])/.exec(text)?.[1]
+    found.fallback ??= fallback ? [...fallback.matchAll(/['"`]([^'"`]+)['"`]/g)].map(m => m[1]!) : undefined
   }
-  return undefined
+  return found
 }
 
 const i18nextPlugin = library({
@@ -68,9 +70,15 @@ const i18nextPlugin = library({
   // i18next names a namespace in a folder by its path: `useTranslation('pages/home')`.
   namespace: { separator: ':', default: 'translation', fromPath: 'slash' },
   extra: async (draft, ctx) => {
-    const found = ctx.user.namespace?.default ? undefined : await findDefaultNamespace(ctx.host)
-    if (found)
-      draft.namespace = { ...draft.namespace, default: found }
+    const user = ctx.user.namespace
+    if (user?.default && user.fallback)
+      return
+    const found = await findNamespaces(ctx.host)
+    draft.namespace = {
+      ...draft.namespace,
+      default: user?.default ?? found.default ?? draft.namespace.default,
+      fallback: user?.fallback ?? found.fallback ?? draft.namespace.fallback,
+    }
   },
   calls: [
     { callee: ['t', 'i18next.t', 'i18n.t'], namespace: { arg: 1, property: 'ns' } },

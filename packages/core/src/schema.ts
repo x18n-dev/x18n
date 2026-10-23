@@ -38,7 +38,7 @@ const callSpec = v.strictObject({
   callee: v.union([v.string(), strings]),
   kind: v.optional(v.picklist(['call', 'selector', 'accessor'])),
   key: v.optional(v.union([v.number(), argSource])),
-  namespace: v.optional(argSource),
+  namespace: v.optional(v.union([argSource, v.string()])),
   keyPrefix: v.optional(argSource),
   factory: v.optional(v.boolean()),
   returns: v.optional(strings),
@@ -96,6 +96,8 @@ const checkSetting = v.union([level, v.tuple([level, jsonObject])]) satisfies v.
 const namespaceOptions = v.strictObject({
   separator: v.optional(v.string()),
   default: v.optional(v.string()),
+  fallback: v.optional(strings),
+  byFile: v.optional(v.record(v.string(), v.string())),
   fromPath: v.optional(v.picklist(['dot', 'slash', 'camel'])),
 }) satisfies v.GenericSchema<NamespaceOptions>
 
