@@ -1,7 +1,7 @@
 import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
 import { extractableHardStrings, extractItems, findCandidates, shouldExtract, slugify } from '../src/extractors'
-import { reactI18next, reactIntl, svelteI18n, vueI18n } from '../src/presets'
+import { i18next, reactI18next, reactIntl, svelteI18n, vueI18n } from '../src/presets'
 import { createTestProject, json } from './_utils'
 
 async function extractAll(project: Project): Promise<void> {
@@ -51,8 +51,14 @@ describe('extraction rules', () => {
       'src/App.vue': `<template>\n  ${tag}\n</template>\n`,
       'src/App.tsx': `export const App = () => ${tag.replace('enter-from-class', 'className')}\n`,
       'src/App.svelte': `${tag.replace('enter-from-class', 'class')}\n`,
+      'src/App.astro': `${tag.replace('enter-from-class', 'class')}\n`,
     }, { presets: [vueI18n(), svelteI18n()], extract: { attributes: ['empty-state'] } })
     expect(findCandidates(project).map(c => `${c.path}:${c.attribute ?? c.kind}`)).toEqual([
+      'src/App.astro:title',
+      'src/App.astro:aria-label',
+      'src/App.astro:confirm-text',
+      'src/App.astro:empty-state',
+      'src/App.astro:astro-text',
       'src/App.svelte:title',
       'src/App.svelte:aria-label',
       'src/App.svelte:confirm-text',
@@ -177,6 +183,35 @@ describe('extraction per preset', () => {
       '</template>',
     ].join('\n'))
     expect(JSON.parse(files.get('src/locales/en.json')!)).toEqual({ existing: 'Already here', clickToContinue: 'Click to continue', mainTitle: 'Main title', welcomeBack: 'Welcome back' })
+  })
+
+  it('i18next in Astro: template text and attributes, frontmatter strings with imports in the frontmatter', async () => {
+    const { project, files } = await createTestProject({
+      'locales/en.json': json({}),
+      'src/pages/index.astro': [
+        '---',
+        'const label = \'Click to continue\'',
+        '---',
+        '<h1 title="Main title" class="text-xl">Welcome back, {name}!</h1>',
+        '<script>',
+        '  document.body.dataset.ready = \'yes\'',
+        '</script>',
+        '',
+      ].join('\n'),
+    }, { presets: [i18next()], resources: [{ pattern: 'locales/{locale}.json' }] })
+    await extractAll(project)
+    expect(files.get('src/pages/index.astro')).toBe([
+      '---',
+      'import i18next from \'i18next\'',
+      'const label = i18next.t(\'clickToContinue\')',
+      '---',
+      '<h1 title={t(\'mainTitle\')} class="text-xl">{t(\'welcomeBack\')} {name}!</h1>',
+      '<script>',
+      '  document.body.dataset.ready = \'yes\'',
+      '</script>',
+      '',
+    ].join('\n'))
+    expect(JSON.parse(files.get('locales/en.json')!)).toEqual({ clickToContinue: 'Click to continue', mainTitle: 'Main title', welcomeBack: 'Welcome back,' })
   })
 
   it('react-i18next: JSX text through Trans, attributes through i18next.t, template arguments', async () => {

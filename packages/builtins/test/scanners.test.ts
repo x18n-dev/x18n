@@ -1,6 +1,6 @@
 import type { CallSpec, ScanResult } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
-import { reactI18next, reactIntl, vueI18n } from '../src/presets'
+import { i18next, reactI18next, reactIntl, vueI18n } from '../src/presets'
 import { loadParser, scanSource } from '../src/scanners/js'
 import { createTestProject, json } from './_utils'
 
@@ -126,6 +126,37 @@ describe('project usages', () => {
     expect(project.text('src/App.vue')!.slice(missing.location!.range.start, missing.location!.range.end)).toBe('missing.key')
     expect(project.keyAt('src/App.vue', project.text('src/App.vue')!.indexOf('b\')'))).toMatchObject({ type: 'key', key: 'b', source: 'usage' })
     expect(project.message('local', 'en')?.value).toBe('L')
+  })
+
+  it('scans Astro frontmatter, template expressions and scripts', async () => {
+    const { project } = await createTestProject({
+      'locales/en.json': json({ page: { title: 'T' }, hero: { title: 'H', alt: 'A' }, items: { one: '1' }, a: 'A', unused: 'x' }),
+      'src/pages/index.astro': [
+        '---',
+        'import { t } from \'i18next\'',
+        'const title = t(\'page.title\')',
+        '---',
+        '<!-- {t(\'commented.out\')} -->',
+        '<html>',
+        '<head><title>{title}</title><style>p { color: red }</style></head>',
+        '<body>',
+        '  <h1 data-x="{not.an.expression}">{t(\'hero.title\')}</h1>',
+        '  <img alt={t(\'hero.alt\')} src="/a.png">',
+        '  <ul>{items.map(item => <li title="Don\'t">{t(`items.${item}`)}</li>)}</ul>', // eslint-disable-line no-template-curly-in-string
+        '  {/* t(\'in.comment\') */}',
+        '  <p>{cond ? t(\'a\') : t(\'missing\')}</p>',
+        '</body>',
+        '</html>',
+        '<script>',
+        '  import i18next from \'i18next\'',
+        '  document.title = i18next.t(\'client.title\')',
+        '</script>',
+      ].join('\n'),
+    }, { presets: [i18next()], resources: [{ pattern: 'locales/{locale}.json' }] })
+    expect(project.usages().map(m => m.usage.key)).toEqual(['page.title', 'hero.title', 'hero.alt', 'items.', 'a', 'missing', 'client.title'])
+    const analysis = project.analyze()
+    expect(analysis.unused).toEqual(['unused'])
+    expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['missing', 'client.title'])
   })
 
   it('applies namespaces, key prefixes and derived keys with i18next', async () => {

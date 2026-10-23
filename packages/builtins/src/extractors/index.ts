@@ -9,7 +9,7 @@ export interface ExtractionRule {
   readonly test: (text: string, kind: string, attribute: string | undefined) => Score
 }
 
-const textKinds = new Set(['jsx-text', 'vue-template-text', 'svelte-text', 'html-text'])
+const textKinds = new Set(['jsx-text', 'vue-template-text', 'svelte-text', 'astro-text', 'html-text'])
 
 /** Built-in rules, applied in order. A `must-*` wins at once; otherwise the last `should-*` decides. */
 export const rules: readonly ExtractionRule[] = [
@@ -103,8 +103,8 @@ export function slugify(text: string, keyCase: KeyCase = 'camel', maxLength = 40
 
 /** Fallback templates per kind, used after config and preset templates. */
 export const defaultTemplates: readonly ExtractTemplate[] = [
-  { template: '{t(\'{key}\'{args})}', kinds: ['jsx-text'] },
-  { template: '{attr}={t(\'{key}\'{args})}', kinds: ['jsx-attribute'] },
+  { template: '{t(\'{key}\'{args})}', kinds: ['jsx-text', 'astro-text'] },
+  { template: '{attr}={t(\'{key}\'{args})}', kinds: ['jsx-attribute', 'astro-attribute'] },
   { template: '{{ $t(\'{key}\'{args}) }}', kinds: ['vue-template-text', 'html-text'] },
   { template: ':{attr}="$t(\'{key}\'{args})"', kinds: ['vue-attribute'] },
   { template: '{$t(\'{key}\'{args})}', kinds: ['svelte-text'] },

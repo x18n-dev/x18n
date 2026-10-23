@@ -132,6 +132,8 @@ Each hard string has a kind, which tells where it is:
 | `vue-attribute` | An attribute in a Vue template |
 | `svelte-text` | Text in a Svelte component |
 | `svelte-attribute` | An attribute in a Svelte component |
+| `astro-text` | Text in an Astro template |
+| `astro-attribute` | An attribute in an Astro template |
 | `js-string` | A string literal in JS or TS |
 | `js-template` | A template string in JS or TS |
 
@@ -139,8 +141,8 @@ x18n picks the first template that matches the kind (`kinds`) and the file (`fil
 
 | Kinds | Template |
 | --- | --- |
-| `jsx-text` | `{t('{key}'{args})}` |
-| `jsx-attribute` | `{attr}={t('{key}'{args})}` |
+| `jsx-text`, `astro-text` | `{t('{key}'{args})}` |
+| `jsx-attribute`, `astro-attribute` | `{attr}={t('{key}'{args})}` |
 | `vue-template-text` | `{{ $t('{key}'{args}) }}` |
 | `vue-attribute` | `:{attr}="$t('{key}'{args})"` |
 | `svelte-text` | `{$t('{key}'{args})}` |

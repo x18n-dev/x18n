@@ -1,3 +1,4 @@
+export { astro } from './astro'
 export { calleeName, js, loadParser, scanSource } from './js'
 export type { ScanSourceOptions } from './js'
 export { compileUsagePattern, regex, regexScopes, scanWithRegex } from './regex'

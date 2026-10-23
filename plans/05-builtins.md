@@ -5,7 +5,7 @@
 ```
 @x18n/builtins/formats    json(), jsonc(), json5(), yaml(), po(), properties(), ...
 @x18n/builtins/finders    pattern(), sfcBlocks()
-@x18n/builtins/scanners   regex(), js(), vue(), svelte(), html()
+@x18n/builtins/scanners   regex(), js(), vue(), svelte(), astro(), html()
 @x18n/builtins/extractors ...
 @x18n/builtins/checks     recommended() and each check
 @x18n/builtins/reporters  pretty(), json(), markdown(), github(), sarif()
@@ -58,6 +58,7 @@ Execution is opt-in per resource pattern (`resources: [{ pattern: 'src/locales/{
 | `js` | js, jsx, mjs, cjs, ts, tsx, mts, cts | `oxc-parser` (native in Node, `@oxc-parser/wasm` in the browser), driven by call specs |
 | `vue` | vue | `@vue/compiler-sfc` + `js` |
 | `svelte` | svelte | `svelte/compiler` + `js` (Node only at first) |
+| `astro` | astro | small template tokenizer + `js` for the frontmatter, `<script>` and `{...}` expressions |
 | `html` | html, and attributes inside other templates | small HTML tokenizer |
 | `regex` | any configured | RegExp, i18n-ally compatible |
 

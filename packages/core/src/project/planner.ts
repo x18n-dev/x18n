@@ -109,7 +109,8 @@ function importEdit(text: string, lines: readonly string[]): TextEdit | undefine
   const missing = lines.filter(line => !text.includes(line.trim()))
   if (missing.length === 0)
     return undefined
-  const script = /<script\b[^>]*>\r?\n?/.exec(text)
+  // A `---` frontmatter holds the server code of a component; a later `<script>` runs in the browser.
+  const script = /^\s*---\r?\n/.exec(text) ?? /<script\b[^>]*>\r?\n?/.exec(text)
   let at = 0
   if (script) {
     at = script.index + script[0].length

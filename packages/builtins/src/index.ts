@@ -5,12 +5,12 @@ import { ecmascript, ftl, ini, json, json5, jsonc, php, po, properties, yaml } f
 import { manifests } from './manifests'
 import { presets } from './presets'
 import { reporters } from './reporters'
-import { js, regex, svelte, vue } from './scanners'
+import { astro, js, regex, svelte, vue } from './scanners'
 
 /** Plugins that are always on, and the presets that `'auto'` detects. */
 export function createBuiltins(): Builtins {
   return {
-    plugins: [manifests(), json(), jsonc(), json5(), yaml(), po(), properties(), ftl(), ini(), php(), ecmascript(), pattern(), js(), vue(), svelte(), regex(), recommended(), reporters()],
+    plugins: [manifests(), json(), jsonc(), json5(), yaml(), po(), properties(), ftl(), ini(), php(), ecmascript(), pattern(), js(), vue(), svelte(), astro(), regex(), recommended(), reporters()],
     presets,
   }
 }

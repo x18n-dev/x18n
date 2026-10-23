@@ -1062,6 +1062,7 @@ exports[`rpc functions > explains the project 1`] = `
         "x18n:scanner-js",
         "x18n:scanner-vue",
         "x18n:scanner-svelte",
+        "x18n:scanner-astro",
         "x18n:scanner-regex",
         "x18n:checks",
         "x18n:reporters",
@@ -1224,6 +1225,13 @@ exports[`rpc functions > explains the project 1`] = `
           ],
           "files": 0,
           "id": "svelte",
+        },
+        {
+          "extensions": [
+            "astro",
+          ],
+          "files": 0,
+          "id": "astro",
         },
         {
           "extensions": [],

@@ -14,6 +14,7 @@ export interface ScanSourceOptions {
 // #endregion
 
 // #region Functions
+export declare function astro(): Plugin;
 export declare function calleeName(_: Node): string | undefined;
 export declare function compileUsagePattern(_: string): RegExp;
 export declare function js(): Plugin;
