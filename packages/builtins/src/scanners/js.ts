@@ -1,5 +1,5 @@
 import type { ArgSource, CallSpec, HardString, Plugin, Scanner, ScanResult, TextRange, UsageCandidate } from '@x18n/core'
-import type { CallExpression, Comment, JSXOpeningElement, Node, ObjectExpression, Program } from 'oxc-parser'
+import type { CallExpression, Comment, JSXElement, JSXOpeningElement, Node, ObjectExpression, Program } from 'oxc-parser'
 
 /** Where a callee name came from: a declared spec, or a factory binding with its namespace and prefix. */
 interface Binding {
@@ -97,6 +97,8 @@ class FileScan {
   readonly factories = new Map<string, CallSpec[]>()
   readonly typed = new Map<string, CallSpec>()
   readonly consumed = new Set<number>()
+  /** Render-prop functions of factory components (`<Translation>{t => ...}</Translation>`), by start offset. */
+  readonly renderProps = new Map<number, Binding>()
 
   constructor(readonly text: string, readonly offset: number, calls: readonly CallSpec[], readonly collectHardStrings: boolean, readonly ignoredCallees: ReadonlySet<string> = new Set(), readonly textAttributes: readonly string[] = []) {
     for (const spec of calls) {
@@ -284,10 +286,7 @@ class FileScan {
       this.handleCall(name, node.arguments, { start: node.start, end: node.end })
   }
 
-  jsx(node: JSXOpeningElement): void {
-    const name = jsxName(node.name)
-    if (!name || !this.lookup(name))
-      return
+  jsxProps(node: JSXOpeningElement): ArgValue {
     const props = new Map<string, Node>()
     for (const attribute of node.attributes) {
       if (attribute.type === 'JSXAttribute' && attribute.value && attribute.name.type === 'JSXIdentifier') {
@@ -296,7 +295,25 @@ class FileScan {
           this.consumed.add(attribute.value.start)
       }
     }
-    this.handleCall(name, [{ props }])
+    return { props }
+  }
+
+  jsx(node: JSXOpeningElement): void {
+    const name = jsxName(node.name)
+    if (name && this.lookup(name))
+      this.handleCall(name, [this.jsxProps(node)])
+  }
+
+  jsxElement(node: JSXElement): void {
+    const name = jsxName(node.openingElement.name)
+    const specs = name ? this.factories.get(name) : undefined
+    if (!specs)
+      return
+    const binding = this.pickFactory([this.jsxProps(node.openingElement)], specs)
+    for (const child of node.children) {
+      if (child.type === 'JSXExpressionContainer' && (child.expression.type === 'ArrowFunctionExpression' || child.expression.type === 'FunctionExpression'))
+        this.renderProps.set(child.expression.start, binding)
+    }
   }
 
   /** ---- Bindings ---- */
@@ -310,7 +327,7 @@ class FileScan {
       const factory = calleeName(value.callee)
       const specs = factory ? this.factories.get(factory) : undefined
       if (specs)
-        this.bindFactory(id, value, specs)
+        this.bindFactory(id, value.arguments, specs)
       return
     }
     // `const tt = t`
@@ -323,18 +340,18 @@ class FileScan {
   }
 
   /** The first factory spec whose namespace and prefix sources all resolve, else the first spec. */
-  pickFactory(call: CallExpression, specs: readonly CallSpec[]): Binding {
+  pickFactory(args: readonly ArgValue[], specs: readonly CallSpec[]): Binding {
     const resolved = specs.map((spec) => {
-      const namespace = spec.namespace ? this.stringArg(this.argValues(call.arguments, spec.namespace, 0)[0]) : undefined
-      const keyPrefix = spec.keyPrefix ? this.stringArg(this.argValues(call.arguments, spec.keyPrefix, 0)[0]) : undefined
+      const namespace = spec.namespace ? this.stringArg(this.argValues(args, spec.namespace, 0)[0]) : undefined
+      const keyPrefix = spec.keyPrefix ? this.stringArg(this.argValues(args, spec.keyPrefix, 0)[0]) : undefined
       const complete = (!spec.namespace || namespace !== undefined) && (!spec.keyPrefix || keyPrefix !== undefined)
       return { binding: { spec: { callee: spec.callee, returns: spec.returns }, namespace, keyPrefix }, complete }
     })
     return (resolved.find(r => r.complete) ?? resolved[0]!).binding
   }
 
-  bindFactory(id: Node, call: CallExpression, specs: readonly CallSpec[]): void {
-    const binding = this.pickFactory(call, specs)
+  bindFactory(id: Node, args: readonly ArgValue[], specs: readonly CallSpec[]): void {
+    const binding = this.pickFactory(args, specs)
     const returns = (binding.spec.returns ?? ['t']).filter(name => !name.includes('.'))
     if (id.type === 'Identifier') {
       this.bind(id.name, binding)
@@ -414,6 +431,9 @@ class FileScan {
       case 'CallExpression':
         this.call(node)
         break
+      case 'JSXElement':
+        this.jsxElement(node)
+        break
       case 'JSXOpeningElement':
         this.jsx(node)
         break
@@ -422,9 +442,13 @@ class FileScan {
         break
       case 'FunctionDeclaration':
       case 'FunctionExpression':
-      case 'ArrowFunctionExpression':
+      case 'ArrowFunctionExpression': {
         this.params(node.params)
+        const binding = this.renderProps.get(node.start)
+        if (binding && node.params[0]?.type === 'Identifier')
+          this.bind(node.params[0].name, binding)
         break
+      }
       case 'ImportSpecifier':
         this.importSpecifier(node)
         break

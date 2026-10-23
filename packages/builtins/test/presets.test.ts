@@ -155,7 +155,7 @@ describe('tier 1 presets', () => {
 
 // Cases that i18n-ally-next fixed after the fork of i18n-ally.
 describe('namespaces', () => {
-  it('react-i18next: folders, keyPrefix, flat dotted keys and withTranslation', async () => {
+  it('react-i18next: folders, keyPrefix, flat dotted keys, Translation and withTranslation', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('react-i18next', 'i18next'),
       'locales/en/translation.json': json({ 'common.stackTrace': 'Stack', 'title': 'T' }),
@@ -165,8 +165,11 @@ describe('namespaces', () => {
         `function A() { const { t } = useTranslation(); return t('common.stackTrace') + t('errors:notFound') }`,
         `function B() { const { t } = useTranslation('pages/home', { keyPrefix: 'foo.bar' }); return t('baz') + t('translation:title') }`,
         `function C() { const { t } = useTranslation('pages/home'); return t('title') + t('pages/home:foo.bar.baz') }`,
+        `function E() { const { t } = useTranslation(undefined, { keyPrefix: 'common' }); return t('stackTrace') }`,
+        `function F() { return <Translation ns="pages/home" keyPrefix="foo.bar">{t => <p>{t('baz')}</p>}</Translation> }`,
       ].join('\n'),
       'src/D.tsx': `function D({ t }) { return t('notFound') }\nexport default withTranslation('errors')(D)\n`,
+      'src/G.tsx': `function G({ t }) { return t('baz') }\nexport default withTranslation('pages/home', { keyPrefix: 'foo.bar' })(G)\n`,
     }, { resources: [{ pattern: 'locales/{locale}/{namespaces}.json' }], keyStyle: 'flat' })
     expect(project.usages().map(m => m.usage.key)).toEqual([
       'translation:common.stackTrace',
@@ -175,7 +178,10 @@ describe('namespaces', () => {
       'translation:title',
       'pages/home:title',
       'pages/home:foo.bar.baz',
+      'translation:common.stackTrace',
+      'pages/home:foo.bar.baz',
       'errors:notFound',
+      'pages/home:foo.bar.baz',
     ])
     expect(project.analyze().undefinedUsages).toEqual([])
   })
