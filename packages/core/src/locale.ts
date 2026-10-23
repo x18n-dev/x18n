@@ -60,7 +60,14 @@ export function fallbackChain(fallbacks: Readonly<Record<LocaleCode, LocaleCode>
   return chain
 }
 
-const pluralOrder: readonly Intl.LDMLPluralRule[] = ['zero', 'one', 'two', 'few', 'many', 'other']
+const pluralOrder: readonly Intl.LDMLPluralRule[] = [
+  'zero',
+  'one',
+  'two',
+  'few',
+  'many',
+  'other',
+]
 
 function flagOf(region: string): string | undefined {
   if (!/^[A-Z]{2}$/.test(region))
@@ -80,7 +87,9 @@ function safe<T>(fn: () => T): T | undefined {
 /** Lenient display parse of a locale code (`zh_CN`, `pt-BR`, `sr-Latn-RS`). Never changes the code. */
 export function parseLocaleInfo(code: LocaleCode): LocaleInfo {
   const parts = code.replace(/_/g, '-').split('-').filter(Boolean)
-  const language = parts[0] && /^[a-z]{2,3}$/i.test(parts[0]) ? parts[0].toLowerCase() : undefined
+  const language = parts[0] && /^[a-z]{2,3}$/i.test(parts[0])
+    ? parts[0].toLowerCase()
+    : undefined
   let script: string | undefined
   let region: string | undefined
   for (const part of parts.slice(1)) {
@@ -90,20 +99,30 @@ export function parseLocaleInfo(code: LocaleCode): LocaleInfo {
       region = part.toUpperCase()
   }
   const tag = [language, script, region].filter(Boolean).join('-')
-  const displayName = language ? safe(() => new Intl.DisplayNames(['en'], { type: 'language' }).of(tag)) : undefined
+  const displayName = language
+    ? safe(() => new Intl.DisplayNames(['en'], { type: 'language' }).of(tag))
+    : undefined
   // CLDR order; Node versions disagree on the order `resolvedOptions` returns.
   const categories = (type: Intl.PluralRuleType): Intl.LDMLPluralRule[] => {
-    const found = language ? safe(() => new Intl.PluralRules(tag, { type }).resolvedOptions().pluralCategories) : undefined
-    return found ? pluralOrder.filter(category => found.includes(category)) : ['other']
+    const found = language
+      ? safe(() => new Intl.PluralRules(tag, { type }).resolvedOptions().pluralCategories)
+      : undefined
+    return found
+      ? pluralOrder.filter(category => found.includes(category))
+      : ['other']
   }
   // Traditional Chinese is written mostly in Taiwan, Hong Kong and Macau; a bare `zh-Hant` is not China's.
-  const flagRegion = region ?? (language === 'zh' && script === 'Hant' ? 'TW' : language ? defaultRegions[language] : undefined)
+  const flagRegion = region ?? (language === 'zh' && script === 'Hant'
+    ? 'TW'
+    : language ? defaultRegions[language] : undefined)
   return {
     code,
     language,
     region,
     displayName,
-    flag: flagRegion ? flagOf(flagRegion) : undefined,
+    flag: flagRegion
+      ? flagOf(flagRegion)
+      : undefined,
     pluralCategories: categories('cardinal'),
     ordinalCategories: categories('ordinal'),
   }

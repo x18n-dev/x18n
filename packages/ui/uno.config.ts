@@ -60,7 +60,11 @@ export default defineConfig({
     presetWind4(),
     presetIcons({ scale: 1.1 }),
   ],
-  preflights: [{ getCSS: () => tokens }],
+  preflights: [
+    {
+      getCSS: () => tokens,
+    },
+  ],
   shortcuts: {
     'bg-base': 'bg-[var(--x-bg)]',
     'bg-inverse': 'bg-[var(--x-fg)]',

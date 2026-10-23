@@ -36,7 +36,9 @@ export default defineNuxtConfig({
     // `comark` is only a transitive dep (via the layer); Nitro can't resolve it
     // from here and externalizes it as an absolute pnpm store path that is
     // missing on Vercel, so bundle it instead.
-    externals: { inline: ['comark'] },
+    externals: {
+      inline: ['comark'],
+    },
   },
 
   app: {

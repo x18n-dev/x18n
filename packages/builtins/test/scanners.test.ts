@@ -1,15 +1,35 @@
 import type { CallSpec, ScanResult } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
-import { reactI18next, reactIntl, vueI18n } from '../src/presets'
-import { loadParser, scanSource } from '../src/scanners/js'
+import { reactI18next } from '../src/presets/react-i18next'
+import { reactIntl } from '../src/presets/react-intl'
+import { vueI18n } from '../src/presets/vue-i18n'
+import { loadParser, scanSource } from '../src/scanners/shared/js'
 import { createTestProject, json } from './_utils'
 
 const calls: CallSpec[] = [
-  { callee: ['t', '$t', 'i18n.t'], namespace: { arg: 1, property: 'ns' } },
-  { callee: 'useTranslation', factory: true, returns: ['t'], namespace: { arg: 0 }, keyPrefix: { arg: 1, property: 'keyPrefix' } },
-  { callee: 'Trans', key: { arg: 0, property: 'i18nKey' } },
-  { callee: 'tr', types: ['TFunction'] },
-  { callee: 'defineMessages', key: { arg: 0, property: '*.id' } },
+  {
+    callee: ['t', '$t', 'i18n.t'],
+    namespace: { arg: 1, property: 'ns' },
+  },
+  {
+    callee: 'useTranslation',
+    factory: true,
+    returns: ['t'],
+    namespace: { arg: 0 },
+    keyPrefix: { arg: 1, property: 'keyPrefix' },
+  },
+  {
+    callee: 'Trans',
+    key: { arg: 0, property: 'i18nKey' },
+  },
+  {
+    callee: 'tr',
+    types: ['TFunction'],
+  },
+  {
+    callee: 'defineMessages',
+    key: { arg: 0, property: '*.id' },
+  },
   { callee: 'useSharedTranslation', factory: true, namespace: 'shared' },
 ]
 
@@ -103,7 +123,9 @@ describe('js scanner', () => {
   it('records the call of a key literal, not of keys picked from a condition or a constant', async () => {
     const code = `const K = 'k'; t('a', { n: 1 }); t(\`b\`); t(ok ? 'c' : 'd'); t(K); <Trans i18nKey="e" />`
     const result = await scan(code)
-    expect(result.usages.map(u => `${u.raw}|${u.expression ? code.slice(u.expression.start, u.expression.end) : ''}`)).toEqual([
+    expect(result.usages.map(u => `${u.raw}|${u.expression
+      ? code.slice(u.expression.start, u.expression.end)
+      : ''}`)).toEqual([
       'a|t(\'a\', { n: 1 })',
       'b|t(`b`)',
       'c|',
@@ -123,8 +145,16 @@ describe('js scanner', () => {
 describe('project usages', () => {
   it('scans Vue SFCs and resolves missing and unused keys', async () => {
     const { project } = await createTestProject({
-      'package.json': json({ dependencies: { 'vue-i18n': '11' } }),
-      'src/locales/en.json': json({ a: 'A', b: 'B', unused: 'x', pages: { home: 'H' }, block: 'x' }),
+      'package.json': json({
+        dependencies: { 'vue-i18n': '11' },
+      }),
+      'src/locales/en.json': json({
+        a: 'A',
+        b: 'B',
+        unused: 'x',
+        pages: { home: 'H' },
+        block: 'x',
+      }),
       'src/App.vue': [
         '<script setup lang="ts">',
         'const { t } = useI18n()',
@@ -140,11 +170,33 @@ describe('project usages', () => {
         '</template>',
         '<i18n lang="json">{ "en": { "local": "L" } }</i18n>',
       ].join('\n'),
-    }, { presets: [vueI18n()] })
+    }, {
+      presets: [
+        vueI18n(),
+      ],
+    })
     const analysis = project.analyze()
-    expect(project.usages().map(m => m.usage.key)).toEqual(['a', 'b', 'block', 'missing.key', 'b', 'a', 'block', 'pages.'])
+    expect(project.usages().map(m => m.usage.key)).toEqual([
+      'a',
+      'b',
+      'block',
+      'missing.key',
+      'b',
+      'a',
+      'block',
+      'pages.',
+    ])
     const text = project.text('src/App.vue')!
-    expect(project.usages().map(({ usage: { expression } }) => expression && text.slice(expression.start, expression.end))).toEqual(['t(\'a\')', '$t(\'b\')', undefined, undefined, undefined, undefined, undefined, '$t(`pages.${x}`)']) // eslint-disable-line no-template-curly-in-string
+    expect(project.usages().map(({ usage: { expression } }) => expression && text.slice(expression.start, expression.end))).toEqual([
+      't(\'a\')',
+      '$t(\'b\')',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      '$t(`pages.${x}`)', // eslint-disable-line no-template-curly-in-string
+    ])
     expect(analysis.unused).toEqual(['local', 'unused'])
     expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['missing.key'])
     const missing = analysis.diagnostics.find(d => d.code === 'missing-key')!
@@ -156,12 +208,21 @@ describe('project usages', () => {
   it('applies namespaces, key prefixes and derived keys with i18next', async () => {
     const { project } = await createTestProject({
       'locales/en/common.json': json({ save: 'Save', item_one: '1', item_other: 'n' }),
-      'locales/en/auth.json': json({ login: { title: 'T' } }),
+      'locales/en/auth.json': json({
+        login: { title: 'T' },
+      }),
       'src/App.tsx': [
         `const { t } = useTranslation('auth', { keyPrefix: 'login' })`,
         `t('title'); t('common:save'); t('common:item', { count: 1 })`,
       ].join('\n'),
-    }, { presets: [reactI18next()], resources: [{ pattern: 'locales/{locale}/{namespace}.json' }] })
+    }, {
+      presets: [
+        reactI18next(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+    })
     expect(project.usages().map(m => m.usage.key)).toEqual(['auth:login.title', 'common:save', 'common:item'])
     const analysis = project.analyze()
     expect(analysis.unused).toEqual([])
@@ -170,9 +231,22 @@ describe('project usages', () => {
 
   it('honours keysInUse and inline suppression', async () => {
     const { project } = await createTestProject({
-      'locales/en.json': json({ runtime: { a: 'x' }, used: 'y' }),
+      'locales/en.json': json({
+        runtime: { a: 'x' },
+        used: 'y',
+      }),
       'src/a.ts': `// x18n-disable-next-line\nt('nope')\nintl.formatMessage({ id: 'used' })`,
-    }, { presets: [reactIntl()], resources: [{ pattern: 'locales/{locale}.json' }], usage: { keysInUse: ['runtime.*'] } })
+    }, {
+      presets: [
+        reactIntl(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+      usage: {
+        keysInUse: ['runtime.*'],
+      },
+    })
     expect(project.analyze().unused).toEqual([])
     expect(project.analyze().undefinedUsages).toEqual([])
   })

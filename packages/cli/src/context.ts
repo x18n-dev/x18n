@@ -40,8 +40,12 @@ export async function openWorkspace(options: GlobalOptions): Promise<Workspace> 
 
 /** Write commands work on one project; a monorepo needs `--project`. */
 export function singleProject(workspace: Workspace): LoadedProject {
-  if (workspace.projects.length !== 1)
-    throw errors.X18N0003({ name: undefined, available: workspace.projects.map(p => p.name) })
+  if (workspace.projects.length !== 1) {
+    throw errors.X18N0003({
+      name: undefined,
+      available: workspace.projects.map(p => p.name),
+    })
+  }
   return workspace.projects[0]!
 }
 
@@ -50,7 +54,9 @@ export function displayPath(root: string, path: string): string {
 }
 
 export function out(text: string): void {
-  process.stdout.write(text.endsWith('\n') ? text : `${text}\n`)
+  process.stdout.write(text.endsWith('\n')
+    ? text
+    : `${text}\n`)
 }
 
 export function printJson<T>(command: string, data: T, diagnostics: readonly WireDiagnostic[] = [], errors: readonly ErrorInfo[] = []): void {
@@ -68,12 +74,16 @@ export function exitCodeFor(code: ErrorCode): number {
     return 3
   if (code === 'X18N4004')
     return 4
-  return /^X18N[01]/.test(code) ? 2 : 1
+  return /^X18N[01]/.test(code)
+    ? 2
+    : 1
 }
 
 /** Errors without an x18n code exit with 2. */
 export function exitCodeOf(error: unknown): number {
-  return isX18nError(error) ? exitCodeFor(error.code) : 2
+  return isX18nError(error)
+    ? exitCodeFor(error.code)
+    : 2
 }
 
 /** Stands for a lone `-` argument (stdin). */
@@ -98,8 +108,11 @@ async function answer(plan: Plan, options: GlobalOptions): Promise<Answers> {
       answers[decision.id] = decision.default
     return answers
   }
-  if (options.json || !process.stdin.isTTY)
-    throw errors.X18N4003({ decisions: plan.decisions.map(d => `${d.message} (${d.options.map(o => o.id).join(' | ')})`) })
+  if (options.json || !process.stdin.isTTY) {
+    throw errors.X18N4003({
+      decisions: plan.decisions.map(d => `${d.message} (${d.options.map(o => o.id).join(' | ')})`),
+    })
+  }
   const rl = createInterface({ input: process.stdin, output: process.stderr })
   try {
     for (const decision of plan.decisions) {
@@ -145,7 +158,9 @@ function formatPlan(project: Project, root: string, plan: Plan): string {
   }
   for (const warning of plan.warnings)
     lines.push(`warning: ${warning}`)
-  return lines.length ? lines.join('\n') : 'No changes.'
+  return lines.length
+    ? lines.join('\n')
+    : 'No changes.'
 }
 
 function planData(root: string, plan: Plan, applied: boolean): object {
@@ -154,7 +169,10 @@ function planData(root: string, plan: Plan, applied: boolean): object {
     keys: plan.keys,
     warnings: plan.warnings,
     decisions: plan.decisions,
-    changes: plan.changes.map(change => ({ ...change, file: displayPath(root, change.path) })),
+    changes: plan.changes.map(change => ({
+      ...change,
+      file: displayPath(root, change.path),
+    })),
   }
 }
 

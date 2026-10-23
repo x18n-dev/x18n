@@ -35,11 +35,12 @@ Every surface reads the same config and reports the same diagnostics. A fix that
 
 x18n knows no i18n library and no file format by itself. Plugins add that knowledge. A preset is a group of plugins for one library. x18n detects the presets from the dependencies of the project:
 
-- Vue: [vue-i18n](/presets/vue-i18n), [@nuxtjs/i18n](/presets/nuxt-i18n) and [fluent-vue](/presets/fluent-vue)
+- Vue: [vue-i18n](/presets/vue-i18n), [@nuxtjs/i18n](/presets/nuxt-i18n), [fluent-vue](/presets/fluent-vue) and [laravel-vue-i18n](/presets/laravel-vue-i18n)
 - React and Next.js: [i18next](/presets/i18next), [react-i18next](/presets/react-i18next), [i18next-shopify](/presets/i18next-shopify), [next-intl](/presets/next-intl), [next-translate](/presets/next-translate), [next-international](/presets/next-international), [react-intl](/presets/react-intl) and [Lingui](/presets/lingui)
 - Svelte: [svelte-i18n and sveltekit-i18n](/presets/svelte-i18n)
 - Solid: [@solid-primitives/i18n](/presets/solid-primitives-i18n)
 - Paraglide JS: [Paraglide](/presets/paraglide)
+- typesafe-i18n: [typesafe-i18n](/presets/typesafe-i18n)
 - Angular: [ngx-translate](/presets/ngx-translate) and [Transloco](/presets/transloco)
 - Other JS libraries: [ember-intl](/presets/ember-intl), [Polyglot.js](/presets/polyglot), [Globalize](/presets/globalize), [es2015-i18n-tag](/presets/i18n-tag), [i18n-js](/presets/i18n-js) and [UI5](/presets/ui5)
 - Extensions: [Chrome and WebExtensions](/presets/chrome-extension) and [VS Code](/presets/vscode-extension) (`vscode.l10n` and `package.nls.json`)

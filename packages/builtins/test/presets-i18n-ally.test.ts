@@ -1,9 +1,13 @@
 import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
-import { phpGettext } from '../src/presets'
+import { phpGettext } from '../src/presets/php-gettext'
 import { createTestProject, json } from './_utils'
 
-const pkg = (...deps: string[]): string => json({ dependencies: Object.fromEntries(deps.map(dep => [dep, '*'])) })
+function pkg(...deps: string[]): string {
+  return json({
+    dependencies: Object.fromEntries(deps.map(dep => [dep, '*'])),
+  })
+}
 
 function detected(project: Project): string[] {
   return project.explain().presets.filter(p => p.reason === 'detected').map(p => p.name).filter(name => name !== 'general')
@@ -17,7 +21,9 @@ describe('every i18n-ally framework is detected and understood', () => {
   it('ngx-translate', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('@angular/core', '@ngx-translate/core'),
-      'src/assets/i18n/en.json': json({ home: { title: 'Home', sub: 'Sub', save: 'Save' } }),
+      'src/assets/i18n/en.json': json({
+        home: { title: 'Home', sub: 'Sub', save: 'Save' },
+      }),
       'src/app/app.component.html': '<h1>{{ \'home.title\' | translate }}</h1>\n<p [translate]="\'home.sub\'"></p>',
       'src/app/app.component.ts': 'this.translate.instant(\'home.save\')',
     })
@@ -28,7 +34,10 @@ describe('every i18n-ally framework is detected and understood', () => {
   it('transloco, with read scopes', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('@jsverse/transloco'),
-      'src/assets/i18n/en.json': json({ title: 'T', admin: { users: 'U' } }),
+      'src/assets/i18n/en.json': json({
+        title: 'T',
+        admin: { users: 'U' },
+      }),
       'src/app/a.html': '<h1>{{ \'title\' | transloco }}</h1>\n<div *transloco="let t; read: \'admin\'"><p>{{ t(\'users\') }}</p></div>',
     })
     expect(detected(project)).toEqual(['transloco'])
@@ -61,9 +70,17 @@ describe('every i18n-ally framework is detected and understood', () => {
   it('i18next-shopify nested plural forms', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('@shopify/i18next-shopify', 'react-i18next'),
-      'locales/en.json': json({ cart: { items: { one: '{count} item', other: '{count} items' } } }),
+      'locales/en.json': json({
+        cart: {
+          items: { one: '{count} item', other: '{count} items' },
+        },
+      }),
       'src/a.tsx': 'const { t } = useTranslation()\nt(\'cart.items\', { count })',
-    }, { resources: [{ pattern: 'locales/{locale}.json' }] })
+    }, {
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+    })
     expect(detected(project)).toContain('i18next-shopify')
     expect(project.analyze().unused).toEqual([])
   })
@@ -71,13 +88,33 @@ describe('every i18n-ally framework is detected and understood', () => {
   it('i18next-shopify: each locale needs its own plural categories', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('@shopify/i18next-shopify', 'react-i18next'),
-      'locales/en.json': json({ cart: { items: { one: '{count} item', other: '{count} items' } } }),
-      'locales/ja.json': json({ cart: { items: { other: '{count} 個' } } }),
-      'locales/pl.json': json({ cart: { items: { one: '{count} produkt', other: '{count} produktu' } } }),
+      'locales/en.json': json({
+        cart: {
+          items: { one: '{count} item', other: '{count} items' },
+        },
+      }),
+      'locales/ja.json': json({
+        cart: {
+          items: { other: '{count} 個' },
+        },
+      }),
+      'locales/pl.json': json({
+        cart: {
+          items: { one: '{count} produkt', other: '{count} produktu' },
+        },
+      }),
       'src/a.tsx': 'const { t } = useTranslation()\nt(\'cart.items\', { count })',
-    }, { resources: [{ pattern: 'locales/{locale}.json' }] })
+    }, {
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+    })
     const missing = Object.fromEntries(project.analyze().coverage.map(c => [c.locale, c.missing]))
-    expect(missing).toEqual({ en: [], ja: [], pl: ['cart.items.few', 'cart.items.many'] })
+    expect(missing).toEqual({
+      en: [],
+      ja: [],
+      pl: ['cart.items.few', 'cart.items.many'],
+    })
   })
 
   it('i18n-tag tagged templates', async () => {
@@ -103,13 +140,39 @@ describe('every i18n-ally framework is detected and understood', () => {
 
   it('polyglot, globalize, i18n-js and ember-intl', async () => {
     const cases: [string, string, string, string][] = [
-      ['node-polyglot', 'src/a.js', 'polyglot.t(\'a.b\')', 'polyglot'],
-      ['globalize', 'src/a.js', 'Globalize.formatMessage(\'a/b\')', 'globalize'],
-      ['i18n-js', 'src/a.js', 'I18n.t(\'a.b\')', 'i18n-js'],
-      ['ember-intl', 'app/templates/a.hbs', '<h1>{{t \'a.b\'}}</h1>', 'ember-intl'],
+      [
+        'node-polyglot',
+        'src/a.js',
+        'polyglot.t(\'a.b\')',
+        'polyglot',
+      ],
+      [
+        'globalize',
+        'src/a.js',
+        'Globalize.formatMessage(\'a/b\')',
+        'globalize',
+      ],
+      [
+        'i18n-js',
+        'src/a.js',
+        'I18n.t(\'a.b\')',
+        'i18n-js',
+      ],
+      [
+        'ember-intl',
+        'app/templates/a.hbs',
+        '<h1>{{t \'a.b\'}}</h1>',
+        'ember-intl',
+      ],
     ]
     for (const [dep, path, code, preset] of cases) {
-      const { project } = await createTestProject({ 'package.json': pkg(dep), 'translations/en.json': json({ a: { b: 'x' } }), [path]: code })
+      const { project } = await createTestProject({
+        'package.json': pkg(dep),
+        'translations/en.json': json({
+          a: { b: 'x' },
+        }),
+        [path]: code,
+      })
       expect(detected(project), dep).toEqual([preset])
       expect(usedKeys(project), dep).toEqual(['a.b'])
     }
@@ -117,7 +180,9 @@ describe('every i18n-ally framework is detected and understood', () => {
 
   it('ui5 properties bundles', async () => {
     const { project } = await createTestProject({
-      'package.json': json({ devDependencies: { '@ui5/cli': '*' } }),
+      'package.json': json({
+        devDependencies: { '@ui5/cli': '*' },
+      }),
       'webapp/i18n/i18n.properties': 'appTitle=App\nhello=Hello {0}\n',
       'webapp/i18n/i18n_de.properties': 'appTitle=Anwendung\n',
       'webapp/view/Main.view.xml': '<Page title="{i18n>appTitle}"/>',
@@ -140,21 +205,38 @@ describe('every i18n-ally framework is detected and understood', () => {
   it('chrome extensions: _locales, getMessage, __MSG__ and the default locale', async () => {
     const { project, files } = await createTestProject({
       'manifest.json': json({ default_locale: 'de', name: '__MSG_appName__' }),
-      '_locales/de/messages.json': json({ appName: { message: 'App', description: 'Name' }, hello: { message: 'Hallo $user$' } }),
-      '_locales/en/messages.json': json({ appName: { message: 'App' } }),
+      '_locales/de/messages.json': json({
+        appName: { message: 'App', description: 'Name' },
+        hello: { message: 'Hallo $user$' },
+      }),
+      '_locales/en/messages.json': json({
+        appName: { message: 'App' },
+      }),
       'src/popup.js': 'chrome.i18n.getMessage(\'hello\')',
     })
     expect(detected(project)).toEqual(['chrome-extension'])
     expect(project.sourceLocale).toBe('de')
     expect(project.keys()).toEqual(['appName', 'hello'])
     expect(usedKeys(project).sort()).toEqual(['appName', 'hello'])
-    await project.apply(project.plan([{ type: 'set', key: 'hello', locale: 'en', value: 'Hello $user$' }]))
-    expect(JSON.parse(files.get('_locales/en/messages.json')!)).toEqual({ appName: { message: 'App' }, hello: { message: 'Hello $user$' } })
+    await project.apply(project.plan([
+      {
+        type: 'set',
+        key: 'hello',
+        locale: 'en',
+        value: 'Hello $user$',
+      },
+    ]))
+    expect(JSON.parse(files.get('_locales/en/messages.json')!)).toEqual({
+      appName: { message: 'App' },
+      hello: { message: 'Hello $user$' },
+    })
   })
 
   it('laravel php arrays, json strings and nested files', async () => {
     const { project } = await createTestProject({
-      'composer.json': json({ require: { 'laravel/framework': '^11' } }),
+      'composer.json': json({
+        require: { 'laravel/framework': '^11' },
+      }),
       'lang/en/auth.php': '<?php\n\nreturn [\n    \'failed\' => \'These credentials do not match.\',\n];\n',
       'lang/en/admin/users.php': '<?php return [\'title\' => \'Users :count\'];',
       'lang/en.json': json({ 'Welcome back!': 'Welcome back!' }),
@@ -165,9 +247,70 @@ describe('every i18n-ally framework is detected and understood', () => {
     expect(project.analyze().undefinedUsages).toEqual([])
   })
 
+  it('laravel-vue-i18n alongside laravel resolves the same keys from vue and blade', async () => {
+    const { project } = await createTestProject({
+      'composer.json': json({
+        require: { 'laravel/framework': '^11' },
+      }),
+      'package.json': pkg('vue', 'laravel-vue-i18n'),
+      'lang/en/auth.php': '<?php return [\'failed\' => \'Failed for :name\'];',
+      'lang/en/admin/users.php': '<?php return [\'title\' => \'Users\'];',
+      'lang/de/auth.php': '<?php return [\'failed\' => \'Fehlgeschlagen\'];',
+      'lang/en.json': json({ 'Welcome back!': 'Welcome back!', 'One apple|Many apples': 'One apple|Many apples' }),
+      'resources/js/Pages/Login.vue': '<template><h1>{{ $t(\'Welcome back!\') }}</h1><p>{{ $tChoice(\'One apple|Many apples\', 2) }}</p></template>\n<script setup>\nimport { trans, wTrans } from \'laravel-vue-i18n\'\nconst a = trans(\'auth.failed\', { name })\nconst b = wTrans(\'admin/users.title\')\n</script>\n',
+      'resources/views/a.blade.php': '{{ __(\'auth.failed\') }}',
+    })
+    expect(detected(project)).toEqual(['laravel-vue-i18n', 'laravel'])
+    expect(project.locales).toEqual(['en', 'de'])
+    expect(project.keys()).toEqual([
+      'One apple|Many apples',
+      'Welcome back!',
+      'admin.users.title',
+      'auth.failed',
+    ])
+    expect(usedKeys(project).sort()).toEqual([
+      'One apple|Many apples',
+      'Welcome back!',
+      'admin.users.title',
+      'auth.failed',
+      'auth.failed',
+    ])
+    const analysis = project.analyze()
+    expect(analysis.undefinedUsages).toEqual([])
+    expect(analysis.unused).toEqual([])
+    expect(analysis.diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:auth.failed')
+  })
+
+  it('laravel-vue-i18n without composer, keyed by sentences in lang/{locale}.json', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('vue', 'laravel-vue-i18n'),
+      'lang/en.json': json({ 'Welcome, :name!': 'Welcome, :name!' }),
+      'lang/pt.json': json({ 'Welcome, :name!': 'Bem-vindo!' }),
+      'resources/js/app.ts': 'import { transChoice, wTransChoice } from \'laravel-vue-i18n\'\ntransChoice(\'Welcome, :name!\', 1); wTransChoice(\'missing.key\', 2)',
+    })
+    expect(detected(project)).toEqual(['laravel-vue-i18n'])
+    expect(usedKeys(project)).toEqual(['Welcome, :name!', 'missing.key'])
+    const analysis = project.analyze()
+    expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['missing.key'])
+    expect(analysis.diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:Welcome, :name!')
+  })
+
+  it('laravel-vue-i18n ignores the lang/php_{locale}.json files its Vite plugin writes', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('vue', 'laravel-vue-i18n'),
+      'lang/en/auth.php': '<?php return [\'failed\' => \'Failed\'];',
+      'lang/en.json': json({ 'Welcome back!': 'Welcome back!' }),
+      'lang/php_en.json': json({ 'auth.failed': 'Failed' }),
+    })
+    expect(project.locales).toEqual(['en'])
+    expect(project.analyze().diagnostics.filter(d => d.code === 'missing-translation')).toEqual([])
+  })
+
   it('joomla ini files', async () => {
     const { project } = await createTestProject({
-      'composer.json': json({ require: { 'joomla/application': '*' } }),
+      'composer.json': json({
+        require: { 'joomla/application': '*' },
+      }),
       'language/en-GB/en-GB.com_demo.ini': 'COM_DEMO_TITLE="Demo"\n',
       'site/view.php': '<?php echo Text::_(\'COM_DEMO_TITLE\'); ?>',
     })
@@ -179,7 +322,12 @@ describe('every i18n-ally framework is detected and understood', () => {
     const { project } = await createTestProject({
       'locale/de/LC_MESSAGES/messages.po': 'msgid "Hello"\nmsgstr "Hallo"\n',
       'index.php': '<?php echo gettext("Hello"); echo _("Missing");',
-    }, { presets: [phpGettext()], sourceLocale: 'de' })
+    }, {
+      presets: [
+        phpGettext(),
+      ],
+      sourceLocale: 'de',
+    })
     expect(usedKeys(project)).toEqual(['Hello', 'Missing'])
   })
 
@@ -194,7 +342,14 @@ describe('every i18n-ally framework is detected and understood', () => {
     expect(project.keys()).toEqual(['hello', 'users.index.title'])
     expect(usedKeys(project)).toEqual(['users.index.title', 'hello'])
     expect(project.analyze().diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:hello')
-    await project.apply(project.plan([{ type: 'set', key: 'users.index.title', locale: 'de', value: 'Benutzer' }]))
+    await project.apply(project.plan([
+      {
+        type: 'set',
+        key: 'users.index.title',
+        locale: 'de',
+        value: 'Benutzer',
+      },
+    ]))
     expect(files.get('config/locales/de.yml')).toContain('de:\n  hello: Hallo\n  users:\n    index:\n      title: Benutzer')
   })
 
@@ -240,7 +395,14 @@ describe('every i18n-ally framework is detected and understood', () => {
     })
     expect(detected(project)).toEqual(['easy-localization'])
     expect(project.locales).toEqual(['en-US', 'de-DE'])
-    expect(usedKeys(project).sort()).toEqual(['day', 'gender', 'menu.close', 'menu.open', 'msg', 'title'])
+    expect(usedKeys(project).sort()).toEqual([
+      'day',
+      'gender',
+      'menu.close',
+      'menu.open',
+      'msg',
+      'title',
+    ])
     const analysis = project.analyze()
     expect(analysis.unused).toEqual([])
     expect(analysis.diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:msg')
@@ -252,8 +414,18 @@ describe('every i18n-ally framework is detected and understood', () => {
       'assets/i18n/en.json': json({
         app_bar: { title: 'Hi {name}' },
         plural: {
-          demo: { zero: 'None', one: 'One', two: 'Two', other: '{{value}} times' },
-          legacy: { 0: 'None', 1: 'One', 2: 'Two', else: '{{value}} times' },
+          demo: {
+            zero: 'None',
+            one: 'One',
+            two: 'Two',
+            other: '{{value}} times',
+          },
+          legacy: {
+            0: 'None',
+            1: 'One',
+            2: 'Two',
+            else: '{{value}} times',
+          },
         },
       }),
       'lib/main.dart': 'Text(translate(\'app_bar.title\', args: {\'name\': n})); Text(translatePlural("plural.demo", _counter)); translatePlural(\'plural.legacy\', 3);',

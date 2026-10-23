@@ -22,16 +22,33 @@ async function treeItem(item: Item): Promise<TreeItem> {
   if (item.context !== undefined)
     treeItem.contextValue = item.context
   const flag = item.locale && await flagIcon(item.locale.code, item.locale.flag)
-  if (flag)
+  if (flag) {
     treeItem.iconPath = flag
-  else if (item.icon)
-    treeItem.iconPath = new ThemeIcon(item.icon, item.color === undefined ? undefined : new ThemeColor(item.color))
+  }
+  else if (item.icon) {
+    treeItem.iconPath = new ThemeIcon(item.icon, item.color === undefined
+      ? undefined
+      : new ThemeColor(item.color))
+  }
   if (item.location) {
     const { start, end } = item.location.range
-    treeItem.command = { title: 'Open', command: 'vscode.open', arguments: [Uri.parse(item.location.uri), { selection: new Range(start.line, start.character, end.line, end.character) }] }
+    treeItem.command = {
+      title: 'Open',
+      command: 'vscode.open',
+      arguments: [
+        Uri.parse(item.location.uri),
+        {
+          selection: new Range(start.line, start.character, end.line, end.character),
+        },
+      ],
+    }
   }
   else if (item.openKey) {
-    treeItem.command = { title: 'Open in UI', command: commands.openKey, arguments: [item.openKey] }
+    treeItem.command = {
+      title: 'Open in UI',
+      command: commands.openKey,
+      arguments: [item.openKey],
+    }
   }
   return treeItem
 }
@@ -41,7 +58,9 @@ function toNode(item: Item): ItemNode {
     item,
     treeItem: treeItem(item),
     get children() {
-      return item.children ? item.children().then(list => list.map(toNode), () => []) : []
+      return item.children
+        ? item.children().then(list => list.map(toNode), () => [])
+        : []
     },
   }
 }
@@ -72,11 +91,17 @@ export function useViews(x18n: X18nClient, refresh: Event<void>): void {
     if (!document || document.uri.scheme !== 'file')
       return []
     const uri = document.uri.toString()
-    return Promise.all([x18n.request('x18n/fileKeys', { uri }), x18n.request('x18n/projects', undefined)])
+    return Promise.all([
+      x18n.request('x18n/fileKeys', { uri }),
+      x18n.request('x18n/projects', undefined),
+    ])
       .then(([result, projects]) => fileItems(uri, projectFor(projects, document.uri.fsPath)?.name, result).map(toNode), () => [])
   })
   useTreeView('x18n.progress', roots(async () => {
-    const [progress, projects] = await Promise.all([x18n.request('x18n/progress', undefined), x18n.request('x18n/projects', undefined)])
+    const [progress, projects] = await Promise.all([
+      x18n.request('x18n/progress', undefined),
+      x18n.request('x18n/projects', undefined),
+    ])
     return progressItems(progress, projects)
   }))
   useTreeView('x18n.keys', roots(() => keyTree(x18n)))

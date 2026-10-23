@@ -55,7 +55,9 @@ export interface PromptData {
 }
 
 function text(value: MessageLeaf | undefined): string | undefined {
-  return value === undefined || value === null ? undefined : String(value)
+  return value === undefined || value === null
+    ? undefined
+    : String(value)
 }
 
 function contextOf(project: Project, key: KeyString): UsageContext[] {
@@ -66,7 +68,13 @@ function contextOf(project: Project, key: KeyString): UsageContext[] {
     const index = createLineIndex(source)
     const line = index.position(usage.range.start).line
     const lines = [line - 1, line, line + 1].filter(n => n >= 0 && n < index.lineCount).map(n => index.line(n))
-    return [{ path: usage.path, line: line + 1, snippet: lines.join('\n') }]
+    return [
+      {
+        path: usage.path,
+        line: line + 1,
+        snippet: lines.join('\n'),
+      },
+    ]
   })
 }
 
@@ -78,8 +86,12 @@ export interface PromptHooks {
 /** Builds the parts of a translate or review prompt from project state. */
 export function buildPrompt(project: Project, kind: 'translate' | 'review', to: LocaleCode, options: PromptOptions, extra: PromptHooks): PromptData {
   const from = project.sourceLocale
-  const match = typeof options.keys === 'string' ? keyMatcher([options.keys]) : undefined
-  const list = Array.isArray(options.keys) ? new Set(options.keys) : undefined
+  const match = typeof options.keys === 'string'
+    ? keyMatcher([options.keys])
+    : undefined
+  const list = Array.isArray(options.keys)
+    ? new Set(options.keys)
+    : undefined
   const stale = (key: KeyString): boolean => isOutdated(project.history(key, from), project.history(key, to))
   const candidates = project.keys({ namespace: options.namespace }).filter((key) => {
     if (match && !match(key))
@@ -118,25 +130,39 @@ export function buildPrompt(project: Project, kind: 'translate' | 'review', to: 
     ? project.keys().flatMap((key) => {
         const source = text(project.message(key, from)?.value)
         const target = text(project.message(key, to)?.value)
-        return source && target && !candidates.includes(key) ? [{ key, source, target }] : []
+        return source && target && !candidates.includes(key)
+          ? [
+              { key, source, target },
+            ]
+          : []
       }).slice(0, 5)
     : []
 
   const items = page.map((key): PromptItem => {
     const source = text(project.message(key, from)?.value) ?? ''
     const translated = project.history(key, to)
-    const previous = translated && stale(key) ? text(project.valueAt(key, from, translated.updatedAt)) : undefined
+    const previous = translated && stale(key)
+      ? text(project.valueAt(key, from, translated.updatedAt))
+      : undefined
     return {
       key,
       source,
-      placeholders: [...new Set(syntaxes.flatMap(s => s.find(source)).map(p => p.text))],
+      placeholders: [
+        ...new Set(syntaxes.flatMap(s => s.find(source)).map(p => p.text)),
+      ],
       existing: text(project.message(key, to)?.value) || undefined,
-      previousSource: previous === source ? undefined : previous,
-      context: options.context === false ? [] : contextOf(project, key),
+      previousSource: previous === source
+        ? undefined
+        : previous,
+      context: options.context === false
+        ? []
+        : contextOf(project, key),
     }
   })
 
-  const nextCursor = end < candidates.length ? String(end) : undefined
+  const nextCursor = end < candidates.length
+    ? String(end)
+    : undefined
   const instructions = kind === 'translate'
     ? [
         `Write a JSON file \`{ "${to}": { "<key>": "<translation>" } }\` and run \`x18n apply <file> --json\`, or run \`x18n set <key> --locale ${to} --value <text>\` per key.`,
@@ -189,19 +215,31 @@ function renderItem(item: PromptItem, to: LocaleCode): string[] {
 
 /** Plain markdown, with no provider-specific syntax. */
 export function renderPrompt(data: PromptData): string {
-  const target = data.targetName ? `${data.to} (${data.targetName})` : data.to
+  const target = data.targetName
+    ? `${data.to} (${data.targetName})`
+    : data.to
   const out: string[] = []
   if (data.kind === 'translate')
     out.push(`# Translate ${data.items.length} messages from ${data.from} to ${target}`, '')
   else
     out.push(`# Review ${data.items.length} ${target} translations against ${data.from}`, '', 'Check meaning, placeholders, glossary terms, tone and length. Report and fix wrong translations.', '')
-  if (data.items.length === 0)
-    return `${out.join('\n')}Nothing to do: every key is ${data.kind === 'translate' ? 'translated' : 'reviewed'}.\n`
+  if (data.items.length === 0) {
+    return `${out.join('\n')}Nothing to do: every key is ${data.kind === 'translate'
+      ? 'translated'
+      : 'reviewed'}.\n`
+  }
   out.push('## Rules', '', ...data.rules.map(rule => `- ${rule}`), ...data.notes.map(note => `- ${note}`), '')
   if (data.glossary.length > 0) {
     out.push('## Glossary', '')
-    for (const entry of data.glossary)
-      out.push(`- ${entry.term}${entry.doNotTranslate ? ': do not translate' : entry.translation ? ` → ${entry.translation}` : ''}${entry.note ? ` (${entry.note})` : ''}`)
+    for (const entry of data.glossary) {
+      out.push(`- ${entry.term}${entry.doNotTranslate
+        ? ': do not translate'
+        : entry.translation
+          ? ` → ${entry.translation}`
+          : ''}${entry.note
+        ? ` (${entry.note})`
+        : ''}`)
+    }
     out.push('')
   }
   if (data.examples.length > 0) {

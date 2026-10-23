@@ -4,7 +4,12 @@ import { frameUrl, panelHtml, uiTheme } from '../src/model/panel'
 
 describe('frameUrl', () => {
   it('passes the theme and language in the query and the token as a devframe magic link', () => {
-    const url = new URL(frameUrl('http://127.0.0.1:5173/', { token: '123456', theme: 'dark', lang: 'zh-tw', key: 'app.title' }))
+    const url = new URL(frameUrl('http://127.0.0.1:5173/', {
+      token: '123456',
+      theme: 'dark',
+      lang: 'zh-tw',
+      key: 'app.title',
+    }))
     expect(url.searchParams.get('theme')).toBe('dark')
     expect(url.searchParams.get('lang')).toBe('zh-tw')
     const fragment = new URLSearchParams(url.hash.slice(1))
@@ -13,7 +18,12 @@ describe('frameUrl', () => {
   })
 
   it('maps color theme kinds', () => {
-    expect([1, 2, 3, 4].map(uiTheme)).toEqual(['light', 'dark', 'high-contrast', 'high-contrast'])
+    expect([1, 2, 3, 4].map(uiTheme)).toEqual([
+      'light',
+      'dark',
+      'high-contrast',
+      'high-contrast',
+    ])
   })
 })
 
@@ -34,8 +44,19 @@ describe('i18n-ally migration', () => {
   })
 
   it('validates the server result', () => {
-    expect(parseMigrationResult({ files: [{ path: 'x18n.config.ts', content: 'x' }, { path: 1 }], notes: ['n', 2] }))
-      .toEqual({ files: [{ path: 'x18n.config.ts', content: 'x' }], notes: ['n'] })
+    expect(parseMigrationResult({
+      files: [
+        { path: 'x18n.config.ts', content: 'x' },
+        { path: 1 },
+      ],
+      notes: ['n', 2],
+    }))
+      .toEqual({
+        files: [
+          { path: 'x18n.config.ts', content: 'x' },
+        ],
+        notes: ['n'],
+      })
     expect(parseMigrationResult(null)).toBeUndefined()
   })
 })

@@ -26,18 +26,39 @@ const c = {
 function bar(percent: number, tone: string): Seg[] {
   const total = 14
   const filled = Math.round(total * percent / 100)
-  return [['█'.repeat(filled), tone], ['░'.repeat(total - filled), c.faint]]
+  return [
+    [
+      '█'.repeat(filled),
+      tone,
+    ],
+    [
+      '░'.repeat(total - filled),
+      c.faint,
+    ],
+  ]
 }
 
 function localeRow(code: string, percent: number, done: number): Line {
-  const tone = percent === 100 ? c.ok : percent >= 95 ? c.warn : c.err
+  const tone = percent === 100
+    ? c.ok
+    : percent >= 95
+      ? c.warn
+      : c.err
   return [
     '  ',
-    [code.padEnd(12), code === 'en' ? c.bold : ''],
+    [
+      code.padEnd(12),
+      code === 'en'
+        ? c.bold
+        : '',
+    ],
 
     ...bar(percent, tone),
     ' ',
-    [`${percent}%`.padStart(4), tone],
+    [
+      `${percent}%`.padStart(4),
+      tone,
+    ],
     [`  ${done}/137`, c.dim],
   ]
 }
@@ -58,11 +79,39 @@ function diagnostic(
   // Pad past the badge so the rule lines up for both levels.
   const message = text.padEnd(46 - badge.length)
   return [
-    [[path, c.path], [`:${pos}`, c.dim]],
-    [[badge, error ? c.errBadge : c.warnBadge], ` ${message}`, [rule, c.dim]],
+    [
+      [path, c.path],
+      [`:${pos}`, c.dim],
+    ],
+    [
+      [
+        badge,
+        error ? c.errBadge : c.warnBadge,
+      ],
+      ` ${message}`,
+      [rule, c.dim],
+    ],
     ...code.flatMap((line, i): Line[] => [
-      [[`${String(from + i).padStart(2)} │ `, c.faint], [line, i === 1 ? '' : c.dim]],
-      ...(i === 1 ? [[[`   │ `, c.faint], [' '.repeat(mark[0]) + '~'.repeat(mark[1]), error ? c.err : c.warn]] as Line] : []),
+      [
+        [`${String(from + i).padStart(2)} │ `, c.faint],
+        [
+          line,
+          i === 1
+            ? ''
+            : c.dim,
+        ],
+      ],
+      ...(i === 1
+        ? [
+            [
+              [`   │ `, c.faint],
+              [
+                ' '.repeat(mark[0]) + '~'.repeat(mark[1]),
+                error ? c.err : c.warn,
+              ],
+            ] as Line,
+          ]
+        : []),
     ]),
   ]
 }
@@ -72,15 +121,58 @@ const outputs: Record<typeof props.name, { command: string, busy?: string, lines
     command: 'pnpx @x18n/cli',
     busy: 'Reading 4 resources',
     lines: [
-      [['x18n ', c.bold], ['(my-app)', c.dim]],
-      ['  ', ['4', c.key], ' resources, ', ['137', c.key], ' keys, ', ['162', c.key], ' usages'],
-      [['  ', ''], ['en (source)'.padEnd(12), c.bold], ...bar(100, c.ok), ' ', ['100%', c.ok], ['  137/137', c.dim]],
+      [
+        ['x18n ', c.bold],
+        ['(my-app)', c.dim],
+      ],
+      [
+        '  ',
+        ['4', c.key],
+        ' resources, ',
+        ['137', c.key],
+        ' keys, ',
+        ['162', c.key],
+        ' usages',
+      ],
+      [
+        ['  ', ''],
+        [
+          'en (source)'.padEnd(12),
+          c.bold,
+        ],
+        ...bar(100, c.ok),
+        ' ',
+        ['100%', c.ok],
+        ['  137/137', c.dim],
+      ],
       localeRow('de', 96, 132),
       localeRow('fr', 91, 125),
       localeRow('ja', 100, 137),
-      [['  ', ''], ['✖ 1 error', c.err], '  ', ['⚠ 2 warnings', c.warn]],
+      [
+        ['  ', ''],
+        ['✖ 1 error', c.err],
+        '  ',
+        ['⚠ 2 warnings', c.warn],
+      ],
       [''],
-      [['Commands: ', c.dim], ['check', c.cmd], ', ', ['keys', c.cmd], ', ', ['get', c.cmd], ', ', ['usages', c.cmd], ', ', ['set', c.cmd], ', ', ['rename', c.cmd], ', ', ['fill', c.cmd], ', ', ['ui', c.cmd]],
+      [
+        ['Commands: ', c.dim],
+        ['check', c.cmd],
+        ', ',
+        ['keys', c.cmd],
+        ', ',
+        ['get', c.cmd],
+        ', ',
+        ['usages', c.cmd],
+        ', ',
+        ['set', c.cmd],
+        ', ',
+        ['rename', c.cmd],
+        ', ',
+        ['fill', c.cmd],
+        ', ',
+        ['ui', c.cmd],
+      ],
     ],
   },
   check: {
@@ -99,56 +191,157 @@ const outputs: Record<typeof props.name, { command: string, busy?: string, lines
         '  "app.title": "Welcome back"',
       ], [3, 6]),
       [''],
-      [['✖ 1 error', `${c.err} ${c.bold}`], '  ', ['⚠ 1 warning', `${c.warn} ${c.bold}`], ['  2 files · 96ms', c.dim]],
+      [
+        ['✖ 1 error', `${c.err} ${c.bold}`],
+        '  ',
+        ['⚠ 1 warning', `${c.warn} ${c.bold}`],
+        ['  2 files · 96ms', c.dim],
+      ],
     ],
   },
   get: {
     command: 'pnpx @x18n/cli get app.loading',
     lines: [
-      [['app.loading', c.key]],
-      ['  ', ['en'.padEnd(5), c.bold], ['"Loading the project…"', c.str], ['  src/locales/en.json:4:6', c.dim]],
-      ['  ', ['de'.padEnd(5), c.bold], ['"Projekt wird geladen…"', c.str], ['  src/locales/de.json:5:6', c.dim]],
-      ['  ', ['fr'.padEnd(5), c.bold], ['"Chargement du projet…"', c.str], ['  src/locales/fr.json:5:6', c.dim]],
-      ['  ', ['ja'.padEnd(5), c.bold], ['"プロジェクトを読み込み中…"', c.str], ['  src/locales/ja.json:5:6', c.dim]],
-      [['  ', ''], ['1', c.ok], ' usage'],
-      ['    ', ['src/app.vue:110:15', c.path]],
+      [
+        ['app.loading', c.key],
+      ],
+      [
+        '  ',
+        [
+          'en'.padEnd(5),
+          c.bold,
+        ],
+        ['"Loading the project…"', c.str],
+        ['  src/locales/en.json:4:6', c.dim],
+      ],
+      [
+        '  ',
+        [
+          'de'.padEnd(5),
+          c.bold,
+        ],
+        ['"Projekt wird geladen…"', c.str],
+        ['  src/locales/de.json:5:6', c.dim],
+      ],
+      [
+        '  ',
+        [
+          'fr'.padEnd(5),
+          c.bold,
+        ],
+        ['"Chargement du projet…"', c.str],
+        ['  src/locales/fr.json:5:6', c.dim],
+      ],
+      [
+        '  ',
+        [
+          'ja'.padEnd(5),
+          c.bold,
+        ],
+        ['"プロジェクトを読み込み中…"', c.str],
+        ['  src/locales/ja.json:5:6', c.dim],
+      ],
+      [
+        ['  ', ''],
+        ['1', c.ok],
+        ' usage',
+      ],
+      [
+        '    ',
+        ['src/app.vue:110:15', c.path],
+      ],
     ],
   },
   rename: {
     command: 'pnpx @x18n/cli rename app.loading app.busy --dry-run',
     lines: [
-      [['edit ', c.bold], ['src/locales/de.json', c.path]],
-      [['-     "loading": "Projekt wird geladen…",', c.del]],
-      [['+     "busy": "Projekt wird geladen…",', c.add]],
-      [['edit ', c.bold], ['src/locales/en.json', c.path]],
-      [['-     "loading": "Loading the project…",', c.del]],
-      [['+     "busy": "Loading the project…",', c.add]],
-      [['edit ', c.bold], ['src/app.vue', c.path]],
-      [['- const label = t(\'app.loading\')', c.del]],
-      [['+ const label = t(\'app.busy\')', c.add]],
-      [['Dry run: nothing was written.', c.dim]],
+      [
+        ['edit ', c.bold],
+        ['src/locales/de.json', c.path],
+      ],
+      [
+        ['-     "loading": "Projekt wird geladen…",', c.del],
+      ],
+      [
+        ['+     "busy": "Projekt wird geladen…",', c.add],
+      ],
+      [
+        ['edit ', c.bold],
+        ['src/locales/en.json', c.path],
+      ],
+      [
+        ['-     "loading": "Loading the project…",', c.del],
+      ],
+      [
+        ['+     "busy": "Loading the project…",', c.add],
+      ],
+      [
+        ['edit ', c.bold],
+        ['src/app.vue', c.path],
+      ],
+      [
+        ['- const label = t(\'app.loading\')', c.del],
+      ],
+      [
+        ['+ const label = t(\'app.busy\')', c.add],
+      ],
+      [
+        ['Dry run: nothing was written.', c.dim],
+      ],
     ],
   },
   ui: {
     command: 'pnpx @x18n/cli ui',
     lines: [
-      [['x18n UI at ', c.bold], ['http://localhost:9999/', c.path]],
-      [['  auth code  ', c.dim], ['123456', c.warn]],
-      [['  or open    ', c.dim], ['http://localhost:9999/#devframe_otp=123456', c.path]],
-      [['  MCP        ', c.dim], ['http://localhost:9999/__mcp', c.path]],
-      [['  MCP token  ', c.dim], 'Authorization: Bearer <token>'],
+      [
+        ['x18n UI at ', c.bold],
+        ['http://localhost:9999/', c.path],
+      ],
+      [
+        ['  auth code  ', c.dim],
+        ['123456', c.warn],
+      ],
+      [
+        ['  or open    ', c.dim],
+        ['http://localhost:9999/#devframe_otp=123456', c.path],
+      ],
+      [
+        ['  MCP        ', c.dim],
+        ['http://localhost:9999/__mcp', c.path],
+      ],
+      [
+        ['  MCP token  ', c.dim],
+        'Authorization: Bearer <token>',
+      ],
       [''],
-      [['● ', c.ok], 'Ready. Watching 4 resources.'],
+      [
+        ['● ', c.ok],
+        'Ready. Watching 4 resources.',
+      ],
     ],
   },
   init: {
     command: 'pnpx @x18n/cli init',
     lines: [
-      [['✔ ', c.ok], 'Wrote ', ['x18n.config.ts', c.path]],
-      [['  Detected presets: ', c.dim], ['vue-i18n', c.key]],
-      [['  Locales: ', c.dim], ['en', c.bold], ', de, fr, ja'],
+      [
+        ['✔ ', c.ok],
+        'Wrote ',
+        ['x18n.config.ts', c.path],
+      ],
+      [
+        ['  Detected presets: ', c.dim],
+        ['vue-i18n', c.key],
+      ],
+      [
+        ['  Locales: ', c.dim],
+        ['en', c.bold],
+        ', de, fr, ja',
+      ],
       [''],
-      [['Next: ', c.dim], ['pnpx @x18n/cli check', c.cmd]],
+      [
+        ['Next: ', c.dim],
+        ['pnpx @x18n/cli check', c.cmd],
+      ],
     ],
   },
 }
@@ -219,7 +412,9 @@ onMounted(() => {
 })
 
 function seg(s: Seg): [string, string] {
-  return typeof s === 'string' ? [s, ''] : s
+  return typeof s === 'string'
+    ? [s, '']
+    : s
 }
 </script>
 

@@ -4,7 +4,7 @@ import { createBuiltins } from '../src'
 
 export async function createTestProject(files: Record<string, string>, config: UserConfig = {}): Promise<{ project: Project, files: Map<string, string> }> {
   const host = createMemoryHost(files)
-  const setup = await resolveConfig({ host, config, builtins: createBuiltins() })
+  const setup = await resolveConfig({ host, config, builtins: await createBuiltins() })
   const project = createProject({ host, setup })
   await project.ready
   return { project, files: host.files }

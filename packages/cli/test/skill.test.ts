@@ -6,7 +6,9 @@ const skillsDir = new URL('../../../skills/', import.meta.url)
 
 /** Every markdown file of every skill, as `[url, text]`. */
 async function skillFiles(): Promise<[URL, string][]> {
-  const names = await Array.fromAsync(glob('*/**/*.md', { cwd: fileURLToPath(skillsDir) }))
+  const names = await Array.fromAsync(glob('*/**/*.md', {
+    cwd: fileURLToPath(skillsDir),
+  }))
   return Promise.all(names.map(async (name): Promise<[URL, string]> => {
     const url = new URL(name, skillsDir)
     return [url, await readFile(url, 'utf8')]

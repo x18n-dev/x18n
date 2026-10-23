@@ -18,4 +18,5 @@ export declare const nesting: PlaceholderSyntax;
 export declare const percentBraces: PlaceholderSyntax;
 export declare const positionalBraces: PlaceholderSyntax;
 export declare const printf: PlaceholderSyntax;
+export declare const typedBraces: PlaceholderSyntax;
 // #endregion
