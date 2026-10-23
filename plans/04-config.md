@@ -78,6 +78,8 @@ Plugin options live under the plugin's own key in `PluginConfigs` (see [03-plugi
 
 A root `x18n.config.ts` lists `projects: ['apps/*', 'packages/ui']`. Each match is a project with its own `x18n.config.ts` that inherits the root options and overrides what it sets. This is the same model as Vitest projects. A matched directory without a config file is a project with the root options and its own detection.
 
+Without a config at or above the cwd, every config below it (outside `node_modules`) loads as a root config of its own, shallowest first, so a config that lists `projects` claims the configs of its projects. The LSP resolves each file to the project with the deepest root that holds it.
+
 The CLI, LSP and UI show every project. `x18n check` checks all of them, and `--project <name>` narrows the run. Project names come from the directory name, or from `name` in the project config.
 
 ## Resolution
