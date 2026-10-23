@@ -194,7 +194,7 @@ describe('extraction per preset', () => {
         '---',
         '<h1 title="Main title" class="text-xl">Welcome back, {name}!</h1>',
         '<script>',
-        '  document.body.dataset.ready = \'yes\'',
+        '  document.title = \'Welcome to the page\'',
         '</script>',
         '',
       ].join('\n'),
@@ -207,11 +207,28 @@ describe('extraction per preset', () => {
       '---',
       '<h1 title={t(\'mainTitle\')} class="text-xl">{t(\'welcomeBack\')} {name}!</h1>',
       '<script>',
-      '  document.body.dataset.ready = \'yes\'',
+      '  document.title = \'Welcome to the page\'',
       '</script>',
       '',
     ].join('\n'))
     expect(JSON.parse(files.get('locales/en.json')!)).toEqual({ clickToContinue: 'Click to continue', mainTitle: 'Main title', welcomeBack: 'Welcome back,' })
+  })
+
+  it('puts imports in the first script when a leading --- has no closing line', async () => {
+    const { project, files } = await createTestProject({
+      'src/locales/en.json': json({}),
+      'src/App.vue': '---\n<script setup lang="ts">\nconst label = \'Click to continue\'\n</script>\n',
+    }, { presets: [vueI18n()] })
+    await extractAll(project)
+    expect(files.get('src/App.vue')).toBe([
+      '---',
+      '<script setup lang="ts">',
+      'import { useI18n } from \'vue-i18n\'',
+      'const { t } = useI18n()',
+      'const label = t(\'clickToContinue\')',
+      '</script>',
+      '',
+    ].join('\n'))
   })
 
   it('react-i18next: JSX text through Trans, attributes through i18next.t, template arguments', async () => {

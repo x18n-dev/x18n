@@ -110,7 +110,9 @@ function importEdit(text: string, lines: readonly string[]): TextEdit | undefine
   if (missing.length === 0)
     return undefined
   // A `---` frontmatter holds the server code of a component; a later `<script>` runs in the browser.
-  const script = /^\s*---\r?\n/.exec(text) ?? /<script\b[^>]*>\r?\n?/.exec(text)
+  const open = /^\s*---\r?\n/.exec(text)
+  const frontmatter = open && /^---\s*$/m.test(text.slice(open[0].length)) ? open : undefined
+  const script = frontmatter ?? /<script\b[^>]*>\r?\n?/.exec(text)
   let at = 0
   if (script) {
     at = script.index + script[0].length

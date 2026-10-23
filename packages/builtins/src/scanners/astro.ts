@@ -138,9 +138,7 @@ class AstroTemplate {
     for (; i < text.length; i++) {
       const c = text[i]!
       if (c === '"' || c === '\'') {
-        i = this.after(i + 1, c) - 1
-        while (text[i - 1] === '\\' && i < text.length)
-          i = this.after(i + 1, c) - 1
+        i = this.literal(i, c)
       }
       else if (c === '`') {
         i = this.template(i)
@@ -151,6 +149,9 @@ class AstroTemplate {
       else if (text.startsWith('/*', i)) {
         i = this.after(i, '*/') - 1
       }
+      else if (c === '/' && this.startsOperand(i, previous)) {
+        i = this.literal(i, '/')
+      }
       else if (c === '{') {
         depth++
       }
@@ -159,13 +160,34 @@ class AstroTemplate {
           return i
       }
       // `<` after a value is less-than or a type argument; elsewhere it opens JSX.
-      else if (c === '<' && /[a-z>]/i.test(text[i + 1] ?? '') && (!/[\w$)\]]/.test(previous) || /\breturn\s*$/.test(text.slice(Math.max(0, i - 10), i)))) {
+      else if (c === '<' && /[a-z>]/i.test(text[i + 1] ?? '') && this.startsOperand(i, previous)) {
         i = this.element(i, true) - 1
         previous = '>'
         continue
       }
       if (!/\s/.test(c))
         previous = c
+    }
+    return text.length
+  }
+
+  /** Whether `i` starts a value rather than continuing one: `<` opens JSX and `/` a regex there, after a value they are operators. */
+  startsOperand(i: number, previous: string): boolean {
+    return !/[\w$)\]]/.test(previous) || /\breturn\s*$/.test(this.text.slice(Math.max(0, i - 10), i))
+  }
+
+  /** Index of the `quote` that closes the string or regex literal at `i`, past escapes and regex classes. */
+  literal(i: number, quote: string): number {
+    const { text } = this
+    let inClass = false
+    for (i++; i < text.length; i++) {
+      const c = text[i]
+      if (c === '\\')
+        i++
+      else if (quote === '/' && (c === '[' || c === ']'))
+        inClass = c === '['
+      else if (c === quote && !inClass)
+        return i
     }
     return text.length
   }
@@ -205,10 +227,10 @@ export function astro(): Plugin {
       const usages: UsageCandidate[] = []
       const keySlots: TextRange[] = []
       const hardStrings: HardString[] = []
-      const add = (range: TextRange, filename: string, expression: boolean): void => {
+      const add = (range: TextRange, filename: string, expression: boolean, reportHardStrings: boolean): void => {
         let result: ScanResult
         try {
-          result = scanSource(parse, text.slice(range.start, range.end), { calls: ctx.calls, ignoreCallees: ctx.config.extract.ignoreCallees, textAttributes: ctx.config.extract.attributes, offset: range.start, filename, expression, hardStrings: !expression })
+          result = scanSource(parse, text.slice(range.start, range.end), { calls: ctx.calls, ignoreCallees: ctx.config.extract.ignoreCallees, textAttributes: ctx.config.extract.attributes, offset: range.start, filename, expression, hardStrings: reportHardStrings })
         }
         catch {
           // Code that is not plain TS or JSX, such as HTML comments inside an expression, holds no keys we can read.
@@ -224,15 +246,16 @@ export function astro(): Plugin {
         const close = /^---/gm
         close.lastIndex = open[0].length
         const end = close.exec(text)?.index ?? text.length
-        add({ start: open[0].length, end }, 'frontmatter.ts', false)
+        add({ start: open[0].length, end }, 'frontmatter.ts', false, true)
         templateStart = end + 3
       }
       const template = new AstroTemplate(text, ctx.config.extract.attributes)
       template.markup(templateStart, false)
+      // A replacement in browser code could not reach the frontmatter import, and `is:inline` scripts cannot import.
       for (const range of template.scripts)
-        add(range, 'script.ts', false)
+        add(range, 'script.ts', false, false)
       for (const range of template.expressions)
-        add(range, 'template.tsx', true)
+        add(range, 'template.tsx', true, false)
       hardStrings.push(...template.hardStrings)
       return { usages, keySlots, hardStrings }
     },

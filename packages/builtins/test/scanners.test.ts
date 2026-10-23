@@ -184,6 +184,20 @@ describe('project usages', () => {
     expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['missing', 'client.title'])
   })
 
+  it.each([
+    ['an escaped backslash before the closing quote', '<p>{t(\'a\\\\\')}{t(\'b\')}</p>', ['a\\', 'b']],
+    ['an escaped quote', '<p>{t(\'a\\\'b\')}{t(\'c\')}</p>', ['a\'b', 'c']],
+    ['a regex literal holding a quote', '<p>{x.replace(/[/\']/g, \'\')}{t(\'c\')}</p>', ['c']],
+    ['a division after a value', '<p>{t(\'a\', { n: x / 2 })}{t(\'c\')}</p>', ['a', 'c']],
+    ['an unterminated string ending in a backslash', '<p>{\'ab\\c', []],
+  ])('finds Astro expression keys past %s', { timeout: 2000 }, async (_, template, expected) => {
+    const { project } = await createTestProject({
+      'locales/en.json': json({}),
+      'src/index.astro': template,
+    }, { presets: [i18next()], resources: [{ pattern: 'locales/{locale}.json' }] })
+    expect(project.usages().map(m => m.usage.key)).toEqual(expected)
+  })
+
   it('applies namespaces, key prefixes and derived keys with i18next', async () => {
     const { project } = await createTestProject({
       'locales/en/common.json': json({ save: 'Save', item_one: '1', item_other: 'n' }),
