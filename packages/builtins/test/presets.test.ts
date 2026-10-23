@@ -74,8 +74,10 @@ describe('tier 1 presets', () => {
       'src/App.tsx': [
         `const a = <Localized id="hello" vars={{ name }}><p>Hello</p></Localized>`,
         `function B() { const { l10n } = useLocalization(); return l10n.getString('title') }`,
-        `function C({ getString }) { return getString('bye') }`,
+        `function C(props) { return props.getString('bye') }`,
         `export default withLocalization(C)`,
+        `const getString = (id) => id`,
+        `getString('not-a-key')`,
       ].join('\n'),
     })
     expect(project.explain().presets.find(p => p.name === 'fluent-react')?.reason).toBe('detected')
@@ -84,13 +86,23 @@ describe('tier 1 presets', () => {
     expect(project.analyze().diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:hello')
   })
 
+  it('fluent-react: attributes read through attrs are used', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('@fluent/react'),
+      'src/locales/en.ftl': 'login = Sign in\n    .title = Sign in to your account\n',
+      'src/App.tsx': `export const App = () => <Localized id="login" attrs={{ title: true }}><button title="Sign in">Sign in</button></Localized>\n`,
+    })
+    expect(project.keys()).toEqual(['login', 'login.title'])
+    expect(project.analyze().unused).toEqual([])
+  })
+
   it('fluent-react: extracts JSX text into <Localized>', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('@fluent/react'),
       'src/locales/en.ftl': 'title = Title\n',
-      'src/App.tsx': `export const App = () => <p>Welcome home</p>\nconst label = 'Sign in'\n`,
+      'src/App.tsx': `export function App() {\n  const { l10n } = useLocalization()\n  const label = 'Sign in'\n  return <p>Welcome home</p>\n}\n`,
     })
-    expect(findCandidates(project).map(c => c.replacement)).toEqual(['<Localized id="welcomeHome" />', 'l10n.getString(\'signIn\')'])
+    expect(findCandidates(project).map(c => c.replacement)).toEqual(['l10n.getString(\'signIn\')', '<Localized id="welcomeHome" />'])
   })
 
   it('vscode-extension: package.nls files and %key% references', async () => {

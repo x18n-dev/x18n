@@ -116,9 +116,12 @@ export function fluentReact(): Preset {
         name: 'fluent-react',
         calls: [
           { callee: 'Localized', key: { arg: 0, property: 'id' } },
-          // `useLocalization()` gives `{ l10n }`, `withLocalization` gives a `getString` prop.
-          { callee: ['l10n.getString', 'getString', 'props.getString', 'this.props.getString'] },
+          // `useLocalization()` gives `{ l10n }`, `withLocalization` gives a `getString` prop. A bare
+          // `getString` is left out: a destructured prop can't be told apart from unrelated functions.
+          { callee: ['l10n.getString', 'props.getString', 'this.props.getString'] },
         ],
+        // `<Localized attrs={{ title: true }}>` reads the message's attributes, the keys `{key}.title`.
+        derivedKeys: ['{key}.*'],
         resources: [{ pattern: 'public/locales/{locale}/*.ftl' }, { pattern: 'locales/{locale}.ftl' }, { pattern: 'src/locales/{locale}.ftl' }],
         templates: [
           { template: '<Localized id="{key}" />', kinds: ['jsx-text'], imports: ['import { Localized } from \'@fluent/react\''] },
