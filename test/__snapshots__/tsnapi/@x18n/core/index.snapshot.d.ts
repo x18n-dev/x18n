@@ -34,7 +34,7 @@ export interface CallSpec {
   readonly callee: string | readonly string[];
   readonly kind?: "call" | "selector" | "accessor" | undefined;
   readonly key?: number | ArgSource | undefined;
-  readonly namespace?: ArgSource | undefined;
+  readonly namespace?: ArgSource | string | undefined;
   readonly keyPrefix?: ArgSource | undefined;
   readonly factory?: boolean | undefined;
   readonly returns?: readonly string[] | undefined;
@@ -66,6 +66,7 @@ export interface CheckContext {
   readonly messages: (_?: LocaleCode) => Iterable<Message>;
   readonly message: (_: KeyString, _: LocaleCode) => Message | undefined;
   readonly duplicates: (_: KeyString, _: LocaleCode) => readonly Message[];
+  readonly formOf: (_: KeyString) => PluralForm | undefined;
   readonly usages: () => Iterable<Usage>;
   readonly coverage: () => readonly LocaleCoverage[];
   readonly unused: () => readonly KeyString[];
@@ -309,6 +310,7 @@ export interface LocaleInfo {
   readonly displayName: string | undefined;
   readonly flag: string | undefined;
   readonly pluralCategories: readonly Intl.LDMLPluralRule[];
+  readonly ordinalCategories: readonly Intl.LDMLPluralRule[];
 }
 export interface Location {
   readonly path: string;
@@ -351,6 +353,10 @@ export interface MessageTree {
 export interface NamespaceOptions {
   readonly separator?: string | undefined;
   readonly default?: string | undefined;
+  readonly fallback?: readonly string[] | undefined;
+  readonly byFile?: {
+    readonly [glob: string]: string;
+  } | undefined;
   readonly fromPath?: "dot" | "slash" | "camel" | undefined;
 }
 export interface NodeRange {
@@ -475,6 +481,11 @@ export interface PluginRegistry {
   readonly formatFor: (_: string, _?: string) => Format | undefined;
   readonly formatById: (_: string) => Format | undefined;
   readonly scannersFor: (_: string) => readonly Scanner[];
+}
+export interface PluralForm {
+  readonly type: Intl.PluralRuleType;
+  readonly category: Intl.LDMLPluralRule;
+  readonly keyOf: (_: Intl.LDMLPluralRule) => KeyString;
 }
 export interface Preset {
   readonly name: string;
@@ -672,6 +683,10 @@ export interface ResolvedConfig {
   readonly namespace: {
     readonly separator: string;
     readonly default: string | undefined;
+    readonly fallback: readonly string[];
+    readonly byFile: {
+      readonly [glob: string]: string;
+    };
     readonly fromPath: NamespaceFromPath;
   };
   readonly usage: {

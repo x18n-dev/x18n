@@ -32,7 +32,7 @@ interface Plugin {
   readonly reviewStore?: ReviewStoreFactory
 
   readonly normalizeKey?: (raw: string, ctx: KeyContext) => string | undefined
-  readonly derivedKeys?: readonly DerivedKeyRule[]
+  readonly derivedKeys?: readonly string[]
   readonly transformResource?: ResourceTransform
   readonly translatePrompt?: (draft: PromptDraft, ctx: PromptContext) => void
   /** Display data for a locale code (language name, flag, plural categories). The first plugin that returns a value wins; the built-in lenient parse is last. */
@@ -239,7 +239,7 @@ interface PlaceholderSyntax {
 ### Key hooks
 
 - `normalizeKey(raw, ctx)`: turns the raw key text into canonical form. Example: i18next `ns:a.b` becomes namespace `ns`, path `a.b`; next-translate `ns:a` the same. Replaces i18n-ally `rewriteKeys`.
-- `derivedKeys`: rules like `{key}_plural`, `{key}_one`, `{key}_other`. When `{key}` is used, the derived keys count as used. When a derived key exists, `{key}` resolves.
+- `derivedKeys`: rules like `{key}_plural`, `{key}_*`, `{key}_{plural}`. When `{key}` is used, the derived keys count as used. When a derived key exists, `{key}` resolves. `{plural}` and `{ordinal}` match CLDR categories, so each locale needs the categories of its own language.
 - `transformResource`: `{ read(tree, ctx), write(tree, ctx) }`. Example: Rails removes the top-level locale key on read and adds it back on write.
 
 ## Order and conflicts

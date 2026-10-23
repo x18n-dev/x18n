@@ -68,6 +68,18 @@ describe('every i18n-ally framework is detected and understood', () => {
     expect(project.analyze().unused).toEqual([])
   })
 
+  it('i18next-shopify: each locale needs its own plural categories', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('@shopify/i18next-shopify', 'react-i18next'),
+      'locales/en.json': json({ cart: { items: { one: '{count} item', other: '{count} items' } } }),
+      'locales/ja.json': json({ cart: { items: { other: '{count} 個' } } }),
+      'locales/pl.json': json({ cart: { items: { one: '{count} produkt', other: '{count} produktu' } } }),
+      'src/a.tsx': 'const { t } = useTranslation()\nt(\'cart.items\', { count })',
+    }, { resources: [{ pattern: 'locales/{locale}.json' }] })
+    const missing = Object.fromEntries(project.analyze().coverage.map(c => [c.locale, c.missing]))
+    expect(missing).toEqual({ en: [], ja: [], pl: ['cart.items.few', 'cart.items.many'] })
+  })
+
   it('i18n-tag tagged templates', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('es2015-i18n-tag'),

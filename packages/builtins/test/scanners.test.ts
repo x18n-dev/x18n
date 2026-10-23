@@ -10,6 +10,7 @@ const calls: CallSpec[] = [
   { callee: 'Trans', key: { arg: 0, property: 'i18nKey' } },
   { callee: 'tr', types: ['TFunction'] },
   { callee: 'defineMessages', key: { arg: 0, property: '*.id' } },
+  { callee: 'useSharedTranslation', factory: true, namespace: 'shared' },
 ]
 
 async function scan(code: string, filename = 'a.tsx'): Promise<ScanResult> {
@@ -45,6 +46,30 @@ describe('js scanner', () => {
       'plain|plain|call|false||',
       'typed|typed|call|false||',
     ])
+  })
+
+  it('reads the namespace of a typed translate function from its type argument', async () => {
+    const code = [
+      `interface Props { t: TFunction<'props'> }`,
+      `export type Other = { t: TFunction }`,
+      `function A(t: TFunction<'shared', undefined>) { t('a') }`,
+      `function B(t: TFunction<['first', 'second']>) { t('b') }`,
+      `function C({ t: tr }: { t: TFunction<'inline'> }) { tr('c') }`,
+      `function D({ t }: Props) { t('d') }`,
+      `function E({ t }: Other) { t('e') }`,
+    ].join('\n')
+    expect(keys(await scan(code), code)).toEqual([
+      'a|a|call|false|shared|',
+      'b|b|call|false|first|',
+      'c|c|call|false|inline|',
+      'd|d|call|false|props|',
+      'e|e|call|false||',
+    ])
+  })
+
+  it('gives a hook with a fixed namespace that namespace', async () => {
+    const code = `const { t } = useSharedTranslation(); t('a')`
+    expect(keys(await scan(code), code)).toEqual(['a|a|call|false|shared|'])
   })
 
   it('reads constants, markers, selectors, templates and JSX', async () => {

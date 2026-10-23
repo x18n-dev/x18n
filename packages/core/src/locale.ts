@@ -92,8 +92,10 @@ export function parseLocaleInfo(code: LocaleCode): LocaleInfo {
   const tag = [language, script, region].filter(Boolean).join('-')
   const displayName = language ? safe(() => new Intl.DisplayNames(['en'], { type: 'language' }).of(tag)) : undefined
   // CLDR order; Node versions disagree on the order `resolvedOptions` returns.
-  const found = language ? safe(() => new Intl.PluralRules(tag).resolvedOptions().pluralCategories) : undefined
-  const pluralCategories = found ? pluralOrder.filter(category => found.includes(category)) : ['other' as const]
+  const categories = (type: Intl.PluralRuleType): Intl.LDMLPluralRule[] => {
+    const found = language ? safe(() => new Intl.PluralRules(tag, { type }).resolvedOptions().pluralCategories) : undefined
+    return found ? pluralOrder.filter(category => found.includes(category)) : ['other']
+  }
   // Traditional Chinese is written mostly in Taiwan, Hong Kong and Macau; a bare `zh-Hant` is not China's.
   const flagRegion = region ?? (language === 'zh' && script === 'Hant' ? 'TW' : language ? defaultRegions[language] : undefined)
   return {
@@ -102,7 +104,8 @@ export function parseLocaleInfo(code: LocaleCode): LocaleInfo {
     region,
     displayName,
     flag: flagRegion ? flagOf(flagRegion) : undefined,
-    pluralCategories,
+    pluralCategories: categories('cardinal'),
+    ordinalCategories: categories('ordinal'),
   }
 }
 

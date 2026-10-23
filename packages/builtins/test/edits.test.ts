@@ -177,11 +177,11 @@ describe('rename', () => {
   it('renames derived plural keys with their base', async () => {
     const { project, files } = await createTestProject({
       'package.json': json({ dependencies: { i18next: '*' } }),
-      'locales/en/translation.json': json({ item_one: '1', item_other: 'n' }),
+      'locales/en/translation.json': json({ item_one: '1', item_other: 'n', item_male_other: 'm' }),
       'src/a.ts': `i18next.t('item', { count })`,
     }, { resources: [{ pattern: 'locales/{locale}/{namespace}.json' }] })
     await write(project, [{ type: 'rename', from: 'translation:item', to: 'translation:thing' }])
-    expect(JSON.parse(files.get('locales/en/translation.json')!)).toEqual({ thing_one: '1', thing_other: 'n' })
+    expect(JSON.parse(files.get('locales/en/translation.json')!)).toEqual({ thing_one: '1', thing_other: 'n', thing_male_other: 'm' })
     expect(files.get('src/a.ts')).toBe(`i18next.t('thing', { count })`)
   })
 })
