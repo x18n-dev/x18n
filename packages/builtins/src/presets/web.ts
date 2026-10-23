@@ -299,10 +299,10 @@ export function gravityUiI18n(): Preset {
     plugins: [
       library({
         name: 'gravity-ui-i18n',
-        // A keyset prefixes its keys, so `i18n('page.home', 'title')` reads `page.home.title` both from
+        // A keyset prefixes its keys, so `i18n.i18n('page.home', 'title')` reads `page.home.title` both from
         // `page.home/en.json` and from one `en.json` that holds every keyset.
         calls: [
-          { callee: ['i18n', 'i18n.i18n', 'i18nInstance.i18n'], key: 1, keyPrefix: { arg: 0 } },
+          { callee: ['i18n.i18n', 'i18nInstance.i18n'], key: 1, keyPrefix: { arg: 0 } },
           { callee: ['i18n.keyset', 'i18nInstance.keyset'], factory: true, keyPrefix: { arg: 0 } },
           { callee: ['i18n.bind', 'i18nInstance.i18n.bind'], factory: true, keyPrefix: { arg: 1 } },
         ],

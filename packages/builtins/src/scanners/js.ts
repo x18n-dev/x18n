@@ -8,6 +8,12 @@ interface Binding {
   readonly keyPrefix?: string | undefined
 }
 
+/** The namespace and key prefix a usage carries. */
+interface KeyBase {
+  readonly namespace: string | undefined
+  readonly keyPrefix: string | undefined
+}
+
 /** A value read from call arguments: an AST node, or the props of a JSX element seen as one object argument. */
 type ArgValue = Node | { readonly props: ReadonlyMap<string, Node> }
 
@@ -212,11 +218,10 @@ class FileScan {
 
   /** ---- Usages ---- */
   /** `expression` is the call holding `value`, kept only when the key is the call's own literal. */
-  addKey(value: ArgValue, binding: Binding, namespace: string | undefined, expression?: TextRange, keyPrefix?: string): void {
+  addKey(value: ArgValue, base: KeyBase, expression?: TextRange): void {
     if ('props' in value)
       return
     const node = unwrap(value)
-    const base = { namespace: namespace ?? binding.namespace, keyPrefix: keyPrefix ?? binding.keyPrefix }
     const call = expression ? { expression: this.range(expression) } : {}
     if (isStringLiteral(node)) {
       this.consumed.add(node.start)
@@ -226,7 +231,7 @@ class FileScan {
     }
     if (node.type === 'JSXExpressionContainer') {
       if (node.expression.type !== 'JSXEmptyExpression')
-        this.addKey(node.expression, binding, namespace, undefined, keyPrefix)
+        this.addKey(node.expression, base)
       return
     }
     if (node.type === 'TemplateLiteral') {
@@ -238,8 +243,8 @@ class FileScan {
       return
     }
     if (node.type === 'ConditionalExpression') {
-      this.addKey(node.consequent, binding, namespace, undefined, keyPrefix)
-      this.addKey(node.alternate, binding, namespace, undefined, keyPrefix)
+      this.addKey(node.consequent, base)
+      this.addKey(node.alternate, base)
       return
     }
     if (node.type === 'ArrowFunctionExpression' && node.params[0]?.type === 'Identifier')
@@ -249,11 +254,17 @@ class FileScan {
       this.usages.push({ ...base, raw: constant.value, range: this.range(innerRange(constant)), kind: 'constant', dynamic: false })
       return
     }
+    this.addUnknown(node, base)
+  }
+
+  addUnknown(node: Node, base: KeyBase): void {
+    if (isStringLiteral(node))
+      this.consumed.add(node.start)
     this.usages.push({ ...base, raw: this.text.slice(node.start, node.end), range: this.range({ start: node.start, end: node.end }), kind: 'call', dynamic: 'unknown' })
   }
 
   /** i18next `t($ => $.a.b)`. */
-  addSelector(param: string, body: Node, base: { namespace: string | undefined, keyPrefix: string | undefined }): void {
+  addSelector(param: string, body: Node, base: KeyBase): void {
     const segments: string[] = []
     let node = unwrap(body)
     let end = node.end
@@ -280,12 +291,18 @@ class FileScan {
     for (const binding of bindings) {
       const namespace = this.namespaceArg(args, binding.spec.namespace, 1)
       const keyPrefix = binding.spec.keyPrefix ? this.stringArg(this.argValues(args, binding.spec.keyPrefix, 1)[0]) : undefined
+      const base = { namespace: namespace ?? binding.namespace, keyPrefix: keyPrefix ?? binding.keyPrefix }
       for (const value of this.argValues(args, binding.spec.key, 0)) {
-        // An object is never a key: another spec of the callee reads it (lingui `t({ id })`), or the call
-        // passes params where this spec expects the key (a gravity keyset function `i18n('key', { count })`).
-        if (!('props' in value) && unwrap(value).type === 'ObjectExpression')
+        if ('props' in value)
           continue
-        this.addKey(value, binding, namespace, expression, keyPrefix)
+        // With several specs per callee, only the one whose key position holds a key counts.
+        if (bindings.length > 1 && unwrap(value).type === 'ObjectExpression')
+          continue
+        // Without its prefix argument (`t(getPrefix(), 'title')`) the key would read as another key.
+        if (binding.spec.keyPrefix && keyPrefix === undefined)
+          this.addUnknown(unwrap(value), base)
+        else
+          this.addKey(value, base, expression)
       }
     }
     return bindings.length > 0

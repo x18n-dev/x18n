@@ -101,40 +101,6 @@ describe('every i18n-ally framework is detected and understood', () => {
     expect(project.analyze().diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:hello')
   })
 
-  it('gravity-ui-i18n keyset folders, bound and keyset helpers', async () => {
-    const { project } = await createTestProject({
-      'package.json': pkg('@gravity-ui/i18n', 'react'),
-      'src/i18n-keysets/common/en.json': json({ hello: 'Hello {{name}}', started: 'Started' }),
-      'src/i18n-keysets/common/ru.json': json({ hello: 'Привет' }),
-      'src/i18n-keysets/page.home/en.json': json({ title: 'Home', seconds: { one: '{{count}} second', other: '{{count}} seconds' } }),
-      'src/components/Header/i18n/en.json': json({ label: 'Label' }),
-      'src/App.jsx': [
-        'const i18nCommon = i18n.bind(null, \'common\')',
-        'const t = i18n.keyset(\'Header\')',
-        'i18nCommon(\'hello\', { name }); i18n(\'page.home\', \'title\'); i18n.i18n(\'page.home\', \'seconds\', { count }); t(\'label\')',
-      ].join('\n'),
-    })
-    expect(detected(project)).toEqual(['gravity-ui-i18n'])
-    expect(project.locales).toEqual(['en', 'ru'])
-    expect(project.keys()).toEqual(['Header.label', 'common.hello', 'common.started', 'page.home.seconds.one', 'page.home.seconds.other', 'page.home.title'])
-    expect(usedKeys(project)).toEqual(['common.hello', 'page.home.title', 'page.home.seconds', 'Header.label'])
-    const analysis = project.analyze()
-    expect(analysis.unused).toEqual(['common.started'])
-    expect(analysis.diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:common.hello')
-  })
-
-  it('gravity-ui-i18n with every keyset in one file per locale', async () => {
-    const { project } = await createTestProject({
-      'package.json': pkg('@gravity-ui/i18n'),
-      'src/i18n/en.json': json({ wizard: { 'label_no-access': 'No access' } }),
-      'src/index.js': 'const i18n = new I18N()\nconst keyset = i18n.keyset(\'wizard\')\nkeyset(\'label_no-access\')',
-      // A keyset function named `i18n`: its params are no key.
-      'src/Button.js': 'import i18n from \'./i18n\'\ni18n(\'label\', { count })',
-    })
-    expect(usedKeys(project)).toEqual(['wizard.label_no-access'])
-    expect(project.analyze().unused).toEqual([])
-  })
-
   it('polyglot, globalize, i18n-js and ember-intl', async () => {
     const cases: [string, string, string, string][] = [
       ['node-polyglot', 'src/a.js', 'polyglot.t(\'a.b\')', 'polyglot'],

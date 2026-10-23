@@ -1,3 +1,4 @@
+import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
 import { createTestProject, json } from './_utils'
 
@@ -298,5 +299,53 @@ describe('placeholder-mismatch', () => {
       '"days" in fr has different placeholders than en: unexpected v.',
       '"hi" in fr has different placeholders than en: missing name.',
     ])
+  })
+})
+
+describe('gravity-ui-i18n', () => {
+  const keys = (project: Project): (string | undefined)[] => project.usages().map(m => m.usage.key)
+
+  it('reads keyset folders, bound and keyset helpers', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('@gravity-ui/i18n', 'react'),
+      'src/i18n-keysets/common/en.json': json({ hello: 'Hello {{name}}', started: 'Started' }),
+      'src/i18n-keysets/common/ru.json': json({ hello: 'Привет' }),
+      'src/i18n-keysets/page.home/en.json': json({ title: 'Home', seconds: { one: '{{count}} second', other: '{{count}} seconds' } }),
+      'src/components/Header/i18n/en.json': json({ label: 'Label' }),
+      'src/App.jsx': [
+        'const i18nCommon = i18n.bind(null, \'common\')',
+        'const t = i18n.keyset(\'Header\')',
+        'i18nCommon(\'hello\', { name }); i18n.i18n(\'page.home\', \'title\'); i18nInstance.i18n(\'page.home\', \'seconds\', { count }); t(\'label\')',
+      ].join('\n'),
+    })
+    expect(project.explain().presets.filter(p => p.reason === 'detected').map(p => p.name)).toContain('gravity-ui-i18n')
+    expect(project.locales).toEqual(['en', 'ru'])
+    expect(project.keys()).toEqual(['Header.label', 'common.hello', 'common.started', 'page.home.seconds.one', 'page.home.seconds.other', 'page.home.title'])
+    expect(keys(project)).toEqual(['common.hello', 'page.home.title', 'page.home.seconds', 'Header.label'])
+    const analysis = project.analyze()
+    expect(analysis.unused).toEqual(['common.started'])
+    expect(analysis.diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:common.hello')
+  })
+
+  it('reads every keyset from one file per locale', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('@gravity-ui/i18n'),
+      'src/i18n/en.json': json({ wizard: { 'label_no-access': 'No access' }, Button: { label: 'Label' } }),
+      'src/index.js': 'const i18n = new I18N()\nconst keyset = i18n.keyset(\'wizard\')\nkeyset(\'label_no-access\')',
+      // A module-level keyset function named `i18n` takes the key first.
+      'src/Button.js': 'const i18n = i18nInstance.keyset(\'Button\')\ni18n(\'label\', \'x\')',
+    })
+    expect(keys(project)).toEqual(['Button.label', 'wizard.label_no-access'])
+    expect(project.analyze().unused).toEqual([])
+  })
+
+  it('leaves a key dynamic when its keyset is no literal', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('@gravity-ui/i18n'),
+      'src/i18n/en.json': json({ page: { title: 'Title' } }),
+      'src/index.js': 'i18n.i18n(getKeyset(), \'title\'); i18n.i18n(`page`, \'title\')',
+    })
+    expect(project.usages().map(m => [m.usage.key, m.usage.dynamic])).toEqual([[undefined, 'unknown'], [undefined, 'unknown']])
+    expect(project.analyze().undefinedUsages).toEqual([])
   })
 })
