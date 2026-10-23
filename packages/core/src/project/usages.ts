@@ -4,7 +4,7 @@ import type { KeyContext, PluralForm, Scope, UsageCandidate } from '../types/plu
 import { joinKey, pathMatcher } from '../keys'
 
 export interface UsageResolver {
-  /** `has` tells whether a key exists, for the fallback namespaces. */
+  /** `has` tells whether a key exists, for optional key prefixes and the fallback namespaces. */
   readonly resolve: (candidate: UsageCandidate, scopes: readonly Scope[], path: string, scanner: string, has: (key: KeyString) => boolean) => Usage
 }
 
@@ -41,7 +41,7 @@ export function createUsageResolver(
         }
       }
       const scopeNamespace = candidate.namespace ?? scope?.namespace ?? byFile.find(rule => rule.matches(path))?.namespace
-      const scopePrefix = candidate.keyPrefix ?? scope?.keyPrefix
+      let scopePrefix = candidate.keyPrefix ?? scope?.keyPrefix
       let namespace: string | undefined
       let explicit = false
       if (namespaced) {
@@ -57,9 +57,17 @@ export function createUsageResolver(
       }
       // An explicit namespace (`t('common:save')`) leaves the scope's key prefix out.
       if (scopePrefix && !explicit) {
-        text = text
+        const prefixed = text
           ? `${scopePrefix}.${text}`
           : scopePrefix
+        // A prefix usage (`items.${id}`) ends in an empty segment, so its parent key decides.
+        const lookup = candidate.dynamic === 'prefix'
+          ? prefixed.replace(/\.$/, '')
+          : prefixed
+        if (candidate.keyPrefix || !scope?.optionalPrefix || has(joinKey(namespace, lookup.split('.'))))
+          text = prefixed
+        else
+          scopePrefix = undefined
       }
       const keyPath = text === ''
         ? []

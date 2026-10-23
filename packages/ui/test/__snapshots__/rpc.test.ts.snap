@@ -1077,6 +1077,10 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "nuxt-i18n-micro",
+          "reason": "not-detected",
+        },
+        {
           "name": "vue-i18n",
           "reason": "detected",
         },
@@ -1085,11 +1089,19 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "fluent-react",
+          "reason": "not-detected",
+        },
+        {
           "name": "i18next-shopify",
           "reason": "not-detected",
         },
         {
           "name": "react-i18next",
+          "reason": "not-detected",
+        },
+        {
+          "name": "svelte-i18next",
           "reason": "not-detected",
         },
         {
@@ -1210,6 +1222,18 @@ exports[`rpc functions > explains the project 1`] = `
         },
         {
           "name": "flutter-translate",
+          "reason": "not-detected",
+        },
+        {
+          "name": "python-gettext",
+          "reason": "not-detected",
+        },
+        {
+          "name": "i18nice",
+          "reason": "not-detected",
+        },
+        {
+          "name": "cargo-i18n",
           "reason": "not-detected",
         },
         {

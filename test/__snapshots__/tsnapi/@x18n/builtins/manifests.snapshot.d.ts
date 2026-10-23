@@ -6,8 +6,11 @@ export declare function manifests(): Plugin;
 // #endregion
 
 // #region Variables
+export declare const cargoToml: ManifestReader;
 export declare const composerJson: ManifestReader;
 export declare const gemfile: ManifestReader;
 export declare const packageJson: ManifestReader;
 export declare const pubspecYaml: ManifestReader;
+export declare const pyprojectToml: ManifestReader;
+export declare const requirementsTxt: ManifestReader;
 // #endregion
