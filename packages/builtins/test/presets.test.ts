@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { findCandidates } from '../src/extractors'
 import { createTestProject, json } from './_utils'
 
 const pkg = (...deps: string[]): string => json({ dependencies: Object.fromEntries(deps.map(dep => [dep, '*'])) })
@@ -62,6 +63,34 @@ describe('tier 1 presets', () => {
       'src/App.svelte': `<h1>{m.hello_world({ name })}</h1>\n<p>{m['a.b']()}</p>`,
     })
     expect(project.usages().map(m => m.usage.key)).toEqual(['hello_world', 'a.b'])
+  })
+
+  it('fluent-react: <Localized>, useLocalization and withLocalization', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('@fluent/react', 'react'),
+      'public/locales/en/main.ftl': 'hello = Hello { $name }\ntitle = Title\n',
+      'public/locales/en/extra.ftl': 'bye = Bye\n',
+      'public/locales/de/main.ftl': 'hello = Hallo { $who }\n',
+      'src/App.tsx': [
+        `const a = <Localized id="hello" vars={{ name }}><p>Hello</p></Localized>`,
+        `function B() { const { l10n } = useLocalization(); return l10n.getString('title') }`,
+        `function C({ getString }) { return getString('bye') }`,
+        `export default withLocalization(C)`,
+      ].join('\n'),
+    })
+    expect(project.explain().presets.find(p => p.name === 'fluent-react')?.reason).toBe('detected')
+    expect(project.keys()).toEqual(['bye', 'hello', 'title'])
+    expect(project.usages().map(m => m.usage.key)).toEqual(['hello', 'title', 'bye'])
+    expect(project.analyze().diagnostics.map(d => `${d.code}:${d.key}`)).toContain('placeholder-mismatch:hello')
+  })
+
+  it('fluent-react: extracts JSX text into <Localized>', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('@fluent/react'),
+      'src/locales/en.ftl': 'title = Title\n',
+      'src/App.tsx': `export const App = () => <p>Welcome home</p>\nconst label = 'Sign in'\n`,
+    })
+    expect(findCandidates(project).map(c => c.replacement)).toEqual(['<Localized id="welcomeHome" />', 'l10n.getString(\'signIn\')'])
   })
 
   it('vscode-extension: package.nls files and %key% references', async () => {

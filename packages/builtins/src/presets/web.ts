@@ -107,6 +107,30 @@ export function fluentVue(): Preset {
   }
 }
 
+export function fluentReact(): Preset {
+  return {
+    name: 'fluent-react',
+    detect: dependsOn(['@fluent/react']),
+    plugins: [
+      library({
+        name: 'fluent-react',
+        calls: [
+          { callee: 'Localized', key: { arg: 0, property: 'id' } },
+          // `useLocalization()` gives `{ l10n }`, `withLocalization` gives a `getString` prop.
+          { callee: ['l10n.getString', 'getString', 'props.getString', 'this.props.getString'] },
+        ],
+        resources: [{ pattern: 'public/locales/{locale}/*.ftl' }, { pattern: 'locales/{locale}.ftl' }, { pattern: 'src/locales/{locale}.ftl' }],
+        templates: [
+          { template: '<Localized id="{key}" />', kinds: ['jsx-text'], imports: ['import { Localized } from \'@fluent/react\''] },
+          { template: '{attr}={l10n.getString(\'{key}\'{args})}', kinds: ['jsx-attribute'] },
+          { template: 'l10n.getString(\'{key}\'{args})', kinds: ['js-string', 'js-template'] },
+        ],
+      }),
+      placeholders(fluent),
+    ],
+  }
+}
+
 export function polyglot(): Preset {
   return {
     name: 'polyglot',

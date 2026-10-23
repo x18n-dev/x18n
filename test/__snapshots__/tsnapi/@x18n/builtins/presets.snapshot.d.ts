@@ -4,6 +4,7 @@
 // #region Functions
 export declare function chromeExtension(): Preset;
 export declare function emberIntl(): Preset;
+export declare function fluentReact(): Preset;
 export declare function fluentVue(): Preset;
 export declare function flutter(): Preset;
 export declare function general(): Preset;

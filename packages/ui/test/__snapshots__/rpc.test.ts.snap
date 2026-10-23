@@ -1084,6 +1084,10 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "fluent-react",
+          "reason": "not-detected",
+        },
+        {
           "name": "i18next-shopify",
           "reason": "not-detected",
         },
