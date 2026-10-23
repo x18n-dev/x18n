@@ -1,4 +1,5 @@
 import type { PresetEntry } from '@x18n/core'
+import cargoI18n from './cargo-i18n/entry'
 import chromeExtension from './chrome-extension/entry'
 import easyLocalization from './easy-localization/entry'
 import emberIntl from './ember-intl/entry'
@@ -11,6 +12,7 @@ import i18nJs from './i18n-js/entry'
 import i18nTag from './i18n-tag/entry'
 import i18nextShopify from './i18next-shopify/entry'
 import i18next from './i18next/entry'
+import i18nice from './i18nice/entry'
 import jekyll from './jekyll/entry'
 import laravelVueI18n from './laravel-vue-i18n/entry'
 import laravel from './laravel/entry'
@@ -25,11 +27,13 @@ import paraglide from './paraglide/entry'
 import phpGettext from './php-gettext/entry'
 import phpJoomla from './php-joomla/entry'
 import polyglot from './polyglot/entry'
+import pythonGettext from './python-gettext/entry'
 import reactI18next from './react-i18next/entry'
 import reactIntl from './react-intl/entry'
 import rubyRails from './ruby-rails/entry'
 import solidPrimitivesI18n from './solid-primitives-i18n/entry'
 import svelteI18n from './svelte-i18n/entry'
+import svelteI18next from './svelte-i18next/entry'
 import transloco from './transloco/entry'
 import typesafeI18n from './typesafe-i18n/entry'
 import ui5 from './ui5/entry'
@@ -41,7 +45,7 @@ import vueI18n from './vue-i18n/entry'
  * A preset is a folder. `<name>/entry.ts` holds its detection and a `load` for `<name>/index.ts`,
  * the preset itself; it is cheap and always loaded, while the preset is imported only when detection passes
  * or the config lists it.
- * Presets that share plugins (react-i18next and i18next) apply them once.
+ * Presets that share plugins (react-i18next, svelte-i18next and i18next) apply them once.
  */
 export const presets: { readonly [name: string]: PresetEntry } = {
   'nuxt-i18n': nuxtI18n,
@@ -50,6 +54,7 @@ export const presets: { readonly [name: string]: PresetEntry } = {
   'fluent-vue': fluentVue,
   'i18next-shopify': i18nextShopify,
   'react-i18next': reactI18next,
+  'svelte-i18next': svelteI18next,
   'next-translate': nextTranslate,
   'next-international': nextInternational,
   'i18next': i18next,
@@ -80,5 +85,8 @@ export const presets: { readonly [name: string]: PresetEntry } = {
   'flutter': flutter,
   'easy-localization': easyLocalization,
   'flutter-translate': flutterTranslate,
+  'python-gettext': pythonGettext,
+  'i18nice': i18nice,
+  'cargo-i18n': cargoI18n,
   'general': general,
 }

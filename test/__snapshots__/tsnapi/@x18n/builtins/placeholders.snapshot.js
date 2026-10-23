@@ -18,5 +18,6 @@ export var nesting /* const */
 export var percentBraces /* const */
 export var positionalBraces /* const */
 export var printf /* const */
+export var pythonPercent /* const */
 export var typedBraces /* const */
 // #endregion

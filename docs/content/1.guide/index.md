@@ -37,7 +37,7 @@ x18n knows no i18n library and no file format by itself. Plugins add that knowle
 
 - Vue: [vue-i18n](/presets/vue-i18n), [@nuxtjs/i18n](/presets/nuxt-i18n), [Nuxt I18n Micro](/presets/nuxt-i18n-micro), [fluent-vue](/presets/fluent-vue) and [laravel-vue-i18n](/presets/laravel-vue-i18n)
 - React and Next.js: [i18next](/presets/i18next), [react-i18next](/presets/react-i18next), [i18next-shopify](/presets/i18next-shopify), [next-intl](/presets/next-intl), [next-translate](/presets/next-translate), [next-international](/presets/next-international), [react-intl](/presets/react-intl) and [Lingui](/presets/lingui)
-- Svelte: [svelte-i18n and sveltekit-i18n](/presets/svelte-i18n)
+- Svelte: [svelte-i18n and sveltekit-i18n](/presets/svelte-i18n) and [svelte-i18next](/presets/svelte-i18next)
 - Solid: [@solid-primitives/i18n](/presets/solid-primitives-i18n)
 - Paraglide JS: [Paraglide](/presets/paraglide)
 - typesafe-i18n: [typesafe-i18n](/presets/typesafe-i18n)
@@ -47,6 +47,8 @@ x18n knows no i18n library and no file format by itself. Plugins add that knowle
 - PHP: [Laravel](/presets/laravel), [Joomla](/presets/php-joomla) and [gettext](/presets/php-gettext)
 - Ruby: [Rails](/presets/ruby-rails) and [Jekyll](/presets/jekyll)
 - Dart: [flutter_i18n](/presets/flutter), [easy_localization](/presets/easy-localization) and [flutter_translate](/presets/flutter-translate)
+- Python: [gettext](/presets/python-gettext) (Django, Flask-Babel, Babel) and [i18nice](/presets/i18nice) (also python-i18n)
+- Rust: [cargo-i18n](/presets/cargo-i18n) (Fluent)
 
 The built-in formats read JSON, JSONC, JSON5, YAML, gettext PO, Java properties, Fluent FTL, INI, PHP arrays and static JS or TS modules. They also read Vue `<i18n>` and `<fluent>` blocks. For a library or format that x18n does not support, [write a plugin](/plugins) in YAML or TypeScript.
 

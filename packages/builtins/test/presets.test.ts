@@ -131,6 +131,49 @@ describe('tier 1 presets', () => {
     ])
   })
 
+  it('cargo-i18n: Cargo.toml, i18n.toml and fl! usages', async () => {
+    const { project } = await createTestProject({
+      'Cargo.toml': '[package]\nname = "app"\n\n[dependencies]\ni18n-embed = { version = "0.16", features = [\n  "fluent-system",\n] }\nrust-embed = "8"\n\n[dependencies.i18n-embed-fl]\nversion = "0.10"\n',
+      'i18n.toml': 'fallback_language = "en-GB"\n\n[fluent]\nassets_dir = "./locales"\n',
+      'locales/en-GB/app.ftl': 'hello-arg = Hello { $name }!\nlogin =\n    .title = Log in\nunused = Unused\n',
+      'locales/de/app.ftl': 'hello-arg = Hallo { $user }!\n',
+      'src/main.rs': 'fl!(LANGUAGE_LOADER, "hello-arg", name = "Bob");\nfl!(crate::loader(), "login", "title");\nfl!("missing-id");\n',
+    })
+    expect(project.explain().presets.find(p => p.name === 'cargo-i18n')?.reason).toBe('detected')
+    expect(project.sourceLocale).toBe('en-GB')
+    expect(project.locales).toEqual(['en-GB', 'de'])
+    expect(project.keys()).toEqual(['hello-arg', 'login.title', 'unused'])
+    expect(project.usages().map(m => m.usage.key)).toEqual(['hello-arg', 'login', 'missing-id'])
+    const report = project.analyze()
+    expect(report.unused).toEqual(['unused'])
+    expect(report.diagnostics.map(d => `${d.code}:${d.key}`)).toEqual(expect.arrayContaining(['placeholder-mismatch:hello-arg', 'missing-key:missing-id']))
+    expect(report.diagnostics.map(d => `${d.code}:${d.key}`)).not.toContain('missing-key:login')
+  })
+
+  it('cargo-i18n: workspace dependencies and the default i18n folder', async () => {
+    const { project } = await createTestProject({
+      'Cargo.toml': '[workspace]\nmembers = ["app"]\n\n[workspace.dependencies]\n"i18n-embed-fl" = "0.10"\n',
+      'i18n/en/app.ftl': 'title = App\n',
+    })
+    expect(project.explain().presets.find(p => p.name === 'cargo-i18n')?.reason).toBe('detected')
+    expect(project.keys()).toEqual(['title'])
+  })
+
+  it.each([
+    ['a dotted key', '[dependencies]\ni18n-embed-fl.workspace = true\n'],
+    ['a quoted dotted key', '[dependencies]\n"i18n-embed".version = "0.16"\n'],
+    ['build-dependencies', '[build-dependencies]\ni18n-embed = "0.16"\n'],
+    ['target build-dependencies', '[target.\'cfg(unix)\'.build-dependencies]\ni18n-embed-fl = "0.10"\n'],
+  ])('cargo-i18n: detected from %s', async (_, cargo) => {
+    const { project } = await createTestProject({ 'Cargo.toml': `[package]\nname = "app"\n\n${cargo}` })
+    expect(project.explain().presets.find(p => p.name === 'cargo-i18n')?.reason).toBe('detected')
+  })
+
+  it('cargo-i18n: a renamed dependency reports its alias', async () => {
+    const { project } = await createTestProject({ 'Cargo.toml': '[dependencies]\nfl = { package = "i18n-embed-fl", version = "0.10" }\n' })
+    expect(project.explain().presets.find(p => p.name === 'cargo-i18n')?.reason).not.toBe('detected')
+  })
+
   it('vscode-extension: package.nls files and %key% references', async () => {
     const { project } = await createTestProject({
       'package.json': json({
@@ -311,6 +354,48 @@ describe('tier 1 presets', () => {
       'src/a.ts': `i18next.t('apple', { count })`,
     })
     expect(project.lookup('translation:apple', 'de')?.value).toBe('ein Apfel')
+  })
+})
+
+describe('tier 2 presets', () => {
+  it('svelte-i18next: $i18n.t in markup and script, with i18next keys', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('svelte-i18next', 'i18next', 'svelte'),
+      'locales/en/translation.json': json({
+        title: 'T',
+        greet: 'Hi {{name}}',
+        apple_one: 'apple',
+        apple_other: 'apples',
+        unused: 'U',
+      }),
+      'locales/en/errors.json': json({ notFound: 'Not found' }),
+      'src/routes/+page.svelte': [
+        '<script>',
+        '  import { getContext } from \'svelte\'',
+        '  const i18n = getContext("i18n")',
+        '  const label = $i18n.t(\'greet\', { name: \'Ada\' })',
+        '</script>',
+        '<h1 title={$i18n.t(\'errors:notFound\')}>{$i18n.t(\'title\')}</h1>',
+        '<p>{$i18n.t(\'apple\', { count: 2 })} {$i18n.t(\'notFound\', { ns: \'errors\' })} {$i18n.t(\'missing\')}</p>',
+      ].join('\n'),
+    }, {
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+    })
+    const detected = project.explain().presets.filter(p => p.reason === 'detected').map(p => p.name)
+    expect(detected).toEqual(['svelte-i18next', 'i18next', 'general'])
+    expect(project.usages().map(m => m.usage.key)).toEqual([
+      'translation:greet',
+      'errors:notFound',
+      'translation:title',
+      'translation:apple',
+      'errors:notFound',
+      'translation:missing',
+    ])
+    const analysis = project.analyze()
+    expect(analysis.unused).toEqual(['translation:unused'])
+    expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['translation:missing'])
   })
 })
 
