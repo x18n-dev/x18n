@@ -42,11 +42,14 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | [`flutter`](/presets/flutter) | flutter_i18n | `flutter_i18n` in `pubspec.yaml` |
 | [`easy-localization`](/presets/easy-localization) | easy_localization | `easy_localization` in `pubspec.yaml` |
 | [`flutter-translate`](/presets/flutter-translate) | flutter_translate | `flutter_translate` in `pubspec.yaml` |
+| [`python-gettext`](/presets/python-gettext) | gettext in Python: Django, Flask-Babel, Babel | `django`, `flask-babel` in `pyproject.toml` or `requirements.txt` |
+| [`i18nice`](/presets/i18nice) | i18nice, python-i18n | `i18nice`, `python-i18n` in `pyproject.toml` or `requirements.txt` |
+| [`cargo-i18n`](/presets/cargo-i18n) | cargo-i18n (Fluent) | `i18n-embed-fl`, `i18n-embed` in `Cargo.toml` |
 | [`general`](/presets/general) | none | always |
 
 ## Detection
 
-With the default `presets: 'auto'`, x18n tests each preset in the order of the table. Most presets apply when the project depends on one of the listed packages. x18n reads the dependencies, dev dependencies and peer dependencies in `package.json`, and the dependencies in `composer.json`, `pubspec.yaml` and `Gemfile`. The manifests in the parent directories, up to the git root, count too.
+With the default `presets: 'auto'`, x18n tests each preset in the order of the table. Most presets apply when the project depends on one of the listed packages. x18n reads the dependencies, dev dependencies and peer dependencies in `package.json`, the dependencies in `composer.json`, `pubspec.yaml`, `Gemfile` and `Cargo.toml`, and the Python requirements in `pyproject.toml` (`[project]`, `[project.optional-dependencies]`, `[dependency-groups]` and the Poetry dependency tables) and `requirements.txt`. Python package names compare in their normalized form, so `Flask_Babel` is `flask-babel`. The manifests in the parent directories, up to the git root, count too.
 
 More than one preset can apply. Some presets include the plugins of another preset: `react-i18next` and `svelte-i18next` include everything of `i18next`, and `i18next-shopify` includes everything of `react-i18next`. When two applied presets share a plugin, x18n adds that plugin one time.
 
@@ -78,7 +81,7 @@ presets: [vue-i18n, general]
 
 ::
 
-In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `svelteI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `typesafeI18n`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravelVueI18n`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter`, `easyLocalization`, `flutterTranslate` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
+In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `svelteI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `typesafeI18n`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravelVueI18n`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter`, `easyLocalization`, `flutterTranslate`, `pythonGettext`, `i18nice`, `cargoI18n` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
 
 ## What a preset adds
 
@@ -113,8 +116,9 @@ A placeholder syntax tells x18n how placeholders look in messages. The [`placeho
 | nesting | `$t(key)` | i18next, react-i18next, i18next-shopify |
 | ICU | `{name}`, `{count, plural, one {# item} other {# items}}` | next-intl, react-intl, svelte-i18n, lingui, ember-intl, globalize |
 | fluent | `{ $name }` | fluent-vue |
-| percent braces | `%{name}` | polyglot, i18n-js, ruby-rails |
+| percent braces | `%{name}` | polyglot, i18n-js, ruby-rails, i18nice |
 | printf | `%s`, `%d`, `%1$s` | php-joomla, php-gettext |
+| Python percent | `%(name)s`, `%s`, `%d` | python-gettext |
 | colon | `:name` | laravel |
 | dollars | `$name$` | chrome-extension |
 
