@@ -1,6 +1,6 @@
 import type { ResolvedConfig } from '../types/config'
-import type { KeyString, TextRange, Usage } from '../types/model'
-import type { KeyContext, Scope, UsageCandidate } from '../types/plugin'
+import type { KeyString, LocaleInfo, TextRange, Usage } from '../types/model'
+import type { KeyContext, PluralForm, Scope, UsageCandidate } from '../types/plugin'
 import { joinKey } from '../keys'
 
 export interface UsageResolver {
@@ -101,30 +101,70 @@ export function suppressedRanges(text: string): TextRange[] {
   return ranges
 }
 
+/** The plural categories of a locale's language: Japanese has only `other`. */
+export function categoriesOf(info: LocaleInfo, type: Intl.PluralRuleType): readonly Intl.LDMLPluralRule[] {
+  return type === 'ordinal' ? info.ordinalCategories : info.pluralCategories
+}
+
+export interface DerivedKeys {
+  /** Base keys of a key, nearest first. Suffixes stack, so `friend_male_one` derives from `friend_male` and `friend`. */
+  readonly basesOf: (key: KeyString) => KeyString[]
+  readonly formOf: (key: KeyString) => PluralForm | undefined
+}
+
+const tokens = /(\{key\}|\{plural\}|\{ordinal\}|\*)/
+const categories: readonly Intl.LDMLPluralRule[] = ['zero', 'one', 'two', 'few', 'many', 'other']
+
 /**
- * Compiles derived-key rules (`{key}_plural`, `{key}_*`) into a function from a key to its base keys,
- * nearest first. Suffixes stack, so `friend_male_one` (context, then plural) derives from `friend_male` and `friend`.
+ * Compiles derived-key rules (`{key}_plural`, `{key}_*`, `{key}_{plural}`). `*` is any key segment;
+ * `{plural}` and `{ordinal}` are CLDR plural categories, which each locale needs its own set of.
  */
-export function derivedBases(rules: readonly string[]): (key: KeyString) => KeyString[] {
-  const regexes = rules.map((rule) => {
-    const source = rule
-      .split('{key}')
-      .map(part => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^.:]+'))
-      .join('(.+)')
-    return new RegExp(`^${source}$`)
+export function derivedKeys(rules: readonly string[]): DerivedKeys {
+  const compiled = rules.map((rule) => {
+    const parts = rule.split(tokens)
+    const type: Intl.PluralRuleType | undefined = parts.includes('{ordinal}') ? 'ordinal' : parts.includes('{plural}') ? 'cardinal' : undefined
+    const source = parts.map((part) => {
+      if (part === '{key}')
+        return '(?<key>.+)'
+      if (part === '{plural}' || part === '{ordinal}')
+        return `(?<category>${categories.join('|')})`
+      if (part === '*')
+        return '[^.:]+'
+      return part.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    }).join('')
+    return { type, re: new RegExp(`^${source}$`, 'd') }
   })
   const baseOf = (key: KeyString): KeyString | undefined => {
-    for (const re of regexes) {
-      const match = re.exec(key)
-      if (match?.[1])
-        return match[1]
+    for (const { re } of compiled) {
+      const base = re.exec(key)?.groups?.key
+      if (base)
+        return base
     }
     return undefined
   }
-  return (key) => {
-    const bases: KeyString[] = []
-    for (let base = baseOf(key); base !== undefined; base = baseOf(base))
-      bases.push(base)
-    return bases
+  return {
+    basesOf(key) {
+      const bases: KeyString[] = []
+      for (let base = baseOf(key); base !== undefined; base = baseOf(base))
+        bases.push(base)
+      return bases
+    },
+    formOf(key) {
+      let best: (PluralForm & { readonly base: string }) | undefined
+      for (const { type, re } of compiled) {
+        const match = type && re.exec(key)
+        if (!type || !match)
+          continue
+        const base = match.groups?.key
+        const category = categories.find(c => c === match.groups?.category)
+        const at = match.indices?.groups?.category
+        // The rule that takes the longest suffix wins: `place_ordinal_one` is an ordinal of `place`.
+        if (!base || !category || !at || (best && best.base.length <= base.length))
+          continue
+        const [start, end] = at
+        best = { base, type, category, keyOf: other => `${key.slice(0, start)}${other}${key.slice(end)}` }
+      }
+      return best
+    },
   }
 }

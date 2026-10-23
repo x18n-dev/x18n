@@ -97,7 +97,7 @@ export interface UsageOptions {
   readonly ignoreCallees?: readonly string[] | undefined
   /** Keys (globs) that count as used, for example keys built at runtime. */
   readonly keysInUse?: readonly string[] | undefined
-  /** Rules like `{key}_plural`: when `{key}` is used the derived keys count as used. */
+  /** Rules like `{key}_plural`: when `{key}` is used the derived keys count as used. Rules apply repeatedly, so with `{key}_*` the key `a_b_c` derives from both `a_b` and `a`. `*` matches one key segment. `{plural}` and `{ordinal}` match a plural or ordinal category (`one`, `few`, `other`): each locale then needs the categories of its own language, and categories the language lacks are optional. */
   readonly derivedKeys?: readonly string[] | undefined
 }
 

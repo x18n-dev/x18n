@@ -116,6 +116,41 @@ describe('tier 1 presets', () => {
     expect(project.lookup('translation:friend', 'en')?.value).toBe('friends')
     expect(project.lookup('translation:place', 'en')?.value).toBe('{{count}}th')
   })
+
+  it('i18next: each locale needs the plural categories of its own language', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('i18next'),
+      'locales/en/translation.json': json({ apple_zero: 'no apples', apple_one: 'an apple', apple_other: 'apples', place_ordinal_one: '1st', place_ordinal_other: 'nth' }),
+      'locales/ja/translation.json': json({ apple_other: 'りんご', place_ordinal_other: '番目' }),
+      'locales/ru/translation.json': json({ apple_one: 'яблоко', apple_other: 'яблока', place_ordinal_other: '-й' }),
+      'src/a.ts': `i18next.t('apple', { count }); i18next.t('place', { count, ordinal: true })`,
+    })
+    const missing = Object.fromEntries(project.analyze().coverage.map(c => [c.locale, c.missing]))
+    // English has no `zero` category: `apple_zero` is optional. English ordinals have `two` and `few`.
+    expect(missing).toEqual({
+      en: ['translation:place_ordinal_few', 'translation:place_ordinal_two'],
+      ja: [],
+      ru: ['translation:apple_few', 'translation:apple_many'],
+    })
+    expect(project.get('translation:apple_one')?.missing).toEqual([])
+    expect(project.lookup('translation:apple', 'ja')?.value).toBe('りんご')
+
+    const diagnostic = project.analyze().diagnostics.find(d => d.code === 'missing-translation' && d.key === 'translation:apple_few')!
+    expect(diagnostic.location?.path).toBe('locales/en/translation.json')
+    const copy = diagnostic.fixes.find(fix => fix.title === 'Copy the source value')!
+    await project.apply(project.plan(copy.ops))
+    expect(project.message('translation:apple_few', 'ru')?.value).toBe('apples')
+  })
+
+  it('i18next: a locale with one form only shows it', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('i18next'),
+      'locales/en/translation.json': json({ apple_one: 'an apple', apple_other: 'apples' }),
+      'locales/de/translation.json': json({ apple_one: 'ein Apfel' }),
+      'src/a.ts': `i18next.t('apple', { count })`,
+    })
+    expect(project.lookup('translation:apple', 'de')?.value).toBe('ein Apfel')
+  })
 })
 
 // Cases that i18n-ally-next fixed after the fork of i18n-ally.

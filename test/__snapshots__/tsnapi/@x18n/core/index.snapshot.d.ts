@@ -66,6 +66,7 @@ export interface CheckContext {
   readonly messages: (_?: LocaleCode) => Iterable<Message>;
   readonly message: (_: KeyString, _: LocaleCode) => Message | undefined;
   readonly duplicates: (_: KeyString, _: LocaleCode) => readonly Message[];
+  readonly formOf: (_: KeyString) => PluralForm | undefined;
   readonly usages: () => Iterable<Usage>;
   readonly coverage: () => readonly LocaleCoverage[];
   readonly unused: () => readonly KeyString[];
@@ -309,6 +310,7 @@ export interface LocaleInfo {
   readonly displayName: string | undefined;
   readonly flag: string | undefined;
   readonly pluralCategories: readonly Intl.LDMLPluralRule[];
+  readonly ordinalCategories: readonly Intl.LDMLPluralRule[];
 }
 export interface Location {
   readonly path: string;
@@ -475,6 +477,11 @@ export interface PluginRegistry {
   readonly formatFor: (_: string, _?: string) => Format | undefined;
   readonly formatById: (_: string) => Format | undefined;
   readonly scannersFor: (_: string) => readonly Scanner[];
+}
+export interface PluralForm {
+  readonly type: Intl.PluralRuleType;
+  readonly category: Intl.LDMLPluralRule;
+  readonly keyOf: (_: Intl.LDMLPluralRule) => KeyString;
 }
 export interface Preset {
   readonly name: string;

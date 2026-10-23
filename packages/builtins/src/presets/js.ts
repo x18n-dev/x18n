@@ -77,7 +77,8 @@ const i18nextPlugin = library({
     { callee: ['getFixedT', 'i18next.getFixedT', 'i18n.getFixedT'], factory: true, returns: ['t'], namespace: { arg: 1 }, keyPrefix: { arg: 2 } },
     { callee: 'tr', types: ['TFunction'] },
   ],
-  derivedKeys: ['{key}_*'],
+  // Plural forms first, so each locale needs its own categories; `*` covers contexts and the v3 `_plural`.
+  derivedKeys: ['{key}_ordinal_{ordinal}', '{key}_{plural}', '{key}_*'],
   translatePrompt: (draft, ctx) => {
     draft.notes.push(`i18next plural keys end in _${ctx.localeInfo.pluralCategories.join(', _')} for ${ctx.targetLocale}; write one key per category.`)
   },

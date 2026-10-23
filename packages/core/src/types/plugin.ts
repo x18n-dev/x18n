@@ -216,6 +216,14 @@ export interface HistoryProvider {
   readonly watch?: ((ctx: HistoryContext, onChange: () => void) => Disposable) | undefined
 }
 
+/** A key that is one plural form of a base key, such as `item_one` of `item`. */
+export interface PluralForm {
+  readonly type: Intl.PluralRuleType
+  readonly category: Intl.LDMLPluralRule
+  /** The sibling key of another category. */
+  readonly keyOf: (category: Intl.LDMLPluralRule) => KeyString
+}
+
 export interface CheckContext {
   readonly config: ResolvedConfig
   readonly sourceLocale: LocaleCode
@@ -232,6 +240,8 @@ export interface CheckContext {
   readonly message: (key: KeyString, locale: LocaleCode) => Message | undefined
   /** Every resource message of a key in a locale, more than one when duplicated across files. */
   readonly duplicates: (key: KeyString, locale: LocaleCode) => readonly Message[]
+  /** The plural form a key is, from the `{plural}` and `{ordinal}` derived-key rules. */
+  readonly formOf: (key: KeyString) => PluralForm | undefined
   readonly usages: () => Iterable<Usage>
   readonly coverage: () => readonly LocaleCoverage[]
   readonly unused: () => readonly KeyString[]

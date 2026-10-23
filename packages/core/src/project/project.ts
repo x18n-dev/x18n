@@ -16,7 +16,7 @@ import { createAnalyzer } from './analysis'
 import { createHistory } from './history'
 import { createPlanner } from './planner'
 import { buildPrompt } from './prompt'
-import { createUsageResolver, derivedBases, prefixMatches, suppressedRanges } from './usages'
+import { categoriesOf, createUsageResolver, derivedKeys, prefixMatches, suppressedRanges } from './usages'
 
 export interface CreateProjectOptions {
   readonly host: Host
@@ -75,7 +75,7 @@ export function createProject(options: CreateProjectOptions): Project {
   const normalizers = registry.plugins.flatMap(plugin => plugin.normalizeKey ? [plugin.normalizeKey] : [])
   const transforms = registry.plugins.flatMap(plugin => plugin.transformResource ? [plugin.transformResource] : [])
   const localeInfoHooks = registry.plugins.flatMap(plugin => plugin.localeInfo ? [plugin.localeInfo] : [])
-  const basesOf = derivedBases(config.usage.derivedKeys)
+  const { basesOf, formOf } = derivedKeys(config.usage.derivedKeys)
   const scanSignature = hashText(JSON.stringify({ usage: config.usage, namespace: config.namespace, scanners: registry.scanners.map(s => s.id), v: 1 }))
   const localeFilter = (code: LocaleCode): boolean =>
     (!config.locales || config.locales.includes(code)) && !config.ignoreLocales.includes(code)
@@ -95,6 +95,12 @@ export function createProject(options: CreateProjectOptions): Project {
       infoCache.set(code, info)
     }
     return info
+  }
+
+  /** Whether `locale` needs `key`: not a plural form of a category its language lacks. */
+  function needs(key: KeyString, locale: LocaleCode): boolean {
+    const form = formOf(key)
+    return !form || categoriesOf(localeInfo(locale), form.type).includes(form.category)
   }
 
   // ---- Discovery and parse ----
@@ -486,6 +492,7 @@ export function createProject(options: CreateProjectOptions): Project {
       history: history.get,
     }),
     basesOf,
+    formOf,
     localeInfo,
     text: path => fileTexts.get(path) ?? files.get(path)?.text,
   })
@@ -502,7 +509,7 @@ export function createProject(options: CreateProjectOptions): Project {
       const locale = query.missing
       list = list.filter((key) => {
         const value = message(key, locale)?.value
-        return message(key, sourceLocale) !== undefined && (value === undefined || value === '')
+        return message(key, sourceLocale) !== undefined && (value === undefined || value === '') && needs(key, locale)
       })
     }
     if (query.unused) {
@@ -524,7 +531,7 @@ export function createProject(options: CreateProjectOptions): Project {
       namespace: id.namespace,
       path: id.path,
       messages: list,
-      missing: locales.filter(locale => !byLocale.has(locale)),
+      missing: locales.filter(locale => !byLocale.has(locale) && needs(key, locale)),
       usages: usageMatches({ key }),
       diagnostics: analyzer.analyze().diagnostics.filter(d => d.key === key),
     }
@@ -731,8 +738,10 @@ export function createProject(options: CreateProjectOptions): Project {
       const exact = message(key, locale)
       if (exact)
         return exact
-      // The nearest derived key wins: `item_other` over `item_male_other`.
-      const derived = [...idx().derived.get(key) ?? []].sort((a, b) => a.length - b.length || a.localeCompare(b))
+      // The nearest derived key the locale has wins: `item_other` over `item_male_other`.
+      const derived = (idx().derived.get(key) ?? [])
+        .filter(k => message(k, locale) !== undefined)
+        .sort((a, b) => a.length - b.length || a.localeCompare(b))
       const other = derived.find(k => /[._-]other$/.test(k)) ?? derived[0]
       return other === undefined ? undefined : message(other, locale)
     },
