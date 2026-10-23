@@ -1,6 +1,6 @@
 import type { MessageConnection } from 'vscode-jsonrpc/node'
 import type { Location, PublishDiagnosticsParams, WorkspaceEdit } from 'vscode-languageserver/node'
-import { cp, mkdtemp, readFile, rm } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { PassThrough } from 'node:stream'
@@ -34,25 +34,30 @@ function relativeOf(location: Location): string {
   return posixRelative(fileURLToPath(location.uri))
 }
 
-beforeAll(async () => {
-  root = await mkdtemp(join(tmpdir(), 'x18n-lsp-'))
-  await cp(join(fixtures, 'vue-i18n'), root, { recursive: true })
+async function connect(dir: string): Promise<MessageConnection> {
   const toServer = new PassThrough()
   const toClient = new PassThrough()
   const server = createConnection(new StreamMessageReader(toServer), new StreamMessageWriter(toClient))
   setupServer(server)
   server.listen()
-  client = createMessageConnection(new StreamMessageReader(toClient), new StreamMessageWriter(toServer))
-  client.onNotification('textDocument/publishDiagnostics', (params: PublishDiagnosticsParams) => {
+  const connection = createMessageConnection(new StreamMessageReader(toClient), new StreamMessageWriter(toServer))
+  connection.onNotification('textDocument/publishDiagnostics', (params: PublishDiagnosticsParams) => {
     diagnostics.set(params.uri, params.diagnostics)
   })
-  client.listen()
-  disposers.push(() => client.dispose(), () => server.dispose())
-  const result = await client.sendRequest(InitializeRequest.type, { processId: null, rootUri: pathToFileURL(root).href, capabilities: {} })
+  connection.listen()
+  disposers.push(() => connection.dispose(), () => server.dispose())
+  const result = await connection.sendRequest(InitializeRequest.type, { processId: null, rootUri: pathToFileURL(dir).href, capabilities: {} })
   expect(result.serverInfo).toEqual({ name: 'x18n', version })
   expect(result.capabilities.textDocumentSync).toBe(TextDocumentSyncKind.Incremental)
-  await client.sendNotification('initialized', {})
-  await client.sendRequest(methods.projects)
+  await connection.sendNotification('initialized', {})
+  await connection.sendRequest(methods.projects)
+  return connection
+}
+
+beforeAll(async () => {
+  root = await mkdtemp(join(tmpdir(), 'x18n-lsp-'))
+  await cp(join(fixtures, 'vue-i18n'), root, { recursive: true })
+  client = await connect(root)
 })
 
 afterAll(async () => {
@@ -163,6 +168,39 @@ describe('language server', () => {
     expect(await (await fetch(`${opened.url}__connection.json`)).json()).toMatchObject({ backend: 'websocket' })
     await client.sendRequest('shutdown')
     await expect(fetch(`${opened.url}__connection.json`)).rejects.toThrow()
+  })
+})
+
+describe('completion with namespaces', () => {
+  it('writes the configured separator and leaves out fallback namespaces', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'x18n-lsp-ns-'))
+    const files: Record<string, object | string> = {
+      'x18n.config.json': {
+        resources: [{ pattern: 'locales/{locale}/{namespace}.json' }],
+        namespace: { separator: '|', fallback: ['common'] },
+        usage: { calls: [{ callee: 'useTranslation', factory: true, namespace: { arg: 0 } }] },
+      },
+      'locales/en/event.json': { name: 'Name', save: 'Save event' },
+      'locales/en/common.json': { save: 'Save', delete: 'Delete' },
+      'locales/en/other.json': { x: 'X' },
+      'src/a.ts': `const { t } = useTranslation('event')\nt('')\n`,
+    }
+    try {
+      for (const [path, content] of Object.entries(files)) {
+        await mkdir(join(dir, path, '..'), { recursive: true })
+        await writeFile(join(dir, path), typeof content === 'string' ? content : JSON.stringify(content))
+      }
+      const connection = await connect(dir)
+      const content = await readFile(join(dir, 'src/a.ts'), 'utf8')
+      const items: { label: string }[] = await connection.sendRequest('textDocument/completion', {
+        textDocument: { uri: pathToFileURL(join(dir, 'src/a.ts')).href },
+        position: createLineIndex(content).position(content.indexOf(`t('')`) + 3),
+      })
+      expect(items.map(i => i.label).sort()).toEqual(['common|save', 'delete', 'name', 'other|x', 'save'])
+    }
+    finally {
+      await rm(dir, { recursive: true, force: true })
+    }
   })
 })
 
