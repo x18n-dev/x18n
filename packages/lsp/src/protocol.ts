@@ -121,6 +121,41 @@ export interface TranslatePromptParams {
   readonly keys?: readonly string[] | undefined
 }
 
+export interface ReviewsParams {
+  readonly project?: string | undefined
+  readonly key?: string | undefined
+  readonly locale?: string | undefined
+  /** Only unresolved comments, and only threads that have some. */
+  readonly open?: boolean | undefined
+}
+
+export interface ReviewCommentInfo {
+  readonly id: string
+  readonly type: 'comment' | 'approve' | 'request-change' | 'suggestion'
+  readonly author: { readonly name?: string | undefined, readonly email?: string | undefined } | undefined
+  /** ISO 8601. */
+  readonly time: string
+  readonly text: string | undefined
+  readonly suggestion: string | undefined
+  readonly resolved: boolean
+  /** An approval of a value the message no longer has. */
+  readonly stale: boolean
+}
+
+export interface ReviewThreadInfo {
+  readonly project: string
+  readonly key: string
+  readonly locale: string
+  readonly state: 'changes-requested' | 'approved' | 'stale-approval' | 'suggested' | 'commented' | undefined
+  readonly comments: readonly ReviewCommentInfo[]
+  /** The key in the locale's resource; undefined while the locale lacks the message. */
+  readonly location: Location | undefined
+}
+
+export interface ReviewsResult {
+  readonly threads: readonly ReviewThreadInfo[]
+}
+
 export interface ChangedParams {
   readonly project: string
   readonly revision: number
@@ -138,6 +173,7 @@ export interface Methods {
   readonly setDisplayLocale: 'x18n/setDisplayLocale'
   readonly openUi: 'x18n/openUi'
   readonly translatePrompt: 'x18n/translatePrompt'
+  readonly reviews: 'x18n/reviews'
   readonly changed: 'x18n/changed'
 }
 
@@ -152,6 +188,7 @@ export const methods: Methods = {
   setDisplayLocale: 'x18n/setDisplayLocale',
   openUi: 'x18n/openUi',
   translatePrompt: 'x18n/translatePrompt',
+  reviews: 'x18n/reviews',
   changed: 'x18n/changed',
 }
 
@@ -163,6 +200,12 @@ export interface Commands {
   readonly extract: 'x18n.extract'
   /** `{ uri: <folder> }` -> `{ files: { path, content }[], notes, removable }`; nothing is written. */
   readonly migrateI18nAlly: 'x18n.migrateI18nAlly'
+  /** `{ project?, key, locale, review, text?, suggestion? }`: adds a review comment, written to disk at once. */
+  readonly review: 'x18n.review'
+  /** `{ project?, id }` */
+  readonly resolveReview: 'x18n.resolveReview'
+  /** `{ project?, id }`: sets the suggested value and resolves the suggestion. */
+  readonly applySuggestion: 'x18n.applySuggestion'
 }
 
 export const commands: Commands = {
@@ -171,4 +214,7 @@ export const commands: Commands = {
   renamePrefix: 'x18n.renamePrefix',
   extract: 'x18n.extract',
   migrateI18nAlly: 'x18n.migrateI18nAlly',
+  review: 'x18n.review',
+  resolveReview: 'x18n.resolveReview',
+  applySuggestion: 'x18n.applySuggestion',
 }

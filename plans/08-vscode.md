@@ -35,7 +35,7 @@ So there is no tsserver plugin. Instead:
 | In-place annotations, **on by default** | `x18n/decorations` + `TextEditorDecorationType` (details below). |
 | After-key hints | LSP inlay hints, when in-place is off and as its fallback. |
 | Definition, implementation, references, rename, hover, completion, diagnostics, code actions | Standard LSP ([07-lsp.md](./07-lsp.md)). |
-| Activity bar container with views **Current File, Progress, Keys, Usage Report** | `x18n/fileKeys`, `x18n/progress`, `x18n/tree`, `x18n/usageReport`. Refresh on `x18n/changed`. A Reviews view follows in 1.x. |
+| Activity bar container with views **Current File, Progress, Keys, Usage Report** | `x18n/fileKeys`, `x18n/progress`, `x18n/tree`, `x18n/usageReport`. Refresh on `x18n/changed`. A Reviews view (`x18n/reviews`) lists threads with open comments. |
 | Status bar: display locale | `x18n/projects`, `x18n/setDisplayLocale`. |
 | x18n UI panel | Webview panel whose content is an `<iframe>` of `asExternalUri(url)` from `x18n/openUi`. |
 | Key editor | The same UI, opened at the key route (`#/keys/<key>`), replacing the i18n-ally Vue 2 webview. |

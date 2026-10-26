@@ -12,8 +12,8 @@ import { cwd, out, printJson } from '../context'
 
 export async function schema(name: string | undefined, options: GlobalOptions): Promise<void> {
   const which = name ?? 'config'
-  if (which !== 'config' && which !== 'plugin')
-    throw errors.X18N0001({ issue: `unknown schema "${which}" (config, plugin)` })
+  if (which !== 'config' && which !== 'plugin' && which !== 'reviews')
+    throw errors.X18N0001({ issue: `unknown schema "${which}" (config, plugin, reviews)` })
   const require = createRequire(import.meta.url)
   const text = await readFile(require.resolve(`@x18n/core/schema/${which}.json`), 'utf8')
   if (options.json) {

@@ -14,6 +14,7 @@ import type {
   Reporter,
   Scanner,
 } from './types/plugin'
+import type { ReviewStore } from './types/review'
 import { errors } from './errors'
 
 export function isPreset(value: Plugin | Preset): value is Preset {
@@ -41,6 +42,7 @@ export interface PluginRegistry {
   readonly manifests: readonly ManifestReader[]
   readonly extractors: readonly Extractor[]
   readonly histories: readonly HistoryProvider[]
+  readonly reviewStores: readonly ReviewStore[]
   readonly conflicts: readonly CapabilityConflict[]
   /** The loaded format for a file path: config `formats` first, then the first format that claims the extension. */
   readonly formatFor: (path: string, hint?: string) => Format | undefined
@@ -192,6 +194,7 @@ export function createRegistry(input: readonly Plugin[], config: Pick<ResolvedCo
     manifests: plugins.flatMap(plugin => plugin.manifests ?? []),
     extractors: plugins.flatMap(plugin => plugin.extractors ?? []),
     histories: plugins.flatMap(plugin => plugin.histories ?? []),
+    reviewStores: plugins.flatMap(plugin => plugin.reviewStores ?? []),
     conflicts,
     formatById,
     formatIdFor,

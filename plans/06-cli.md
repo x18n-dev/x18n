@@ -74,9 +74,9 @@ All write commands support `--dry-run`, which prints the plan (files and edits) 
 | `x18n prompt review --locale <l>` | Prompt to review existing translations against source and glossary. |
 | `x18n mcp` | MCP server over stdio ([10-agents.md](./10-agents.md)). |
 
-### Reviews (1.x)
+### Reviews
 
-`x18n review list | comment <key> | approve <key> | request-change <key> | suggest <key> --value | resolve <id>`, all with `--locale`. See [12-reviews.md](./12-reviews.md).
+`x18n review list [key] | comment <key> | approve <key> | request-change <key> --text | suggest <key> --value | resolve <id> | apply-suggestion <id> | mark-fresh <key>`, with `--locale`, `--text`, `--author`, `--open` and `--dry-run`. See [12-reviews.md](./12-reviews.md).
 
 ### Typegen (1.x)
 

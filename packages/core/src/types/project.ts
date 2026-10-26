@@ -19,6 +19,7 @@ import type {
   Usage,
 } from './model'
 import type { HardString, LocaleCoverage, MessageChange, PlaceholderSyntax, Reporter, ScanResult } from './plugin'
+import type { ReviewAuthor, ReviewFilter, ReviewThread } from './review'
 
 export interface KeyQuery {
   /** Key glob: `*` inside a segment, `**` across segments. */
@@ -52,6 +53,7 @@ export interface KeyInfo {
   readonly missing: readonly LocaleCode[]
   readonly usages: readonly UsageMatch[]
   readonly diagnostics: readonly Diagnostic[]
+  readonly reviews: readonly ReviewThread[]
 }
 
 /** The key, or the resource node, under a position. */
@@ -180,6 +182,12 @@ export interface Project {
   readonly history: (key: KeyString, locale: LocaleCode) => MessageChange | undefined
   /** The value a message had at a time (ms), from the provider that knows the message. */
   readonly valueAt: (key: KeyString, locale: LocaleCode, at: number) => MessageLeaf | undefined
+  /** Review threads, in key order and then locale order. */
+  readonly reviews: (filter?: ReviewFilter) => readonly ReviewThread[]
+  /** The review file when reviews are on and a review store is registered. */
+  readonly reviewFile: string | undefined
+  /** Author of new reviews: config `review.author`, else the host identity. */
+  readonly reviewAuthor: () => Promise<ReviewAuthor | undefined>
   /** Parts of a translate or review prompt for an agent or LLM; render with `renderPrompt`. */
   readonly prompt: (kind: 'translate' | 'review', locale: LocaleCode, options?: PromptOptions) => PromptData
   readonly explain: () => ProjectExplanation

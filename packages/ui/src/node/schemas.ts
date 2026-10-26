@@ -1,4 +1,4 @@
-import type { AgentCheckQuery, AgentDeleteQuery, AgentKeysQuery, AgentRenameQuery, AgentSetQuery, AgentUsagesQuery, ApplyQuery, ExtractApplyQuery, ExtractQuery, KeyQuery, OpenQuery, PlanQuery, ProjectQuery, PromptQuery, UsageQuery } from './types'
+import type { AgentCheckQuery, AgentDeleteQuery, AgentKeysQuery, AgentRenameQuery, AgentReviewQuery, AgentSetQuery, AgentUsagesQuery, ApplyQuery, ExtractApplyQuery, ExtractQuery, KeyQuery, OpenQuery, PlanQuery, ProjectQuery, PromptQuery, ReviewQuery, UsageQuery } from './types'
 import * as v from 'valibot'
 
 function text(description: string): v.SchemaWithPipe<readonly [v.StringSchema<undefined>, v.DescriptionAction<string, string>]> {
@@ -43,6 +43,13 @@ export const PromptQuerySchema: v.GenericSchema<PromptQuery> = v.object({
   stale: v.optional(v.pipe(v.boolean(), v.description('Also translate stale translations: those older than their source message.'))),
 })
 
+const reviewType = v.picklist([
+  'comment',
+  'approve',
+  'request-change',
+  'suggestion',
+])
+
 const EditOpSchema = v.variant('type', [
   v.object({
     type: v.literal('set'),
@@ -70,7 +77,36 @@ const EditOpSchema = v.variant('type', [
       v.array(v.string()),
     ])),
   }),
+  // The server fills in the author, id and time.
+  v.object({
+    type: v.literal('review'),
+    key: v.string(),
+    locale: v.string(),
+    review: reviewType,
+    text: v.exactOptional(v.string()),
+    suggestion: v.exactOptional(v.string()),
+  }),
+  v.object({
+    type: v.literal('resolve-review'),
+    id: v.string(),
+  }),
+  v.object({
+    type: v.literal('apply-suggestion'),
+    id: v.string(),
+  }),
+  v.object({
+    type: v.literal('mark-fresh'),
+    key: v.string(),
+    locales: v.exactOptional(v.array(v.string())),
+  }),
 ])
+
+export const ReviewQuerySchema: v.GenericSchema<ReviewQuery> = v.object({
+  project,
+  key: v.optional(text('Only reviews of this key.')),
+  locale: v.optional(text('Only reviews of this locale.')),
+  open: v.optional(v.pipe(v.boolean(), v.description('Only unresolved comments, and only threads that have some.'))),
+})
 
 export const PlanQuerySchema: v.GenericSchema<PlanQuery> = v.object({
   project,
@@ -155,6 +191,15 @@ export const AgentRenameSchema: v.GenericSchema<AgentRenameQuery> = v.object({
   usages: v.optional(v.pipe(v.boolean(), v.description('Also rewrite usages in code. Default true.'))),
   confirm,
   answers,
+})
+
+export const AgentReviewSchema: v.GenericSchema<AgentReviewQuery> = v.object({
+  project,
+  key: text('Key of the reviewed message.'),
+  locale: text('Locale of the reviewed message.'),
+  review: v.pipe(reviewType, v.description('`request-change` for a wrong translation (say why in `text`), `suggestion` to propose a value (in `suggestion`), `approve` for a good one, `comment` for anything else.')),
+  text: v.optional(text('The comment: what is wrong, or why.')),
+  suggestion: v.optional(text('The proposed value, for `review: "suggestion"`. Keep every placeholder.')),
 })
 
 export const AgentDeleteSchema: v.GenericSchema<AgentDeleteQuery> = v.object({

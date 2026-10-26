@@ -1,4 +1,4 @@
-import type { FileKeysResult, Location, ProgressResult, ProjectInfo, Range, TreeNode, UsageReportResult } from '@x18n/lsp'
+import type { FileKeysResult, Location, ProgressResult, ProjectInfo, Range, ReviewsResult, ReviewThreadInfo, TreeNode, UsageReportResult } from '@x18n/lsp'
 import type { KeyRef, X18nClient } from './client'
 
 /** What a tree item shows and does, independent of the `vscode` API. */
@@ -203,4 +203,51 @@ export function usageReportItems(result: UsageReportResult): Item[] {
       children: async () => missing,
     },
   ]
+}
+
+export const reviewStates: Record<NonNullable<ReviewThreadInfo['state']>, { readonly label: string, readonly icon: string, readonly color?: string }> = {
+  'changes-requested': { label: 'changes requested', icon: 'request-changes', color: 'list.warningForeground' },
+  'approved': { label: 'approved', icon: 'check' },
+  'stale-approval': { label: 'approved, changed since', icon: 'history', color: 'list.warningForeground' },
+  'suggested': { label: 'suggestion', icon: 'lightbulb' },
+  'commented': { label: 'comments', icon: 'comment' },
+}
+
+/** Reviews view: one item per thread with open comments, expanding to the comments. */
+export function reviewItems(result: ReviewsResult): Item[] {
+  return result.threads.flatMap((thread): Item[] => {
+    if (!thread.state)
+      return []
+    const state = reviewStates[thread.state]
+    const ref = { project: thread.project, key: thread.key }
+    return [
+      {
+        label: thread.key,
+        description: `${thread.locale} · ${state.label}`,
+        icon: state.icon,
+        color: state.color,
+        context: 'x18n.key',
+        ref,
+        location: thread.location,
+        openKey: ref,
+        children: async () => thread.comments.map(c => ({
+          label: c.text ?? (c.suggestion === undefined
+            ? c.type
+            : `suggests "${c.suggestion}"`),
+          description: `${c.type} · ${c.author?.name ?? c.author?.email ?? 'unknown'} · ${c.time.slice(0, 10)}`,
+          tooltip: c.suggestion === undefined
+            ? undefined
+            : `Suggested value: ${c.suggestion}`,
+          icon: c.type === 'suggestion'
+            ? 'lightbulb'
+            : c.type === 'approve'
+              ? 'check'
+              : c.type === 'request-change'
+                ? 'request-changes'
+                : 'comment',
+          location: thread.location,
+        })),
+      },
+    ]
+  })
 }

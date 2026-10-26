@@ -66,6 +66,57 @@ describe('migrate i18n-ally', () => {
     expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['home.missing'])
   })
 
+  it('converts i18n-ally reviews into x18n threads', async () => {
+    const dir = await fixture('vue')
+    const { files, notes, removable, project } = await migrateAndLoad(dir)
+    expect(files.find(f => f.path === '.x18n/reviews.yml')!.content).toMatchInlineSnapshot(`
+      "# yaml-language-server: $schema=https://x18n.antfu.dev/schema/reviews.json
+      x18n: 1
+      threads:
+        home.title:
+          de:
+            - id: 3fJx_a1
+              type: request-change
+              author:
+                name: Ada
+                email: ada@example.com
+              time: 2023-05-01T10:00:00.000Z
+              text: Zu lang
+            - id: Kq9-b2
+              type: approve
+              author:
+                name: Bob
+              time: 2023-05-02T10:00:00.000Z
+              resolved: true
+            - id: Zp0c3
+              type: suggestion
+              time: 2023-05-03T10:00:00.000Z
+              text: Try this
+              suggestion: Start
+            - id: 101c1e
+              type: suggestion
+              time: 2023-05-04T10:00:00.000Z
+              text: Translation candidate from i18n-ally
+              suggestion: Startseite
+      "
+    `)
+    expect(notes).toContain('1 key description was dropped: x18n reviews have no key descriptions.')
+    expect(removable).toContain('.vscode/i18n-ally-reviews.yml')
+    expect(project.reviews({ open: true }).map(t => [
+      t.key,
+      t.locale,
+      t.state,
+      t.comments.map(c => c.type),
+    ])).toEqual([
+      [
+        'home.title',
+        'de',
+        'changes-requested',
+        ['request-change', 'suggestion', 'suggestion'],
+      ],
+    ])
+  })
+
   it('turns a custom framework into a YAML plugin', async () => {
     const dir = await fixture('custom')
     const { files, project } = await migrateAndLoad(dir)

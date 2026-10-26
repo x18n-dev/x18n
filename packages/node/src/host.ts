@@ -1,5 +1,6 @@
-import type { CacheStore, Disposable, FileEvent, Host, Logger } from '@x18n/core'
+import type { CacheStore, Disposable, FileEvent, Host, Logger, ReviewAuthor } from '@x18n/core'
 import type { Ignore } from 'ignore'
+import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve, sep } from 'node:path'
@@ -88,6 +89,30 @@ async function loadGitignore(root: string): Promise<(path: string) => boolean> {
   }
 }
 
+function gitConfig(cwd: string, key: string): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    execFile('git', ['config', key], { cwd, encoding: 'utf8' }, (error, stdout) => {
+      resolve(error
+        ? undefined
+        : stdout.trim() || undefined)
+    })
+  })
+}
+
+/** The git `user.name` and `user.email`, or undefined without git or a configured user. */
+async function gitIdentity(cwd: string): Promise<ReviewAuthor | undefined> {
+  const [name, email] = await Promise.all([
+    gitConfig(cwd, 'user.name'),
+    gitConfig(cwd, 'user.email'),
+  ])
+  return name === undefined && email === undefined
+    ? undefined
+    : {
+        ...name !== undefined && { name },
+        ...email !== undefined && { email },
+      }
+}
+
 /** A persistent cache in one JSON file. Only entries used in this session are written back, so it stays bounded. */
 function createFileCache(dir: string): CacheStore & { flush: () => Promise<void> } {
   const file = join(dir, 'cache.json')
@@ -135,6 +160,7 @@ export function createNodeHost(root: string, options: NodeHostOptions = {}): Nod
     ? createFileCache(join(cacheDir, hashText(absoluteRoot)))
     : undefined
   const full = (path: string): string => resolve(absoluteRoot, path)
+  let identity: Promise<ReviewAuthor | undefined> | undefined
 
   return {
     root: absoluteRoot,
@@ -201,6 +227,7 @@ export function createNodeHost(root: string, options: NodeHostOptions = {}): Nod
         },
       }
     },
+    identity: () => identity ??= gitIdentity(absoluteRoot),
     flush: async () => cache?.flush(),
   }
 }

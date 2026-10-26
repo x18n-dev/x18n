@@ -114,6 +114,37 @@ export const staleTranslation: Check = {
   },
 }
 
+export const reviewChangesRequested: Check = {
+  id: 'review-changes-requested',
+  defaultSeverity: 'info',
+  description: 'A message with an open "request change" review.',
+  * run(ctx) {
+    for (const thread of ctx.reviews({ open: true })) {
+      if (thread.state !== 'changes-requested')
+        continue
+      const request = thread.comments.findLast(comment => comment.type === 'request-change')!
+      const by = request.author?.name
+        ? ` by ${request.author.name}`
+        : ''
+      yield {
+        key: thread.key,
+        locale: thread.locale,
+        message: `Change requested${by} for "${thread.key}" in ${thread.locale}${request.text
+          ? `: ${request.text}`
+          : '.'}`,
+        fixes: [
+          {
+            title: 'Resolve the review',
+            ops: [
+              { type: 'resolve-review', id: request.id },
+            ],
+          },
+        ],
+      }
+    }
+  },
+}
+
 export const emptyTranslation: Check = {
   id: 'empty-translation',
   defaultSeverity: 'warning',
@@ -425,6 +456,7 @@ export const allChecks: readonly Check[] = [
   keyConflict,
   missingTranslation,
   staleTranslation,
+  reviewChangesRequested,
   emptyTranslation,
   redundantTranslation,
   unusedKey,

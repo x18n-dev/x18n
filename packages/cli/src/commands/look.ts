@@ -166,6 +166,7 @@ export async function get(input: string, options: GlobalOptions): Promise<void> 
           ...locate(loaded, u.usage.path, u.usage.range.start, u.usage.range.end),
         })),
         diagnostics: wireDiagnostics(loaded, info.diagnostics),
+        reviews: info.reviews,
       },
     ]
   })
@@ -188,6 +189,11 @@ export async function get(input: string, options: GlobalOptions): Promise<void> 
       out(`    ${u.file}:${u.line}:${u.column}${u.possible ? ' (possible)' : ''}`)
     for (const d of p.diagnostics)
       out(`  ${d.severity} ${d.code}: ${d.message}`)
+    for (const thread of p.reviews) {
+      out(`  review ${thread.locale}: ${thread.state ?? 'resolved'}, ${thread.comments.length} comment${thread.comments.length === 1
+        ? ''
+        : 's'}`)
+    }
   }
 }
 

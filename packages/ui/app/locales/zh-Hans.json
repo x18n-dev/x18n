@@ -76,7 +76,8 @@
     "outdated": "过时",
     "sort": "排序",
     "sortKey": "键",
-    "sortRecent": "最近更改"
+    "sortRecent": "最近更改",
+    "reviewed": "有审阅"
   },
   "locale": {
     "complete": "所有键均已翻译。",
@@ -105,7 +106,8 @@
     "keys": "键",
     "overview": "概览",
     "project": "项目",
-    "usages": "引用"
+    "usages": "引用",
+    "reviews": "审阅"
   },
   "overview": {
     "clean": "未发现问题。",
@@ -187,5 +189,41 @@
     "copyFix": "复制修复提示词",
     "fixHint": "复制提示词，供 LLM 或智能体修复此项目的所有诊断",
     "fixCodeHint": "复制提示词，供 LLM 或智能体修复 {code} 诊断"
+  },
+  "review": {
+    "add": "审阅",
+    "type": "审阅类型",
+    "textPlaceholder": "评论",
+    "suggestionPlaceholder": "建议的值",
+    "send": "发送",
+    "resolve": "解决",
+    "apply": "应用",
+    "resolved": "已解决",
+    "stale": "之后已更改",
+    "unknownAuthor": "某人",
+    "suggests": "建议",
+    "empty": "没有可显示的审阅。",
+    "off": "此项目已关闭审阅。",
+    "all": "全部 ({count})",
+    "showResolved": "显示已解决",
+    "states": {
+      "changesRequested": "请求修改",
+      "approved": "已批准",
+      "staleApproval": "已批准，之后已更改",
+      "suggested": "建议",
+      "commented": "评论"
+    },
+    "types": {
+      "comment": "评论",
+      "approve": "批准",
+      "requestChange": "请求修改",
+      "suggestion": "建议"
+    },
+    "done": {
+      "comment": "发表了评论",
+      "approve": "批准了",
+      "requestChange": "请求修改",
+      "suggestion": "建议了一个值"
+    }
   }
 }

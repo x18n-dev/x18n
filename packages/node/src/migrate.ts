@@ -1,7 +1,9 @@
-import type { ExtractTemplate, PluginFile, RegexScannerSpec, ResourceSpec, SerializableConfig } from '@x18n/core'
+import type { ExtractTemplate, PluginFile, RegexScannerSpec, ResourceSpec, ReviewComment, ReviewType, SerializableConfig } from '@x18n/core'
 import { existsSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { yamlReviewStore } from '@x18n/builtins/reviews'
+import { hashText } from '@x18n/core'
 import { applyEdits, modify, parse as parseJsonc } from 'jsonc-parser'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 
@@ -401,11 +403,8 @@ function notesOf(settings: Settings, notes: string[]): void {
   ].some(key => key.startsWith('translate.'))) {
     notes.push('`translate.*` settings were dropped: x18n writes translate prompts instead (`x18n prompt translate --to <locale>`).')
   }
-  if ([
-    ...settings.keys(),
-  ].some(key => key.startsWith('review.'))) {
-    notes.push('Review settings move to `review.*` once reviews ship (1.x); they were not migrated yet.')
-  }
+  if (settings.has('review.removeCommentOnResolved'))
+    notes.push('`i18n-ally.review.removeCommentOnResolved` was dropped: x18n keeps resolved reviews and hides them with `x18n review list --open`.')
   for (const key of handledByDefaults) {
     if (settings.has(key))
       notes.push(`\`i18n-ally.${key}\` is handled by defaults or dropped.`)
@@ -515,7 +514,112 @@ function mapConfig(settings: Settings, parts: PluginParts, notes: string[]): Ser
     ...Object.keys(extract).length
       ? { extract }
       : {},
+    ...reviewOf(r),
   }
+}
+
+function reviewOf(r: Reader): Pick<SerializableConfig, 'review'> {
+  const enabled = r.get('review.enabled')
+  const author = {
+    ...r.str('review.user.name') && {
+      name: r.str('review.user.name'),
+    },
+    ...r.str('review.user.email') && {
+      email: r.str('review.user.email'),
+    },
+  }
+  const review = {
+    ...typeof enabled === 'boolean' && { enabled },
+    ...Object.keys(author).length > 0 && { author },
+  }
+  return Object.keys(review).length > 0
+    ? { review }
+    : {}
+}
+
+const reviewTypes: Readonly<Record<string, ReviewType>> = {
+  comment: 'comment',
+  approve: 'approve',
+  request_change: 'request-change',
+}
+
+function str(value: unknown): string | undefined {
+  return typeof value === 'string'
+    ? value
+    : undefined
+}
+
+function recordOf(value: unknown): Record<string, unknown> {
+  return isRecord(value)
+    ? value
+    : {}
+}
+
+/** One i18n-ally comment; one with a `suggestion` becomes a suggestion. */
+function convertComment(comment: Record<string, unknown>): ReviewComment {
+  const user = recordOf(comment.user)
+  const name = str(user.name)
+  const email = str(user.email)
+  const text = str(comment.comment)
+  const suggestion = str(comment.suggestion)
+  return {
+    id: str(comment.id) ?? hashText(JSON.stringify(comment)).slice(0, 6),
+    type: suggestion === undefined
+      ? reviewTypes[str(comment.type) ?? 'comment'] ?? 'comment'
+      : 'suggestion',
+    ...(name !== undefined || email !== undefined) && {
+      author: {
+        ...name !== undefined && { name },
+        ...email !== undefined && { email },
+      },
+    },
+    time: str(comment.time) ?? new Date(0).toISOString(),
+    ...text !== undefined && { text },
+    ...suggestion !== undefined && { suggestion },
+    ...comment.resolved === true && { resolved: true },
+  }
+}
+
+/** The comments of one key and locale, with the translation candidate as a last suggestion. */
+function convertLocale(key: string, locale: string, item: Record<string, unknown>): ReviewComment[] {
+  const comments = (Array.isArray(item.comments)
+    ? item.comments
+    : []).filter(isRecord).map(convertComment)
+  const candidate = recordOf(item.translation_candidate)
+  const text = str(candidate.text)
+  if (text !== undefined) {
+    comments.push({
+      id: hashText(`${key}:${locale}:${text}`).slice(0, 6),
+      type: 'suggestion',
+      time: str(candidate.time) ?? new Date(0).toISOString(),
+      text: 'Translation candidate from i18n-ally',
+      suggestion: text,
+    })
+  }
+  return comments
+}
+
+/** i18n-ally's `reviews.<key>.locales.<locale>.comments` as x18n threads; translation candidates become suggestions. */
+function convertI18nAllyReviews(text: string, notes: string[]): string {
+  const reviews = recordOf(recordOf(parseYaml(text)).reviews)
+  const threads: Record<string, Record<string, ReviewComment[]>> = {}
+  let descriptions = 0
+  for (const [key, entry] of Object.entries(reviews)) {
+    const { description, locales } = recordOf(entry)
+    if (description !== undefined)
+      descriptions++
+    for (const [locale, item] of Object.entries(recordOf(locales))) {
+      const comments = convertLocale(key, locale, recordOf(item))
+      if (comments.length > 0)
+        (threads[key] ??= {})[locale] = comments
+    }
+  }
+  if (descriptions > 0) {
+    notes.push(`${descriptions} key description${descriptions === 1
+      ? ' was'
+      : 's were'} dropped: x18n reviews have no key descriptions.`)
+  }
+  return yamlReviewStore.serialize({ threads, sources: {} })
 }
 
 export interface I18nAllyConfig {
@@ -600,7 +704,7 @@ export async function migrateI18nAlly(root: string, options: MigrateOptions = {}
   }
   const { config, plugin } = found
   const notes = [...found.notes]
-  const reviews = (await readFirst(root, ['.vscode/i18n-ally-next-reviews.yml', '.vscode/i18n-ally-reviews.yml']))?.text
+  const reviews = await readFirst(root, ['.vscode/i18n-ally-next-reviews.yml', '.vscode/i18n-ally-reviews.yml'])
   const files: MigrationFile[] = []
   const needsPlugin = plugin !== undefined
   const finalConfig: SerializableConfig = needsPlugin
@@ -630,8 +734,11 @@ export async function migrateI18nAlly(root: string, options: MigrateOptions = {}
       files.push({ path: '.vscode/settings.json', content: vscodeText })
   }
   if (reviews !== undefined && !existsSync(join(root, '.x18n/reviews.yml'))) {
-    files.push({ path: '.x18n/reviews.yml', content: reviews })
-    notes.push('Reviews were copied to `.x18n/reviews.yml`; x18n reads them once reviews ship (1.x).')
+    files.push({
+      path: '.x18n/reviews.yml',
+      content: convertI18nAllyReviews(reviews.text, notes),
+    })
+    notes.push('Reviews were converted to `.x18n/reviews.yml`.')
   }
   return {
     files,
@@ -640,6 +747,9 @@ export async function migrateI18nAlly(root: string, options: MigrateOptions = {}
       ...keys,
       ...found.customFramework
         ? [found.customFramework]
+        : [],
+      ...reviews
+        ? [reviews.path]
         : [],
     ],
   }

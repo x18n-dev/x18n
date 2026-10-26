@@ -42,6 +42,9 @@ interface AnalyzerState {
   readonly derived: ReadonlyMap<KeyString, readonly KeyString[]>
   readonly files: ReadonlyMap<string, { readonly result: ScanResult }>
   readonly history: (key: KeyString, locale: LocaleCode) => MessageChange | undefined
+  /** Targets the review records mark as written against the current source value. */
+  readonly fresh: (key: KeyString, locale: LocaleCode) => boolean
+  readonly reviews: CheckContext['reviews']
 }
 
 export interface AnalyzerOptions {
@@ -100,7 +103,7 @@ function computeCoverage(state: AnalyzerState, options: AnalyzerOptions, sourceK
           ? missing
           : empty).push(key)
       }
-      else if (locale !== sourceLocale && isOutdated(state.history(key, sourceLocale), state.history(key, locale))) {
+      else if (locale !== sourceLocale && isOutdated(state.history(key, sourceLocale), state.history(key, locale)) && !state.fresh(key, locale)) {
         outdated.push(key)
       }
     }
@@ -303,6 +306,7 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
       localeInfo: options.localeInfo,
       text: options.text,
       history: state.history,
+      reviews: state.reviews,
       * hardStrings(): Generator<HardString & { readonly path: string }> {
         for (const [path, file] of state.files) {
           for (const hard of file.result.hardStrings ?? [])

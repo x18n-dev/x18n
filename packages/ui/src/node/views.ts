@@ -1,4 +1,4 @@
-import type { Answers, Diagnostic, EditOp, KeyString, LineIndex, LocaleCode, LocaleCoverage, MessageChange, Plan, Usage, UsageMatch, WireDiagnostic } from '@x18n/core'
+import type { Answers, Diagnostic, EditOp, KeyString, LineIndex, LocaleCode, LocaleCoverage, MessageChange, Plan, ReviewState, Usage, UsageMatch, WireDiagnostic } from '@x18n/core'
 import type { AnalysisView, ApplyView, ExplainView, HistoryView, KeyDetail, KeyTable, PlanView, ProjectSummary, Snippet, UiProject, UsageView } from './types'
 import { createLineIndex, errors, placeholderProblems, toWireDiagnostic } from '@x18n/core'
 
@@ -127,6 +127,9 @@ export function summarize({ name, project }: UiProject): ProjectSummary {
     },
     presets: project.explain().presets.filter(p => p.reason === 'listed' || p.reason === 'detected').map(p => p.name),
     changes: recentChangeGroups(project),
+    reviews: project.reviewFile === undefined
+      ? undefined
+      : project.reviews({ open: true }).length,
   }
 }
 
@@ -150,6 +153,15 @@ export function keyTable({ name, project }: UiProject): KeyTable {
     }
   }
   const outdated = outdatedByKey(analysis.coverage)
+  const reviews = new Map<KeyString, Record<LocaleCode, ReviewState>>()
+  for (const thread of project.reviews({ open: true })) {
+    if (thread.state) {
+      reviews.set(thread.key, {
+        ...reviews.get(thread.key),
+        [thread.locale]: thread.state,
+      })
+    }
+  }
   const now = Date.now()
   return {
     project: name,
@@ -169,6 +181,7 @@ export function keyTable({ name, project }: UiProject): KeyTable {
         changedAt: times.length
           ? Math.max(...times)
           : undefined,
+        reviews: reviews.get(key) ?? {},
       }
     }),
   }
@@ -262,6 +275,7 @@ export function keyDetail(p: UiProject, key: KeyString): KeyDetail | null {
     missing: info.missing,
     usages: usageViews(p, info.usages),
     diagnostics: wire(p, info.diagnostics),
+    reviews: info.reviews,
   }
 }
 
@@ -295,7 +309,15 @@ export function previewOps(p: UiProject, ops: readonly EditOp[]): PlanView {
 }
 
 /** Plans and applies ops; placeholder problems block the write unless `force`. */
-export async function applyOps(p: UiProject, ops: readonly EditOp[], options: { readonly answers?: Answers | undefined, readonly force?: boolean | undefined } = {}): Promise<ApplyView> {
+export async function applyOps(p: UiProject, input: readonly EditOp[], options: { readonly answers?: Answers | undefined, readonly force?: boolean | undefined } = {}): Promise<ApplyView> {
+  const author = input.some(op => op.type === 'review' && !op.author)
+    ? await p.project.reviewAuthor()
+    : undefined
+  const ops = author
+    ? input.map(op => op.type === 'review' && !op.author
+        ? { ...op, author }
+        : op)
+    : input
   const plan = p.project.plan(ops)
   const problems = placeholderProblems(p.project, ops)
   if (problems.length > 0 && !options.force) {

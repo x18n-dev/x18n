@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -50,6 +51,14 @@ describe('createNodeHost', () => {
     await host.cache!.set('k', 'v')
     await host.flush()
     expect(await createNodeHost(root).cache!.get('k')).toBe('v')
+  })
+
+  it('reads the review identity from git config', async () => {
+    await rm(join(root, '.git'), { recursive: true })
+    execFileSync('git', ['init', '-q'], { cwd: root })
+    execFileSync('git', ['config', 'user.name', 'Ada'], { cwd: root })
+    execFileSync('git', ['config', 'user.email', 'ada@example.com'], { cwd: root })
+    expect(await createNodeHost(root).identity!()).toEqual({ name: 'Ada', email: 'ada@example.com' })
   })
 
   it('reports file events when watching', async () => {

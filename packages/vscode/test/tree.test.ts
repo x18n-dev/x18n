@@ -2,7 +2,7 @@ import type { ProjectInfo, TreeNode, TreeParams } from '@x18n/lsp'
 import type { Requests, X18nClient } from '../src/model/client'
 import { describe, expect, it } from 'vitest'
 import { projectFor } from '../src/model/client'
-import { fileItems, keyTree, progressItems, usageReportItems } from '../src/model/tree'
+import { fileItems, keyTree, progressItems, reviewItems, usageReportItems } from '../src/model/tree'
 
 function range(line: number) {
   return {
@@ -293,5 +293,67 @@ describe('usageReportItems', () => {
     const [titel] = await missing!.children!()
     expect(titel).toMatchObject({ label: 'app.titel', description: '2 usages', location })
     expect(await titel!.children!()).toHaveLength(2)
+  })
+})
+
+describe('reviewItems', () => {
+  it('lists open threads with their state, expanding to comments', async () => {
+    const location = {
+      uri: 'file:///w/de.json',
+      range: range(2),
+    }
+    const comment = {
+      author: { name: 'Ada' },
+      time: '2026-10-15T09:12:00Z',
+      resolved: false,
+      stale: false,
+    }
+    const items = reviewItems({
+      threads: [
+        {
+          project: 'app',
+          key: 'app.title',
+          locale: 'de',
+          state: 'changes-requested',
+          location,
+          comments: [
+            {
+              ...comment,
+              id: 'a',
+              type: 'request-change',
+              text: 'Too formal',
+              suggestion: undefined,
+            },
+            {
+              ...comment,
+              id: 'b',
+              type: 'suggestion',
+              text: undefined,
+              suggestion: 'Anmelden',
+            },
+          ],
+        },
+        {
+          project: 'app',
+          key: 'done',
+          locale: 'de',
+          state: undefined,
+          location,
+          comments: [],
+        },
+      ],
+    })
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({
+      label: 'app.title',
+      description: 'de · changes requested',
+      icon: 'request-changes',
+      location,
+      ref: { project: 'app', key: 'app.title' },
+    })
+    expect((await items[0]!.children!()).map(c => [c.label, c.description])).toEqual([
+      ['Too formal', 'request-change · Ada · 2026-10-15'],
+      ['suggests "Anmelden"', 'suggestion · Ada · 2026-10-15'],
+    ])
   })
 })

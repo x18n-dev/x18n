@@ -7,7 +7,7 @@ import { Range, ThemeColor, ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri, 
 import { flagIcon } from './flags'
 import { commands } from './generated/meta'
 import { projectFor } from './model/client'
-import { fileItems, keyTree, progressItems, usageReportItems } from './model/tree'
+import { fileItems, keyTree, progressItems, reviewItems, usageReportItems } from './model/tree'
 
 interface ItemNode extends TreeViewNode {
   readonly item: Item
@@ -106,5 +106,6 @@ export function useViews(x18n: X18nClient, refresh: Event<void>): void {
   }))
   useTreeView('x18n.keys', roots(() => keyTree(x18n)))
   useTreeView('x18n.usageReport', roots(async () => usageReportItems(await x18n.request('x18n/usageReport', undefined))))
+  useTreeView('x18n.reviews', roots(async () => reviewItems(await x18n.request('x18n/reviews', { open: true }))))
   watch(editor, () => fileRevision.value++)
 }

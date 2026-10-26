@@ -4,11 +4,13 @@ import type { FileEvent, Host } from '../types/host'
 import type { EditOp, ExtractItem, KeyString, LocaleCode, Message, MessageLeaf, MessageTree, Resource, TextEdit, Usage } from '../types/model'
 import type { Format, MessageOp } from '../types/plugin'
 import type { Answers, ApplyResult, Decision, FileChange, Plan, ProjectChange, UsageMatch } from '../types/project'
+import type { ReviewData, ReviewStore } from '../types/review'
 import type { ResourceState } from './analysis'
 import { errors } from '../errors'
 import { isKeyUnder, replaceKeyPrefix, splitKey } from '../keys'
 import { applyMessageOps, isMessageLeaf, pathId, sortTree, walkLeaves } from '../message-tree'
 import { applyTextEdits, diffText, hashText } from '../text'
+import { findReview, noReviews, ReviewDraft, reviewId, sourceHash, valueText } from './reviews'
 
 interface PlannerState {
   readonly revision: number
@@ -18,6 +20,17 @@ interface PlannerState {
   readonly namespaced: boolean
   readonly resources: readonly ResourceState[]
   readonly fileTexts: ReadonlyMap<string, string>
+  /** Undefined when reviews are off or the review file cannot be read; `reviewProblem` says why. */
+  readonly reviews: ReviewSource | undefined
+  readonly reviewProblem: string | undefined
+}
+
+export interface ReviewSource {
+  readonly store: ReviewStore
+  readonly file: string
+  /** Undefined while the file does not exist. */
+  readonly text: string | undefined
+  readonly data: ReviewData
 }
 
 export interface PlannerOptions {
@@ -147,6 +160,9 @@ class PlanBuilder {
   readonly touched = new Set<KeyString>()
   readonly stateById: ReadonlyMap<string, ResourceState>
   readonly config: ResolvedConfig
+  /** Source values set by this plan, for the source records of targets set after them. */
+  readonly plannedSource = new Map<KeyString, MessageLeaf>()
+  draft: ReviewDraft | undefined
 
   constructor(readonly options: PlannerOptions, readonly state: PlannerState, readonly answers: Answers) {
     this.config = options.config
@@ -544,6 +560,7 @@ class PlanBuilder {
       : this.renameNode(op.from, op.to)
     for (const [from, to] of pairs) {
       this.moveKey(from, to, renamed)
+      this.reviewDraft()?.move(from, to)
       if (op.usages !== false)
         this.rewriteUsages(from, to)
     }
@@ -562,6 +579,7 @@ class PlanBuilder {
       throw errors.X18N4006({ key: op.key })
     for (const key of keys) {
       this.touched.add(key)
+      this.reviewDraft()?.remove(key, op.locales ?? 'all')
       for (const [locale, list] of this.options.messages(key) ?? []) {
         if (op.locales === undefined || op.locales === 'all' || op.locales.includes(locale))
           list.forEach(m => this.deleteMessage(m))
@@ -588,17 +606,108 @@ class PlanBuilder {
     }
   }
 
+  // ---- Reviews ----
+
+  /** The review draft, or undefined when reviews are off. */
+  reviewDraft(): ReviewDraft | undefined {
+    const reviews = this.state.reviews
+    if (reviews)
+      this.draft ??= new ReviewDraft(reviews.data)
+    return this.draft
+  }
+
+  requireReviews(): ReviewDraft {
+    const draft = this.reviewDraft()
+    if (!draft)
+      throw errors.X18N5003({ reason: this.state.reviewProblem ?? 'reviews are off' })
+    return draft
+  }
+
+  /** Records the source value a target was written against, once the project keeps a review file. */
+  recordSource(key: KeyString, locale: LocaleCode, force = false): void {
+    if (locale === this.state.sourceLocale || (!force && this.state.reviews?.text === undefined))
+      return
+    const source = this.plannedSource.has(key)
+      ? this.plannedSource.get(key)
+      : this.options.message(key, this.state.sourceLocale)?.value
+    if (source !== undefined)
+      this.reviewDraft()?.record(key, locale, sourceHash(source))
+  }
+
+  review(op: Extract<EditOp, { type: 'review' }>): void {
+    const draft = this.requireReviews()
+    if (!this.options.messages(op.key))
+      throw errors.X18N4006({ key: op.key })
+    if (!this.state.locales.includes(op.locale))
+      throw errors.X18N4008({ reason: `unknown locale "${op.locale}"` })
+    if (op.review === 'suggestion' && op.suggestion === undefined)
+      throw errors.X18N4008({ reason: 'a suggestion needs a value' })
+    const current = this.options.message(op.key, op.locale)?.value
+    this.touched.add(op.key)
+    draft.add(op.key, op.locale, {
+      id: op.id!, // filled in by `plan`
+      type: op.review,
+      ...op.author && { author: op.author },
+      time: op.time!,
+      ...op.text !== undefined && { text: op.text },
+      ...op.review === 'suggestion' && { suggestion: op.suggestion },
+      ...op.review === 'approve' && current !== undefined && {
+        value: valueText(current),
+      },
+    })
+  }
+
+  applySuggestion(id: string): void {
+    const draft = this.requireReviews()
+    const found = findReview(draft.data(), id)
+    if (!found)
+      throw errors.X18N5004({ id })
+    const { key, locale, comment } = found
+    if (comment.type !== 'suggestion' || comment.suggestion === undefined || comment.resolved)
+      throw errors.X18N5005({ id })
+    this.setValue(key, locale, comment.suggestion)
+    this.recordSource(key, locale, true)
+    draft.resolve(id)
+  }
+
+  resolveReview(id: string): void {
+    const draft = this.requireReviews()
+    const found = findReview(draft.data(), id)
+    if (!found)
+      throw errors.X18N5004({ id })
+    this.touched.add(found.key)
+    draft.resolve(id)
+  }
+
+  markFresh(op: Extract<EditOp, { type: 'mark-fresh' }>): void {
+    this.requireReviews()
+    if (this.options.message(op.key, this.state.sourceLocale) === undefined)
+      throw errors.X18N4006({ key: op.key })
+    const locales = op.locales ?? this.state.locales.filter(locale => this.options.message(op.key, locale) !== undefined)
+    this.touched.add(op.key)
+    for (const locale of locales)
+      this.recordSource(op.key, locale, true)
+  }
+
+  set(op: Extract<EditOp, { type: 'set' }>): void {
+    this.setValue(op.key, op.locale, op.value)
+    if (op.locale === this.state.sourceLocale)
+      this.plannedSource.set(op.key, op.value)
+    else if (op.value !== '')
+      this.recordSource(op.key, op.locale)
+    if (!this.config.write.keepFilled)
+      return
+    for (const locale of this.state.locales) {
+      if (locale !== op.locale && !this.state.fallbacks[locale] && !this.options.message(op.key, locale))
+        this.setValue(op.key, locale, '')
+    }
+  }
+
   run(ops: readonly EditOp[]): void {
     for (const op of ops) {
       switch (op.type) {
         case 'set':
-          this.setValue(op.key, op.locale, op.value)
-          if (this.config.write.keepFilled) {
-            for (const locale of this.state.locales) {
-              if (locale !== op.locale && !this.state.fallbacks[locale] && !this.options.message(op.key, locale))
-                this.setValue(op.key, locale, '')
-            }
-          }
+          this.set(op)
           break
         case 'delete':
           this.delete(op)
@@ -615,6 +724,18 @@ class PlanBuilder {
             if ((!op.paths || op.paths.includes(s.resource.path)) && !s.resource.readonly && !s.error)
               this.workFor(this.targetOf(s)).formatOnly = true
           }
+          break
+        case 'review':
+          this.review(op)
+          break
+        case 'resolve-review':
+          this.resolveReview(op.id)
+          break
+        case 'apply-suggestion':
+          this.applySuggestion(op.id)
+          break
+        case 'mark-fresh':
+          this.markFresh(op)
           break
       }
     }
@@ -745,7 +866,28 @@ class PlanBuilder {
       })
       texts.set(path, text)
     }
+    const review = this.reviewChange()
+    if (review) {
+      changes.push(review)
+      texts.set(review.path, this.state.reviews?.text)
+    }
     return { changes, texts }
+  }
+
+  reviewChange(): FileChange | undefined {
+    const reviews = this.state.reviews
+    if (!reviews || !this.draft?.changed)
+      return undefined
+    const next = reviews.store.serialize(this.draft.data())
+    if (reviews.text === undefined)
+      return { type: 'create', path: reviews.file, content: next }
+    return next === reviews.text
+      ? undefined
+      : {
+          type: 'edit',
+          path: reviews.file,
+          edits: diffText(reviews.text, next),
+        }
   }
 }
 
@@ -757,8 +899,22 @@ export interface Planner {
 export function createPlanner(options: PlannerOptions): Planner {
   const texts = new Map<string, ReadonlyMap<string, string | undefined>>()
 
-  function planWith(ops: readonly EditOp[], answers: Answers): { plan: Plan, texts: ReadonlyMap<string, string | undefined> } {
+  /** Gives new reviews an id and a time, so planning again (after decisions) writes the same comments. */
+  function withReviewIds(ops: readonly EditOp[], data: ReviewData): readonly EditOp[] {
+    const used = new Set<string>()
+    const time = new Date().toISOString()
+    return ops.map((op) => {
+      if (op.type !== 'review' || (op.id !== undefined && op.time !== undefined))
+        return op
+      const id = op.id ?? reviewId(id => used.has(id) || findReview(data, id) !== undefined)
+      used.add(id)
+      return { ...op, id, time: op.time ?? time }
+    })
+  }
+
+  function planWith(input: readonly EditOp[], answers: Answers): { plan: Plan, texts: ReadonlyMap<string, string | undefined> } {
     const state = options.state()
+    const ops = withReviewIds(input, state.reviews?.data ?? noReviews)
     const builder = new PlanBuilder(options, state, answers)
     builder.run(ops)
     const result = builder.changes()

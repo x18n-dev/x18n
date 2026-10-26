@@ -256,6 +256,80 @@ exports[`agent tools > names the tools for MCP 1`] = `
     "safety": "action",
   },
   {
+    "description": "Review threads: comments, approvals, change requests and suggested values on messages, per key and locale, with each thread's state. Pass \`open: true\` for unresolved ones only.",
+    "id": "x18n:reviews",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "key": {
+          "description": "Only reviews of this key.",
+          "type": "string",
+        },
+        "locale": {
+          "description": "Only reviews of this locale.",
+          "type": "string",
+        },
+        "open": {
+          "description": "Only unresolved comments, and only threads that have some.",
+          "type": "boolean",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "safety": "read",
+  },
+  {
+    "description": "Leave a review on one message for a human: \`request-change\` with the reason in \`text\`, or \`suggestion\` with a better value in \`suggestion\` (a human applies it), \`approve\`, or \`comment\`. Use it when a human should decide, instead of changing values yourself.",
+    "id": "x18n:review",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "key": {
+          "description": "Key of the reviewed message.",
+          "type": "string",
+        },
+        "locale": {
+          "description": "Locale of the reviewed message.",
+          "type": "string",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+        "review": {
+          "description": "\`request-change\` for a wrong translation (say why in \`text\`), \`suggestion\` to propose a value (in \`suggestion\`), \`approve\` for a good one, \`comment\` for anything else.",
+          "enum": [
+            "comment",
+            "approve",
+            "request-change",
+            "suggestion",
+          ],
+          "type": "string",
+        },
+        "suggestion": {
+          "description": "The proposed value, for \`review: "suggestion"\`. Keep every placeholder.",
+          "type": "string",
+        },
+        "text": {
+          "description": "The comment: what is wrong, or why.",
+          "type": "string",
+        },
+      },
+      "required": [
+        "key",
+        "locale",
+        "review",
+      ],
+      "type": "object",
+    },
+    "safety": "action",
+  },
+  {
     "description": "Rename a key (or every key under a parent) in all locales, and its usages in code unless \`usages: false\`. Without \`confirm\` it returns the plan (files to change, decisions, warnings); call again with \`confirm: true\` to apply it.",
     "id": "x18n:rename_key",
     "inputSchema": {
@@ -537,6 +611,7 @@ exports[`agent tools > reports status, keys, check and the translate prompt 1`] 
         "general",
       ],
       "resources": 2,
+      "reviews": 0,
       "sourceLocale": "en",
       "usages": 6,
     },
@@ -671,6 +746,7 @@ exports[`agent tools > reports status, keys, check and the translate prompt 5`] 
   ],
   "missing": [],
   "project": "vue-i18n",
+  "reviews": [],
   "usages": [
     {
       "column": 16,
@@ -825,6 +901,7 @@ exports[`rpc functions > details one key with usages and diagnostics 1`] = `
   ],
   "missing": [],
   "project": "vue-i18n",
+  "reviews": [],
   "usages": [
     {
       "column": 16,
@@ -879,6 +956,10 @@ exports[`rpc functions > explains the project 1`] = `
         },
         "pluginConfigs": {},
         "resources": [],
+        "review": {
+          "enabled": true,
+          "file": ".x18n/reviews.yml",
+        },
         "sourceLocale": "en",
         "strict": false,
         "usage": {
@@ -1075,6 +1156,7 @@ exports[`rpc functions > explains the project 1`] = `
         "x18n:scanner-astro",
         "x18n:scanner-regex",
         "x18n:checks",
+        "x18n:reviews",
         "x18n:reporters",
         "x18n:vue-i18n",
         "x18n:finder-sfc-blocks",
@@ -1317,6 +1399,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "key": "app.greeting",
       "missing": [],
       "outdated": [],
+      "reviews": {},
       "unused": false,
       "values": {
         "de": "Hallo",
@@ -1328,6 +1411,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "key": "app.title",
       "missing": [],
       "outdated": [],
+      "reviews": {},
       "unused": false,
       "values": {
         "de": "Meine App",
@@ -1339,6 +1423,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "key": "linked",
       "missing": [],
       "outdated": [],
+      "reviews": {},
       "unused": true,
       "values": {
         "de": "@:app.title!",
@@ -1352,6 +1437,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
         "de",
       ],
       "outdated": [],
+      "reviews": {},
       "unused": false,
       "values": {
         "de": "",
@@ -1363,6 +1449,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "key": "nav.home",
       "missing": [],
       "outdated": [],
+      "reviews": {},
       "unused": false,
       "values": {
         "de": "Start",
@@ -1376,6 +1463,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
         "de",
       ],
       "outdated": [],
+      "reviews": {},
       "unused": false,
       "values": {
         "en": "About us",
@@ -1386,6 +1474,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "key": "pages.home.title",
       "missing": [],
       "outdated": [],
+      "reviews": {},
       "unused": false,
       "values": {
         "de": "Willkommen",
@@ -1397,6 +1486,7 @@ exports[`rpc functions > lists keys with values and flags 1`] = `
       "key": "unused",
       "missing": [],
       "outdated": [],
+      "reviews": {},
       "unused": true,
       "values": {
         "de": "Niemand",
@@ -1828,6 +1918,7 @@ exports[`rpc functions > summarizes projects 1`] = `
         "general",
       ],
       "resources": 2,
+      "reviews": 0,
       "sourceLocale": "en",
       "usages": 6,
     },

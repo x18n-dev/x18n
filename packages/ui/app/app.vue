@@ -7,10 +7,10 @@ import LanguageMenu from './components/LanguageMenu.vue'
 import LocaleBar from './components/LocaleBar.vue'
 import LogoMark from './components/LogoMark.vue'
 import { setupI18n, t } from './i18n'
-import { backend, projectList, projectName, recentKeys, revision } from './state'
+import { backend, currentProject, projectList, projectName, recentKeys, revision } from './state'
 import { setupTheme } from './theme'
 
-const nav = computed(() => [
+const nav = computed<{ to: string, label: string, count?: number }[]>(() => [
   {
     to: '/',
     label: t('nav.overview'),
@@ -23,6 +23,15 @@ const nav = computed(() => [
     to: '/usages',
     label: t('nav.usages'),
   },
+  ...currentProject.value?.reviews === undefined
+    ? []
+    : [
+        {
+          to: '/reviews',
+          label: t('nav.reviews'),
+          count: currentProject.value.reviews,
+        },
+      ],
   {
     to: '/extract',
     label: t('nav.extract'),
@@ -105,6 +114,7 @@ onMounted(async () => {
             exact-active-class="!color-base"
           >
             {{ item.label }}
+            <span v-if="item.count" class="ml-1 tabular-nums color-warn">{{ item.count }}</span>
           </NuxtLink>
         </nav>
         <div class="flex-auto" />

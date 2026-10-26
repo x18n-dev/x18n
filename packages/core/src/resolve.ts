@@ -87,6 +87,12 @@ function defaultDraft(): ConfigDraft {
     ignoreKeys: [],
     glossary: [],
     history: { providers: [] },
+    review: {
+      enabled: true,
+      file: '.x18n/reviews.yml',
+      store: undefined,
+      author: undefined,
+    },
     pluginConfigs: {},
   }
 }
@@ -250,6 +256,15 @@ function applyLayer(draft: ConfigDraft, layer: UserConfig, origin: ConfigOrigin,
             ],
           }
     mark('history')
+  }
+  if (layer.review !== undefined) {
+    draft.review = {
+      enabled: layer.review.enabled ?? draft.review.enabled,
+      file: layer.review.file ?? draft.review.file,
+      store: layer.review.store ?? draft.review.store,
+      author: layer.review.author ?? draft.review.author,
+    }
+    mark('review')
   }
   if (layer.pluginConfigs !== undefined) {
     draft.pluginConfigs = {

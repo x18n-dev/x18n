@@ -14,6 +14,7 @@ import { extract } from './commands/extract'
 import { doctor, get, keys, locales, status, usages } from './commands/look'
 import { migrate } from './commands/migrate'
 import { prompt } from './commands/prompt'
+import { review } from './commands/review'
 import { eject, init, schema } from './commands/setup'
 import { exitCodeOf, printJson, stdinArg, useColor } from './context'
 
@@ -150,6 +151,15 @@ export function createCli(): CAC {
     .option('--stale', 'Also translate stale translations (needs git history)')
     .action(run('prompt', prompt))
 
+  cli.command('review <action> [target]', 'Reviews: `list [key]`, `comment|approve|request-change|suggest <key>`, `resolve|apply-suggestion <id>`, `mark-fresh <key>`')
+    .option('--locale <locale>', 'Locale of the message (repeatable for mark-fresh)')
+    .option('--text <text>', 'Comment text')
+    .option('--value <value>', 'Suggested value (suggest)')
+    .option('--author <author>', 'Author as `Name <email>` (default: review.author, then git user)')
+    .option('--open', 'Only unresolved reviews (list)')
+    .option('--dry-run', 'Print the plan instead of writing')
+    .action(run('review', review))
+
   cli.command('ui', 'Start the UI: browse and edit messages in the browser, with HTTP MCP at /__mcp')
     .option('--port <port>', 'Port (default: a free one from 9999)')
     .option('--host <host>', 'Bind host (default: localhost)')
@@ -170,7 +180,7 @@ export function createCli(): CAC {
     .option('--dry-run', 'Print the files instead of writing')
     .option('--force', 'Replace an existing config')
     .action(run('migrate', migrate))
-  cli.command('schema [name]', 'Print a JSON Schema: config (default) or plugin').action(run('schema', schema))
+  cli.command('schema [name]', 'Print a JSON Schema: config (default), plugin or reviews').action(run('schema', schema))
   cli.command('plugin <action> <file>', 'Plugin tools: `plugin eject <file.yml>` prints the TS equivalent')
     .action(run('plugin eject', async (action: string, file: string, options: GlobalOptions) => {
       if (action !== 'eject')

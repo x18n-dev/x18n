@@ -11,6 +11,7 @@ import type {
   SerializableConfig,
 } from './types/config'
 import type { JsonObject, JsonValue } from './types/model'
+import type { ReviewAuthor, ReviewComment, ReviewData } from './types/review'
 import * as v from 'valibot'
 
 function isJsonValue(value: unknown): value is JsonValue {
@@ -128,6 +129,11 @@ const namespaceOptions = v.strictObject({
   fromPath: v.optional(v.picklist(['dot', 'slash', 'camel'])),
 }) satisfies v.GenericSchema<NamespaceOptions>
 
+const reviewAuthor = v.strictObject({
+  name: v.optional(v.string()),
+  email: v.optional(v.string()),
+}) satisfies v.GenericSchema<ReviewAuthor>
+
 const configSchema = v.strictObject({
   $schema: v.optional(v.string()),
   root: v.optional(v.string()),
@@ -181,6 +187,12 @@ const configSchema = v.strictObject({
       v.looseObject({}),
     ])),
   ])),
+  review: v.optional(v.strictObject({
+    enabled: v.optional(v.boolean()),
+    file: v.optional(v.string()),
+    store: v.optional(v.string()),
+    author: v.optional(reviewAuthor),
+  })),
   projects: v.optional(strings),
 })
 
@@ -262,6 +274,40 @@ const pluginFileSchema = v.strictObject({
 })
 
 export const PluginFileSchema: v.GenericSchema<PluginFile> = pluginFileSchema
+
+/** The review file (`.x18n/reviews.yml`), as the YAML review store reads it. */
+export interface ReviewFile {
+  readonly $schema?: string | undefined
+  /** File format version. */
+  readonly x18n: 1
+  readonly threads?: ReviewData['threads'] | undefined
+  readonly sources?: ReviewData['sources'] | undefined
+}
+
+const reviewComment = v.strictObject({
+  id: v.string(),
+  type: v.picklist([
+    'comment',
+    'approve',
+    'request-change',
+    'suggestion',
+  ]),
+  author: v.optional(reviewAuthor),
+  time: v.string(),
+  text: v.optional(v.string()),
+  suggestion: v.optional(v.string()),
+  value: v.optional(v.string()),
+  resolved: v.optional(v.boolean()),
+}) satisfies v.GenericSchema<ReviewComment>
+
+const reviewFileSchema = v.strictObject({
+  $schema: v.optional(v.string()),
+  x18n: v.literal(1),
+  threads: v.optional(v.record(v.string(), v.record(v.string(), v.array(reviewComment)))),
+  sources: v.optional(v.record(v.string(), v.record(v.string(), v.string()))),
+})
+
+export const ReviewFileSchema: v.GenericSchema<ReviewFile> = reviewFileSchema
 
 export interface SchemaIssue {
   readonly path: string

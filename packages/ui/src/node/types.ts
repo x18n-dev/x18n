@@ -1,5 +1,5 @@
 import type { ExtractCandidate } from '@x18n/builtins/extractors'
-import type { Decision, EditOp, FileChange, KeyString, LocaleCode, MessageLeaf, PlaceholderProblem, Project, ProjectExplanation, Severity, TextRange, UsageKind, WireDiagnostic } from '@x18n/core'
+import type { Decision, EditOp, FileChange, KeyString, LocaleCode, MessageLeaf, PlaceholderProblem, Project, ProjectExplanation, ReviewState, ReviewThread, ReviewType, Severity, TextRange, UsageKind, WireDiagnostic } from '@x18n/core'
 // Puts `devframe` into every program that sees these types, so the augmentation below resolves (the SPA only imports `devframe/client`).
 import type {} from 'devframe'
 
@@ -61,6 +61,13 @@ export interface ApplyQuery extends PlanQuery {
   readonly force?: boolean | undefined
 }
 
+export interface ReviewQuery extends ProjectQuery {
+  readonly key?: KeyString | undefined
+  readonly locale?: LocaleCode | undefined
+  /** Only unresolved comments. */
+  readonly open?: boolean | undefined
+}
+
 export interface ExtractQuery extends ProjectQuery {
   readonly files?: readonly string[] | undefined
 }
@@ -111,6 +118,14 @@ export interface AgentRenameQuery extends ProjectQuery, Confirmable {
   readonly from: KeyString
   readonly to: KeyString
   readonly usages?: boolean | undefined
+}
+
+export interface AgentReviewQuery extends ProjectQuery {
+  readonly key: KeyString
+  readonly locale: LocaleCode
+  readonly review: ReviewType
+  readonly text?: string | undefined
+  readonly suggestion?: string | undefined
 }
 
 export interface AgentDeleteQuery extends ProjectQuery, Confirmable {
@@ -171,6 +186,8 @@ export interface ProjectSummary {
   readonly presets: readonly string[]
   /** The latest revisions in history, local changes first. */
   readonly changes: readonly ChangeGroup[]
+  /** Threads with open comments; undefined when reviews are off. */
+  readonly reviews: number | undefined
 }
 
 export interface ProjectList {
@@ -191,6 +208,8 @@ export interface KeyRow {
   readonly outdated: readonly LocaleCode[]
   /** The latest change in any locale (ms); local changes count as now. */
   readonly changedAt: number | undefined
+  /** Review state per locale with open comments. */
+  readonly reviews: Readonly<Record<LocaleCode, ReviewState>>
 }
 
 export interface KeyTable {
@@ -246,6 +265,8 @@ export interface KeyDetail {
   readonly missing: readonly LocaleCode[]
   readonly usages: readonly UsageView[]
   readonly diagnostics: readonly WireDiagnostic[]
+  /** Every thread, resolved comments included. */
+  readonly reviews: readonly ReviewThread[]
 }
 
 export interface AnalysisView {
@@ -296,6 +317,7 @@ declare module 'devframe' {
     'x18n:usages': (query: UsageQuery) => UsageView[]
     'x18n:analysis': (query: ProjectQuery) => AnalysisView
     'x18n:explain': () => ExplainList
+    'x18n:reviews': (query: ReviewQuery) => ReviewThread[]
     'x18n:translate-prompt': (query: PromptQuery) => string
     'x18n:plan': (query: PlanQuery) => PlanView
     'x18n:apply': (query: ApplyQuery) => Promise<ApplyView>

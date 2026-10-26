@@ -47,7 +47,7 @@ interface MessageChange {
 
 ## Stale rule
 
-A target message is stale when both it and its source message have an entry and the target's `updatedAt` is earlier than the source's. A commit that changes both leaves the target fresh. A message without an entry is never stale. `LocaleCoverage.outdated` lists stale keys per locale, `stale-translation` (warning) reports each one at the target message, and `x18n check --json` adds an `outdated` count to each coverage entry.
+A target message is stale when both it and its source message have an entry and the target's `updatedAt` is earlier than the source's. A commit that changes both leaves the target fresh. A message without an entry is never stale. A review record of the current source value keeps a target fresh whatever the times say ([12-reviews.md](./12-reviews.md#stale-translations)). `LocaleCoverage.outdated` lists stale keys per locale, `stale-translation` (warning) reports each one at the target message, and `x18n check --json` adds an `outdated` count to each coverage entry.
 
 ## Git provider
 

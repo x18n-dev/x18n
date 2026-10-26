@@ -76,7 +76,8 @@
     "outdated": "Obsolètes",
     "sort": "Tri",
     "sortKey": "Clé",
-    "sortRecent": "Modifiées récemment"
+    "sortRecent": "Modifiées récemment",
+    "reviewed": "Avec revue"
   },
   "locale": {
     "complete": "Toutes les clés sont traduites.",
@@ -105,7 +106,8 @@
     "keys": "Clés",
     "overview": "Aperçu",
     "project": "Projet",
-    "usages": "Utilisations"
+    "usages": "Utilisations",
+    "reviews": "Revues"
   },
   "overview": {
     "clean": "Aucun problème détecté.",
@@ -187,5 +189,41 @@
     "copyFix": "Copier le prompt de correction",
     "fixHint": "Copie un prompt pour un LLM ou un agent qui corrige tous les diagnostics de ce projet",
     "fixCodeHint": "Copie un prompt pour un LLM ou un agent qui corrige les diagnostics {code}"
+  },
+  "review": {
+    "add": "Relire",
+    "type": "Type de revue",
+    "textPlaceholder": "Commentaire",
+    "suggestionPlaceholder": "Valeur proposée",
+    "send": "Envoyer",
+    "resolve": "Résoudre",
+    "apply": "Appliquer",
+    "resolved": "résolu",
+    "stale": "modifié depuis",
+    "unknownAuthor": "Quelqu'un",
+    "suggests": "Propose",
+    "empty": "Aucune revue à afficher.",
+    "off": "Les revues sont désactivées pour ce projet.",
+    "all": "Toutes ({count})",
+    "showResolved": "Afficher les résolues",
+    "states": {
+      "changesRequested": "Modification demandée",
+      "approved": "Approuvé",
+      "staleApproval": "Approuvé, modifié depuis",
+      "suggested": "Proposition",
+      "commented": "Commentaires"
+    },
+    "types": {
+      "comment": "Commenter",
+      "approve": "Approuver",
+      "requestChange": "Demander une modification",
+      "suggestion": "Proposer"
+    },
+    "done": {
+      "comment": "a commenté",
+      "approve": "a approuvé",
+      "requestChange": "demande une modification",
+      "suggestion": "propose une valeur"
+    }
   }
 }

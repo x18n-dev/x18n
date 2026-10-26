@@ -126,6 +126,67 @@ describe('x18n binary', () => {
     expect(locales.locales.map((l: any) => l.code)).toEqual(['en', 'de'])
   })
 
+  it('review comments, suggests, applies and resolves', async () => {
+    const dir = await fixture('i18next')
+    const author = ['--author', 'Ada <ada@example.com>']
+    expect((await x18n(dir, [
+      'review',
+      'request-change',
+      'auth:login.title',
+      '--locale',
+      'de',
+      '--text',
+      'Too short',
+      ...author,
+    ])).code).toBe(0)
+    expect((await x18n(dir, [
+      'review',
+      'suggest',
+      'auth:login.title',
+      '--locale',
+      'de',
+      '--value',
+      'Einloggen',
+      ...author,
+    ])).code).toBe(0)
+    const threads = json(await x18n(dir, ['review', 'list', '--json'])).data.projects[0].threads
+    expect(threads).toMatchObject([
+      {
+        key: 'auth:login.title',
+        locale: 'de',
+        state: 'changes-requested',
+        comments: [
+          {
+            type: 'request-change',
+            text: 'Too short',
+            author: { name: 'Ada', email: 'ada@example.com' },
+          },
+          { type: 'suggestion', suggestion: 'Einloggen' },
+        ],
+      },
+    ])
+    const [request, suggestion] = threads[0].comments
+    const check = json(await x18n(dir, ['check', '--json']))
+    expect(check.diagnostics.find((d: any) => d.code === 'review-changes-requested')).toMatchObject({ key: 'auth:login.title', locale: 'de', severity: 'info' })
+
+    expect((await x18n(dir, ['review', 'apply-suggestion', suggestion.id])).code).toBe(0)
+    expect(JSON.parse(await readFile(join(dir, 'public/locales/de/auth.json'), 'utf8')).login.title).toBe('Einloggen')
+    expect((await x18n(dir, ['review', 'resolve', request.id])).code).toBe(0)
+    expect((await x18n(dir, ['review', 'list', '--open'])).stdout).toBe('No open reviews.\n')
+    expect((await x18n(dir, ['review', 'list'])).stdout).toContain('auth:login.title  de\n')
+    expect(json(await x18n(dir, ['get', 'auth:login.title', '--json'])).data.projects[0].reviews[0].comments).toHaveLength(2)
+
+    const missing = await x18n(dir, [
+      'review',
+      'comment',
+      'auth:login.title',
+      '--text',
+      'Hm',
+    ])
+    expect(missing.code).toBe(1)
+    expect(missing.stderr).toContain('pass --locale <locale>')
+  })
+
   it('doctor explains detected presets', async () => {
     const dir = await fixture('i18next')
     const projects = json(await x18n(dir, ['doctor', '--json'])).data.projects
@@ -281,6 +342,7 @@ describe('x18n binary', () => {
       ['usages'],
       ['locales'],
       ['check'],
+      ['review', 'list'],
       [
         'prompt',
         'translate',

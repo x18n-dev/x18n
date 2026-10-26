@@ -21,6 +21,7 @@ import type {
   Usage,
   UsageKind,
 } from './model'
+import type { ReviewFilter, ReviewStore, ReviewThread } from './review'
 
 export interface ConfigContext {
   readonly host: Host
@@ -287,6 +288,7 @@ export interface CheckContext {
   readonly hardStrings: () => Iterable<HardString & { readonly path: string }>
   /** When a message last changed, from the history providers. Undefined until history is loaded. */
   readonly history: (key: KeyString, locale: LocaleCode) => MessageChange | undefined
+  readonly reviews: (filter?: ReviewFilter) => readonly ReviewThread[]
 }
 
 export interface Check {
@@ -396,6 +398,8 @@ export interface Plugin {
   readonly reporters?: readonly Reporter[] | undefined
   readonly placeholders?: readonly PlaceholderSyntax[] | undefined
   readonly histories?: readonly HistoryProvider[] | undefined
+  /** Only one store is active: a second one needs `review.store` in config. */
+  readonly reviewStores?: readonly ReviewStore[] | undefined
 
   /** Turns raw key text into canonical form. The first plugin that returns a value wins. */
   readonly normalizeKey?: ((raw: string, ctx: KeyContext) => string | undefined) | undefined

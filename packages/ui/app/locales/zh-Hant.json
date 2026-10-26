@@ -76,7 +76,8 @@
     "outdated": "過時",
     "sort": "排序",
     "sortKey": "鍵",
-    "sortRecent": "最近變更"
+    "sortRecent": "最近變更",
+    "reviewed": "有審閱"
   },
   "locale": {
     "complete": "所有鍵皆已翻譯。",
@@ -105,7 +106,8 @@
     "keys": "鍵",
     "overview": "總覽",
     "project": "專案",
-    "usages": "使用處"
+    "usages": "使用處",
+    "reviews": "審閱"
   },
   "overview": {
     "clean": "未發現問題。",
@@ -187,5 +189,41 @@
     "copyFix": "複製修復提示詞",
     "fixHint": "複製提示詞，供 LLM 或代理修復此專案的所有診斷",
     "fixCodeHint": "複製提示詞，供 LLM 或代理修復 {code} 診斷"
+  },
+  "review": {
+    "add": "審閱",
+    "type": "審閱類型",
+    "textPlaceholder": "留言",
+    "suggestionPlaceholder": "建議的值",
+    "send": "送出",
+    "resolve": "解決",
+    "apply": "套用",
+    "resolved": "已解決",
+    "stale": "之後已變更",
+    "unknownAuthor": "某人",
+    "suggests": "建議",
+    "empty": "沒有可顯示的審閱。",
+    "off": "此專案已關閉審閱。",
+    "all": "全部 ({count})",
+    "showResolved": "顯示已解決",
+    "states": {
+      "changesRequested": "要求修改",
+      "approved": "已核准",
+      "staleApproval": "已核准，之後已變更",
+      "suggested": "建議",
+      "commented": "留言"
+    },
+    "types": {
+      "comment": "留言",
+      "approve": "核准",
+      "requestChange": "要求修改",
+      "suggestion": "建議"
+    },
+    "done": {
+      "comment": "留言了",
+      "approve": "核准了",
+      "requestChange": "要求修改",
+      "suggestion": "建議了一個值"
+    }
   }
 }

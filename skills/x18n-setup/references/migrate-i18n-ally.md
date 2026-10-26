@@ -11,7 +11,7 @@ Use this when a project has i18n-ally settings: `i18n-ally.*`, legacy `vue-i18n-
    - `languageTagSystem` is dropped: x18n uses locale codes exactly as they appear in file names.
    - A custom framework with `monopoly: true` turns the built-in presets off (`presets: []`).
    - Executed JS/TS locale files become read-only (`execute: true`).
-   - Reviews move to `.x18n/reviews.yml`, which x18n reads once reviews ship.
+   - Reviews are converted to `.x18n/reviews.yml`; key descriptions and `review.removeCommentOnResolved` are dropped.
    - The config format: `x18n.config.ts` by default, or `--format yml` / `--format json` for projects without Node.js tooling.
 4. Write the files: `x18n migrate i18n-ally --json` (add `--format yml` if the user chose YAML; `--force` replaces an existing x18n config). It writes:
    - `x18n.config.ts` (or `.yml`, `.json`) from the project settings

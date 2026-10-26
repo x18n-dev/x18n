@@ -171,3 +171,59 @@ describe('agent tools', () => {
     expect(wire(await ctx.agent.invoke('x18n:extract_plan', {}))).toMatchSnapshot()
   })
 })
+
+describe('reviews', () => {
+  it('adds reviews through apply and the agent tool, and lists them on the key, the grid and the summary', async () => {
+    const applied = await ctx.rpc.invokeLocal('x18n:apply', {
+      project,
+      ops: [
+        {
+          type: 'review',
+          key: 'app.title',
+          locale: 'de',
+          review: 'suggestion',
+          suggestion: 'Meine Anwendung',
+        },
+      ],
+    })
+    expect(applied).toMatchObject({
+      applied: true,
+      changes: [
+        { type: 'create', path: '.x18n/reviews.yml' },
+      ],
+    })
+    expect(await ctx.agent.invoke('x18n:review', {
+      key: 'app.title',
+      locale: 'de',
+      review: 'request-change',
+      text: 'Too literal',
+    })).toMatchObject({ applied: true })
+
+    const threads = await ctx.rpc.invokeLocal('x18n:reviews', { project, open: true })
+    expect(threads).toMatchObject([
+      {
+        key: 'app.title',
+        locale: 'de',
+        state: 'changes-requested',
+        comments: [
+          { type: 'suggestion', suggestion: 'Meine Anwendung' },
+          { type: 'request-change', text: 'Too literal' },
+        ],
+      },
+    ])
+    expect((await ctx.rpc.invokeLocal('x18n:key', { project, key: 'app.title' }))?.reviews).toEqual(threads)
+    expect((await ctx.rpc.invokeLocal('x18n:keys', { project })).rows.find(r => r.key === 'app.title')?.reviews).toEqual({ de: 'changes-requested' })
+    expect((await ctx.rpc.invokeLocal('x18n:project')).projects[0]?.reviews).toBe(1)
+    expect(await ctx.agent.invoke('x18n:reviews', { open: true })).toEqual({ threads })
+
+    await ctx.rpc.invokeLocal('x18n:apply', {
+      project,
+      ops: [
+        { type: 'apply-suggestion', id: threads[0]!.comments[0]!.id },
+        { type: 'resolve-review', id: threads[0]!.comments[1]!.id },
+      ],
+    })
+    expect(JSON.parse(await readFile(join(root, 'src/locales/de.json'), 'utf8')).app.title).toBe('Meine Anwendung')
+    expect(await ctx.rpc.invokeLocal('x18n:reviews', { project, open: true })).toEqual([])
+  })
+})

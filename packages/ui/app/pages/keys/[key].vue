@@ -13,10 +13,12 @@ import KeySidebar from '../../components/KeySidebar.vue'
 import LocaleFlag from '../../components/LocaleFlag.vue'
 import MessageEditor from '../../components/MessageEditor.vue'
 import MessageText from '../../components/MessageText.vue'
+import ReviewThread from '../../components/ReviewThread.vue'
 import UiSection from '../../components/ui/UiSection.vue'
 import { applyEdit, describeProblem, setMessage } from '../../edit'
 import { t } from '../../i18n'
 import { translatePrompt } from '../../prompt'
+import { reviewStates } from '../../review'
 import { backend, currentProject, locales, projectName, showAllLocales, useLive, visibleLocales } from '../../state'
 
 const route = useRoute()
@@ -26,7 +28,10 @@ const detail = useLive((b, project) => b.key(project, key.value))
 const rows = computed(() => visibleLocales.value.map(locale => ({
   locale: locale.code,
   message: detail.value?.messages.find(m => m.locale === locale.code),
+  thread: detail.value?.reviews.find(r => r.locale === locale.code),
 })))
+const reviewing = ref<string>()
+const canReview = computed(() => backend.value?.capabilities.write === true && currentProject.value?.reviews !== undefined)
 const hiddenCount = computed(() => locales.value.length - visibleLocales.value.length)
 const sourceValue = computed(() => detail.value?.messages.find(m => m.locale === currentProject.value?.sourceLocale)?.value)
 
@@ -105,6 +110,7 @@ function openUsage(usage: UsageView): void {
               {{ row.locale }}
               <span v-if="row.locale === currentProject?.sourceLocale" class="badge">{{ t('overview.source') }}</span>
               <span v-if="row.message?.outdated" class="badge border-current color-warn" :title="t('history.outdatedHint')">{{ t('history.outdated') }}</span>
+              <span v-if="row.thread?.state" :class="[reviewStates[row.thread.state].icon, reviewStates[row.thread.state].color]" :title="t(reviewStates[row.thread.state].label)" />
             </span>
             <MessageEditor
               v-if="editing?.locale === row.locale"
@@ -130,6 +136,9 @@ function openUsage(usage: UsageView): void {
               </dl>
             </div>
             <div class="flex gap-1">
+              <button v-if="canReview" class="btn-icon" :aria-label="t('review.add')" :title="t('review.add')" @click="reviewing = reviewing === row.locale ? undefined : row.locale">
+                <span class="i-ph-chat-circle-text-duotone" />
+              </button>
               <CopyPrompt v-if="row.locale !== currentProject?.sourceLocale" :text="translatePrompt([{ locale: row.locale, key }])" :label="t('prompt.copy')" :hint="t('prompt.hint')" />
               <InfoPop v-if="row.message" icon="i-ph-file-text-duotone" :label="t('detail.file')">
                 <FilePath :path="row.message.path" :line="row.message.line" />
@@ -138,6 +147,15 @@ function openUsage(usage: UsageView): void {
                 <ChangeInfo :change="row.message.changed" />
               </InfoPop>
             </div>
+            <ReviewThread
+              v-if="row.thread || reviewing === row.locale"
+              class="col-span-2 col-start-2"
+              :thread="row.thread"
+              :review-key="key"
+              :locale="row.locale"
+              :composing="reviewing === row.locale"
+              @close="reviewing = undefined"
+            />
           </div>
           <button v-if="hiddenCount" class="btn-ghost h-9 w-full justify-start px-4" @click="showAllLocales">
             <span class="i-ph-dots-three-duotone" /> {{ t('detail.showAllLocales') }} ({{ hiddenCount }})

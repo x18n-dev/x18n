@@ -139,7 +139,14 @@ x18n check --only placeholder-mismatch,invalid-syntax,glossary --locale de --jso
 x18n prompt review --locale de --limit 50
 ```
 
-Fix wrong values with `x18n set <key> --locale de --value <text> --json`, and list what you changed and why.
+Do not change values yourself. For each wrong translation, leave a review for a human to accept, then list what you reviewed:
+
+```sh
+x18n review suggest <key> --locale de --value <better text> --text <why> --json
+x18n review request-change <key> --locale de --text <why> --json
+```
+
+Keep every placeholder in a suggested value. `x18n review list --locale de --open --json` shows the open reviews. Only when the user asks, apply one with `x18n review apply-suggestion <id> --json`. When reviews are off (`review.enabled: false`, error X18N5003), fix values with `x18n set <key> --locale de --value <text> --json` instead.
 
 ### Clean up
 

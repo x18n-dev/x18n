@@ -34,6 +34,7 @@ it('writes a static report with the SPA and the dumped data', async () => {
       'x18n:key',
       'x18n:keys',
       'x18n:project',
+      'x18n:reviews',
       'x18n:usages',
     ])
     expect(Object.keys(manifest['x18n:key'].records)).toHaveLength(workspace.projects[0]!.project.keys().length)

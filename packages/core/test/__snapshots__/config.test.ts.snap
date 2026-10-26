@@ -389,6 +389,35 @@ exports[`schemas > config schema 1`] = `
       },
       "type": "array",
     },
+    "review": {
+      "additionalProperties": false,
+      "properties": {
+        "author": {
+          "additionalProperties": false,
+          "properties": {
+            "email": {
+              "type": "string",
+            },
+            "name": {
+              "type": "string",
+            },
+          },
+          "required": [],
+          "type": "object",
+        },
+        "enabled": {
+          "type": "boolean",
+        },
+        "file": {
+          "type": "string",
+        },
+        "store": {
+          "type": "string",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
     "root": {
       "type": "string",
     },

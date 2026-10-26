@@ -10,6 +10,7 @@ import UiToggle from '../../components/ui/UiToggle.vue'
 import { describeProblem, setMessage } from '../../edit'
 import { fuzzyScore } from '../../fuzzy'
 import { t } from '../../i18n'
+import { reviewStates } from '../../review'
 import { backend, currentProject, useLive, visibleLocales } from '../../state'
 
 const ROW_HEIGHT = 32
@@ -26,6 +27,8 @@ const missingIn = ref(typeof route.query.missing === 'string'
 const unusedOnly = ref(false)
 const withDiagnostics = ref(false)
 const outdatedOnly = ref(route.query.outdated !== undefined)
+const reviewedOnly = ref(route.query.reviewed !== undefined)
+const hasReviews = computed(() => (table.value?.rows ?? []).some(row => Object.keys(row.reviews).length > 0))
 const sort = ref<'key' | 'recent'>('key')
 const sorts = computed(() => [
   {
@@ -51,7 +54,8 @@ const rows = computed<KeyRow[]>(() => {
     && (!missingIn.value || !locales.value.includes(missingIn.value) || row.missing.includes(missingIn.value))
     && (!unusedOnly.value || row.unused)
     && (!withDiagnostics.value || row.diagnostics > 0)
-    && (!outdatedOnly.value || row.outdated.some(locale => locales.value.includes(locale))))
+    && (!outdatedOnly.value || row.outdated.some(locale => locales.value.includes(locale)))
+    && (!reviewedOnly.value || locales.value.some(locale => row.reviews[locale] !== undefined)))
   if (!query) {
     return sort.value === 'recent'
       ? [...filtered].sort((a, b) => (b.changedAt ?? 0) - (a.changedAt ?? 0))
@@ -235,6 +239,9 @@ function onEditorKey(event: KeyboardEvent): void {
       <UiToggle v-model="withDiagnostics">
         {{ t('keys.withDiagnostics') }}
       </UiToggle>
+      <UiToggle v-if="hasReviews" v-model="reviewedOnly">
+        {{ t('keys.reviewed') }}
+      </UiToggle>
       <template v-if="hasHistory">
         <UiToggle v-model="outdatedOnly">
           {{ t('keys.outdated') }}
@@ -319,7 +326,8 @@ function onEditorKey(event: KeyboardEvent): void {
             >
             <template v-else>
               <span class="truncate" :title="String(row.values[locale] ?? '')"><MessageText :value="row.values[locale]" inline /></span>
-              <span v-if="row.outdated.includes(locale)" class="ml-auto shrink-0 pl-2 color-warn" :title="t('history.outdatedHint')"><span class="i-ph-clock-counter-clockwise-duotone block" /></span>
+              <span v-if="row.reviews[locale]" class="ml-auto shrink-0 pl-2" :class="reviewStates[row.reviews[locale]].color" :title="t(reviewStates[row.reviews[locale]].label)"><span class="block" :class="reviewStates[row.reviews[locale]].icon" /></span>
+              <span v-if="row.outdated.includes(locale)" class="shrink-0 pl-2 color-warn" :class="row.reviews[locale] ? '' : 'ml-auto'" :title="t('history.outdatedHint')"><span class="i-ph-clock-counter-clockwise-duotone block" /></span>
             </template>
           </div>
         </div>

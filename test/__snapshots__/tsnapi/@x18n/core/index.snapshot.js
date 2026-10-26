@@ -52,4 +52,5 @@ export var ConfigSchema /* const */
 export var contractVersion /* const */
 export var errors /* const */
 export var PluginFileSchema /* const */
+export var ReviewFileSchema /* const */
 // #endregion

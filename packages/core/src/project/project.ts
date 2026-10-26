@@ -4,7 +4,9 @@ import type { FileEvent, Host } from '../types/host'
 import type { KeyString, LocaleCode, LocaleInfo, Message, MessageLeaf, MessageTree, Resource, TextRange, Usage } from '../types/model'
 import type { HardString, HistoryContext, ScanResult, SourceFile } from '../types/plugin'
 import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, ResourceNode, UsageMatch } from '../types/project'
+import type { ReviewData, ReviewFilter, ReviewStore, ReviewThread } from '../types/review'
 import type { ResourceState } from './analysis'
+import type { ReviewSource } from './planner'
 import type { UsageResolver } from './usages'
 import { errors, isX18nError, toErrorInfo } from '../errors'
 import { isKeyUnder, joinKey, keyMatcher, pathMatcher } from '../keys'
@@ -16,6 +18,7 @@ import { createAnalyzer } from './analysis'
 import { createHistory } from './history'
 import { createPlanner } from './planner'
 import { buildPrompt } from './prompt'
+import { listThreads, noReviews, sourceHash } from './reviews'
 import { categoriesOf, createUsageResolver, derivedKeys, prefixMatches, suppressedRanges } from './usages'
 
 export interface CreateProjectOptions {
@@ -71,6 +74,10 @@ export function createProject(options: CreateProjectOptions): Project {
   // Rebuilt only when resources change, so a source edit re-indexes just its usages.
   let resourceIndex: ResourceIndex | undefined
   let resolved = new WeakMap<FileState, Usage[]>()
+  const reviewFile = config.review.file
+  let reviewText: string | undefined
+  let reviewData: ReviewData = noReviews
+  let reviewError: X18nError | undefined
 
   const normalizers = registry.plugins.flatMap(plugin => plugin.normalizeKey
     ? [plugin.normalizeKey]
@@ -116,6 +123,95 @@ export function createProject(options: CreateProjectOptions): Project {
   function needs(key: KeyString, locale: LocaleCode): boolean {
     const form = formOf(key)
     return !form || categoriesOf(localeInfo(locale), form.type).includes(form.category)
+  }
+
+  // ---- Reviews ----
+
+  const reviewStore = ((): { store?: ReviewStore | undefined, error?: X18nError | undefined } => {
+    if (!config.review.enabled)
+      return {}
+    const stores = registry.reviewStores
+    const ids = stores.map(store => store.id)
+    if (config.review.store !== undefined) {
+      const store = stores.find(item => item.id === config.review.store)
+      return store
+        ? { store }
+        : {
+            error: errors.X18N5003({ reason: `no review store "${config.review.store}" (${ids.join(', ') || 'none registered'})` }),
+          }
+    }
+    return stores.length > 1
+      ? {
+          error: errors.X18N5002({ stores: ids }),
+        }
+      : { store: stores[0] }
+  })()
+
+  async function loadReviews(): Promise<void> {
+    const { store } = reviewStore
+    if (!store)
+      return
+    reviewText = await host.readFile(reviewFile)
+    reviewError = undefined
+    reviewData = noReviews
+    if (reviewText === undefined)
+      return
+    try {
+      reviewData = store.parse(reviewText)
+    }
+    catch (error) {
+      reviewError = errors.X18N5001({
+        path: reviewFile,
+        reason: error instanceof Error
+          ? error.message
+          : String(error),
+        cause: error,
+      })
+    }
+  }
+
+  /** Reviews the planner may change: none while the file cannot be read, so a write never drops what is in it. */
+  function reviewSource(): ReviewSource | undefined {
+    const { store } = reviewStore
+    return store && !reviewError
+      ? {
+          store,
+          file: reviewFile,
+          text: reviewText,
+          data: reviewData,
+        }
+      : undefined
+  }
+
+  function reviewProblem(): string | undefined {
+    if (!config.review.enabled)
+      return '`review.enabled` is false'
+    const error = reviewStore.error ?? reviewError
+    if (error)
+      return error.message
+    return reviewStore.store
+      ? undefined
+      : 'no review store is registered'
+  }
+
+  function reviewErrors(): { error: X18nError, path: string }[] {
+    const error = reviewStore.error ?? reviewError
+    return error
+      ? [
+          { error, path: reviewFile },
+        ]
+      : []
+  }
+
+  function reviews(filter: ReviewFilter = {}): ReviewThread[] {
+    return listThreads(reviewData, filter, locales, (key, locale) => message(key, locale)?.value)
+  }
+
+  /** A target recorded as written against the current source value. */
+  function fresh(key: KeyString, locale: LocaleCode): boolean {
+    const recorded = reviewData.sources[key]?.[locale]
+    const source = message(key, sourceLocale)?.value
+    return recorded !== undefined && source !== undefined && recorded === sourceHash(source)
   }
 
   // ---- Discovery and parse ----
@@ -698,7 +794,10 @@ export function createProject(options: CreateProjectOptions): Project {
             { error: s.error, path },
           ]
         : []),
-      discoveryErrors,
+      discoveryErrors: [
+        ...discoveryErrors,
+        ...reviewErrors(),
+      ],
       messages: idx().messages,
       parents: idx().parents,
       usages: idx().usages,
@@ -707,6 +806,8 @@ export function createProject(options: CreateProjectOptions): Project {
       derived: idx().derived,
       files,
       history: history.get,
+      fresh,
+      reviews,
     }),
     basesOf,
     formOf,
@@ -755,6 +856,7 @@ export function createProject(options: CreateProjectOptions): Project {
       missing: locales.filter(locale => !byLocale.has(locale) && needs(key, locale)),
       usages: usageMatches({ key }),
       diagnostics: analyzer.analyze().diagnostics.filter(d => d.key === key),
+      reviews: reviews({ key }),
     }
   }
 
@@ -826,6 +928,7 @@ export function createProject(options: CreateProjectOptions): Project {
       conflicts: registry.conflicts,
       errors: [
         ...discoveryErrors,
+        ...reviewErrors(),
         ...resources.flatMap(state => state.error
           ? [
               { error: state.error, path: state.resource.path },
@@ -868,6 +971,20 @@ export function createProject(options: CreateProjectOptions): Project {
     return [...out]
   }
 
+  /** Reloads the review file and returns the keys whose reviews or records it had or has. */
+  async function reloadReviews(): Promise<KeyString[]> {
+    const keysOf = (data: ReviewData): string[] => [
+      ...Object.keys(data.threads),
+      ...Object.keys(data.sources),
+    ]
+    const old = keysOf(reviewData)
+    await loadReviews()
+    return [
+      ...old,
+      ...keysOf(reviewData),
+    ]
+  }
+
   let current = Promise.resolve()
   async function update(events: readonly FileEvent[]): Promise<ProjectChange | undefined> {
     const run = current.then(async () => {
@@ -875,11 +992,14 @@ export function createProject(options: CreateProjectOptions): Project {
         return undefined
       const before = idx()
       const paths = new Set(events.map(event => event.path))
+      const reviewKeys = paths.has(reviewFile)
+        ? await reloadReviews()
+        : []
       const resourcePaths = new Set([
         ...resourceStates.values(),
       ].map(state => state.resource.path))
       // An edited source file stays a source file; only other files with a format may have become resources.
-      const maybeResource = (path: string): boolean => !resourcePaths.has(path) && registry.formatIdFor(path) !== undefined && !usageEligible(path)
+      const maybeResource = (path: string): boolean => path !== reviewFile && !resourcePaths.has(path) && registry.formatIdFor(path) !== undefined && !usageEligible(path)
       // Block ranges move when their file changes; only the finders know the new ones.
       const blockPaths = new Set([
         ...resourceStates.values(),
@@ -909,7 +1029,12 @@ export function createProject(options: CreateProjectOptions): Project {
       const change: ProjectChange = {
         revision,
         paths: [...paths],
-        keys: touchedKeys(paths, before),
+        keys: [
+          ...new Set([
+            ...touchedKeys(paths, before),
+            ...reviewKeys,
+          ]),
+        ],
       }
       emit(change)
       return change
@@ -932,6 +1057,8 @@ export function createProject(options: CreateProjectOptions): Project {
         ...resourceStates.values(),
       ],
       fileTexts,
+      reviews: reviewSource(),
+      reviewProblem: reviewProblem(),
     }),
     message: (key, locale) => message(key, locale),
     messages: key => idx().messages.get(key),
@@ -949,7 +1076,10 @@ export function createProject(options: CreateProjectOptions): Project {
 
   const ready = (async () => {
     const candidates = await discover()
-    await loadResources(candidates, 'all')
+    await Promise.all([
+      loadResources(candidates, 'all'),
+      loadReviews(),
+    ])
     await scanAll()
     revision++
   })()
@@ -1046,6 +1176,13 @@ export function createProject(options: CreateProjectOptions): Project {
     },
     history: history.get,
     valueAt: history.valueAt,
+    reviews,
+    reviewFile: reviewStore.store
+      ? reviewFile
+      : undefined,
+    async reviewAuthor() {
+      return config.review.author ?? await host.identity?.()
+    },
     prompt: (kind, locale, promptOptions = {}) => buildPrompt(project, kind, locale, promptOptions, {
       config,
       hooks: registry.plugins.flatMap(plugin => plugin.translatePrompt
@@ -1054,8 +1191,10 @@ export function createProject(options: CreateProjectOptions): Project {
     }),
     explain,
     localeInfo,
-    text: path => fileTexts.get(path) ?? files.get(path)?.text,
-    owns: path => fileTexts.has(path) || files.has(path) || usageEligible(path),
+    text: path => fileTexts.get(path) ?? files.get(path)?.text ?? (path === reviewFile
+      ? reviewText
+      : undefined),
+    owns: path => fileTexts.has(path) || files.has(path) || usageEligible(path) || (path === reviewFile && reviewStore.store !== undefined),
     plan: ops => planner.plan(ops),
     apply: (plan, applyOptions) => planner.apply(plan, applyOptions?.answers ?? {}),
     update,

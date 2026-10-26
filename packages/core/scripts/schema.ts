@@ -3,9 +3,9 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { toJsonSchema } from '@valibot/to-json-schema'
-import { ConfigSchema, PluginFileSchema } from '../src/schema'
+import { ConfigSchema, PluginFileSchema, ReviewFileSchema } from '../src/schema'
 
-/** Writes `schema/config.json` and `schema/plugin.json` from the valibot schemas. */
+/** Writes `schema/config.json`, `schema/plugin.json` and `schema/reviews.json` from the valibot schemas. */
 export function buildJsonSchema(schema: GenericSchema<unknown>, title: string): object {
   return {
     ...toJsonSchema(schema, {
@@ -23,4 +23,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   await mkdir(out, { recursive: true })
   await writeFile(new URL('config.json', out), `${JSON.stringify(buildJsonSchema(ConfigSchema, 'x18n config'), null, 2)}\n`)
   await writeFile(new URL('plugin.json', out), `${JSON.stringify(buildJsonSchema(PluginFileSchema, 'x18n YAML plugin'), null, 2)}\n`)
+  await writeFile(new URL('reviews.json', out), `${JSON.stringify(buildJsonSchema(ReviewFileSchema, 'x18n reviews'), null, 2)}\n`)
 }

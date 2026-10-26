@@ -259,7 +259,8 @@ exports[`x18n binary > keeps the JSON contract of every read command > get app.g
             },
             "fixes": []
           }
-        ]
+        ],
+        "reviews": []
       }
     ]
   },
@@ -478,6 +479,24 @@ exports[`x18n binary > keeps the JSON contract of every read command > prompt tr
       "Write a JSON file \`{ \\"de\\": { \\"<key>\\": \\"<translation>\\" } }\` and run \`x18n apply <file> --json\`, or run \`x18n set <key> --locale de --value <text>\` per key.",
       "Then run \`x18n check --only placeholder-mismatch,invalid-syntax --locale de --json\` and fix the reported keys.",
       "To find more work: \`x18n keys --missing de --json --limit 50\`."
+    ]
+  },
+  "diagnostics": [],
+  "errors": []
+}
+"
+`;
+
+exports[`x18n binary > keeps the JSON contract of every read command > review list 1`] = `
+"{
+  "x18n": 2,
+  "command": "review list",
+  "data": {
+    "projects": [
+      {
+        "name": "<fixture>",
+        "threads": []
+      }
     ]
   },
   "diagnostics": [],

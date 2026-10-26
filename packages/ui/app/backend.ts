@@ -1,4 +1,5 @@
 import type { ExtractCandidate } from '@x18n/builtins/extractors'
+import type { ReviewThread } from '@x18n/core'
 import type { DevframeRpcClient } from 'devframe/client'
 import type { AnalysisView, ApplyQuery, ApplyView, ExplainList, ExtractApplyQuery, KeyDetail, KeyTable, OpenQuery, PlanQuery, PlanView, ProjectList, UsageView, X18nState } from '../src/node/types'
 import { connectDevframe } from 'devframe/client'
@@ -13,6 +14,8 @@ export interface UiBackend {
   readonly key: (project: string, key: string) => Promise<KeyDetail | null>
   readonly usages: (project: string) => Promise<UsageView[]>
   readonly analysis: (project: string) => Promise<AnalysisView>
+  /** Every review thread, resolved comments included. */
+  readonly reviews: (project: string) => Promise<ReviewThread[]>
   readonly explain: () => Promise<ExplainList>
   readonly extractCandidates: (project: string) => Promise<ExtractCandidate[]>
   readonly plan: (query: PlanQuery) => Promise<PlanView>
@@ -24,13 +27,14 @@ export interface UiBackend {
 }
 
 // Static dumps are keyed by the exact arguments, so reads always pass `{ project }` and nothing else.
-function reads(rpc: DevframeRpcClient): Pick<UiBackend, 'project' | 'keys' | 'key' | 'usages' | 'analysis' | 'explain' | 'extractCandidates'> {
+function reads(rpc: DevframeRpcClient): Pick<UiBackend, 'project' | 'keys' | 'key' | 'usages' | 'analysis' | 'reviews' | 'explain' | 'extractCandidates'> {
   return {
     project: () => rpc.call('x18n:project'),
     keys: project => rpc.call('x18n:keys', { project }),
     key: (project, key) => rpc.call('x18n:key', { project, key }),
     usages: project => rpc.call('x18n:usages', { project }),
     analysis: project => rpc.call('x18n:analysis', { project }),
+    reviews: project => rpc.call('x18n:reviews', { project }),
     explain: () => rpc.call('x18n:explain'),
     extractCandidates: project => rpc.call('x18n:extract-candidates', { project }),
   }

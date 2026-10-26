@@ -1,5 +1,6 @@
 import type { MessageConnection } from 'vscode-jsonrpc/node'
 import type { Location, PublishDiagnosticsParams, WorkspaceEdit } from 'vscode-languageserver/node'
+import type { ReviewsResult } from '../src'
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
@@ -244,6 +245,49 @@ describe('language server', () => {
   })
 
   // Last: `shutdown` stops the UI server.
+  it('adds, lists and resolves reviews, with their diagnostic and hover', async () => {
+    await client.sendRequest('workspace/executeCommand', {
+      command: 'x18n.review',
+      arguments: [
+        {
+          key: 'app.greeting',
+          locale: 'de',
+          review: 'request-change',
+          text: 'Use "Servus"',
+        },
+      ],
+    })
+    const { threads } = await client.sendRequest(methods.reviews, { open: true }) as ReviewsResult
+    expect(threads).toMatchObject([
+      {
+        key: 'app.greeting',
+        locale: 'de',
+        state: 'changes-requested',
+        comments: [
+          { type: 'request-change', text: 'Use "Servus"', resolved: false },
+        ],
+      },
+    ])
+    expect(relativeOf(threads[0]!.location!)).toBe('src/locales/de.json')
+    await expect.poll(() => diagnostics.get(uri('src/locales/de.json'))?.map(d => d.code)).toContain('review-changes-requested')
+    const hover: { contents: { value: string } } = await client.sendRequest('textDocument/hover', {
+      textDocument: {
+        uri: uri('src/App.vue'),
+      },
+      position: await position('src/App.vue', 'app.greeting'),
+    })
+    expect(hover.contents.value).toContain('**Reviews** de: changes requested')
+    await client.sendRequest('workspace/executeCommand', {
+      command: 'x18n.resolveReview',
+      arguments: [
+        { id: threads[0]!.comments[0]!.id },
+      ],
+    })
+    expect((await client.sendRequest(methods.reviews, { open: true }) as ReviewsResult).threads).toEqual([])
+    expect(await text('.x18n/reviews.yml')).toContain('resolved: true')
+    await expect.poll(() => diagnostics.get(uri('src/locales/de.json'))?.map(d => d.code)).toEqual(['placeholder-mismatch', 'empty-translation'])
+  })
+
   it('starts the UI on loopback with a one-time code, reuses it, and stops it on shutdown', async () => {
     const opened: { url: string, token: string } = await client.sendRequest(methods.openUi, {})
     expect(opened.url).toMatch(/^http:\/\/(?:localhost|127\.0\.0\.1):\d+\/$/)

@@ -76,7 +76,8 @@
     "outdated": "오래된 번역",
     "sort": "정렬",
     "sortKey": "키",
-    "sortRecent": "최근 변경"
+    "sortRecent": "최근 변경",
+    "reviewed": "리뷰 있음"
   },
   "locale": {
     "complete": "모든 키가 번역되었습니다.",
@@ -105,7 +106,8 @@
     "keys": "키",
     "overview": "개요",
     "project": "프로젝트",
-    "usages": "사용처"
+    "usages": "사용처",
+    "reviews": "리뷰"
   },
   "overview": {
     "clean": "문제가 없습니다.",
@@ -187,5 +189,41 @@
     "copyFix": "수정 프롬프트 복사",
     "fixHint": "이 프로젝트의 모든 진단을 수정하는 LLM 또는 에이전트용 프롬프트를 복사합니다",
     "fixCodeHint": "{code} 진단을 수정하는 LLM 또는 에이전트용 프롬프트를 복사합니다"
+  },
+  "review": {
+    "add": "리뷰",
+    "type": "리뷰 유형",
+    "textPlaceholder": "댓글",
+    "suggestionPlaceholder": "제안 값",
+    "send": "보내기",
+    "resolve": "해결",
+    "apply": "적용",
+    "resolved": "해결됨",
+    "stale": "이후 변경됨",
+    "unknownAuthor": "누군가",
+    "suggests": "제안",
+    "empty": "표시할 리뷰가 없습니다.",
+    "off": "이 프로젝트에서는 리뷰가 꺼져 있습니다.",
+    "all": "전체 ({count})",
+    "showResolved": "해결된 항목 표시",
+    "states": {
+      "changesRequested": "변경 요청",
+      "approved": "승인됨",
+      "staleApproval": "승인 후 변경됨",
+      "suggested": "제안",
+      "commented": "댓글"
+    },
+    "types": {
+      "comment": "댓글",
+      "approve": "승인",
+      "requestChange": "변경 요청",
+      "suggestion": "제안"
+    },
+    "done": {
+      "comment": "댓글을 남김",
+      "approve": "승인함",
+      "requestChange": "변경을 요청함",
+      "suggestion": "값을 제안함"
+    }
   }
 }

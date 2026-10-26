@@ -4,7 +4,6 @@ import type { PromptContext, PromptDraft } from '../types/plugin'
 import type { Project } from '../types/project'
 import { keyMatcher } from '../keys'
 import { createLineIndex } from '../text'
-import { isOutdated } from './history'
 
 export interface PromptOptions {
   /** Key glob, or a list of keys. */
@@ -92,7 +91,8 @@ export function buildPrompt(project: Project, kind: 'translate' | 'review', to: 
   const list = Array.isArray(options.keys)
     ? new Set(options.keys)
     : undefined
-  const stale = (key: KeyString): boolean => isOutdated(project.history(key, from), project.history(key, to))
+  const outdated = new Set(project.analyze().coverage.find(c => c.locale === to)?.outdated)
+  const stale = (key: KeyString): boolean => outdated.has(key)
   const candidates = project.keys({ namespace: options.namespace }).filter((key) => {
     if (match && !match(key))
       return false
@@ -171,10 +171,16 @@ export function buildPrompt(project: Project, kind: 'translate' | 'review', to: 
           ? `${candidates.length - end} more keys remain: \`x18n prompt translate --to ${to} --cursor ${nextCursor}\`.`
           : `To find more work: \`x18n keys --missing ${to} --json --limit 50\`.`,
       ]
-    : [
-        `Fix wrong translations with \`x18n set <key> --locale ${to} --value <text>\`, then list what you changed and why.`,
-        `Then run \`x18n check --only placeholder-mismatch,invalid-syntax --locale ${to} --json\`.`,
-      ]
+    : project.reviewFile === undefined
+      ? [
+          `Fix wrong translations with \`x18n set <key> --locale ${to} --value <text>\`, then list what you changed and why.`,
+          `Then run \`x18n check --only placeholder-mismatch,invalid-syntax --locale ${to} --json\`.`,
+        ]
+      : [
+          `Leave fixes for a human to accept: \`x18n review suggest <key> --locale ${to} --value <text> --text <why>\`. Keep every placeholder in the value.`,
+          `For a problem without a clear fix, run \`x18n review request-change <key> --locale ${to} --text <why>\`.`,
+          `Then list what you reviewed; \`x18n review list --locale ${to} --open\` shows the open reviews.`,
+        ]
 
   return {
     kind,

@@ -1,3 +1,5 @@
+import type { ReviewAuthor, ReviewType } from './review'
+
 // Domain names from the glossary. Branding them would force a cast at every boundary.
 /* eslint-disable slop/no-trivial-type-aliases */
 /** A locale code exactly as written in paths and files: `en`, `zh_CN`, `pt-BR`. Never normalized. */
@@ -117,6 +119,24 @@ export type EditOp
     | { readonly type: 'extract', readonly items: readonly ExtractItem[] }
     /** Re-write resources with the configured sort and indent. */
     | { readonly type: 'format', readonly paths?: readonly string[] }
+    /** Adds a comment to the review thread of a message. `id` and `time` are filled in when planned. */
+    | {
+      readonly type: 'review'
+      readonly key: KeyString
+      readonly locale: LocaleCode
+      readonly review: ReviewType
+      readonly text?: string | undefined
+      /** The proposed value, required for `suggestion`. */
+      readonly suggestion?: string | undefined
+      readonly author?: ReviewAuthor | undefined
+      readonly id?: string | undefined
+      readonly time?: string | undefined
+    }
+    | { readonly type: 'resolve-review', readonly id: string }
+    /** Sets the value of a suggestion and resolves it. */
+    | { readonly type: 'apply-suggestion', readonly id: string }
+    /** Records that translations are up to date with the current source value. Default: every translated locale. */
+    | { readonly type: 'mark-fresh', readonly key: KeyString, readonly locales?: readonly LocaleCode[] | undefined }
 
 export interface ExtractItem {
   readonly path: string

@@ -65,6 +65,7 @@ export default defineConfig({
     'presets/dotnet-resx': 'src/presets/dotnet-resx/index.ts',
     'presets/general': 'src/presets/general/index.ts',
     'reporters': 'src/reporters/index.ts',
+    'reviews': 'src/reviews/index.ts',
     'reporters/pretty': 'src/reporters/pretty.ts',
     'reporters/json': 'src/reporters/json.ts',
     'reporters/markdown': 'src/reporters/markdown.ts',

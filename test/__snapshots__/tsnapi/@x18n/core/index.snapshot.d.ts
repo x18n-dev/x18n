@@ -80,6 +80,7 @@ export interface CheckContext {
     readonly path: string;
   }>;
   readonly history: (_: KeyString, _: LocaleCode) => MessageChange | undefined;
+  readonly reviews: (_?: ReviewFilter) => readonly ReviewThread[];
 }
 export interface CheckIds {}
 export interface ConfigContext {
@@ -254,6 +255,7 @@ export interface Host {
   readonly watch?: ((_: readonly string[], _: (_: readonly FileEvent[]) => void) => Disposable) | undefined;
   readonly cache?: CacheStore | undefined;
   readonly logger?: Logger | undefined;
+  readonly identity?: (() => Promise<ReviewAuthor | undefined>) | undefined;
 }
 export interface JsonObject {
   readonly [key: string]: JsonValue;
@@ -273,6 +275,7 @@ export interface KeyInfo {
   readonly missing: readonly LocaleCode[];
   readonly usages: readonly UsageMatch[];
   readonly diagnostics: readonly Diagnostic[];
+  readonly reviews: readonly ReviewThread[];
 }
 export interface KeyQuery {
   readonly glob?: string | undefined;
@@ -449,6 +452,7 @@ export interface Plugin {
   readonly reporters?: readonly Reporter[] | undefined;
   readonly placeholders?: readonly PlaceholderSyntax[] | undefined;
   readonly histories?: readonly HistoryProvider[] | undefined;
+  readonly reviewStores?: readonly ReviewStore[] | undefined;
   readonly normalizeKey?: ((_: string, _: KeyContext) => string | undefined) | undefined;
   readonly derivedKeys?: readonly string[] | undefined;
   readonly transformResource?: ResourceTransform | undefined;
@@ -510,6 +514,7 @@ export interface PluginRegistry {
   readonly manifests: readonly ManifestReader[];
   readonly extractors: readonly Extractor[];
   readonly histories: readonly HistoryProvider[];
+  readonly reviewStores: readonly ReviewStore[];
   readonly conflicts: readonly CapabilityConflict[];
   readonly formatFor: (_: string, _?: string) => Format | undefined;
   readonly formatIdFor: (_: string, _?: string) => string | undefined;
@@ -571,6 +576,9 @@ export interface Project {
   }) => Promise<void>;
   readonly history: (_: KeyString, _: LocaleCode) => MessageChange | undefined;
   readonly valueAt: (_: KeyString, _: LocaleCode, _: number) => MessageLeaf | undefined;
+  readonly reviews: (_?: ReviewFilter) => readonly ReviewThread[];
+  readonly reviewFile: string | undefined;
+  readonly reviewAuthor: () => Promise<ReviewAuthor | undefined>;
   readonly prompt: (_: "translate" | "review", _: LocaleCode, _?: PromptOptions) => PromptData;
   readonly explain: () => ProjectExplanation;
   readonly localeInfo: (_: LocaleCode) => LocaleInfo;
@@ -754,6 +762,12 @@ export interface ResolvedConfig {
   readonly ignoreKeys: readonly string[];
   readonly glossary: readonly GlossaryEntry[];
   readonly history: false | HistorySettings;
+  readonly review: {
+    readonly enabled: boolean;
+    readonly file: string;
+    readonly store: string | undefined;
+    readonly author: ReviewAuthor | undefined;
+  };
   readonly pluginConfigs: Partial<PluginConfigs>;
   readonly origins: {
     readonly [key: string]: ConfigOrigin;
@@ -805,6 +819,60 @@ export interface ResourceTransformContext {
   readonly locale: LocaleCode;
   readonly namespace: string | undefined;
   readonly path: string;
+}
+export interface ReviewAuthor {
+  readonly name?: string | undefined;
+  readonly email?: string | undefined;
+}
+export interface ReviewComment {
+  readonly id: string;
+  readonly type: ReviewType;
+  readonly author?: ReviewAuthor | undefined;
+  readonly time: string;
+  readonly text?: string | undefined;
+  readonly suggestion?: string | undefined;
+  readonly value?: string | undefined;
+  readonly resolved?: boolean | undefined;
+}
+export interface ReviewData {
+  readonly threads: {
+    readonly [key: KeyString]: {
+      readonly [locale: LocaleCode]: readonly ReviewComment[];
+    };
+  };
+  readonly sources: {
+    readonly [key: KeyString]: {
+      readonly [locale: LocaleCode]: string;
+    };
+  };
+}
+export interface ReviewFile {
+  readonly $schema?: string | undefined;
+  readonly x18n: 1;
+  readonly threads?: ReviewData["threads"] | undefined;
+  readonly sources?: ReviewData["sources"] | undefined;
+}
+export interface ReviewFilter {
+  readonly key?: KeyString | undefined;
+  readonly locale?: LocaleCode | undefined;
+  readonly open?: boolean | undefined;
+}
+export interface ReviewOptions {
+  readonly enabled?: boolean | undefined;
+  readonly file?: string | undefined;
+  readonly store?: string | undefined;
+  readonly author?: ReviewAuthor | undefined;
+}
+export interface ReviewStore {
+  readonly id: string;
+  readonly parse: (_: string) => ReviewData;
+  readonly serialize: (_: ReviewData) => string;
+}
+export interface ReviewThread {
+  readonly key: KeyString;
+  readonly locale: LocaleCode;
+  readonly comments: readonly ThreadComment[];
+  readonly state: ReviewState | undefined;
 }
 export interface ScanContext {
   readonly config: ResolvedConfig;
@@ -864,6 +932,7 @@ export interface SerializableConfig {
   readonly ignoreKeys?: readonly string[] | undefined;
   readonly glossary?: readonly GlossaryEntry[] | undefined;
   readonly history?: boolean | HistoryOptions | undefined;
+  readonly review?: ReviewOptions | undefined;
   readonly projects?: readonly string[] | undefined;
 }
 export interface Setup {
@@ -887,6 +956,9 @@ export interface TextEdit {
 export interface TextRange {
   readonly start: number;
   readonly end: number;
+}
+export interface ThreadComment extends ReviewComment {
+  readonly stale: boolean;
 }
 export interface TreeLeaf {
   readonly path: readonly string[];
@@ -1005,6 +1077,26 @@ export type EditOp = {
 } | {
   readonly type: "format";
   readonly paths?: readonly string[];
+} | {
+  readonly type: "review";
+  readonly key: KeyString;
+  readonly locale: LocaleCode;
+  readonly review: ReviewType;
+  readonly text?: string | undefined;
+  readonly suggestion?: string | undefined;
+  readonly author?: ReviewAuthor | undefined;
+  readonly id?: string | undefined;
+  readonly time?: string | undefined;
+} | {
+  readonly type: "resolve-review";
+  readonly id: string;
+} | {
+  readonly type: "apply-suggestion";
+  readonly id: string;
+} | {
+  readonly type: "mark-fresh";
+  readonly key: KeyString;
+  readonly locales?: readonly LocaleCode[] | undefined;
 };
 export type ErrorCode = keyof typeof errorDefinitions;
 export type FileChange = {
@@ -1064,6 +1156,8 @@ export type ReporterLoader = () => Promise<{
   readonly default: Reporter;
 }>;
 export type ResourceId = string;
+export type ReviewState = "changes-requested" | "approved" | "stale-approval" | "suggested" | "commented";
+export type ReviewType = "comment" | "approve" | "request-change" | "suggestion";
 export type Severity = "error" | "warning" | "info" | "hint";
 export type UsageKind = "call" | "selector" | "accessor" | "constant" | "marker";
 export type X18nError = Diagnostic$1 & {
@@ -1130,6 +1224,7 @@ export declare const ConfigSchema: v.GenericSchema<SerializableConfig>;
 export declare const contractVersion: number;
 export declare const errors: ErrorHandles;
 export declare const PluginFileSchema: v.GenericSchema<PluginFile>;
+export declare const ReviewFileSchema: v.GenericSchema<ReviewFile>;
 // #endregion
 
 // #region Referenced (internal)

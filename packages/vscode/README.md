@@ -11,7 +11,8 @@ All i18n logic lives in the bundled x18n language server; the extension only pre
 - **In-place annotations** (on by default): keys in code show their display-locale value. The cursor line and selections show the raw key, and missing keys show in a warning color. With in-place off, values show as hints after the key.
 - **Keys as symbols**: go to definition, implementation, references and rename work across code and every locale file, next to TypeScript's own results.
 - Hover with every locale's value, completion of keys, diagnostics equal to `x18n check`, and quick fixes to add, fill or extract.
-- **Activity bar views**: Current File, Progress, Keys and Usage Report.
+- **Activity bar views**: Current File, Progress, Keys, Usage Report and Reviews.
+- **Reviews**: comment, approve, request changes and suggest values on messages, as editor comments on each locale file. Reviews live in `.x18n/reviews.yml`, so they travel with the branch.
 - **Status bar**: the display locale; click to switch.
 - **x18n UI** in a panel, also opened at a single key from hovers and views.
 - Copy a translate prompt for an agent or LLM, or hand it to the editor's chat agent, from the palette, a hover or a key.
@@ -24,24 +25,31 @@ Project settings live in `x18n.config.ts`; the settings below only change the ed
 
 <!-- commands -->
 
-| Command                    | Title                                  |
-| -------------------------- | -------------------------------------- |
-| `x18n.openUi`              | x18n: Open UI                          |
-| `x18n.openKey`             | x18n: Open Key in UI                   |
-| `x18n.setDisplayLocale`    | x18n: Set Display Locale               |
-| `x18n.editKey`             | x18n: Edit Message                     |
-| `x18n.renameKeyPrefix`     | x18n: Rename Key Prefix                |
-| `x18n.deleteKey`           | x18n: Delete Key                       |
-| `x18n.extract`             | x18n: Extract Hard String              |
-| `x18n.extractFile`         | x18n: Extract All Hard Strings in File |
-| `x18n.copyTranslatePrompt` | x18n: Copy Translate Prompt            |
-| `x18n.translateWithAgent`  | x18n: Translate with Agent             |
-| `x18n.goToNextUsage`       | x18n: Go to Next Key Usage             |
-| `x18n.goToPrevUsage`       | x18n: Go to Previous Key Usage         |
-| `x18n.toggleInPlace`       | x18n: Toggle In-place Annotations      |
-| `x18n.restartServer`       | x18n: Restart Language Server          |
-| `x18n.migrateFromI18nAlly` | x18n: Migrate from i18n-ally           |
-| `x18n.showOutput`          | x18n: Show Output                      |
+| Command                      | Title                                  |
+| ---------------------------- | -------------------------------------- |
+| `x18n.openUi`                | x18n: Open UI                          |
+| `x18n.openKey`               | x18n: Open Key in UI                   |
+| `x18n.setDisplayLocale`      | x18n: Set Display Locale               |
+| `x18n.editKey`               | x18n: Edit Message                     |
+| `x18n.renameKeyPrefix`       | x18n: Rename Key Prefix                |
+| `x18n.deleteKey`             | x18n: Delete Key                       |
+| `x18n.extract`               | x18n: Extract Hard String              |
+| `x18n.extractFile`           | x18n: Extract All Hard Strings in File |
+| `x18n.copyTranslatePrompt`   | x18n: Copy Translate Prompt            |
+| `x18n.translateWithAgent`    | x18n: Translate with Agent             |
+| `x18n.goToNextUsage`         | x18n: Go to Next Key Usage             |
+| `x18n.goToPrevUsage`         | x18n: Go to Previous Key Usage         |
+| `x18n.toggleInPlace`         | x18n: Toggle In-place Annotations      |
+| `x18n.restartServer`         | x18n: Restart Language Server          |
+| `x18n.migrateFromI18nAlly`   | x18n: Migrate from i18n-ally           |
+| `x18n.showOutput`            | x18n: Show Output                      |
+| `x18n.addReview`             | x18n: Review Key                       |
+| `x18n.replyReview`           | x18n: Comment                          |
+| `x18n.approveReview`         | x18n: Approve                          |
+| `x18n.requestReviewChange`   | x18n: Request Change                   |
+| `x18n.suggestReview`         | x18n: Suggest as Value                 |
+| `x18n.resolveReviewComment`  | x18n: Resolve                          |
+| `x18n.applyReviewSuggestion` | x18n: Apply Suggestion                 |
 
 <!-- commands -->
 

@@ -1,3 +1,5 @@
+import type { ReviewAuthor } from './review'
+
 export interface Disposable {
   readonly dispose: () => void
 }
@@ -36,4 +38,6 @@ export interface Host {
   readonly watch?: ((patterns: readonly string[], onChange: (events: readonly FileEvent[]) => void) => Disposable) | undefined
   readonly cache?: CacheStore | undefined
   readonly logger?: Logger | undefined
+  /** Who writes reviews. The node host reads git `user.name` and `user.email`. */
+  readonly identity?: (() => Promise<ReviewAuthor | undefined>) | undefined
 }

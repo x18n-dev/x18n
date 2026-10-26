@@ -129,12 +129,74 @@
         "command": "x18n.showOutput",
         "title": "Show Output",
         "category": "x18n"
+      },
+      {
+        "command": "x18n.addReview",
+        "title": "Review Key",
+        "category": "x18n",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "x18n.replyReview",
+        "title": "Comment",
+        "category": "x18n"
+      },
+      {
+        "command": "x18n.approveReview",
+        "title": "Approve",
+        "category": "x18n"
+      },
+      {
+        "command": "x18n.requestReviewChange",
+        "title": "Request Change",
+        "category": "x18n"
+      },
+      {
+        "command": "x18n.suggestReview",
+        "title": "Suggest as Value",
+        "category": "x18n"
+      },
+      {
+        "command": "x18n.resolveReviewComment",
+        "title": "Resolve",
+        "category": "x18n",
+        "icon": "$(check)"
+      },
+      {
+        "command": "x18n.applyReviewSuggestion",
+        "title": "Apply Suggestion",
+        "category": "x18n",
+        "icon": "$(lightbulb-autofix)"
       }
     ],
     "menus": {
       "commandPalette": [
         {
           "command": "x18n.renameKeyPrefix",
+          "when": "false"
+        },
+        {
+          "command": "x18n.replyReview",
+          "when": "false"
+        },
+        {
+          "command": "x18n.approveReview",
+          "when": "false"
+        },
+        {
+          "command": "x18n.requestReviewChange",
+          "when": "false"
+        },
+        {
+          "command": "x18n.suggestReview",
+          "when": "false"
+        },
+        {
+          "command": "x18n.resolveReviewComment",
+          "when": "false"
+        },
+        {
+          "command": "x18n.applyReviewSuggestion",
           "when": "false"
         }
       ],
@@ -176,6 +238,44 @@
         {
           "command": "x18n.renameKeyPrefix",
           "when": "viewItem == x18n.prefix"
+        },
+        {
+          "command": "x18n.addReview",
+          "when": "viewItem == x18n.key"
+        }
+      ],
+      "comments/commentThread/context": [
+        {
+          "command": "x18n.replyReview",
+          "when": "commentController == x18n.reviews",
+          "group": "inline@1"
+        },
+        {
+          "command": "x18n.suggestReview",
+          "when": "commentController == x18n.reviews",
+          "group": "inline@2"
+        },
+        {
+          "command": "x18n.requestReviewChange",
+          "when": "commentController == x18n.reviews",
+          "group": "inline@3"
+        },
+        {
+          "command": "x18n.approveReview",
+          "when": "commentController == x18n.reviews",
+          "group": "inline@4"
+        }
+      ],
+      "comments/comment/title": [
+        {
+          "command": "x18n.applyReviewSuggestion",
+          "when": "commentController == x18n.reviews && comment =~ /^x18n\\.review\\.suggestion\\.open$/",
+          "group": "inline"
+        },
+        {
+          "command": "x18n.resolveReviewComment",
+          "when": "commentController == x18n.reviews && comment =~ /\\.open$/",
+          "group": "inline"
         }
       ]
     },
@@ -205,6 +305,10 @@
         {
           "id": "x18n.usageReport",
           "name": "Usage Report"
+        },
+        {
+          "id": "x18n.reviews",
+          "name": "Reviews"
         }
       ]
     },

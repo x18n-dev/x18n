@@ -22,6 +22,13 @@ export interface AgentRenameQuery extends ProjectQuery, Confirmable {
   readonly to: KeyString;
   readonly usages?: boolean | undefined;
 }
+export interface AgentReviewQuery extends ProjectQuery {
+  readonly key: KeyString;
+  readonly locale: LocaleCode;
+  readonly review: ReviewType;
+  readonly text?: string | undefined;
+  readonly suggestion?: string | undefined;
+}
 export interface AgentSetQuery extends ProjectQuery {
   readonly messages: Readonly<Record<LocaleCode, Readonly<Record<string, MessageLeaf>>>>;
   readonly force?: boolean | undefined;
@@ -84,6 +91,7 @@ export interface KeyDetail {
   readonly missing: readonly LocaleCode[];
   readonly usages: readonly UsageView[];
   readonly diagnostics: readonly WireDiagnostic[];
+  readonly reviews: readonly ReviewThread[];
 }
 export interface KeyQuery extends ProjectQuery {
   readonly key: KeyString;
@@ -97,6 +105,7 @@ export interface KeyRow {
   readonly diagnostics: number;
   readonly outdated: readonly LocaleCode[];
   readonly changedAt: number | undefined;
+  readonly reviews: Readonly<Record<LocaleCode, ReviewState>>;
 }
 export interface KeyTable {
   readonly project: string;
@@ -160,6 +169,7 @@ export interface ProjectSummary {
   readonly diagnostics: DiagnosticCounts;
   readonly presets: readonly string[];
   readonly changes: readonly ChangeGroup[];
+  readonly reviews: number | undefined;
 }
 export interface PromptQuery extends ProjectQuery {
   readonly locale: LocaleCode;
@@ -168,6 +178,11 @@ export interface PromptQuery extends ProjectQuery {
   readonly limit?: number | undefined;
   readonly cursor?: string | undefined;
   readonly stale?: boolean | undefined;
+}
+export interface ReviewQuery extends ProjectQuery {
+  readonly key?: KeyString | undefined;
+  readonly locale?: LocaleCode | undefined;
+  readonly open?: boolean | undefined;
 }
 export interface Snippet {
   readonly line: number;

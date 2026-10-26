@@ -76,7 +76,8 @@
     "outdated": "古い翻訳",
     "sort": "並び順",
     "sortKey": "キー",
-    "sortRecent": "最近の変更"
+    "sortRecent": "最近の変更",
+    "reviewed": "レビューあり"
   },
   "locale": {
     "complete": "すべてのキーが翻訳済みです。",
@@ -105,7 +106,8 @@
     "keys": "キー",
     "overview": "概要",
     "project": "プロジェクト",
-    "usages": "使用箇所"
+    "usages": "使用箇所",
+    "reviews": "レビュー"
   },
   "overview": {
     "clean": "問題は見つかりませんでした。",
@@ -187,5 +189,41 @@
     "copyFix": "修正プロンプトをコピー",
     "fixHint": "このプロジェクトのすべての診断を修正する LLM やエージェント向けのプロンプトをコピーします",
     "fixCodeHint": "{code} の診断を修正する LLM やエージェント向けのプロンプトをコピーします"
+  },
+  "review": {
+    "add": "レビュー",
+    "type": "レビューの種類",
+    "textPlaceholder": "コメント",
+    "suggestionPlaceholder": "提案する値",
+    "send": "送信",
+    "resolve": "解決",
+    "apply": "適用",
+    "resolved": "解決済み",
+    "stale": "その後変更あり",
+    "unknownAuthor": "誰か",
+    "suggests": "提案",
+    "empty": "表示するレビューはありません。",
+    "off": "このプロジェクトではレビューがオフです。",
+    "all": "すべて ({count})",
+    "showResolved": "解決済みを表示",
+    "states": {
+      "changesRequested": "変更依頼",
+      "approved": "承認済み",
+      "staleApproval": "承認後に変更あり",
+      "suggested": "提案",
+      "commented": "コメント"
+    },
+    "types": {
+      "comment": "コメント",
+      "approve": "承認",
+      "requestChange": "変更を依頼",
+      "suggestion": "提案"
+    },
+    "done": {
+      "comment": "がコメント",
+      "approve": "が承認",
+      "requestChange": "が変更を依頼",
+      "suggestion": "が値を提案"
+    }
   }
 }

@@ -5,7 +5,7 @@ import { toJsonSchema } from '@valibot/to-json-schema'
 import { extractItems, findCandidates, toPlanFile } from '@x18n/builtins/extractors'
 import { errors, parseMessageBatch, renderPrompt, toWireDiagnostic } from '@x18n/core'
 import * as v from 'valibot'
-import { AgentCheckSchema, AgentDeleteSchema, AgentKeysSchema, AgentRenameSchema, AgentSetSchema, AgentUsagesSchema, ExtractApplySchema, ExtractQuerySchema, KeyQuerySchema, ProjectQuerySchema, PromptQuerySchema } from './schemas'
+import { AgentCheckSchema, AgentDeleteSchema, AgentKeysSchema, AgentRenameSchema, AgentReviewSchema, AgentSetSchema, AgentUsagesSchema, ExtractApplySchema, ExtractQuerySchema, KeyQuerySchema, ProjectQuerySchema, PromptQuerySchema, ReviewQuerySchema } from './schemas'
 import { applyOps, keyDetail, pickProject, previewOps, summarize, usageViews } from './views'
 
 function page<T>(items: readonly T[], query: { readonly limit?: number | undefined, readonly cursor?: string | undefined }): { total: number, nextCursor: string | undefined, items: T[] } {
@@ -109,6 +109,27 @@ export function registerAgentTools(ctx: DevframeNodeContext, projects: readonly 
   tool('set_messages', 'action', 'Set many messages at once: `messages` is `{ "<locale>": { "<key>": "<value>" } }`, the same shape as `x18n apply`. Files keep their format, key style and order. When a value drops or adds placeholders compared to the source value, nothing is written and `problems` lists them (`applied: false`); fix the values, or pass `force: true`.', AgentSetSchema, (query) => {
     const p = pick(query.project)
     return applyOps(p, parseMessageBatch(p.project, query.messages), { force: query.force })
+  })
+
+  tool('reviews', 'read', 'Review threads: comments, approvals, change requests and suggested values on messages, per key and locale, with each thread\'s state. Pass `open: true` for unresolved ones only.', ReviewQuerySchema, (query) => {
+    const { project, ...filter } = query
+    return {
+      threads: pick(project).project.reviews(filter),
+    }
+  })
+
+  tool('review', 'action', 'Leave a review on one message for a human: `request-change` with the reason in `text`, or `suggestion` with a better value in `suggestion` (a human applies it), `approve`, or `comment`. Use it when a human should decide, instead of changing values yourself.', AgentReviewSchema, (query) => {
+    const p = pick(query.project)
+    return applyOps(p, [
+      {
+        type: 'review',
+        key: p.project.parseKey(query.key),
+        locale: query.locale,
+        review: query.review,
+        text: query.text,
+        suggestion: query.suggestion,
+      },
+    ])
   })
 
   tool('rename_key', 'destructive', 'Rename a key (or every key under a parent) in all locales, and its usages in code unless `usages: false`. Without `confirm` it returns the plan (files to change, decisions, warnings); call again with `confirm: true` to apply it.', AgentRenameSchema, (query) => {

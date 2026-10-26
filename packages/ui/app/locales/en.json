@@ -21,7 +21,8 @@
     "keys": "Keys",
     "usages": "Usages",
     "extract": "Extract",
-    "project": "Project"
+    "project": "Project",
+    "reviews": "Reviews"
   },
   "localeBar": {
     "title": "Locales",
@@ -75,7 +76,8 @@
     "outdated": "Outdated",
     "sort": "Sort",
     "sortKey": "Key",
-    "sortRecent": "Recently changed"
+    "sortRecent": "Recently changed",
+    "reviewed": "Reviewed"
   },
   "value": {
     "missing": "missing",
@@ -187,5 +189,41 @@
     "tree": "Tree view",
     "filter": "Filter keys",
     "view": "Key list view"
+  },
+  "review": {
+    "add": "Review",
+    "type": "Review type",
+    "textPlaceholder": "Comment",
+    "suggestionPlaceholder": "Suggested value",
+    "send": "Send",
+    "resolve": "Resolve",
+    "apply": "Apply",
+    "resolved": "resolved",
+    "stale": "changed since",
+    "unknownAuthor": "Someone",
+    "suggests": "Suggests",
+    "empty": "No reviews to show.",
+    "off": "Reviews are off for this project.",
+    "all": "All ({count})",
+    "showResolved": "Show resolved",
+    "states": {
+      "changesRequested": "Changes requested",
+      "approved": "Approved",
+      "staleApproval": "Approved, changed since",
+      "suggested": "Suggestion",
+      "commented": "Comments"
+    },
+    "types": {
+      "comment": "Comment",
+      "approve": "Approve",
+      "requestChange": "Request change",
+      "suggestion": "Suggest"
+    },
+    "done": {
+      "comment": "commented",
+      "approve": "approved",
+      "requestChange": "requested a change",
+      "suggestion": "suggested a value"
+    }
   }
 }

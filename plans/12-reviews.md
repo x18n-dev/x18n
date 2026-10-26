@@ -1,10 +1,10 @@
 # 12 - Reviews (1.x)
 
-Comments, approvals, change requests and suggested values on messages. A port of i18n-ally's review system, moved out of `.vscode/` and made usable from every surface. Reviews ship after 1.0 (M12). `x18n migrate i18n-ally` already converts `.vscode/i18n-ally-reviews.yml` to `.x18n/reviews.yml` in 1.0, so existing reviews carry over.
+Comments, approvals, change requests and suggested values on messages. A port of i18n-ally's review system, moved out of `.vscode/` and made usable from every surface. Reviews shipped in M12. `x18n migrate i18n-ally` converts `.vscode/i18n-ally-reviews.yml` to `.x18n/reviews.yml`, so existing reviews carry over.
 
 ## Storage
 
-Default file `.x18n/reviews.yml`, tracked in git, so reviews travel with the branch and show up in PR diffs.
+Default file `.x18n/reviews.yml` (`review.file`), tracked in git, so reviews travel with the branch and show up in PR diffs. Its schema is `ReviewFileSchema` in core, published as `schema/reviews.json`.
 
 ```yaml
 # yaml-language-server: $schema=https://x18n.antfu.dev/schema/reviews.json
@@ -18,45 +18,52 @@ threads:
         time: '2026-10-15T09:12:00Z'
         text: Too formal, use "Anmelden".
         suggestion: Anmelden # only for type: suggestion
+        value: Einloggen # only for type: approve, the value it approved
         resolved: false
-```
-
-- Keyed by `KeyString`, then locale. Stable order (sorted keys) so concurrent edits merge well.
-- `id` is a short random id, unique within the file.
-- Author comes from `host.identity()` (git `user.name` and `user.email` in the node host), or from `--author` / config `review.author`.
-- When a key is renamed through x18n, its threads move with it in the same plan. When a key is deleted, its threads are removed in the same plan.
-- When a message value changes after an approval, the approval is marked `stale: true`, so reviewers see it needs another look.
-
-## Stale translations
-
-Stale translations come from history providers ([19-history.md](./19-history.md)); git works without any records. Reviews add one more provider, ahead of git, for changes that git cannot see:
-
-```yaml
 sources:
   'auth:login.title':
     de: 9f2c1a # hash of the source value when de was last written
 ```
 
-- Every x18n write of a target value (`set`, `apply`, an accepted suggestion, a translate prompt batch) records the hash of the current source value for that key and locale, in the same plan.
-- A recorded hash that matches the current source value makes the target fresh, whatever git says; `x18n review mark-fresh <key> [--locale]` records the current hash without a change.
+- Keyed by `KeyString`, then locale. Stable order (sorted keys and locales) so concurrent edits merge well.
+- `id` is a short random id, unique within the file. `project.plan` fills in `id` and `time` of new reviews, so planning again after decisions writes the same comments.
+- Author comes from config `review.author`, else `host.identity()` (git `user.name` and `user.email` in the node host); the CLI also takes `--author`.
+- When a key is renamed through x18n, its threads and records move with it in the same plan. When a key is deleted, they are removed in the same plan.
+- An approval stores the value it approved. It is stale when the message has another value; the flag is derived on read (`ThreadComment.stale`), so hand edits and pulls count too.
+- A file that does not parse is reported as `invalid-resource` with X18N5001, and x18n writes no reviews until it is fixed, so a write never drops what the file holds.
+
+## Thread state
+
+The last open `approve` or `request-change` decides (`approved`, `stale-approval`, `changes-requested`); without one, an open suggestion makes it `suggested`, then an open comment `commented`. A thread whose comments are all resolved has no state. `resolve` marks a comment `resolved: true`; it stays in the file.
+
+## Stale translations
+
+Stale translations come from history providers ([19-history.md](./19-history.md)); git works without any records. Review records cover changes that git cannot see:
+
+- Once the project has a review file, every x18n write of a non-empty target value (`set`, `apply`, an accepted suggestion, a translate prompt batch) records the hash of the source value for that key and locale, in the same plan. A source set in the same plan counts with its new value.
+- A recorded hash that matches the current source value makes the target fresh, whatever the providers say; `x18n review mark-fresh <key> [--locale]` records the current hash without a change. A record has no time, so it is not a history provider: a mismatch leaves the decision to the providers.
 - Renames and deletes move or drop the records with the threads.
+
+## Store and ops
 
 ```ts
 interface ReviewStore {
-  list: (filter: ReviewFilter) => Promise<readonly ReviewThread[]>
-  /** Returns operations for the edit planner, so review writes join the same plan as message writes. */
-  plan: (op: ReviewOp) => Promise<readonly FileChange[]>
+  readonly id: string
+  readonly parse: (text: string) => ReviewData
+  readonly serialize: (data: ReviewData) => string
 }
 ```
 
-The YAML store is the built-in `reviewStore`. A plugin can provide another one (for example backed by a remote service). Only one store is active; a second one is a config error unless the config names which one.
+Core reads and writes the file through the host and puts review writes into the edit plan (D41). The YAML store is the built-in one (`x18n:reviews` in `@x18n/builtins/reviews`). A plugin can add another through `reviewStores`. Only one store is active; a second one is X18N5002 unless `review.store` names one.
+
+Edit ops: `review` (`{ key, locale, review, text?, suggestion?, author? }`), `resolve-review` (`{ id }`), `apply-suggestion` (`{ id }`: sets the value and resolves it), `mark-fresh` (`{ key, locales? }`). Reads: `project.reviews(filter)`, `KeyInfo.reviews`, `CheckContext.reviews`.
 
 ## Surfaces
 
 | Surface | Features |
 | --- | --- |
-| CLI | `x18n review list [--locale] [--open]`, `comment`, `approve`, `request-change`, `suggest --value`, `resolve <id>`, `apply-suggestion <id>`. |
-| LSP | Diagnostic `review-changes-requested`; hover shows review state; commands for each operation. |
-| VS Code | Comments API threads on usages and resource lines; gutter icon for review state; Reviews view. |
-| UI | Thread under each locale value on the key page; `/reviews` page; filter keys by review state. |
-| Agents | `x18n prompt review` produces work that ends in `request-change` or `suggest` commands. |
+| CLI | `x18n review list [key] [--locale] [--open]`, `comment`, `approve`, `request-change --text`, `suggest --value`, `resolve <id>`, `apply-suggestion <id>`, `mark-fresh <key>`. `x18n get` lists the threads. |
+| LSP | Diagnostic `review-changes-requested` with a quick fix that resolves it; hover shows the open review state per locale; `x18n/reviews` request; `x18n.review`, `x18n.resolveReview`, `x18n.applySuggestion` commands, which write at once. |
+| VS Code | Comments API threads on the key in each locale's resource, with reply as comment, approve, request change or suggestion, and resolve and apply buttons; "Review Key" from the cursor or the Keys view; Reviews view. |
+| UI | Thread under each locale value on the key page, with a form for new reviews; `/reviews` page filtered by state; filter keys by open reviews and a state icon per cell. Writes go through `x18n:apply`; reads through `x18n:reviews`. |
+| Agents | `x18n prompt review` asks for `x18n review suggest` and `request-change` commands; MCP tools `x18n_reviews` and `x18n_review`. |

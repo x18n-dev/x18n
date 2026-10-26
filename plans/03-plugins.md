@@ -29,7 +29,7 @@ interface Plugin {
   readonly reporters?: readonly Reporter[]
   readonly placeholders?: readonly PlaceholderSyntax[]
   readonly histories?: readonly HistoryProvider[]
-  readonly reviewStore?: ReviewStoreFactory
+  readonly reviewStores?: readonly ReviewStore[]
 
   readonly normalizeKey?: (raw: string, ctx: KeyContext) => string | undefined
   readonly derivedKeys?: readonly string[]

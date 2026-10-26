@@ -8,6 +8,7 @@ import regex from '@x18n/builtins/scanners/regex'
 import { recommended } from './checks'
 import { pattern } from './finders'
 import { manifests } from './manifests'
+import { reviews } from './reviews'
 
 /** Plugins that are always on, and the presets that `'auto'` detects. Formats, scanners and presets load on demand; `regex` and the reporters are always loaded. */
 export async function createBuiltins(): Promise<Builtins> {
@@ -33,6 +34,7 @@ export async function createBuiltins(): Promise<Builtins> {
       ...scannerPlugins,
       regex(),
       recommended(),
+      reviews(),
       reporterPlugin,
     ],
     presets,

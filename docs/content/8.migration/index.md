@@ -30,7 +30,7 @@ It writes:
 | `x18n.config.ts` | Always. `--format yml` or `--format json` writes `x18n.config.yml` or `x18n.config.json` instead. |
 | `x18n/custom.x18n-plugin.yml` | When the settings hold regex scanners, scopes, refactor templates, locale flags, or a custom framework. The config lists it in `plugins`. |
 | `.vscode/settings.json` | When editor settings move to the x18n extension. |
-| `.x18n/reviews.yml` | When i18n-ally reviews exist, and this file does not. |
+| `.x18n/reviews.yml` | When i18n-ally reviews exist, and this file does not. The comments are converted to [x18n reviews](/guide/reviews). |
 
 The command never deletes i18n-ally files or settings. At the end, it lists the i18n-ally settings that you can remove. If an `x18n.config.*` file exists, the command stops. Pass `--force` to replace it.
 
@@ -103,6 +103,9 @@ When a folder has `i18n-ally.*` settings in `.vscode/settings.json` and no `x18n
 | `regex.usageMatch`, `regex.usageMatchAppend` | `scanners.regex` in the generated plugin, for JS, TS, Vue, HTML and Svelte files |
 | `localeCountryMap` | `localeInfo` flags in the generated plugin |
 | `parsers.typescript.*` | `execute: true` on the JS and TS resource patterns. These resources are read-only. |
+| `review.enabled` | `review.enabled` |
+| `review.user.name`, `review.user.email` | `review.author` |
+| `.vscode/i18n-ally-reviews.yml` | `.x18n/reviews.yml`: comments keep their id, author, time and resolved state; `request_change` becomes `request-change`; a comment with a `suggestion` becomes a `suggestion`; a translation candidate becomes a `suggestion` too. |
 | `annotations`, `annotationInPlace`, `annotationInPlaceFullMatch`, `annotationMaxLength`, `displayLanguage`, `showFlags`, `theme.annotation*` | The VS Code settings with the same names under `x18n.*`; `displayLanguage` becomes `x18n.displayLocale` |
 
 ## Framework map
@@ -156,7 +159,7 @@ Every framework of i18n-ally has a preset. For an unknown framework id, the comm
 ## What is dropped
 
 - `translate.*`: x18n calls no translation service. It writes [translate prompts](/agents/prompts) for an agent or an LLM instead. The command prints a note.
-- `review.*`: x18n does not read reviews yet. The command copies `.vscode/i18n-ally-reviews.yml` to `.x18n/reviews.yml` for later, and prints a note.
+- `review.removeCommentOnResolved`: x18n keeps resolved reviews, and `x18n review list --open` hides them. Key descriptions in the review file are dropped too. The command prints a note for each.
 - `readonly`, `encoding`, `fullReloadOnChanged`, `includeSubfolders`, `ignoreFiles`, `editor.preferEditor`, `annotationDelimiter`, `languageTagSystem`, `targetPickingStrategy` and `extract.targetPickingStrategy`: the defaults of x18n handle them, or x18n has no such setting. The command prints a note for each one it finds. x18n uses locale codes as written, so it needs no `languageTagSystem`.
 
 Settings that are not on this page are not migrated.

@@ -64,6 +64,7 @@ All methods use the `x18n/` prefix. Shapes are valibot schemas shared with the c
 | `x18n/setDisplayLocale` | notification | Per-client display locale. |
 | `x18n/openUi` | request | Start or reuse the UI server for a project; returns `{ url, token }`. |
 | `x18n/translatePrompt` | request | Prompt text for a locale or key set. |
+| `x18n/reviews` | request | Review threads with their comments, state and the location of the key in the reviewed locale. |
 | `x18n/changed` | server notification | Project revision and changed keys, so client views refresh only what changed. |
 
 ## Hosting the UI

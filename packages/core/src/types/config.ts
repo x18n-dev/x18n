@@ -1,5 +1,6 @@
 import type { JsonObject, Severity } from './model'
 import type { HistoryProvider, Plugin, Preset } from './plugin'
+import type { ReviewAuthor } from './review'
 
 /** Where a value comes from: an argument, or a property of an object argument. */
 export interface ArgSource {
@@ -121,6 +122,17 @@ export interface NamespaceOptions {
   readonly fromPath?: 'dot' | 'slash' | 'camel' | undefined
 }
 
+export interface ReviewOptions {
+  /** Default true. */
+  readonly enabled?: boolean | undefined
+  /** Review file, relative to the project root. Default `.x18n/reviews.yml`. */
+  readonly file?: string | undefined
+  /** Id of the review store to use when plugins add more than one. */
+  readonly store?: string | undefined
+  /** Author of new reviews, instead of the host identity (git `user.name` and `user.email`). */
+  readonly author?: ReviewAuthor | undefined
+}
+
 export type NamespaceFromPath = NonNullable<NamespaceOptions['fromPath']>
 
 export type PluginSpecifier = string | readonly [string, JsonObject]
@@ -158,6 +170,8 @@ export interface SerializableConfig {
   readonly glossary?: readonly GlossaryEntry[] | undefined
   /** History providers for stale translations. `false` turns every provider off. Options of a provider sit under its key, such as `git: { maxDepth, since }` (or `git: false`). */
   readonly history?: boolean | HistoryOptions | undefined
+  /** Review comments, approvals and suggested values on messages, kept in a file tracked in git. */
+  readonly review?: ReviewOptions | undefined
   /** Monorepo: directories (globs) that are projects inheriting this config. */
   readonly projects?: readonly string[] | undefined
 }
@@ -229,6 +243,7 @@ export interface ResolvedConfig {
   readonly ignoreKeys: readonly string[]
   readonly glossary: readonly GlossaryEntry[]
   readonly history: false | HistorySettings
+  readonly review: { readonly enabled: boolean, readonly file: string, readonly store: string | undefined, readonly author: ReviewAuthor | undefined }
   readonly pluginConfigs: Partial<PluginConfigs>
   /** Origin of each top-level value, for `explain()`. */
   readonly origins: { readonly [key: string]: ConfigOrigin }

@@ -8,6 +8,8 @@ import type {
   PositionParams,
   ProgressResult,
   ProjectInfo,
+  ReviewsParams,
+  ReviewsResult,
   TranslatePromptParams,
   TreeNode,
   TreeParams,
@@ -25,6 +27,7 @@ export interface Requests {
   'x18n/decorations': [DocumentParams, DecorationsResult]
   'x18n/openUi': [OpenUiParams, OpenUiResult]
   'x18n/translatePrompt': [TranslatePromptParams, string]
+  'x18n/reviews': [ReviewsParams, ReviewsResult]
 }
 
 /** The slice of the language client the view models need; tests pass a fake. */

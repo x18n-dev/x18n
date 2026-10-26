@@ -1,4 +1,4 @@
-import type { ProjectInfo } from '@x18n/lsp'
+import type { ProjectInfo, ReviewCommentInfo } from '@x18n/lsp'
 import type { Uri } from 'vscode'
 import type { LanguageClient } from 'vscode-languageclient/node'
 import type { KeyRef, X18nClient } from './model/client'
@@ -45,8 +45,15 @@ async function localeItem(locale: ProjectInfo['locales'][number]): Promise<{ lab
   }
 }
 
-/** Display locale, translate prompt and key commands. `x18n.extract` is the server's command, see `client.ts`. */
-export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtCursor: () => Promise<void> } {
+const reviewChoices: readonly { readonly label: string, readonly review: ReviewCommentInfo['type'], readonly prompt: string }[] = [
+  { label: 'Comment', review: 'comment', prompt: 'Comment' },
+  { label: 'Approve', review: 'approve', prompt: 'Comment (optional)' },
+  { label: 'Request change', review: 'request-change', prompt: 'What should change' },
+  { label: 'Suggest a value', review: 'suggestion', prompt: 'Suggested value' },
+]
+
+/** Display locale, translate prompt, review and key commands. `x18n.extract` is the server's command, see `client.ts`. */
+export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtCursor: () => Promise<void>, execute: (command: string, arg: object) => Promise<unknown> } {
   const execute = (command: string, arg: object): Promise<unknown> => client.sendRequest(ExecuteCommandRequest.type, {
     command,
     arguments: [arg],
@@ -140,6 +147,29 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
         value,
       })
     }
+  })
+
+  register(commands.addReview, async (arg) => {
+    const ref = await resolveRef(arg)
+    const info = ref && await project(ref.project)
+    const locale = ref && info && await pickLocale(info, `Locale of ${ref.key} to review`)
+    const choice = locale && await window.showQuickPick(reviewChoices, { placeHolder: `Review ${ref.key} (${locale})` })
+    if (!ref || !info || !locale || !choice)
+      return
+    const text = await window.showInputBox({ title: `${choice.label}: ${ref.key} (${locale})`, prompt: choice.prompt })
+    if (text === undefined || (!text && choice.review !== 'approve'))
+      return
+    await execute(serverCommands.review, {
+      project: info.name,
+      key: ref.key,
+      locale,
+      review: choice.review,
+      ...choice.review === 'suggestion'
+        ? { suggestion: text }
+        : text
+          ? { text }
+          : {},
+    })
   })
 
   register(commands.renameKeyPrefix, async (arg) => {
@@ -265,5 +295,5 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
     await workspace.applyEdit(await client.protocol2CodeConverter.asWorkspaceEdit(picked.action.edit))
   }
 
-  return { extractAtCursor }
+  return { extractAtCursor, execute }
 }

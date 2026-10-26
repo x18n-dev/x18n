@@ -36,7 +36,7 @@ The same builder serves:
 - the UI button "Copy translate prompt" (per locale, per selection, per key),
 - the VS Code commands and hover links: copy, or hand to the editor's chat agent (D39).
 
-`x18n prompt review --locale de` is the same idea for checking existing translations. In 1.0 the agent fixes values with `x18n set` and lists what it changed. Once reviews ship (1.x), it can instead leave `x18n review request-change` comments or `x18n review suggest` values for a human to accept.
+`x18n prompt review --locale de` is the same idea for checking existing translations. With reviews on (the default), the agent leaves `x18n review request-change` comments or `x18n review suggest` values for a human to accept; with `review.enabled: false` it fixes values with `x18n set` and lists what it changed. MCP agents use the `x18n_review` and `x18n_reviews` tools.
 
 ## MCP
 
@@ -58,6 +58,7 @@ Tools are the RPC functions marked `agent` in [09-ui.md](./09-ui.md), with descr
 | `x18n_set_messages` | Batch set, same shape as `x18n apply`; returns placeholder problems instead of writing when found. |
 | `x18n_rename_key`, `x18n_delete_key` | Return the plan; a second call with `confirm: true` applies it. |
 | `x18n_extract_plan`, `x18n_extract_apply` | Two-step extraction. |
+| `x18n_reviews`, `x18n_review` | List review threads; leave a comment, approval, change request or suggestion for a human. |
 
 MCP prompts: `translate`, `review`, `extract`.
 

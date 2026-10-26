@@ -131,7 +131,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `hard-string` | off | Detected hard-coded string; on with `extract.autoDetect` ([11-extraction.md](./11-extraction.md)). |
 | `glossary` | off | A glossary term is translated differently from the glossary. |
 | `typegen-stale` | error (1.x) | The generated `x18n.d.ts` is out of date ([18-typegen.md](./18-typegen.md)). |
-| `review-changes-requested` | info (1.x) | An open "request change" review ([12-reviews.md](./12-reviews.md)). |
+| `review-changes-requested` | info | An open "request change" review ([12-reviews.md](./12-reviews.md)). |
 
 `strict` (config `strict: true` or `x18n check --strict`) turns every warning into an error.
 

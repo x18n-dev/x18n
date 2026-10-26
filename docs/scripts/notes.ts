@@ -174,7 +174,50 @@ Commands that write files (\`set\`, \`apply\`, \`rename\`, \`delete\`, \`fill\`,
 
 - \`x18n set\` needs \`--value <text>\` (or \`--value -\` to read stdin).
 - \`x18n apply\` needs JSON in the shape \`{ "<locale>": { "<key>": "<value>" } }\`. Values are strings, numbers, booleans or \`null\`.
-- \`x18n extract --apply\` needs a plan file written by \`x18n extract --plan\`.`,
+- \`x18n extract --apply\` needs a plan file written by \`x18n extract --plan\`.
+- \`x18n review\` needs \`--locale <locale>\` to comment, approve, request a change or suggest; \`request-change\` needs \`--text\` and \`suggest\` needs \`--value\`.`,
+  },
+
+  X18N5001: {
+    title: 'Review file could not be read',
+    notes: `x18n found the review file (\`review.file\`, default \`.x18n/reviews.yml\`), but it is not valid YAML or does not match the reviews schema. Until it is fixed, x18n does not write reviews, so the file never loses what it holds. Renames and deletes still work, but leave the file as it is.
+
+1. Fix the problem that the message names. A merge conflict in the file is a common cause.
+2. Add \`# yaml-language-server: $schema=https://x18n.antfu.dev/schema/reviews.json\` as the first line. Your editor then shows the errors.
+3. Or restore the file from git.`,
+  },
+
+  X18N5002: {
+    title: 'More than one review store',
+    notes: `Plugins add more than one review store, and only one can be active.
+
+1. Run \`x18n doctor\` to see the plugins.
+2. Set \`review.store\` to the id of the store to use.`,
+  },
+
+  X18N5003: {
+    title: 'Reviews are not available',
+    notes: `A review command ran, but the project cannot write reviews. The message says why:
+
+- \`review.enabled\` is \`false\` in the config.
+- \`review.store\` names a store that no plugin adds.
+- The review file could not be read (see [X18N5001](/errors/x18n5001)).`,
+  },
+
+  X18N5004: {
+    title: 'Review not found',
+    notes: `No review in the review file has this id.
+
+1. Run \`x18n review list\` to list review ids.
+2. If someone else changed the file, pull their changes first.`,
+  },
+
+  X18N5005: {
+    title: 'Not an open suggestion',
+    notes: `\`x18n review apply-suggestion\` applies only reviews of type \`suggestion\` that are not resolved yet.
+
+1. Run \`x18n review list --open\` to list open suggestions.
+2. To change the value yourself, use \`x18n set\`.`,
   },
 }
 
@@ -210,6 +253,7 @@ export default defineConfig({
   'stale-translation': `A translation is stale when it last changed before its source message did. Inside a git repo, x18n reads the commits that touched the locale files and compares the parsed messages, so reformatting, sorting and moving keys between files do not count. Uncommitted edits count as changed now. A message without history is never stale.
 
 In CI, fetch the full history: a shallow clone (the \`actions/checkout\` default) reports nothing. Set \`fetch-depth: 0\`. Limit the walk with \`history: { git: { maxDepth, since } }\`, or turn history off with \`history: false\`. \`x18n prompt translate --to <locale> --stale\` adds stale translations to the prompt, with the source text from when they last changed.`,
+  'review-changes-requested': 'The check reports each message whose open review comments end in a change request, at the message in the reviewed locale. The quick fix resolves the request. A later approval by anyone clears it too. See [Reviews](/guide/reviews).',
   'dynamic-key': 'A fully dynamic key, such as `t(key)`, has no static prefix. No check can follow it. Turn this check on to find such usages.',
 }
 

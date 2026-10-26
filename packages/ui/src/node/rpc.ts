@@ -1,10 +1,10 @@
 import type { DevframeNodeContext } from 'devframe'
-import type { ApplyQuery, ExtractApplyQuery, ExtractQuery, KeyQuery, OpenQuery, PlanQuery, ProjectList, ProjectQuery, PromptQuery, UiLocation, UiProject, UsageQuery } from './types'
+import type { ApplyQuery, ExtractApplyQuery, ExtractQuery, KeyQuery, OpenQuery, PlanQuery, ProjectList, ProjectQuery, PromptQuery, ReviewQuery, UiLocation, UiProject, UsageQuery } from './types'
 import { extractItems, findCandidates } from '@x18n/builtins/extractors'
 import { renderPrompt } from '@x18n/core'
 import { defineRpcFunction } from 'devframe'
 import * as v from 'valibot'
-import { ApplyQuerySchema, ExtractApplySchema, ExtractQuerySchema, KeyQuerySchema, OpenQuerySchema, PlanQuerySchema, ProjectQuerySchema, PromptQuerySchema, UsageQuerySchema } from './schemas'
+import { ApplyQuerySchema, ExtractApplySchema, ExtractQuerySchema, KeyQuerySchema, OpenQuerySchema, PlanQuerySchema, ProjectQuerySchema, PromptQuerySchema, ReviewQuerySchema, UsageQuerySchema } from './schemas'
 import { analysisView, applyOps, explainView, keyDetail, keyTable, pickProject, previewOps, summarize, usageViews } from './views'
 
 export interface RpcOptions {
@@ -69,6 +69,20 @@ export function registerRpc(ctx: DevframeNodeContext, projects: readonly UiProje
     type: 'query',
     jsonSerializable: true,
     handler: (query: ProjectQuery) => analysisView(pickProject(projects, v.parse(ProjectQuerySchema, query).project)),
+    dump: () => ({
+      inputs: perProject(),
+    }),
+  }))
+  rpc.register(defineRpcFunction({
+    name: 'reviews',
+    type: 'query',
+    jsonSerializable: true,
+    handler: (query: ReviewQuery) => {
+      const { project, ...filter } = v.parse(ReviewQuerySchema, query)
+      return [
+        ...pickProject(projects, project).project.reviews(filter),
+      ]
+    },
     dump: () => ({
       inputs: perProject(),
     }),

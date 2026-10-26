@@ -14,6 +14,7 @@ import { createLog, useLog } from './log'
 import { migratableFolders, migrate } from './migrate'
 import { projectFor } from './model/client'
 import { useUiPanel } from './panel'
+import { useReviews } from './reviews'
 import { registerNativePreviewMiddleware } from './typescript-native'
 import { useViews } from './views'
 
@@ -48,7 +49,9 @@ const { activate, deactivate } = defineExtension((context): X18nExtensionApi => 
   annotations = useAnnotations(x18n, refresh.event)
   useViews(x18n, refresh.event)
   const panel = useUiPanel(x18n)
-  extractAtCursor = useCommands({ client, x18n, openUi: panel.open }).extractAtCursor
+  const actions = useCommands({ client, x18n, openUi: panel.open })
+  extractAtCursor = actions.extractAtCursor
+  useReviews(x18n, actions.execute, refresh.event)
 
   registerNativePreviewMiddleware(x18n).forEach(useDisposable)
   useDisposable(client.onNotification(methods.changed, () => refresh.fire()))

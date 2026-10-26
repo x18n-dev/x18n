@@ -221,7 +221,7 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 
 ## D37 - Stale translations compare per target message
 
-- Decided: a target message is stale when it last changed before its source message, per key and locale. History providers report the times (D38). Review records (1.x) of the source hash at each x18n write are one more provider, ahead of git. Messages without history are never stale.
+- Decided: a target message is stale when it last changed before its source message, per key and locale. History providers report the times (D38). Review records of the source hash at each x18n write mark a target fresh while the source keeps that value, whatever the providers say (D41). Messages without history are never stale.
 - Why: i18n-ally-next keeps one source snapshot per key, so one source edit marks all locales stale until someone refreshes it. Per-target times stay right when locales are updated at different times.
 
 ## D38 - History providers report times, core decides staleness
@@ -241,3 +241,9 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 - Decided: `@x18n/devtools` ships `/vite` (a Vite plugin through `createPluginFromDevframe`, for Vite DevTools and Nuxt DevTools 4) and `/devframe` (a definition for any hub). Both load the workspace from the host's root when the host sets the devframe up, through a loader that `createX18nDevframe` in `@x18n/ui` accepts.
 - Considered: a `@x18n/vite` package with only the plugin; a Nuxt module that adds the plugin.
 - Why: Nuxt DevTools 4 runs on Vite DevTools, so one plugin covers both, and `vite.plugins` is one line. Hubs need only the definition. Loading in `setup` uses the host's root, so the user passes no path.
+
+## D41 - Reviews: one file, plans write it, staleness is derived
+
+- Decided: the review store only parses and serializes the review file (`review.file`); core reads it, keeps the threads and records, and puts every review write into the edit plan as a file change, so a suggestion applied and resolved is one plan. An approval stores the value it approved, and is stale when the message has another value; nothing writes `stale: true`. Source records are written only once the project has a review file, and only make targets fresh: a record is not a history provider, because it has no time.
+- Considered: an async store API (`list`, `plan`) for remote backends; marking approvals stale in the plan that changes the value; writing records on every write.
+- Why: the planner is synchronous, and one file keeps the stale-plan check of every other write. A derived stale flag also sees hand edits and pulls. Writing records unasked would add `.x18n/reviews.yml` to projects that never use reviews.

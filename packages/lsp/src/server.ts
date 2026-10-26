@@ -1,5 +1,5 @@
 import type { ExtractCandidate } from '@x18n/builtins/extractors'
-import type { EditOp, FileChange, KeyString, MessageChange, OverlayHost, Plan, Project, ResourceNode, TextRange, Diagnostic as X18nDiagnostic } from '@x18n/core'
+import type { EditOp, FileChange, KeyString, MessageChange, OverlayHost, Plan, Project, ResourceNode, ReviewThread, ReviewType, TextRange, Diagnostic as X18nDiagnostic } from '@x18n/core'
 import type { NodeHost } from '@x18n/node'
 import type {
   CodeAction,
@@ -62,6 +62,21 @@ interface Settings {
   /** Flag emoji next to locales in hovers. */
   showFlags: boolean
 }
+
+const reviewLabels: Record<NonNullable<ReviewThread['state']>, string> = {
+  'changes-requested': 'changes requested',
+  'approved': 'approved',
+  'stale-approval': 'approved, changed since',
+  'suggested': 'suggestion',
+  'commented': 'comments',
+}
+
+const reviewTypes: readonly ReviewType[] = [
+  'comment',
+  'approve',
+  'request-change',
+  'suggestion',
+]
 
 const severities: Record<X18nDiagnostic['severity'], DiagnosticSeverity> = {
   error: DiagnosticSeverity.Error,
@@ -527,6 +542,9 @@ class Server {
             ? '_empty_'
             : value.replace(/\|/g, '\\|').replace(/\n/g, ' ')} |${changed}`)
       })
+      const threads = project.reviews({ key: target.key, open: true })
+      if (threads.length > 0)
+        lines.push('', `**Reviews** ${threads.map(t => `${t.locale}: ${reviewLabels[t.state!]}`).join(' · ')}`)
     }
     const usages = target.type === 'subtree'
       ? project.usages({ prefix: target.key })
@@ -798,7 +816,9 @@ class Server {
     const arg: unknown = params.arguments?.[0]
     if (typeof arg !== 'object' || arg === null)
       return null
-    const input = arg as { project?: string, key?: string, locale?: string, value?: string, to?: string, uri?: string } // client-supplied; fields checked below
+    const input = arg as { project?: string, key?: string, locale?: string, value?: string, to?: string, uri?: string, id?: string, review?: string, text?: string, suggestion?: string } // client-supplied; fields checked below
+    if (params.command === commands.review || params.command === commands.resolveReview || params.command === commands.applySuggestion)
+      return this.reviewCommand(params.command, input)
     if (params.command === commands.extract && typeof input.uri === 'string')
       return this.extractFile(input.uri)
     if (params.command === commands.migrateI18nAlly && typeof input.uri === 'string')
@@ -837,6 +857,80 @@ class Server {
     const edit = this.workspaceEdit(entry, this.plan(entry.project, [op]))
     await this.connection.workspace.applyEdit(edit)
     return edit
+  }
+
+  /** Review commands write at once: a comment is not an edit to review in the editor. */
+  async reviewCommand(command: string, input: { project?: string, key?: string, locale?: string, id?: string, review?: string, text?: string, suggestion?: string }): Promise<{ revision: number } | null> {
+    const entry = this.entryByName(input.project)
+    if (!entry)
+      return null
+    const { project } = entry
+    const review = reviewTypes.find(type => type === input.review)
+    let op: EditOp | undefined
+    if (command === commands.review && typeof input.key === 'string' && typeof input.locale === 'string' && review) {
+      op = {
+        type: 'review',
+        key: project.parseKey(input.key),
+        locale: input.locale,
+        review,
+        text: typeof input.text === 'string'
+          ? input.text
+          : undefined,
+        suggestion: typeof input.suggestion === 'string'
+          ? input.suggestion
+          : undefined,
+        author: await project.reviewAuthor(),
+      }
+    }
+    else if (typeof input.id === 'string') {
+      op = command === commands.resolveReview
+        ? { type: 'resolve-review', id: input.id }
+        : { type: 'apply-suggestion', id: input.id }
+    }
+    if (!op)
+      return null
+    try {
+      return { revision: (await project.apply(this.plan(project, [op]))).revision }
+    }
+    catch (error) {
+      throw isX18nError(error)
+        ? new ResponseError(1, `${error.message}. ${error.fix}`)
+        : error
+    }
+  }
+
+  reviews(params: P.ReviewsParams): P.ReviewsResult {
+    const entries = params.project === undefined
+      ? this.projects
+      : this.projects.filter(p => p.name === params.project)
+    return {
+      threads: entries.flatMap(entry => entry.project.reviews({
+        key: params.key === undefined
+          ? undefined
+          : entry.project.parseKey(params.key),
+        locale: params.locale,
+        open: params.open,
+      }).map((thread): P.ReviewThreadInfo => {
+        const node = entry.project.locations(thread.key).find(n => n.locale === thread.locale && n.leaf)
+        return {
+          project: entry.name,
+          key: thread.key,
+          locale: thread.locale,
+          state: thread.state,
+          comments: thread.comments.map(c => ({
+            id: c.id,
+            type: c.type,
+            author: c.author,
+            time: c.time,
+            text: c.text,
+            suggestion: c.suggestion,
+            resolved: c.resolved === true,
+            stale: c.stale,
+          })),
+          location: node && this.entryLocation(entry, node),
+        }
+      })),
+    }
   }
 
   async extractFile(uri: string): Promise<WorkspaceEdit | null> {
@@ -1113,6 +1207,10 @@ export function setupServer(connection: Connection, options: ServerOptions = {})
     if (!entry)
       throw new ResponseError(1, `No project "${params?.project ?? ''}" in this server.`)
     return openUi(entry)
+  })
+  connection.onRequest(methods.reviews, async (params: P.ReviewsParams | undefined) => {
+    await server.ready
+    return server.reviews(params ?? {})
   })
   connection.onRequest(methods.translatePrompt, async (params: P.TranslatePromptParams) => {
     await server.ready

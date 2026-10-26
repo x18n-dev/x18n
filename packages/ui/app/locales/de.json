@@ -76,7 +76,8 @@
     "outdated": "Veraltet",
     "sort": "Sortierung",
     "sortKey": "Schlüssel",
-    "sortRecent": "Zuletzt geändert"
+    "sortRecent": "Zuletzt geändert",
+    "reviewed": "Mit Review"
   },
   "locale": {
     "complete": "Alle Schlüssel sind übersetzt.",
@@ -105,7 +106,8 @@
     "keys": "Schlüssel",
     "overview": "Übersicht",
     "project": "Projekt",
-    "usages": "Verwendungen"
+    "usages": "Verwendungen",
+    "reviews": "Reviews"
   },
   "overview": {
     "clean": "Keine Probleme gefunden.",
@@ -187,5 +189,41 @@
     "copyFix": "Prompt zur Behebung kopieren",
     "fixHint": "Kopiert einen Prompt für ein LLM oder einen Agenten, der alle Diagnosen dieses Projekts behebt",
     "fixCodeHint": "Kopiert einen Prompt für ein LLM oder einen Agenten, der die Diagnosen {code} behebt"
+  },
+  "review": {
+    "add": "Review",
+    "type": "Art des Reviews",
+    "textPlaceholder": "Kommentar",
+    "suggestionPlaceholder": "Vorgeschlagener Wert",
+    "send": "Senden",
+    "resolve": "Erledigen",
+    "apply": "Übernehmen",
+    "resolved": "erledigt",
+    "stale": "seitdem geändert",
+    "unknownAuthor": "Jemand",
+    "suggests": "Vorschlag",
+    "empty": "Keine Reviews.",
+    "off": "Reviews sind für dieses Projekt aus.",
+    "all": "Alle ({count})",
+    "showResolved": "Erledigte zeigen",
+    "states": {
+      "changesRequested": "Änderung gewünscht",
+      "approved": "Freigegeben",
+      "staleApproval": "Freigegeben, seitdem geändert",
+      "suggested": "Vorschlag",
+      "commented": "Kommentare"
+    },
+    "types": {
+      "comment": "Kommentieren",
+      "approve": "Freigeben",
+      "requestChange": "Änderung wünschen",
+      "suggestion": "Vorschlagen"
+    },
+    "done": {
+      "comment": "hat kommentiert",
+      "approve": "hat freigegeben",
+      "requestChange": "wünscht eine Änderung",
+      "suggestion": "schlägt einen Wert vor"
+    }
   }
 }
