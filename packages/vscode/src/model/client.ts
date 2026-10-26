@@ -10,6 +10,8 @@ import type {
   ProjectInfo,
   ReviewsParams,
   ReviewsResult,
+  SearchMatch,
+  SearchParams,
   TranslatePromptParams,
   TreeNode,
   TreeParams,
@@ -24,10 +26,12 @@ export interface Requests {
   'x18n/progress': [undefined, ProgressResult]
   'x18n/fileKeys': [DocumentParams, FileKeysResult]
   'x18n/usageReport': [undefined, UsageReportResult]
+  'x18n/search': [SearchParams, SearchMatch[]]
   'x18n/decorations': [DocumentParams, DecorationsResult]
   'x18n/openUi': [OpenUiParams, OpenUiResult]
   'x18n/translatePrompt': [TranslatePromptParams, string]
   'x18n/reviews': [ReviewsParams, ReviewsResult]
+  'x18n/explain': [undefined, string]
 }
 
 /** The slice of the language client the view models need; tests pass a fake. */

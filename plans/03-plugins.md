@@ -314,7 +314,7 @@ Rules:
 ## TS plugins
 
 ```ts
-// x18n/acme.ts
+// .x18n/acme.ts
 import { definePlugin } from '@x18n/core'
 
 export default definePlugin((options: { prefix: string }) => ({

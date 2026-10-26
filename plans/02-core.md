@@ -143,7 +143,7 @@ Incremental rules:
 
 ### `project.explain()`
 
-Returns how the project was understood: detected presets and why, each finder and what it found, which format read each file, which scanner handles which extension, the resolved config with the origin of each value (default, preset, user). The CLI prints it with `x18n doctor`, the UI shows it on the "Project" page. This is the main tool for plugin authors.
+Returns how the project was understood: detected presets and why, each finder and what it found, which format read each file, which scanner handles which extension, the resolved config with the origin of each value (default, preset, user). The CLI prints it with `x18n doctor` through `renderExplanation`, the language server returns the same text from `x18n/explain`, and the UI shows it on the "Project" page. This is the main tool for plugin authors.
 
 ## Edits
 

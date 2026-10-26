@@ -36,7 +36,7 @@ export default defineConfig({
 sourceLocale: en
 presets: [vue-i18n]
 plugins:
-  - ./x18n/acme.x18n-plugin.yml
+  - ./.x18n/acme.x18n-plugin.yml
   - [x18n-plugin-foo, {strict: true}]
 resources:
   - pattern: 'src/locales/{locale}.json'

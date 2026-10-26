@@ -97,6 +97,11 @@ export interface AgentKeysQuery extends ProjectQuery, PageQuery {
   readonly values?: boolean | undefined
 }
 
+export interface AgentSearchQuery extends ProjectQuery, PageQuery {
+  readonly query: string
+  readonly exact?: boolean | undefined
+}
+
 export interface AgentUsagesQuery extends UsageQuery, PageQuery {}
 
 export interface AgentCheckQuery extends ProjectQuery, PageQuery {

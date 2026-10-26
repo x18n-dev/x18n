@@ -23,6 +23,7 @@ Bare `x18n` prints `x18n status` followed by the main commands. It never starts 
 | --- | --- |
 | `x18n status` | Locales with coverage, resource count, key count, diagnostics summary. |
 | `x18n keys [glob]` | List keys. `--missing <locale>`, `--unused`, `--namespace`, `--values` (include values per locale). |
+| `x18n search <query>` | Keys by value in any locale, fuzzy, best first, with usages. `--exact` for substring matches only. |
 | `x18n get <key>` | All values, resources, usages and reviews of one key. |
 | `x18n usages [key]` | Usages of a key, or all usages. `--file <path>` limits to a file. |
 | `x18n locales` | Locale codes as found, with display names, flags and resources. |

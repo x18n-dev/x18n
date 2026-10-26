@@ -88,6 +88,24 @@ export interface UsageReportResult {
   readonly missing: readonly { readonly project: string, readonly key: string, readonly locations: readonly Location[] }[]
 }
 
+export interface SearchParams {
+  /** Text of a value in any locale, ignoring case. */
+  readonly query: string
+  /** Only values containing the query; by default a fuzzy match also counts. */
+  readonly exact?: boolean | undefined
+}
+
+export interface SearchMatch {
+  readonly project: string
+  readonly key: string
+  /** The best-matching locale, source first on ties. */
+  readonly locale: string
+  readonly value: string
+  /** The entry holding the matched value. */
+  readonly definition: Location | undefined
+  readonly usages: readonly Location[]
+}
+
 export interface Decoration {
   readonly range: Range
   /** The whole call holding the key, when the scanner knows it. */
@@ -169,11 +187,13 @@ export interface Methods {
   readonly progress: 'x18n/progress'
   readonly fileKeys: 'x18n/fileKeys'
   readonly usageReport: 'x18n/usageReport'
+  readonly search: 'x18n/search'
   readonly decorations: 'x18n/decorations'
   readonly setDisplayLocale: 'x18n/setDisplayLocale'
   readonly openUi: 'x18n/openUi'
   readonly translatePrompt: 'x18n/translatePrompt'
   readonly reviews: 'x18n/reviews'
+  readonly explain: 'x18n/explain'
   readonly changed: 'x18n/changed'
 }
 
@@ -184,11 +204,13 @@ export const methods: Methods = {
   progress: 'x18n/progress',
   fileKeys: 'x18n/fileKeys',
   usageReport: 'x18n/usageReport',
+  search: 'x18n/search',
   decorations: 'x18n/decorations',
   setDisplayLocale: 'x18n/setDisplayLocale',
   openUi: 'x18n/openUi',
   translatePrompt: 'x18n/translatePrompt',
   reviews: 'x18n/reviews',
+  explain: 'x18n/explain',
   changed: 'x18n/changed',
 }
 

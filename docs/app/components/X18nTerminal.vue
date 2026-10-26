@@ -4,7 +4,7 @@
 type Seg = string | [text: string, cls: string]
 type Line = Seg[]
 
-const props = defineProps<{ name: 'status' | 'check' | 'get' | 'rename' | 'ui' | 'init' }>()
+const props = defineProps<{ name: 'status' | 'check' | 'get' | 'search' | 'rename' | 'ui' | 'init' }>()
 
 const c = {
   path: 'text-cyan-700 underline decoration-cyan-700/40 underline-offset-2 dark:text-cyan-400 dark:decoration-cyan-400/40',
@@ -248,6 +248,22 @@ const outputs: Record<typeof props.name, { command: string, busy?: string, lines
       ],
       [
         '    ',
+        ['src/app.vue:110:15', c.path],
+      ],
+    ],
+  },
+  search: {
+    command: 'pnpx @x18n/cli search "projekt geladen"',
+    lines: [
+      [
+        ['app.loading', c.key],
+        '  ',
+        ['de', c.bold],
+        '  ',
+        ['"Projekt wird geladen…"', c.str],
+      ],
+      [
+        '  ',
         ['src/app.vue:110:15', c.path],
       ],
     ],

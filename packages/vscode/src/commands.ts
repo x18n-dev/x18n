@@ -1,10 +1,9 @@
-import type { ProjectInfo, ReviewCommentInfo } from '@x18n/lsp'
-import type { Uri } from 'vscode'
+import type { Location, ProjectInfo, ReviewCommentInfo, SearchMatch } from '@x18n/lsp'
 import type { LanguageClient } from 'vscode-languageclient/node'
 import type { KeyRef, X18nClient } from './model/client'
 import { commands as serverCommands } from '@x18n/lsp'
 import { useCommand } from 'reactive-vscode'
-import { ConfigurationTarget, env, Range, Selection, TextEditorRevealType, commands as vscodeCommands, window, workspace } from 'vscode'
+import { ConfigurationTarget, env, Range, Selection, TextEditorRevealType, Uri, commands as vscodeCommands, window, workspace } from 'vscode'
 import { CodeActionKind, CodeActionRequest, ExecuteCommandRequest } from 'vscode-languageclient/node'
 import { annotationInPlace, config } from './config'
 import { flagIcon } from './flags'
@@ -32,6 +31,30 @@ function refOf(arg: unknown): KeyRef | undefined {
   if (typeof arg === 'object' && arg !== null && 'item' in arg && typeof arg.item === 'object' && arg.item !== null && 'ref' in arg.item && isKeyRef(arg.item.ref))
     return arg.item.ref
   return undefined
+}
+
+async function open(location: Location): Promise<void> {
+  const { start, end } = location.range
+  await window.showTextDocument(Uri.parse(location.uri), {
+    selection: new Range(start.line, start.character, end.line, end.character),
+  })
+}
+
+/** The matched value's usages, or its locale entry when no code uses the key. */
+async function openMatch(match: SearchMatch): Promise<void> {
+  const targets = match.usages.length > 0
+    ? match.usages
+    : match.definition
+      ? [match.definition]
+      : []
+  const picked = targets.length > 1
+    ? (await window.showQuickPick(targets.map(location => ({
+        label: `${workspace.asRelativePath(Uri.parse(location.uri))}:${location.range.start.line + 1}`,
+        location,
+      })), { placeHolder: `Usages of ${match.key}` }))?.location
+    : targets[0]
+  if (picked)
+    await open(picked)
 }
 
 async function localeItem(locale: ProjectInfo['locales'][number]): Promise<{ label: string, code: string, iconPath?: Uri }> {
@@ -109,6 +132,47 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
     const ref = await resolveRef(arg)
     if (ref)
       await openUi(ref)
+  })
+
+  register(commands.findKeyByText, async () => {
+    const editor = window.activeTextEditor
+    const selected = editor?.document.getText(editor.selection).trim() ?? ''
+    const pick = window.createQuickPick<{ label: string, description: string, detail: string, alwaysShow: boolean, match: SearchMatch }>()
+    pick.placeholder = 'Text shown in the app, in any locale'
+    const search = async (query: string): Promise<void> => {
+      pick.busy = true
+      const matches = await x18n.request('x18n/search', { query })
+      if (pick.value !== query)
+        return
+      const projects = new Set(matches.map(m => m.project))
+      pick.items = matches.map(match => ({
+        label: match.value,
+        description: projects.size > 1
+          ? `${match.project} · ${match.key}`
+          : match.key,
+        detail: `${match.locale} · ${match.usages.length === 1
+          ? '1 usage'
+          : `${match.usages.length} usages`}`,
+        // The server matches fuzzily; the quick pick's own filter would hide some matches.
+        alwaysShow: true,
+        match,
+      }))
+      pick.busy = false
+    }
+    const fail = (error: unknown): void => void window.showErrorMessage(`x18n: ${message(error)}`)
+    if (!selected.includes('\n'))
+      pick.value = selected
+    pick.onDidChangeValue(query => search(query).catch(fail))
+    pick.onDidAccept(() => {
+      const match = pick.selectedItems[0]?.match
+      pick.dispose()
+      if (match)
+        openMatch(match).catch(fail)
+    })
+    pick.onDidHide(() => pick.dispose())
+    pick.show()
+    if (pick.value)
+      await search(pick.value)
   })
 
   register(commands.setDisplayLocale, async () => {
@@ -252,6 +316,10 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
   register(commands.toggleInPlace, async () => config.update('annotationInPlace', !annotationInPlace(), ConfigurationTarget.Global))
   register(commands.restartServer, () => client.restart())
   register(commands.showOutput, async () => client.outputChannel.show())
+  register(commands.explainProjects, async () => {
+    client.outputChannel.appendLine(await x18n.request('x18n/explain', undefined))
+    client.outputChannel.show()
+  })
 
   register(commands.migrateFromI18nAlly, async () => {
     const folders = await migratableFolders()

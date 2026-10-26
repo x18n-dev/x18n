@@ -126,6 +126,7 @@ describe('agent tools', () => {
   it('reports status, keys, check and the translate prompt', async () => {
     expect(wire(await ctx.agent.invoke('x18n:status', {}))).toMatchSnapshot()
     expect(wire(await ctx.agent.invoke('x18n:keys', { missing: 'de', values: true, limit: 2 }))).toMatchSnapshot()
+    expect(wire(await ctx.agent.invoke('x18n:search', { query: 'welcome' }))).toMatchSnapshot()
     expect(wire(await ctx.agent.invoke('x18n:check', {
       only: ['missing-translation'],
     }))).toMatchSnapshot()

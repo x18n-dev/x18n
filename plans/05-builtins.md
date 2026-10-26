@@ -22,21 +22,23 @@ Tiers decide the release: tier 1 ships in 1.0 with full parity tests, tier 2 in 
 
 | Id | Extensions | Read | Write | Library | Tier |
 | --- | --- | --- | --- | --- | --- |
-| `json` | json | yes | in place | `jsonc-parser` (`modify` keeps layout) | 1 |
+| `json` | json | yes | in place | `jsonc-parser` to read, shared literal editor to write | 1 |
 | `jsonc` | jsonc | yes | in place | `jsonc-parser` | 1 |
-| `json5` | json5 | yes | serialize | `json5` | 1 |
+| `json5` | json5 | yes | in place | `json5` to read, shared literal editor to write | 1 |
 | `yaml` | yml, yaml | yes | in place, keeps comments | `yaml` v2 Document API | 1 |
 | `po` | po, pot | yes | in place | `pofile` or a small own parser | 2 |
 | `properties` | properties | yes | in place | own line-based parser | 2 |
 | `ftl` | ftl | yes | in place | `@fluent/syntax` | 2 |
 | `arb` | arb | yes | in place (json) | json + `@@locale` and `@key` metadata | 2 |
-| `js` / `ts` | js, mjs, cjs, ts, mts | static by default: `export default { ... }`, object literals, `defineX({ ... })` and loaders that only return one, bare or wrapped (`export default () => ({ ... })`, `defineI18nLocale(() => ({ ... }))`); executed with `execute: true` | in place when static; read-only when executed | `oxc-parser` to read, `magicast` to write | 2 |
-| `php` | php | static `return [ ... ]` arrays | serialize | own parser | 2 |
+| `js` / `ts` | js, mjs, cjs, ts, mts | static by default: `export default { ... }`, object literals, `defineX({ ... })` and loaders that only return one, bare or wrapped (`export default () => ({ ... })`, `defineI18nLocale(() => ({ ... }))`); executed with `execute: true` | in place when static; read-only when executed | `oxc-parser` to read, shared literal editor to write | 2 |
+| `php` | php | static `return [ ... ]` arrays | in place | own parser, shared literal editor | 2 |
 | `xliff` | xlf, xliff | yes | in place | small XML parser | 3 |
-| `ini` | ini | yes | serialize | `ini` | 3 |
+| `ini` | ini | yes | in place | own parser | 3 |
 | `strings` | strings (Apple) | yes | in place | own parser | 3 |
 | `android-xml` | xml (`res/values*/strings.xml`) | yes | in place | small XML parser | 3 |
 | `resx` | resx | yes | in place | own parser | 2 |
+
+`json`, `jsonc`, `json5`, `js` and `php` share one editor for nested key-value literals (`formats/shared/literal.ts`). It sets a value in its own quotes, adds a key after the last key of its parent in the file's indent and comma style, and deletes a key with its own lines, so every comment that is not on those lines stays.
 
 By default the `js` / `ts` format never runs user code. A file that is not a static literal is reported as `X18N2004`, with a hint to use JSON or YAML or to opt in to execution.
 

@@ -1,20 +1,15 @@
 import type { MessageLeaf, MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
 import type { Expression, Node, ObjectExpression, ObjectPropertyKind, Program } from 'oxc-parser'
-import { applyMessageOps, diffText, errors, isMessageLeaf, pathId } from '@x18n/core'
+import type { LiteralItem, LiteralObject, LiteralSyntax } from '../shared/literal'
+import { applyMessageOps, diffText, errors, pathId } from '@x18n/core'
 import { parseSync } from 'oxc-parser'
-import { splice } from '../shared'
-
-interface Scalar {
-  /** The whole literal, quotes included. */
-  readonly range: TextRange
-  readonly quote: string | undefined
-}
+import { indentUnit } from '../shared'
+import { editLiteral, literalText } from '../shared/literal'
 
 interface Module {
-  readonly root: ObjectExpression | undefined
   readonly tree: MessageTree
   readonly ranges: Map<string, NodeRange>
-  readonly scalars: Map<string, Scalar>
+  readonly literal: LiteralObject | undefined
 }
 
 type Fail = (code: 'X18N2003' | 'X18N2004', node: Node, reason: string) => never
@@ -116,37 +111,53 @@ function readLeaf(node: Expression, text: string): { value: MessageLeaf, quote: 
   return undefined
 }
 
-function readObject(node: ObjectExpression, path: readonly string[], module: Pick<Module, 'ranges' | 'scalars'>, text: string, fail: Fail): MessageTree {
-  const out: Record<string, MessageTree | MessageLeaf> = {}
+function readObject(node: ObjectExpression, path: readonly string[], ranges: Map<string, NodeRange>, text: string, fail: Fail): { tree: MessageTree, literal: LiteralObject } {
+  const tree: Record<string, MessageTree | MessageLeaf> = {}
+  const items: LiteralItem[] = []
   for (const property of node.properties) {
     const { key, range, value } = readProperty(property, fail)
     const childPath = [...path, key]
-    const id = pathId(childPath)
+    const item = {
+      key,
+      range: { start: property.start, end: property.end },
+    }
     if (value.type === 'ObjectExpression') {
-      module.ranges.set(id, {
+      ranges.set(pathId(childPath), {
         key: range,
         value: { start: value.start, end: value.end },
       })
-      out[key] = readObject(value, childPath, module, text, fail)
+      const child = readObject(value, childPath, ranges, text, fail)
+      tree[key] = child.tree
+      items.push({ ...item, value: child.literal })
       continue
     }
     const leaf = readLeaf(value, text)
     if (!leaf)
       return fail('X18N2004', value, `${value.type} is not a static value`)
-    const quoted = leaf.quote !== undefined
-    module.ranges.set(id, {
+    ranges.set(pathId(childPath), {
       key: range,
-      value: quoted
-        ? { start: value.start + 1, end: value.end - 1 }
-        : { start: value.start, end: value.end },
+      value: leaf.quote === undefined
+        ? { start: value.start, end: value.end }
+        : { start: value.start + 1, end: value.end - 1 },
     })
-    module.scalars.set(id, {
-      range: { start: value.start, end: value.end },
-      quote: leaf.quote,
+    tree[key] = leaf.value
+    items.push({
+      ...item,
+      value: {
+        kind: 'scalar',
+        range: { start: value.start, end: value.end },
+        quote: leaf.quote,
+      },
     })
-    out[key] = leaf.value
   }
-  return out
+  return {
+    tree,
+    literal: {
+      kind: 'object',
+      range: { start: node.start, end: node.end },
+      items,
+    },
+  }
 }
 
 function readModule(text: string, path: string): Module {
@@ -162,16 +173,12 @@ function readModule(text: string, path: string): Module {
   if (result.errors.length > 0)
     throw errors.X18N2002({ path, reason: result.errors[0]!.message })
   const root = findRoot(result.program, fail)
-  const found = {
-    ranges: new Map<string, NodeRange>(),
-    scalars: new Map<string, Scalar>(),
-  }
+  const ranges = new Map<string, NodeRange>()
+  if (!root)
+    return { tree: {}, ranges, literal: undefined }
   return {
-    root,
-    tree: root
-      ? readObject(root, [], found, text, fail)
-      : {},
-    ...found,
+    ...readObject(root, [], ranges, text, fail),
+    ranges,
   }
 }
 
@@ -194,48 +201,31 @@ function literal(value: MessageLeaf, quote: string | undefined): string {
   return `'${value.replace(/[\\'\n\r\u2028\u2029]/g, char => singleEncodings[char]!)}'`
 }
 
-function objectText(tree: MessageTree, unit: string, depth: number): string {
-  const entries = Object.entries(tree)
-  if (entries.length === 0)
-    return '{}'
-  const pad = unit.repeat(depth + 1)
-  const lines = entries.map(([key, child]) => {
-    const name = /^[a-z_$][\w$]*$/i.test(key)
+function syntaxOf(text: string, indent: number | 'tab' | undefined): LiteralSyntax {
+  return {
+    open: '{',
+    close: '}',
+    separator: ': ',
+    key: key => /^[a-z_$][\w$]*$/i.test(key)
       ? key
-      : literal(key, '\'')
-    return `${pad}${name}: ${isMessageLeaf(child)
-      ? literal(child, '\'')
-      : objectText(child, unit, depth + 1)},\n`
-  })
-  return `{\n${lines.join('')}${unit.repeat(depth)}}`
-}
-
-/** Indent unit: configured, else the file's (first indented line), else 2 spaces. */
-function unitOf(text: string, indent: number | 'tab' | undefined): string {
-  if (indent !== undefined) {
-    return indent === 'tab'
-      ? '\t'
-      : ' '.repeat(indent)
+      : literal(key, '\''),
+    leaf: (value, quote) => literal(value, quote ?? '\''),
+    unit: indentUnit(text, indent, '  '),
+    trailingComma: true,
   }
-  return /^([ \t]+)\S/m.exec(text)?.[1] ?? '  '
 }
 
-function moduleText(tree: MessageTree, path: string, unit: string): string {
+function moduleText(tree: MessageTree, path: string, syntax: LiteralSyntax): string {
   return `${path.endsWith('.cjs')
     ? 'module.exports ='
-    : 'export default'} ${objectText(tree, unit, 0)}\n`
+    : 'export default'} ${literalText(tree, syntax)}\n`
 }
 
-function applyOp(text: string, op: MessageOp, path: string, unit: string): string {
-  const module = readModule(text, path)
-  const scalar = module.scalars.get(pathId(op.path))
-  if (op.type === 'set' && scalar)
-    return splice(text, scalar.range, literal(op.value, scalar.quote))
-  const tree = applyMessageOps(module.tree, [op])
-  // Structural changes rewrite the object literal and keep its wrapper (`as const`, `module.exports`, ...).
-  return module.root
-    ? splice(text, module.root, objectText(tree, unit, 0))
-    : moduleText(tree, path, unit)
+function applyOp(text: string, op: MessageOp, path: string, syntax: LiteralSyntax): string {
+  const root = readModule(text, path).literal
+  return root
+    ? editLiteral(text, root, op, syntax)
+    : moduleText(applyMessageOps({}, [op]), path, syntax)
 }
 
 export function ecmascript(): Plugin {
@@ -250,13 +240,13 @@ export function ecmascript(): Plugin {
           return { tree, ranges }
         },
         edit(text, ops, ctx) {
-          const unit = unitOf(text, ctx.indent)
+          const syntax = syntaxOf(text, ctx.indent)
           let next = text
           for (const op of ops)
-            next = applyOp(next, op, ctx.path, unit)
+            next = applyOp(next, op, ctx.path, syntax)
           return diffText(text, next)
         },
-        serialize: (tree, ctx) => moduleText(tree, ctx.path, unitOf('', ctx.indent)),
+        serialize: (tree, ctx) => moduleText(tree, ctx.path, syntaxOf('', ctx.indent)),
       },
     ],
   }

@@ -58,6 +58,9 @@ items:
   - icon: i-ph-magnifying-glass-duotone
     title: x18n get
     description: The value of a key in every locale, and where the code uses it.
+  - icon: i-ph-text-aa-duotone
+    title: x18n search
+    description: Find the key behind a text that the app shows, in any locale, and where the code uses it.
   - icon: i-ph-pencil-simple-line-duotone
     title: x18n rename
     description: Rename a key in every locale and every usage. Add `--dry-run` to see the diff first.
@@ -88,12 +91,15 @@ Run x18n in the root of a project. It detects the i18n library from your depende
   :x18n-terminal{name="get"}
 
 #code-3
-  :x18n-terminal{name="rename"}
+  :x18n-terminal{name="search"}
 
 #code-4
-  :x18n-terminal{name="ui"}
+  :x18n-terminal{name="rename"}
 
 #code-5
+  :x18n-terminal{name="ui"}
+
+#code-6
   :x18n-terminal{name="init"}
 ::
 

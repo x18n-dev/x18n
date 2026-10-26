@@ -241,7 +241,10 @@ import { defineConfig } from '@x18n/core'
 
 export default defineConfig({
   checks: {
-    'key-style': ['warning', { case: 'camel' }],
+    'key-style': [
+      'warning',
+      { case: 'camel' }
+    ],
   },
 })
 \`\`\`

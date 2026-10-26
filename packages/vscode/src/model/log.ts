@@ -15,12 +15,14 @@ function percent(translated: number, total: number): string {
 /** The projects the server loaded and how translated each locale is, as indented lines. */
 export function formatStatus(projects: readonly ProjectInfo[], progress: ProgressResult): string[] {
   if (projects.length === 0)
-    return ['No x18n project found in the workspace. Run `x18n init`, or add an x18n.config.ts.']
+    return ['No x18n project found in the workspace. Run `x18n: Explain Projects` to see why, then `x18n init` or add an x18n.config.ts.']
   const lines = [`${projects.length} project${projects.length === 1
     ? ''
     : 's'} loaded`]
   for (const project of projects) {
     lines.push(`  ${project.name}  ${project.root}`, `    ${project.keys} keys, source ${project.sourceLocale}, display ${project.displayLocale}`)
+    if (project.keys === 0)
+      lines.push('    Run `x18n: Explain Projects` to see why no keys were found.')
     const locales = progress.projects.find(p => p.name === project.name)?.locales ?? []
     const width = Math.max(0, ...locales.map(l => l.locale.length))
     for (const l of locales) {

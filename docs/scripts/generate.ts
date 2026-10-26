@@ -584,6 +584,12 @@ const methodDocs = {
     result: 'UsageReportResult',
     doc: 'Unused keys, and used keys that are not defined.',
   },
+  search: {
+    kind: 'request',
+    params: 'SearchParams',
+    result: 'SearchMatch[]',
+    doc: 'Keys found by their value in any locale, best first: fuzzy unless `exact`, ignoring case. Each match has the matched value, its locale entry and the usages. At most 100.',
+  },
   decorations: {
     kind: 'request',
     params: 'DocumentParams',
@@ -607,6 +613,12 @@ const methodDocs = {
     params: 'TranslatePromptParams',
     result: 'string',
     doc: 'The translate prompt for a locale, as markdown.',
+  },
+  explain: {
+    kind: 'request',
+    params: undefined,
+    result: 'string',
+    doc: 'What `x18n doctor` prints for every workspace folder: load errors, presets, locale files and config. The server also logs it when it finds no locale files.',
   },
   changed: {
     kind: 'notification (server to client)',
@@ -665,7 +677,80 @@ async function lspPage(): Promise<void> {
 pnpx x18n-lsp --stdio
 \`\`\`
 
-The server also accepts \`--node-ipc\` and \`--socket=<port>\`. It loads the projects of each workspace folder, the same way the CLI does.
+The server also accepts \`--node-ipc\` and \`--socket=<port>\`. With \`--socket\`, the client listens on the port and the server connects to it. The server loads the projects of each workspace folder, the same way the CLI does.
+
+## Editor setup
+
+Install the server once so that \`x18n-lsp\` is on your \`PATH\`:
+
+\`\`\`sh
+npm i -g @x18n/lsp
+\`\`\`
+
+The server runs next to your language's own server. Point it at the file types that use or define messages. Each editor below starts it over stdio and can pass [initialization options](#initialization-options).
+
+### Neovim
+
+Neovim 0.11 and later:
+
+\`\`\`lua
+vim.lsp.config('x18n', {
+  cmd = { 'x18n-lsp', '--stdio' },
+  filetypes = { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact', 'vue', 'svelte', 'json', 'yaml' },
+  root_markers = { 'x18n.config.ts', 'x18n.config.json', 'package.json', '.git' },
+  init_options = { showFlags = true },
+})
+vim.lsp.enable('x18n')
+\`\`\`
+
+### Helix
+
+In \`languages.toml\`, add the server, then add it to each language next to the server it already uses:
+
+\`\`\`toml
+[language-server.x18n]
+command = "x18n-lsp"
+args = [ "--stdio" ]
+config = { showFlags = true }
+
+[[language]]
+name = "typescript"
+language-servers = [
+  "typescript-language-server",
+  "x18n"
+]
+\`\`\`
+
+### Sublime Text
+
+With the [LSP](https://packagecontrol.io/packages/LSP) package, in \`LSP.sublime-settings\`:
+
+\`\`\`json
+{
+  "clients": {
+    "x18n": {
+      "enabled": true,
+      "command": ["x18n-lsp", "--stdio"],
+      "selector": "source.js | source.ts | source.jsx | source.tsx | text.html.vue | source.json | source.yaml",
+      "initializationOptions": { "showFlags": true }
+    }
+  }
+}
+\`\`\`
+
+### Emacs
+
+With \`lsp-mode\`, register x18n as an add-on server so that it runs next to the main server:
+
+\`\`\`elisp
+(with-eval-after-load 'lsp-mode
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection '("x18n-lsp" "--stdio"))
+    :activation-fn (lsp-activate-on "javascript" "typescript" "typescriptreact" "vue" "json" "yaml")
+    :add-on? t
+    :server-id 'x18n)))
+\`\`\`
 
 ## Standard features
 
@@ -889,7 +974,7 @@ ${invalidResource.notes}
 
 - ${sourceLink('packages/core/src/project/analysis.ts')}
 `)
-  const reporterIds = Object.keys(reporters).map(code).join(', ')
+  const reporterIds = Object.keys(reporters).map(id => code(id)).join(', ')
   page('content/9.checks/index.md', 'Checks', 'Every built-in check of x18n check, with its default severity.', `
 A check reads the project and reports diagnostics. A diagnostic is one reported issue with a code, a severity and optional fixes. \`x18n check\` runs every check, and the editor shows the same diagnostics.
 
@@ -902,7 +987,10 @@ export default defineConfig({
   checks: {
     'unused-key': 'error',
     'identical-to-source': 'warning',
-    'key-style': ['warning', { case: 'camel' }],
+    'key-style': [
+      'warning',
+      { case: 'camel' }
+    ],
   },
 })
 \`\`\`

@@ -43,6 +43,12 @@
   "contributes": {
     "commands": [
       {
+        "command": "x18n.findKeyByText",
+        "title": "Find Key by Text",
+        "category": "x18n",
+        "icon": "$(search)"
+      },
+      {
         "command": "x18n.openUi",
         "title": "Open UI",
         "category": "x18n",
@@ -131,6 +137,11 @@
         "category": "x18n"
       },
       {
+        "command": "x18n.explainProjects",
+        "title": "Explain Projects",
+        "category": "x18n"
+      },
+      {
         "command": "x18n.addReview",
         "title": "Review Key",
         "category": "x18n",
@@ -201,6 +212,11 @@
         }
       ],
       "view/title": [
+        {
+          "command": "x18n.findKeyByText",
+          "when": "view == x18n.keys",
+          "group": "navigation"
+        },
         {
           "command": "x18n.openUi",
           "when": "view =~ /^x18n\\./",

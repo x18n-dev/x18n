@@ -15,7 +15,7 @@ Use this when a project has i18n-ally settings: `i18n-ally.*`, legacy `vue-i18n-
    - The config format: `x18n.config.ts` by default, or `--format yml` / `--format json` for projects without Node.js tooling.
 4. Write the files: `x18n migrate i18n-ally --json` (add `--format yml` if the user chose YAML; `--force` replaces an existing x18n config). It writes:
    - `x18n.config.ts` (or `.yml`, `.json`) from the project settings
-   - `x18n/custom.x18n-plugin.yml`, when there are custom regexes, a custom framework, refactor templates or `localeCountryMap` flags
+   - `.x18n/custom.x18n-plugin.yml`, when there are custom regexes, a custom framework, refactor templates or `localeCountryMap` flags
    - editor settings in `.vscode/settings.json`: `x18n.displayLocale`, `x18n.annotationInPlace`, `x18n.annotations`, `x18n.annotationMaxLength`, `x18n.showFlags`
    - `.x18n/reviews.yml`, when `.vscode/i18n-ally-reviews.yml` or `.vscode/i18n-ally-next-reviews.yml` exists
 

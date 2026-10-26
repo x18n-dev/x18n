@@ -1,7 +1,7 @@
 import type { KeyString, LocaleCoverage } from '@x18n/core'
 import type { LoadedProject } from '@x18n/node'
 import type { GlobalOptions } from '../context'
-import { toWireRange } from '@x18n/core'
+import { renderExplanation, toWireRange } from '@x18n/core'
 import { displayPath, openWorkspace, out, printJson, wireDiagnostics } from '../context'
 
 function percent(coverage: LocaleCoverage): number {
@@ -141,6 +141,43 @@ function locate(loaded: LoadedProject, path: string, start: number, end: number)
   }
 }
 
+export async function search(query: string, options: GlobalOptions & { readonly exact?: boolean | undefined, readonly limit?: number | undefined, readonly cursor?: string | undefined }): Promise<void> {
+  const workspace = await openWorkspace(options)
+  const projects = workspace.projects.map((loaded) => {
+    const { project } = loaded
+    const { items, total, nextCursor } = page(project.search(String(query), { exact: options.exact }), options)
+    return {
+      name: loaded.name,
+      total,
+      nextCursor,
+      matches: items.map(m => ({
+        key: m.key,
+        locale: m.locale,
+        value: m.value,
+        usages: project.usages({ key: m.key }).map(u => ({
+          possible: u.possible,
+          ...locate(loaded, u.usage.path, u.usage.range.start, u.usage.range.end),
+        })),
+      })),
+    }
+  })
+  if (options.json) {
+    printJson('search', { projects })
+    return
+  }
+  for (const p of projects) {
+    if (workspace.projects.length > 1)
+      out(`# ${p.name}`)
+    for (const m of p.matches) {
+      out(`${m.key}  ${m.locale}  ${JSON.stringify(m.value)}`)
+      for (const u of m.usages)
+        out(`  ${u.file}:${u.line}:${u.column}${u.possible ? ' (possible)' : ''}`)
+    }
+    if (p.nextCursor)
+      out(`… ${p.total - Number(p.nextCursor)} more (--cursor ${p.nextCursor})`)
+  }
+}
+
 export async function get(input: string, options: GlobalOptions): Promise<void> {
   const workspace = await openWorkspace(options)
   const projects = workspace.projects.flatMap((loaded) => {
@@ -262,35 +299,6 @@ export async function doctor(options: GlobalOptions): Promise<void> {
     printJson('doctor', { projects })
     return
   }
-  for (const e of projects) {
-    out(`# ${e.name} (${e.root})`)
-    out(`config: ${e.configFile ?? 'none (detection only)'}`)
-    out(`presets:`)
-    const applied = e.presets.filter(p => p.reason === 'detected' || p.reason === 'listed')
-    for (const p of applied)
-      out(`  ✓ ${p.name} (${p.reason})`)
-    if (applied.length === 0)
-      out('  none')
-    if (e.presets.length > applied.length)
-      out(`  ${e.presets.length - applied.length} others not applied (--json lists them)`)
-    out('finders:')
-    for (const f of e.finders) {
-      out(`  ${f.id}: ${f.resources.length} resources${f.resources.length
-        ? `\n    ${f.resources.slice(0, 20).join('\n    ')}`
-        : ''}`)
-    }
-    out('formats:')
-    for (const f of e.formats.filter(f => f.resources > 0))
-      out(`  ${f.id} (${f.extensions.join(', ')}): ${f.resources} resources`)
-    out('scanners:')
-    for (const s of e.scanners)
-      out(`  ${s.id} (${s.extensions.join(', ') || 'none'}): ${s.files} files`)
-    if (e.conflicts.length)
-      out(`conflicts:\n${e.conflicts.map(c => `  .${c.extension}: ${c.winner} wins over ${c.loser}`).join('\n')}`)
-    if (e.errors.length)
-      out(`errors:\n${e.errors.map(err => `  ${err.name} ${err.why}`).join('\n')}`)
-    out('config origins:')
-    for (const [key, origin] of Object.entries(e.config.origins))
-      out(`  ${key}: ${origin}`)
-  }
+  for (const e of projects)
+    out(renderExplanation(e, e.configFile))
 }

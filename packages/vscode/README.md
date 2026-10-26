@@ -27,6 +27,7 @@ Project settings live in `x18n.config.ts`; the settings below only change the ed
 
 | Command                      | Title                                  |
 | ---------------------------- | -------------------------------------- |
+| `x18n.findKeyByText`         | x18n: Find Key by Text                 |
 | `x18n.openUi`                | x18n: Open UI                          |
 | `x18n.openKey`               | x18n: Open Key in UI                   |
 | `x18n.setDisplayLocale`      | x18n: Set Display Locale               |
@@ -43,6 +44,7 @@ Project settings live in `x18n.config.ts`; the settings below only change the ed
 | `x18n.restartServer`         | x18n: Restart Language Server          |
 | `x18n.migrateFromI18nAlly`   | x18n: Migrate from i18n-ally           |
 | `x18n.showOutput`            | x18n: Show Output                      |
+| `x18n.explainProjects`       | x18n: Explain Projects                 |
 | `x18n.addReview`             | x18n: Review Key                       |
 | `x18n.replyReview`           | x18n: Comment                          |
 | `x18n.approveReview`         | x18n: Approve                          |

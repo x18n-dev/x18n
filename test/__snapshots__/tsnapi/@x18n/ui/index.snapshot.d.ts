@@ -29,6 +29,10 @@ export interface AgentReviewQuery extends ProjectQuery {
   readonly text?: string | undefined;
   readonly suggestion?: string | undefined;
 }
+export interface AgentSearchQuery extends ProjectQuery, PageQuery {
+  readonly query: string;
+  readonly exact?: boolean | undefined;
+}
 export interface AgentSetQuery extends ProjectQuery {
   readonly messages: Readonly<Record<LocaleCode, Readonly<Record<string, MessageLeaf>>>>;
   readonly force?: boolean | undefined;

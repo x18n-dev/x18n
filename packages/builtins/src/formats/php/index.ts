@@ -1,13 +1,20 @@
 import type { MessageLeaf, MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
-import { applyMessageOps, diffText, errors, isMessageLeaf, pathId } from '@x18n/core'
-import { splice } from '../shared'
+import type { LiteralItem, LiteralObject, LiteralScalar, LiteralSyntax } from '../shared/literal'
+import { applyMessageOps, diffText, errors, pathId } from '@x18n/core'
+import { editLiteral, literalText } from '../shared/literal'
 
-type Value
-  = | { readonly kind: 'array', readonly range: TextRange, readonly items: readonly Item[] }
-    | { readonly kind: 'scalar', readonly range: TextRange, readonly value: MessageLeaf, readonly quote: string | undefined }
+type Value = PhpArray | PhpScalar
 
-interface Item {
-  readonly key: string
+interface PhpArray extends LiteralObject {
+  readonly items: readonly Item[]
+}
+
+interface PhpScalar extends LiteralScalar {
+  readonly value: MessageLeaf
+}
+
+interface Item extends LiteralItem {
+  /** The key without its quotes. */
   readonly keyRange: TextRange
   readonly value: Value
 }
@@ -40,7 +47,7 @@ function decodeDouble(raw: string, fail: Fail): string {
   })
 }
 
-function parseFile(text: string, path: string): Value | undefined {
+function parseFile(text: string, path: string): PhpArray | undefined {
   let pos = 0
   const fail: Fail = (code, reason) => {
     throw errors[code]({ path, line: text.slice(0, pos).split('\n').length, reason })
@@ -93,12 +100,14 @@ function parseFile(text: string, path: string): Value | undefined {
         return fail('X18N2003', 'array item without a key')
       if (key.kind !== 'scalar' || (typeof key.value !== 'string' && typeof key.value !== 'number'))
         return fail('X18N2004', 'array keys must be strings or integers')
+      const value = parseValue()
       items.push({
         key: String(key.value),
+        range: { start: key.range.start, end: value.range.end },
         keyRange: key.quote
           ? { start: key.range.start + 1, end: key.range.end - 1 }
           : key.range,
-        value: parseValue(),
+        value,
       })
       if (eat(/^,/))
         continue
@@ -108,7 +117,7 @@ function parseFile(text: string, path: string): Value | undefined {
         return fail('X18N2004', `expected "," or "${close}"; expressions are not static`)
     }
     return {
-      kind: 'array',
+      kind: 'object',
       range: { start, end: pos },
       items,
     }
@@ -149,7 +158,7 @@ function parseFile(text: string, path: string): Value | undefined {
   if (!eat(/^return\b/i))
     fail('X18N2004', 'expected `return [ ... ];`')
   const root = parseValue()
-  if (root.kind !== 'array')
+  if (root.kind !== 'object')
     fail('X18N2003', 'the file must return an array')
   if (!eat(/^;/))
     fail('X18N2004', 'expected ";" after the array; expressions are not static')
@@ -161,7 +170,7 @@ function parseFile(text: string, path: string): Value | undefined {
 
 function readTree(value: Value, path: readonly string[], ranges: Map<string, NodeRange>): MessageTree {
   const out: Record<string, MessageTree | MessageLeaf> = {}
-  if (value.kind !== 'array')
+  if (value.kind !== 'object')
     return out
   for (const item of value.items) {
     const childPath = [...path, item.key]
@@ -169,7 +178,7 @@ function readTree(value: Value, path: readonly string[], ranges: Map<string, Nod
       ? { start: item.value.range.start + 1, end: item.value.range.end - 1 }
       : item.value.range
     ranges.set(pathId(childPath), { key: item.keyRange, value: inner })
-    out[item.key] = item.value.kind === 'array'
+    out[item.key] = item.value.kind === 'object'
       ? readTree(item.value, childPath, ranges)
       : item.value.value
   }
@@ -193,51 +202,30 @@ function literal(value: MessageLeaf, quote: string | undefined): string {
   return `'${value.replace(/[\\']/g, '\\$&')}'`
 }
 
-function arrayText(tree: MessageTree, unit: string, depth: number): string {
-  const entries = Object.entries(tree)
-  if (entries.length === 0)
-    return '[]'
-  const pad = unit.repeat(depth + 1)
-  const lines = entries.map(([key, child]) => `${pad}${literal(key, '\'')} => ${isMessageLeaf(child)
-    ? literal(child, '\'')
-    : arrayText(child, unit, depth + 1)},\n`)
-  return `[\n${lines.join('')}${unit.repeat(depth)}]`
-}
-
-function find(root: Value, path: readonly string[]): Value | undefined {
-  let node: Value | undefined = root
-  for (const segment of path) {
-    node = node?.kind === 'array'
-      ? node.items.findLast(item => item.key === segment)?.value
-      : undefined
+/** The indent unit is the configured one, else the file's (first indented item), else 4 spaces. */
+function syntaxOf(text: string, indent: number | 'tab' | undefined): LiteralSyntax {
+  return {
+    open: '[',
+    close: ']',
+    separator: ' => ',
+    key: key => literal(key, '\''),
+    leaf: (value, quote) => literal(value, quote),
+    unit: indent === undefined
+      ? /^([ \t]+)['"\]]/m.exec(text)?.[1] ?? '    '
+      : indent === 'tab'
+        ? '\t'
+        : ' '.repeat(indent),
+    trailingComma: true,
   }
-  return node
 }
 
-/** Indent unit: configured, else the file's (first indented item), else 4 spaces. */
-function unitOf(text: string, indent: number | 'tab' | undefined): string {
-  if (indent !== undefined) {
-    return indent === 'tab'
-      ? '\t'
-      : ' '.repeat(indent)
-  }
-  return /^([ \t]+)['"\]]/m.exec(text)?.[1] ?? '    '
-}
-
-function applyOp(text: string, op: MessageOp, path: string, unit: string): string {
+function applyOp(text: string, op: MessageOp, path: string, syntax: LiteralSyntax): string {
   const root = parseFile(text, path)
-  const node = root && find(root, op.path)
-  if (op.type === 'set' && node?.kind === 'scalar')
-    return splice(text, node.range, literal(op.value, node.quote))
-  const tree = applyMessageOps(root
-    ? readTree(root, [], new Map())
-    : {}, [op])
-  // Structural changes rewrite the returned array and keep the rest of the file.
   return root
-    ? splice(text, root.range, arrayText(tree, unit, 0))
+    ? editLiteral(text, root, op, syntax)
     : `${text.trim() === ''
       ? '<?php'
-      : text.trimEnd()}\n\nreturn ${arrayText(tree, unit, 0)};\n`
+      : text.trimEnd()}\n\nreturn ${literalText(applyMessageOps({}, [op]), syntax)};\n`
 }
 
 export function php(): Plugin {
@@ -258,13 +246,13 @@ export function php(): Plugin {
           }
         },
         edit(text, ops, ctx) {
-          const unit = unitOf(text, ctx.indent)
+          const syntax = syntaxOf(text, ctx.indent)
           let next = text
           for (const op of ops)
-            next = applyOp(next, op, ctx.path, unit)
+            next = applyOp(next, op, ctx.path, syntax)
           return diffText(text, next)
         },
-        serialize: (tree, ctx) => `<?php\n\nreturn ${arrayText(tree, unitOf('', ctx.indent), 0)};\n`,
+        serialize: (tree, ctx) => `<?php\n\nreturn ${literalText(tree, syntaxOf('', ctx.indent))};\n`,
       },
     ],
   }

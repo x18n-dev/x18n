@@ -47,9 +47,9 @@ describe('migrate i18n-ally', () => {
         keysInUse: ['dynamic.*'],
       },
       extract: { keyCase: 'snake' },
-      plugins: ['./x18n/custom.x18n-plugin.yml'],
+      plugins: ['./.x18n/custom.x18n-plugin.yml'],
     })
-    expect(files.find(f => f.path === 'x18n/custom.x18n-plugin.yml')!.content).toContain('flag: 🇬🇧')
+    expect(files.find(f => f.path === '.x18n/custom.x18n-plugin.yml')!.content).toContain('flag: 🇬🇧')
     const vscode = files.find(f => f.path === '.vscode/settings.json')!.content
     expect(vscode).toContain('"x18n.displayLocale": "de"')
     expect(vscode).toContain('"x18n.annotationInPlace": false')
@@ -122,7 +122,7 @@ describe('migrate i18n-ally', () => {
     const { files, project } = await migrateAndLoad(dir)
     const config = JSON.parse(files.find(f => f.path === 'x18n.config.json')!.content)
     expect(config.presets).toEqual([])
-    expect(files.find(f => f.path === 'x18n/custom.x18n-plugin.yml')!.content).toContain('- php')
+    expect(files.find(f => f.path === '.x18n/custom.x18n-plugin.yml')!.content).toContain('- php')
     expect(project.usages().map(m => m.usage.key)).toEqual(['welcome'])
     expect(project.analyze().unused).toEqual(['bye'])
   })

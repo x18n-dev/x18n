@@ -28,7 +28,7 @@ It writes:
 | File | When |
 | --- | --- |
 | `x18n.config.ts` | Always. `--format yml` or `--format json` writes `x18n.config.yml` or `x18n.config.json` instead. |
-| `x18n/custom.x18n-plugin.yml` | When the settings hold regex scanners, scopes, refactor templates, locale flags, or a custom framework. The config lists it in `plugins`. |
+| `.x18n/custom.x18n-plugin.yml` | When the settings hold regex scanners, scopes, refactor templates, locale flags, or a custom framework. The config lists it in `plugins`. |
 | `.vscode/settings.json` | When editor settings move to the x18n extension. |
 | `.x18n/reviews.yml` | When i18n-ally reviews exist, and this file does not. The comments are converted to [x18n reviews](/guide/reviews). |
 
@@ -146,7 +146,7 @@ Every framework of i18n-ally has a preset. For an unknown framework id, the comm
 
 ## Custom framework map
 
-`.vscode/i18n-ally-custom-framework.yml` becomes `x18n/custom.x18n-plugin.yml`:
+`.vscode/i18n-ally-custom-framework.yml` becomes `.x18n/custom.x18n-plugin.yml`:
 
 | Custom framework | YAML plugin |
 | --- | --- |

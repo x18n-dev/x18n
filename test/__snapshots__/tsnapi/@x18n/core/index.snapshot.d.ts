@@ -558,6 +558,7 @@ export interface Project {
   readonly placeholderSyntaxes: readonly PlaceholderSyntax[];
   readonly extractTemplates: readonly ExtractTemplate[];
   readonly keys: (_?: KeyQuery) => KeyString[];
+  readonly search: (_: string, _?: SearchOptions) => SearchMatch[];
   readonly get: (_: KeyString) => KeyInfo | undefined;
   readonly message: (_: KeyString, _: LocaleCode) => Message | undefined;
   readonly lookup: (_: KeyString, _: LocaleCode) => Message | undefined;
@@ -904,6 +905,15 @@ export interface Scope {
   readonly keyPrefix?: string | undefined;
   readonly optionalPrefix?: boolean | undefined;
 }
+export interface SearchMatch {
+  readonly key: KeyString;
+  readonly locale: LocaleCode;
+  readonly value: string;
+  readonly score: number;
+}
+export interface SearchOptions {
+  readonly exact?: boolean | undefined;
+}
 export interface SerializableConfig {
   readonly $schema?: string | undefined;
   readonly root?: string | undefined;
@@ -1184,6 +1194,7 @@ export declare function definePreset<const T extends Preset>(_: T): T;
 export declare function diffText(_: string, _: string): TextEdit[];
 export declare function envelope<T>(_: string, _: T, _?: readonly WireDiagnostic[], _?: readonly ErrorInfo[]): Envelope<T>;
 export declare function extensionOf(_: string): string;
+export declare function fuzzyScore(_: string, _: string): number;
 export declare function globToRegExp(_: string, _?: string): RegExp;
 export declare function hashText(_: string): string;
 export declare function isJsonObject(_: unknown): value is JsonObject;
@@ -1201,6 +1212,7 @@ export declare function pathId(_: readonly string[]): string;
 export declare function pathMatcher(_: readonly string[]): (_: string) => boolean;
 export declare function placeholderProblems(_: Project, _: readonly EditOp[]): PlaceholderProblem[];
 export declare function rangeContains(_: TextRange, _: number): boolean;
+export declare function renderExplanation(_: ProjectExplanation, _?: string | undefined): string;
 export declare function renderPrompt(_: PromptData): string;
 export declare function replaceKeyPrefix(_: KeyString, _: KeyString, _: KeyString): KeyString;
 export declare function resolveConfig(_: ResolveConfigOptions): Promise<Setup>;

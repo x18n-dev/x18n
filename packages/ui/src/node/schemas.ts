@@ -1,4 +1,4 @@
-import type { AgentCheckQuery, AgentDeleteQuery, AgentKeysQuery, AgentRenameQuery, AgentReviewQuery, AgentSetQuery, AgentUsagesQuery, ApplyQuery, ExtractApplyQuery, ExtractQuery, KeyQuery, OpenQuery, PlanQuery, ProjectQuery, PromptQuery, ReviewQuery, UsageQuery } from './types'
+import type { AgentCheckQuery, AgentDeleteQuery, AgentKeysQuery, AgentRenameQuery, AgentReviewQuery, AgentSearchQuery, AgentSetQuery, AgentUsagesQuery, ApplyQuery, ExtractApplyQuery, ExtractQuery, KeyQuery, OpenQuery, PlanQuery, ProjectQuery, PromptQuery, ReviewQuery, UsageQuery } from './types'
 import * as v from 'valibot'
 
 function text(description: string): v.SchemaWithPipe<readonly [v.StringSchema<undefined>, v.DescriptionAction<string, string>]> {
@@ -155,6 +155,14 @@ export const AgentKeysSchema: v.GenericSchema<AgentKeysQuery> = v.object({
   unused: v.optional(v.pipe(v.boolean(), v.description('Only keys without usages in code.'))),
   namespace: v.optional(v.string()),
   values: v.optional(v.pipe(v.boolean(), v.description('Include the value per locale.'))),
+  limit: v.optional(v.pipe(v.number(), v.description('Page size. Default 100.'))),
+  cursor: v.optional(text('`nextCursor` of the previous page.')),
+})
+
+export const AgentSearchSchema: v.GenericSchema<AgentSearchQuery> = v.object({
+  project,
+  query: text('Text of the message, as seen in the app, in any locale.'),
+  exact: v.optional(v.pipe(v.boolean(), v.description('Only values containing the query. By default a fuzzy match also counts.'))),
   limit: v.optional(v.pipe(v.number(), v.description('Page size. Default 100.'))),
   cursor: v.optional(text('`nextCursor` of the previous page.')),
 })

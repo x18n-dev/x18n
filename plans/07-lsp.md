@@ -60,11 +60,13 @@ All methods use the `x18n/` prefix. Shapes are valibot schemas shared with the c
 | `x18n/progress` | request | Coverage per locale with missing and empty key lists. |
 | `x18n/fileKeys` | request | Keys used in a document, keys not found, hard strings (Current File view). |
 | `x18n/usageReport` | request | Unused and missing keys with locations. |
+| `x18n/search` | request | Keys by value in any locale (fuzzy, or `exact`), best first, with the locale entry and the usages (reverse search). |
 | `x18n/decorations` | request | Ranges, values and states for in-place annotations. |
 | `x18n/setDisplayLocale` | notification | Per-client display locale. |
 | `x18n/openUi` | request | Start or reuse the UI server for a project; returns `{ url, token }`. |
 | `x18n/translatePrompt` | request | Prompt text for a locale or key set. |
 | `x18n/reviews` | request | Review threads with their comments, state and the location of the key in the reviewed locale. |
+| `x18n/explain` | request | The `x18n doctor` text for every workspace folder, with load errors. The server also logs it when it finds no locale files. |
 | `x18n/changed` | server notification | Project revision and changed keys, so client views refresh only what changed. |
 
 ## Hosting the UI

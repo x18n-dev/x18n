@@ -5,7 +5,7 @@ import { toJsonSchema } from '@valibot/to-json-schema'
 import { extractItems, findCandidates, toPlanFile } from '@x18n/builtins/extractors'
 import { errors, parseMessageBatch, renderPrompt, toWireDiagnostic } from '@x18n/core'
 import * as v from 'valibot'
-import { AgentCheckSchema, AgentDeleteSchema, AgentKeysSchema, AgentRenameSchema, AgentReviewSchema, AgentSetSchema, AgentUsagesSchema, ExtractApplySchema, ExtractQuerySchema, KeyQuerySchema, ProjectQuerySchema, PromptQuerySchema, ReviewQuerySchema } from './schemas'
+import { AgentCheckSchema, AgentDeleteSchema, AgentKeysSchema, AgentRenameSchema, AgentReviewSchema, AgentSearchSchema, AgentSetSchema, AgentUsagesSchema, ExtractApplySchema, ExtractQuerySchema, KeyQuerySchema, ProjectQuerySchema, PromptQuerySchema, ReviewQuerySchema } from './schemas'
 import { applyOps, keyDetail, pickProject, previewOps, summarize, usageViews } from './views'
 
 function page<T>(items: readonly T[], query: { readonly limit?: number | undefined, readonly cursor?: string | undefined }): { total: number, nextCursor: string | undefined, items: T[] } {
@@ -78,6 +78,25 @@ export function registerAgentTools(ctx: DevframeNodeContext, projects: readonly 
     if (!detail)
       throw errors.X18N4006({ key: query.key })
     return detail
+  })
+
+  tool('search', 'read', 'Find keys by their value, best match first: the key behind a text seen in the app. Searches every locale, ignoring case, and matches fuzzily unless `exact`. Each match has the matched locale and value, and the usages in code with file, line and column.', AgentSearchSchema, (query) => {
+    const p = pick(query.project)
+    const { items, ...rest } = page(p.project.search(query.query, { exact: query.exact }), query)
+    return {
+      ...rest,
+      matches: items.map(m => ({
+        key: m.key,
+        locale: m.locale,
+        value: m.value,
+        usages: usageViews(p, p.project.usages({ key: m.key })).map(u => ({
+          path: u.path,
+          line: u.line,
+          column: u.column,
+          possible: u.possible,
+        })),
+      })),
+    }
   })
 
   tool('usages', 'read', 'Usages in code, paged: of one `key` (usages with a computed key under a prefix of it are marked `possible`), of one file (`path`), or all. Each usage has file, line, column and a code snippet.', AgentUsagesSchema, (query) => {

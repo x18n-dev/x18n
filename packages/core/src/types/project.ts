@@ -31,6 +31,20 @@ export interface KeyQuery {
   readonly unused?: boolean | undefined
 }
 
+export interface SearchOptions {
+  /** Only values containing the query; by default a fuzzy (subsequence) match also counts. Both ignore case. */
+  readonly exact?: boolean | undefined
+}
+
+/** A key found by its value: the best-matching locale, source first on ties. */
+export interface SearchMatch {
+  readonly key: KeyString
+  readonly locale: LocaleCode
+  readonly value: string
+  /** Higher is better; substring hits rank above fuzzy ones. */
+  readonly score: number
+}
+
 export interface UsageMatch {
   readonly usage: Usage
   /** True for prefix usages that may refer to the key. */
@@ -160,6 +174,8 @@ export interface Project {
   /** Extraction templates: config `extract.templates` first, then those of presets. */
   readonly extractTemplates: readonly ExtractTemplate[]
   readonly keys: (query?: KeyQuery) => KeyString[]
+  /** Keys whose value in some locale matches the query, best first. */
+  readonly search: (query: string, options?: SearchOptions) => SearchMatch[]
   readonly get: (key: KeyString) => KeyInfo | undefined
   readonly message: (key: KeyString, locale: LocaleCode) => Message | undefined
   /** The message a usage of `key` shows: the key's own, or one of its derived keys (`item` → `item_other`). */

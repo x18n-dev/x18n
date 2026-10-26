@@ -2,7 +2,7 @@ import type { Format, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/co
 import type { Document, Node as YamlNode } from 'yaml'
 import { applyTextEdits, diffText, errors, pathId } from '@x18n/core'
 import { isMap, isNode, isScalar, parseDocument, Scalar, stringify, Document as YamlDocument } from 'yaml'
-import { toLeaf } from '../shared'
+import { splice, toLeaf } from '../shared'
 
 interface MutableTree { [segment: string]: MutableTree | string | number | boolean | null }
 
@@ -66,6 +66,35 @@ function scalarText(value: string | number | boolean | null, type: Scalar['type'
   return stringify(value, { lineWidth: 0 }).trimEnd()
 }
 
+/**
+ * Deletes a pair of a block map by its lines, so the comments around it stay where they are. The comment at the end of
+ * its last line goes with it. Undefined when the Document API must do it.
+ */
+function removePair(text: string, doc: Document, path: readonly string[]): string | undefined {
+  const map = path.length === 1
+    ? doc.contents
+    : doc.getIn(path.slice(0, -1), true)
+  if (!isMap(map))
+    return text
+  const pair = map.items.findLast(item => isScalar(item.key) && String(item.key.value) === path.at(-1))
+  const key = pair?.key
+  if (!pair || !isScalar(key))
+    return text
+  // Without its last pair, a nested map would read as null.
+  if (map.flow || !key.range || (map.items.length === 1 && path.length > 1))
+    return undefined
+  const start = text.lastIndexOf('\n', key.range[0] - 1) + 1
+  if (!/^[ \t]*$/.test(text.slice(start, key.range[0])))
+    return undefined
+  const valueEnd = isNode(pair.value) && pair.value.range
+    ? pair.value.range[1]
+    : key.range[1]
+  const end = text[valueEnd - 1] === '\n'
+    ? valueEnd
+    : valueEnd + /^[ \t]*(?:#.*)?(?:\r?\n)?/.exec(text.slice(valueEnd))![0].length
+  return splice(text, { start, end }, '')
+}
+
 function indentOf(text: string): number {
   const match = /^( +)\S/m.exec(text)
   return match?.[1]?.length ?? 2
@@ -101,6 +130,13 @@ export function yaml(): Plugin {
             },
           ])
           continue
+        }
+        if (op.type === 'delete') {
+          const removed = removePair(next, doc, op.path)
+          if (removed !== undefined) {
+            next = removed
+            continue
+          }
         }
         if (doc.contents === null)
           doc = new YamlDocument({})

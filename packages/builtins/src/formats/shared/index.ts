@@ -1,15 +1,13 @@
 import type { MessageLeaf, TextRange } from '@x18n/core'
 
-/** Indent of the first indented line, so edits keep the file's style. */
-export function detectIndent(text: string, fallback: number | 'tab' | undefined): { readonly insertSpaces: boolean, readonly tabSize: number } {
-  if (fallback === 'tab')
-    return { insertSpaces: false, tabSize: 1 }
-  if (typeof fallback === 'number')
-    return { insertSpaces: true, tabSize: fallback }
-  const match = /^([ \t]+)\S/m.exec(text)
-  if (match?.[1]?.startsWith('\t'))
-    return { insertSpaces: false, tabSize: 1 }
-  return { insertSpaces: true, tabSize: match?.[1]?.length ?? 2 }
+/** One indent level: the configured one, else the file's first indented line, else `fallback`. */
+export function indentUnit(text: string, indent: number | 'tab' | undefined, fallback: string): string {
+  if (indent !== undefined) {
+    return indent === 'tab'
+      ? '\t'
+      : ' '.repeat(indent)
+  }
+  return /^([ \t]+)\S/m.exec(text)?.[1] ?? fallback
 }
 
 export function detectEol(text: string): string {

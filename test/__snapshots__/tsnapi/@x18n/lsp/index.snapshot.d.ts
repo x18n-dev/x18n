@@ -69,11 +69,13 @@ export interface Methods {
   readonly progress: "x18n/progress";
   readonly fileKeys: "x18n/fileKeys";
   readonly usageReport: "x18n/usageReport";
+  readonly search: "x18n/search";
   readonly decorations: "x18n/decorations";
   readonly setDisplayLocale: "x18n/setDisplayLocale";
   readonly openUi: "x18n/openUi";
   readonly translatePrompt: "x18n/translatePrompt";
   readonly reviews: "x18n/reviews";
+  readonly explain: "x18n/explain";
   readonly changed: "x18n/changed";
 }
 export interface OpenUiParams {
@@ -142,6 +144,18 @@ export interface ReviewThreadInfo {
   readonly comments: readonly ReviewCommentInfo[];
   readonly location: Location | undefined;
 }
+export interface SearchMatch {
+  readonly project: string;
+  readonly key: string;
+  readonly locale: string;
+  readonly value: string;
+  readonly definition: Location | undefined;
+  readonly usages: readonly Location[];
+}
+export interface SearchParams {
+  readonly query: string;
+  readonly exact?: boolean | undefined;
+}
 export interface ServerOptions {
   readonly loadProjects?: ((_: string, _: (_: NodeHost) => OverlayHost) => Promise<readonly Omit<ServerProject, "overlay">[]>) | undefined;
   readonly openUi?: ((_: ServerProject) => Promise<OpenUiResult>) | undefined;
@@ -151,6 +165,7 @@ export interface ServerProject {
   readonly root: string;
   readonly project: Project;
   readonly overlay: OverlayHost;
+  readonly configFile?: string | undefined;
 }
 export interface SetDisplayLocaleParams {
   readonly locale: string | undefined;

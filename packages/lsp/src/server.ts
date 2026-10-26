@@ -1,5 +1,5 @@
 import type { ExtractCandidate } from '@x18n/builtins/extractors'
-import type { EditOp, FileChange, KeyString, MessageChange, OverlayHost, Plan, Project, ResourceNode, ReviewThread, ReviewType, TextRange, Diagnostic as X18nDiagnostic } from '@x18n/core'
+import type { EditOp, ErrorInfo, FileChange, KeyString, MessageChange, OverlayHost, Plan, Project, ResourceNode, ReviewThread, ReviewType, TextRange, Diagnostic as X18nDiagnostic } from '@x18n/core'
 import type { NodeHost } from '@x18n/node'
 import type {
   CodeAction,
@@ -23,7 +23,7 @@ import type { UiServers } from './ui'
 import { relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { extractItems, findCandidates } from '@x18n/builtins/extractors'
-import { createLineIndex, createOverlayHost, isX18nError, joinKey, renderPrompt, splitKey } from '@x18n/core'
+import { createLineIndex, createOverlayHost, isX18nError, joinKey, renderExplanation, renderPrompt, splitKey, toErrorInfo } from '@x18n/core'
 import { loadWorkspace, migrateI18nAlly } from '@x18n/node'
 import {
   CodeActionKind,
@@ -46,6 +46,8 @@ export interface ServerProject {
   readonly root: string
   readonly project: Project
   readonly overlay: OverlayHost
+  /** Absolute path of the config file, when there is one. */
+  readonly configFile?: string | undefined
 }
 
 export interface ServerOptions {
@@ -130,6 +132,8 @@ function posix(path: string): string {
 class Server {
   readonly documents = new TextDocuments(TextDocument)
   readonly projects: ServerProject[] = []
+  /** Workspace folders whose projects could not be loaded. */
+  readonly failures: { readonly folder: string, readonly error: ErrorInfo }[] = []
   readonly published = new Map<string, Set<string>>()
   readonly timers = new Map<string, ReturnType<typeof setTimeout>>()
   readonly settings: Settings = {
@@ -224,14 +228,14 @@ class Server {
         overlays.push(overlay)
         return overlay
       }
-      const loaded = this.options.loadProjects
-        ? await this.options.loadProjects(folder, wrap)
-        : (await loadWorkspace({ cwd: folder, wrapHost: wrap }).catch((error: unknown) => {
-            void this.connection.window.showWarningMessage(`x18n: ${error instanceof Error
-              ? error.message
-              : String(error)}`)
-            return { projects: [] }
-          })).projects
+      const loaded = await (this.options.loadProjects
+        ? this.options.loadProjects(folder, wrap)
+        : loadWorkspace({ cwd: folder, wrapHost: wrap }).then(workspace => workspace.projects)).catch((error: unknown) => {
+        const info = toErrorInfo(error)
+        this.failures.push({ folder, error: info })
+        void this.connection.window.showWarningMessage(`x18n: ${info.why}`)
+        return []
+      })
       loaded.forEach((item, i) => {
         const overlay = overlays[i]
         if (overlay && !this.projects.some(p => p.root === item.root)) {
@@ -240,10 +244,14 @@ class Server {
             root: item.root,
             project: item.project,
             overlay,
+            configFile: item.configFile,
           })
         }
       })
     }
+    // Editors show the server log, so a workspace without locale files explains itself as `x18n doctor` would.
+    if (this.projects.every(entry => entry.project.resources.length === 0))
+      this.connection.console.info(`No locale files found in the workspace.\n\n${this.explain()}`)
     for (const entry of this.projects) {
       entry.project.onChange((change) => {
         void this.connection.sendNotification(methods.changed, { project: entry.name, revision: change.revision, keys: change.keys } satisfies P.ChangedParams)
@@ -960,6 +968,24 @@ class Server {
       : this.projects.find(p => p.name === name)
   }
 
+  /** `x18n doctor` for every folder: load errors, then how each project was understood. */
+  explain(): string {
+    if (this.folders.length === 0)
+      return 'No workspace folder is open.'
+    return [
+      ...this.failures.map(({ folder, error }) => [
+        `# ${folder}`,
+        `error: ${error.name} ${error.why}`,
+        ...error.fix
+          ? [
+              `fix: ${error.fix}`,
+            ]
+          : [],
+      ].join('\n')),
+      ...this.projects.map(entry => renderExplanation(entry.project.explain(), entry.configFile)),
+    ].join('\n\n')
+  }
+
   projectInfos(): P.ProjectInfo[] {
     return this.projects.map(entry => ({
       name: entry.name,
@@ -1114,6 +1140,23 @@ class Server {
     return { unused, missing }
   }
 
+  /** Matches of every project, best first. */
+  search(params: P.SearchParams): P.SearchMatch[] {
+    const found = this.projects.flatMap(entry => entry.project.search(params.query, { exact: params.exact }).map(match => ({ entry, match })))
+    return found.sort((a, b) => b.match.score - a.match.score).slice(0, 100).map(({ entry, match }) => {
+      const { project } = entry
+      const node = project.locations(match.key).find(node => node.locale === match.locale)
+      return {
+        project: entry.name,
+        key: match.key,
+        locale: match.locale,
+        value: match.value,
+        definition: node && this.entryLocation(entry, node),
+        usages: project.usages({ key: match.key }).map(m => this.location(entry, m.usage.path, m.usage.range)),
+      }
+    })
+  }
+
   async decorations(params: P.DocumentParams): Promise<P.DecorationsResult> {
     await this.ready
     const found = this.locate(params.uri)
@@ -1196,6 +1239,10 @@ export function setupServer(connection: Connection, options: ServerOptions = {})
     await server.ready
     return server.usageReport()
   })
+  connection.onRequest(methods.search, async (params: P.SearchParams) => {
+    await server.ready
+    return server.search(params)
+  })
   connection.onRequest(methods.decorations, (params: P.DocumentParams) => server.decorations(params))
   connection.onNotification(methods.setDisplayLocale, (params: P.SetDisplayLocaleParams) => {
     server.settings.displayLocale = params.locale
@@ -1211,6 +1258,10 @@ export function setupServer(connection: Connection, options: ServerOptions = {})
   connection.onRequest(methods.reviews, async (params: P.ReviewsParams | undefined) => {
     await server.ready
     return server.reviews(params ?? {})
+  })
+  connection.onRequest(methods.explain, async () => {
+    await server.ready
+    return server.explain()
   })
   connection.onRequest(methods.translatePrompt, async (params: P.TranslatePromptParams) => {
     await server.ready

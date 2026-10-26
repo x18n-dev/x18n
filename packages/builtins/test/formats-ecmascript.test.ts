@@ -102,24 +102,47 @@ describe('ecmascript format', () => {
     ])).toBe(source.replace('-3', '4'))
   })
 
-  it('rewrites only the object for structural changes', () => {
-    const added = edit(source, [
+  it('adds and deletes properties in place, keeping comments and order', () => {
+    expect(edit(source, [
       {
         type: 'set',
         path: ['nav', 'about'],
         value: 'Über',
       },
-    ])
-    expect(added.startsWith('// Header\nexport default {\n')).toBe(true)
-    expect(added.endsWith('} as const\n')).toBe(true)
-    expect(format.parse(added, ctx).tree.nav).toEqual({ home: 'Start', 1: 'eins', about: 'Über' })
-    const removed = edit('module.exports = {\n  a: \'A\',\n  b: \'B\',\n}\n', [
+    ])).toBe(source.replace('    1: \'eins\',\n', '    1: \'eins\',\n    about: \'Über\',\n'))
+    expect(edit(source, [
+      {
+        type: 'delete',
+        path: ['nav', 'home'],
+      },
+    ])).toBe(source.replace('    home: `Start`, // inline\n', ''))
+    expect(edit('module.exports = {\n  a: \'A\',\n  b: \'B\',\n}\n', [
       {
         type: 'delete',
         path: ['a'],
       },
-    ], 'de.cjs')
-    expect(removed).toBe('module.exports = {\n  b: \'B\',\n}\n')
+    ], 'de.cjs')).toBe('module.exports = {\n  b: \'B\',\n}\n')
+    // Without trailing commas, none is added, and the last item takes the comma before it.
+    expect(edit('export default {\n  a: \'A\', // a\n  b: \'B\'\n}\n', [
+      {
+        type: 'set',
+        path: ['c'],
+        value: 'C',
+      },
+    ])).toBe('export default {\n  a: \'A\', // a\n  b: \'B\',\n  c: \'C\'\n}\n')
+    expect(edit('export default {\n  a: \'A\', // a\n  b: \'B\'\n}\n', [
+      {
+        type: 'delete',
+        path: ['b'],
+      },
+    ])).toBe('export default {\n  a: \'A\' // a\n}\n')
+    expect(edit('export default { a: \'A\' }\n', [
+      {
+        type: 'set',
+        path: ['b'],
+        value: 'B',
+      },
+    ])).toBe('export default { a: \'A\', b: \'B\' }\n')
   })
 
   it('serializes and round-trips', () => {

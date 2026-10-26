@@ -6,7 +6,7 @@
 - `.vscode/i18n-ally-custom-framework.yml` (or the fork's `i18n-ally-next-custom-framework.yml`, which wins),
 - `.vscode/i18n-ally-reviews.yml` (or the fork's `i18n-ally-next-reviews.yml`, which wins),
 
-and writes `x18n.config.ts` (or `--format yml`), `x18n/custom.x18n-plugin.yml` when a custom framework exists, and `.x18n/reviews.yml`. With `--dry-run` it prints the files. It never deletes i18n-ally files; it prints which settings can be removed.
+and writes `x18n.config.ts` (or `--format yml`), `.x18n/custom.x18n-plugin.yml` when a custom framework exists, and `.x18n/reviews.yml`. With `--dry-run` it prints the files. It never deletes i18n-ally files; it prints which settings can be removed.
 
 ## Settings map
 

@@ -710,12 +710,12 @@ export async function migrateI18nAlly(root: string, options: MigrateOptions = {}
   const finalConfig: SerializableConfig = needsPlugin
     ? {
         ...config,
-        plugins: ['./x18n/custom.x18n-plugin.yml'],
+        plugins: ['./.x18n/custom.x18n-plugin.yml'],
       }
     : config
   files.push(configFile(finalConfig, options.format ?? 'ts'))
   if (plugin)
-    files.push({ path: 'x18n/custom.x18n-plugin.yml', content: `# yaml-language-server: $schema=../node_modules/@x18n/core/schema/plugin.json\n${stringifyYaml(plugin)}` })
+    files.push({ path: '.x18n/custom.x18n-plugin.yml', content: `# yaml-language-server: $schema=../node_modules/@x18n/core/schema/plugin.json\n${stringifyYaml(plugin)}` })
 
   // Editor UX settings stay in VS Code; they never override the config.
   const vscodePath = join(root, '.vscode/settings.json')

@@ -26,11 +26,11 @@ List plugins in the `plugins` option of the config. An entry is a path, a packag
 
 ```ts [x18n.config.ts]
 import { defineConfig } from '@x18n/core'
-import acme from './x18n/acme'
+import acme from './.x18n/acme'
 
 export default defineConfig({
   plugins: [
-    './x18n/legacy.x18n-plugin.yml',
+    './.x18n/legacy.x18n-plugin.yml',
     'x18n-plugin-po',
     [
       'x18n-plugin-glossary-sync',
