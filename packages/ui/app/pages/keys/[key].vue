@@ -13,6 +13,7 @@ import KeySidebar from '../../components/KeySidebar.vue'
 import LocaleFlag from '../../components/LocaleFlag.vue'
 import MessageEditor from '../../components/MessageEditor.vue'
 import MessageText from '../../components/MessageText.vue'
+import ReviewComposer from '../../components/ReviewComposer.vue'
 import ReviewThread from '../../components/ReviewThread.vue'
 import UiSection from '../../components/ui/UiSection.vue'
 import { applyEdit, describeProblem, setMessage } from '../../edit'
@@ -105,12 +106,12 @@ function openUsage(usage: UsageView): void {
             {{ t('localeBar.noneShown') }}
           </p>
           <div v-for="row in rows" :key="row.locale" class="grid grid-cols-[7rem_1fr_auto] items-start gap-4 border-b border-base px-4 py-3 last:border-b-0" :data-locale="row.locale">
-            <span class="flex items-center gap-2 pt-0.5 font-mono">
+            <span class="flex flex-wrap items-center gap-2 pt-0.5 font-mono">
               <LocaleFlag :code="row.locale" />
               {{ row.locale }}
               <span v-if="row.locale === currentProject?.sourceLocale" class="badge">{{ t('overview.source') }}</span>
               <span v-if="row.message?.outdated" class="badge border-current color-warn" :title="t('history.outdatedHint')">{{ t('history.outdated') }}</span>
-              <span v-if="row.thread?.state" :class="[reviewStates[row.thread.state].icon, reviewStates[row.thread.state].color]" :title="t(reviewStates[row.thread.state].label)" />
+              <span v-if="row.thread?.state" class="badge gap-1 border-current" :class="reviewStates[row.thread.state].color" :title="t(reviewStates[row.thread.state].label)"><span :class="reviewStates[row.thread.state].icon" />{{ row.thread.comments.filter(c => !c.resolved).length }}</span>
             </span>
             <MessageEditor
               v-if="editing?.locale === row.locale"
@@ -136,7 +137,7 @@ function openUsage(usage: UsageView): void {
               </dl>
             </div>
             <div class="flex gap-1">
-              <button v-if="canReview" class="btn-icon" :aria-label="t('review.add')" :title="t('review.add')" @click="reviewing = reviewing === row.locale ? undefined : row.locale">
+              <button v-if="canReview" type="button" class="btn-icon h-6 w-6 text-sm" :class="reviewing === row.locale && 'bg-hover color-base'" :aria-label="t('review.add')" :title="t('review.add')" :aria-expanded="reviewing === row.locale" @click="reviewing = reviewing === row.locale ? undefined : row.locale">
                 <span class="i-ph-chat-circle-text-duotone" />
               </button>
               <CopyPrompt v-if="row.locale !== currentProject?.sourceLocale" :text="translatePrompt([{ locale: row.locale, key }])" :label="t('prompt.copy')" :hint="t('prompt.hint')" />
@@ -147,15 +148,10 @@ function openUsage(usage: UsageView): void {
                 <ChangeInfo :change="row.message.changed" />
               </InfoPop>
             </div>
-            <ReviewThread
-              v-if="row.thread || reviewing === row.locale"
-              class="col-span-2 col-start-2"
-              :thread="row.thread"
-              :review-key="key"
-              :locale="row.locale"
-              :composing="reviewing === row.locale"
-              @close="reviewing = undefined"
-            />
+            <div v-if="row.thread?.comments.length || reviewing === row.locale" class="col-span-2 col-start-2 grid gap-3 pb-1">
+              <ReviewThread v-if="row.thread?.comments.length" :thread="row.thread" :current="row.message?.value" />
+              <ReviewComposer v-if="reviewing === row.locale" :review-key="key" :locale="row.locale" :current="row.message?.value" @close="reviewing = undefined" />
+            </div>
           </div>
           <button v-if="hiddenCount" class="btn-ghost h-9 w-full justify-start px-4" @click="showAllLocales">
             <span class="i-ph-dots-three-duotone" /> {{ t('detail.showAllLocales') }} ({{ hiddenCount }})

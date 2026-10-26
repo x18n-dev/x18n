@@ -201,7 +201,6 @@
     "resolved": "解決済み",
     "stale": "その後変更あり",
     "unknownAuthor": "誰か",
-    "suggests": "提案",
     "empty": "表示するレビューはありません。",
     "off": "このプロジェクトではレビューがオフです。",
     "all": "すべて ({count})",
@@ -224,6 +223,9 @@
       "approve": "が承認",
       "requestChange": "が変更を依頼",
       "suggestion": "が値を提案"
-    }
+    },
+    "hint": "Enter で送信 · Shift+Enter で改行 · Esc でキャンセル",
+    "resolvedCount": "解決済み {count} 件",
+    "hideResolved": "解決済みを隠す"
   }
 }

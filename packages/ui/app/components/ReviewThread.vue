@@ -1,50 +1,25 @@
-<!-- The comments on one message, with resolve and apply; `composing` adds the form for a new review. -->
+<!-- The reviews of one message as a timeline, with apply and resolve. Resolved reviews fold away. -->
 <script setup lang="ts">
-import type { ReviewThread, ReviewType } from '@x18n/core'
+import type { MessageLeaf, ReviewThread } from '@x18n/core'
 import { computed, ref } from 'vue'
 import { applyEdit } from '../edit'
 import { formatAgo, t, uiLocale } from '../i18n'
-import { reviewTypeOrder, reviewTypes } from '../review'
+import { reviewTypes } from '../review'
 import { backend } from '../state'
 import MessageText from './MessageText.vue'
-import UiSegmented from './ui/UiSegmented.vue'
 
-const { thread, reviewKey, locale, composing = false } = defineProps<{
-  thread: ReviewThread | undefined
-  reviewKey: string
-  locale: string
-  composing?: boolean
+const { thread, current } = defineProps<{
+  thread: ReviewThread
+  /** The message's value now, shown against a suggestion. */
+  current?: MessageLeaf | undefined
 }>()
-const emit = defineEmits<{ close: [] }>()
 
-const type = ref<ReviewType>('comment')
-const text = ref('')
-const suggestion = ref('')
-const types = computed(() => reviewTypeOrder.map(value => ({
-  value,
-  label: t(reviewTypes[value].label),
-})))
-const canSend = computed(() => type.value === 'suggestion'
-  ? suggestion.value !== ''
-  : type.value === 'approve' || text.value.trim() !== '')
-
-async function send(): Promise<void> {
-  await applyEdit([
-    {
-      type: 'review',
-      key: reviewKey,
-      locale,
-      review: type.value,
-      ...text.value.trim() && {
-        text: text.value.trim(),
-      },
-      ...type.value === 'suggestion' && { suggestion: suggestion.value },
-    },
-  ])
-  text.value = ''
-  suggestion.value = ''
-  emit('close')
-}
+const showResolved = ref(false)
+const resolved = computed(() => thread.comments.filter(c => c.resolved).length)
+const shown = computed(() => showResolved.value
+  ? thread.comments
+  : thread.comments.filter(c => !c.resolved))
+const write = computed(() => backend.value?.capabilities.write === true)
 
 function author(comment: ReviewThread['comments'][number]): string {
   return comment.author?.name ?? comment.author?.email ?? t('review.unknownAuthor')
@@ -52,45 +27,50 @@ function author(comment: ReviewThread['comments'][number]): string {
 </script>
 
 <template>
-  <div class="grid gap-2 border-l-2 border-base pl-3" :data-review-locale="locale">
-    <div v-for="comment in thread?.comments" :key="comment.id" class="grid gap-1" :class="comment.resolved ? 'opacity-60' : ''" :data-review="comment.id">
-      <div class="flex flex-wrap items-center gap-x-2 text-xs color-muted">
-        <span class="color-base font-medium">{{ author(comment) }}</span>
-        <span>{{ t(reviewTypes[comment.type].done) }}</span>
-        <time :datetime="comment.time" :title="new Date(comment.time).toLocaleString(uiLocale)">{{ formatAgo(Date.parse(comment.time)) }}</time>
-        <span v-if="comment.resolved" class="badge">{{ t('review.resolved') }}</span>
-        <span v-if="comment.stale" class="badge border-current color-warn">{{ t('review.stale') }}</span>
-        <span class="flex-auto" />
-        <template v-if="backend?.capabilities.write && !comment.resolved">
-          <button v-if="comment.type === 'suggestion'" class="btn-outline h-6 text-xs" @click="applyEdit([{ type: 'apply-suggestion', id: comment.id }])">
+  <div class="grid gap-2" :data-review-locale="thread.locale">
+    <ol v-if="shown.length" class="grid gap-3 border-l border-base">
+      <li v-for="comment in shown" :key="comment.id" class="group relative grid gap-1.5 pl-5" :class="comment.resolved && 'opacity-55'" :data-review="comment.id">
+        <span class="absolute -left-[9px] top-0 size-[18px] flex items-center justify-center border border-base bg-base">
+          <span class="text-[11px]" :class="[reviewTypes[comment.type].icon, reviewTypes[comment.type].color]" />
+        </span>
+        <div class="flex min-h-[18px] flex-wrap items-center gap-x-1.5 text-xs">
+          <span class="font-medium color-base">{{ author(comment) }}</span>
+          <span class="color-muted">{{ t(reviewTypes[comment.type].done) }}</span>
+          <span class="color-faint">·</span>
+          <time class="color-faint" :datetime="comment.time" :title="new Date(comment.time).toLocaleString(uiLocale)">{{ formatAgo(Date.parse(comment.time)) }}</time>
+          <span v-if="comment.resolved" class="badge ml-1">{{ t('review.resolved') }}</span>
+          <span v-if="comment.stale" class="badge ml-1 border-current color-warn">{{ t('review.stale') }}</span>
+          <span class="flex-auto" />
+          <button
+            v-if="write && !comment.resolved"
+            type="button"
+            class="btn-icon h-6 w-6 text-sm opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            :aria-label="t('review.resolve')"
+            :title="t('review.resolve')"
+            @click="applyEdit([{ type: 'resolve-review', id: comment.id }])"
+          >
+            <span class="i-ph-check" />
+          </button>
+        </div>
+        <p v-if="comment.text" class="whitespace-pre-wrap break-words leading-relaxed">
+          {{ comment.text }}
+        </p>
+        <div v-if="comment.suggestion !== undefined" class="grid grid-cols-[1fr_auto] items-center gap-3 border border-base bg-hover px-3 py-2">
+          <div class="grid min-w-0 gap-1">
+            <span v-if="current !== undefined && current !== null && current !== '' && current !== comment.suggestion" class="truncate text-xs color-faint line-through decoration-[var(--x-faint)]">
+              <MessageText :value="current" inline />
+            </span>
+            <span class="min-w-0 font-medium"><MessageText :value="comment.suggestion" /></span>
+          </div>
+          <button v-if="write && !comment.resolved" type="button" class="btn-outline h-7" @click="applyEdit([{ type: 'apply-suggestion', id: comment.id }])">
             <span class="i-ph-check" /> {{ t('review.apply') }}
           </button>
-          <button class="btn-ghost h-6 text-xs" @click="applyEdit([{ type: 'resolve-review', id: comment.id }])">
-            {{ t('review.resolve') }}
-          </button>
-        </template>
-      </div>
-      <p v-if="comment.text" class="whitespace-pre-wrap">
-        {{ comment.text }}
-      </p>
-      <div v-if="comment.suggestion !== undefined" class="flex items-baseline gap-2">
-        <span class="label">{{ t('review.suggests') }}</span>
-        <MessageText :value="comment.suggestion" />
-      </div>
-    </div>
-
-    <form v-if="composing && backend?.capabilities.write" class="grid gap-2 border border-inverse p-2" @submit.prevent="canSend && send()">
-      <UiSegmented v-model="type" :options="types" :label="t('review.type')" />
-      <input v-if="type === 'suggestion'" v-model="suggestion" class="input font-mono" :placeholder="t('review.suggestionPlaceholder')" :aria-label="t('review.suggestionPlaceholder')">
-      <textarea v-model="text" class="input min-h-12 py-1.5 [field-sizing:content]" rows="2" :placeholder="t('review.textPlaceholder')" :aria-label="t('review.textPlaceholder')" @keydown.escape.prevent="emit('close')" />
-      <div class="flex justify-end gap-2">
-        <button type="button" class="btn-ghost h-7" @click="emit('close')">
-          {{ t('edit.cancel') }}
-        </button>
-        <button type="submit" class="btn-solid h-7" :disabled="!canSend">
-          {{ t('review.send') }}
-        </button>
-      </div>
-    </form>
+        </div>
+      </li>
+    </ol>
+    <button v-if="resolved" type="button" class="btn-ghost h-6 justify-self-start px-1.5 text-[11px]" @click="showResolved = !showResolved">
+      <span :class="showResolved ? 'i-ph-caret-up' : 'i-ph-caret-down'" />
+      {{ showResolved ? t('review.hideResolved') : t('review.resolvedCount', { count: resolved }) }}
+    </button>
   </div>
 </template>

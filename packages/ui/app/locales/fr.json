@@ -201,7 +201,6 @@
     "resolved": "résolu",
     "stale": "modifié depuis",
     "unknownAuthor": "Quelqu'un",
-    "suggests": "Propose",
     "empty": "Aucune revue à afficher.",
     "off": "Les revues sont désactivées pour ce projet.",
     "all": "Toutes ({count})",
@@ -224,6 +223,9 @@
       "approve": "a approuvé",
       "requestChange": "demande une modification",
       "suggestion": "propose une valeur"
-    }
+    },
+    "hint": "Entrée pour envoyer · Maj+Entrée pour une nouvelle ligne · Échap pour annuler",
+    "resolvedCount": "{count} résolues",
+    "hideResolved": "Masquer les résolues"
   }
 }

@@ -201,7 +201,6 @@
     "resolved": "已解決",
     "stale": "之後已變更",
     "unknownAuthor": "某人",
-    "suggests": "建議",
     "empty": "沒有可顯示的審閱。",
     "off": "此專案已關閉審閱。",
     "all": "全部 ({count})",
@@ -224,6 +223,9 @@
       "approve": "核准了",
       "requestChange": "要求修改",
       "suggestion": "建議了一個值"
-    }
+    },
+    "hint": "Enter 送出 · Shift+Enter 換行 · Esc 取消",
+    "resolvedCount": "{count} 則已解決",
+    "hideResolved": "隱藏已解決"
   }
 }

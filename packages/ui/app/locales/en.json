@@ -201,7 +201,6 @@
     "resolved": "resolved",
     "stale": "changed since",
     "unknownAuthor": "Someone",
-    "suggests": "Suggests",
     "empty": "No reviews to show.",
     "off": "Reviews are off for this project.",
     "all": "All ({count})",
@@ -224,6 +223,9 @@
       "approve": "approved",
       "requestChange": "requested a change",
       "suggestion": "suggested a value"
-    }
+    },
+    "hint": "Enter to send · Shift+Enter for a new line · Esc to cancel",
+    "resolvedCount": "{count} resolved",
+    "hideResolved": "Hide resolved"
   }
 }

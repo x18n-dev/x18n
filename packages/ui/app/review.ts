@@ -10,11 +10,31 @@ export const reviewStates: Readonly<Record<ReviewState, { readonly label: Messag
   'commented': { label: /* @x18n-key */ 'review.states.commented', icon: 'i-ph-chat-circle-text-duotone', color: 'color-muted' },
 }
 
-export const reviewTypes: Readonly<Record<ReviewType, { readonly label: MessageKey, readonly done: MessageKey }>> = {
-  'comment': { label: /* @x18n-key */ 'review.types.comment', done: /* @x18n-key */ 'review.done.comment' },
-  'approve': { label: /* @x18n-key */ 'review.types.approve', done: /* @x18n-key */ 'review.done.approve' },
-  'request-change': { label: /* @x18n-key */ 'review.types.requestChange', done: /* @x18n-key */ 'review.done.requestChange' },
-  'suggestion': { label: /* @x18n-key */ 'review.types.suggestion', done: /* @x18n-key */ 'review.done.suggestion' },
+export const reviewTypes: Readonly<Record<ReviewType, { readonly label: MessageKey, readonly done: MessageKey, readonly icon: string, readonly color: string }>> = {
+  'comment': {
+    label: /* @x18n-key */ 'review.types.comment',
+    done: /* @x18n-key */ 'review.done.comment',
+    icon: 'i-ph-chat-circle-text-duotone',
+    color: 'color-muted',
+  },
+  'approve': {
+    label: /* @x18n-key */ 'review.types.approve',
+    done: /* @x18n-key */ 'review.done.approve',
+    icon: 'i-ph-check-circle-duotone',
+    color: 'color-ok',
+  },
+  'request-change': {
+    label: /* @x18n-key */ 'review.types.requestChange',
+    done: /* @x18n-key */ 'review.done.requestChange',
+    icon: 'i-ph-note-pencil-duotone',
+    color: 'color-warn',
+  },
+  'suggestion': {
+    label: /* @x18n-key */ 'review.types.suggestion',
+    done: /* @x18n-key */ 'review.done.suggestion',
+    icon: 'i-ph-lightbulb-duotone',
+    color: 'color-info',
+  },
 }
 
 export const reviewTypeOrder: readonly ReviewType[] = [

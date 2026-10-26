@@ -201,7 +201,6 @@
     "resolved": "해결됨",
     "stale": "이후 변경됨",
     "unknownAuthor": "누군가",
-    "suggests": "제안",
     "empty": "표시할 리뷰가 없습니다.",
     "off": "이 프로젝트에서는 리뷰가 꺼져 있습니다.",
     "all": "전체 ({count})",
@@ -224,6 +223,9 @@
       "approve": "승인함",
       "requestChange": "변경을 요청함",
       "suggestion": "값을 제안함"
-    }
+    },
+    "hint": "Enter로 보내기 · Shift+Enter로 줄 바꿈 · Esc로 취소",
+    "resolvedCount": "해결됨 {count}개",
+    "hideResolved": "해결된 항목 숨기기"
   }
 }

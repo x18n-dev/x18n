@@ -201,7 +201,6 @@
     "resolved": "решено",
     "stale": "изменено с тех пор",
     "unknownAuthor": "Кто-то",
-    "suggests": "Предлагает",
     "empty": "Нет ревью для показа.",
     "off": "Ревью в этом проекте отключены.",
     "all": "Все ({count})",
@@ -224,6 +223,9 @@
       "approve": "одобрил",
       "requestChange": "запросил изменение",
       "suggestion": "предложил значение"
-    }
+    },
+    "hint": "Enter: отправить · Shift+Enter: новая строка · Esc: отмена",
+    "resolvedCount": "Решено: {count}",
+    "hideResolved": "Скрыть решённые"
   }
 }

@@ -201,7 +201,6 @@
     "resolved": "erledigt",
     "stale": "seitdem geändert",
     "unknownAuthor": "Jemand",
-    "suggests": "Vorschlag",
     "empty": "Keine Reviews.",
     "off": "Reviews sind für dieses Projekt aus.",
     "all": "Alle ({count})",
@@ -224,6 +223,9 @@
       "approve": "hat freigegeben",
       "requestChange": "wünscht eine Änderung",
       "suggestion": "schlägt einen Wert vor"
-    }
+    },
+    "hint": "Enter zum Senden · Umschalt+Enter für eine neue Zeile · Esc zum Abbrechen",
+    "resolvedCount": "{count} erledigt",
+    "hideResolved": "Erledigte ausblenden"
   }
 }

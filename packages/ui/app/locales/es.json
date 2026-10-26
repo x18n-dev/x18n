@@ -201,7 +201,6 @@
     "resolved": "resuelto",
     "stale": "cambiado desde entonces",
     "unknownAuthor": "Alguien",
-    "suggests": "Sugiere",
     "empty": "No hay revisiones que mostrar.",
     "off": "Las revisiones están desactivadas en este proyecto.",
     "all": "Todas ({count})",
@@ -224,6 +223,9 @@
       "approve": "aprobó",
       "requestChange": "pidió un cambio",
       "suggestion": "sugirió un valor"
-    }
+    },
+    "hint": "Intro para enviar · Mayús+Intro para una nueva línea · Esc para cancelar",
+    "resolvedCount": "{count} resueltas",
+    "hideResolved": "Ocultar resueltas"
   }
 }

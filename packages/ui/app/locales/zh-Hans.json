@@ -201,7 +201,6 @@
     "resolved": "已解决",
     "stale": "之后已更改",
     "unknownAuthor": "某人",
-    "suggests": "建议",
     "empty": "没有可显示的审阅。",
     "off": "此项目已关闭审阅。",
     "all": "全部 ({count})",
@@ -224,6 +223,9 @@
       "approve": "批准了",
       "requestChange": "请求修改",
       "suggestion": "建议了一个值"
-    }
+    },
+    "hint": "Enter 发送 · Shift+Enter 换行 · Esc 取消",
+    "resolvedCount": "{count} 条已解决",
+    "hideResolved": "隐藏已解决"
   }
 }
