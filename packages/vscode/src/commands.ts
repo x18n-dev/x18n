@@ -286,6 +286,10 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
   register(commands.toggleInPlace, async () => config.update('annotationInPlace', !annotationInPlace(), ConfigurationTarget.Global))
   register(commands.restartServer, () => client.restart())
   register(commands.showOutput, async () => client.outputChannel.show())
+  register(commands.explainProjects, async () => {
+    client.outputChannel.appendLine(await x18n.request('x18n/explain', undefined))
+    client.outputChannel.show()
+  })
 
   register(commands.migrateFromI18nAlly, async () => {
     const folders = await migratableFolders()

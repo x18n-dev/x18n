@@ -71,6 +71,7 @@ export interface Methods {
   readonly setDisplayLocale: "x18n/setDisplayLocale";
   readonly openUi: "x18n/openUi";
   readonly translatePrompt: "x18n/translatePrompt";
+  readonly explain: "x18n/explain";
   readonly changed: "x18n/changed";
 }
 export interface OpenUiParams {
@@ -130,6 +131,7 @@ export interface ServerProject {
   readonly root: string;
   readonly project: Project;
   readonly overlay: OverlayHost;
+  readonly configFile?: string | undefined;
 }
 export interface SetDisplayLocaleParams {
   readonly locale: string | undefined;

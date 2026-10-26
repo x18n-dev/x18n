@@ -614,6 +614,12 @@ const methodDocs = {
     result: 'string',
     doc: 'The translate prompt for a locale, as markdown.',
   },
+  explain: {
+    kind: 'request',
+    params: undefined,
+    result: 'string',
+    doc: 'What `x18n doctor` prints for every workspace folder: load errors, presets, locale files and config. The server also logs it when it finds no locale files.',
+  },
   changed: {
     kind: 'notification (server to client)',
     params: 'ChangedParams',

@@ -43,6 +43,7 @@ Project settings live in `x18n.config.ts`; the settings below only change the ed
 | `x18n.restartServer`       | x18n: Restart Language Server          |
 | `x18n.migrateFromI18nAlly` | x18n: Migrate from i18n-ally           |
 | `x18n.showOutput`          | x18n: Show Output                      |
+| `x18n.explainProjects`     | x18n: Explain Projects                 |
 
 <!-- commands -->
 

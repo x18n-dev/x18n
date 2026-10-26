@@ -135,6 +135,11 @@
         "command": "x18n.showOutput",
         "title": "Show Output",
         "category": "x18n"
+      },
+      {
+        "command": "x18n.explainProjects",
+        "title": "Explain Projects",
+        "category": "x18n"
       }
     ],
     "menus": {

@@ -86,7 +86,7 @@ Generated into `src/generated/meta.ts` by `vscode-ext-gen` (`--scope x18n`). Ini
 - `x18n.editKey`, `x18n.renameKeyPrefix`, `x18n.deleteKey`
 - `x18n.extract`, `x18n.extractFile`, `x18n.copyTranslatePrompt`, `x18n.translateWithAgent`
 - `x18n.goToNextUsage`, `x18n.goToPrevUsage`
-- `x18n.toggleInPlace`, `x18n.restartServer`, `x18n.migrateFromI18nAlly`, `x18n.showOutput`
+- `x18n.toggleInPlace`, `x18n.restartServer`, `x18n.migrateFromI18nAlly`, `x18n.showOutput`, `x18n.explainProjects` (prints `x18n/explain` to the output channel)
 
 ## Testing
 

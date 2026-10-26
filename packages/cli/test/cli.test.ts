@@ -134,6 +134,8 @@ describe('x18n binary', () => {
     const dir = await fixture('i18next')
     const projects = json(await x18n(dir, ['doctor', '--json'])).data.projects
     expect(projects[0].presets).toContainEqual({ name: 'react-i18next', reason: 'detected' })
+    const { stdout } = await x18n(dir, ['doctor'])
+    expect(stdout).toContain('config: none (detection only)\npresets:\n  ✓ react-i18next (detected)')
   })
 
   it('set, rename and delete write files; --dry-run does not', async () => {

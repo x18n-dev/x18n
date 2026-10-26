@@ -1118,6 +1118,7 @@ export declare function pathId(_: readonly string[]): string;
 export declare function pathMatcher(_: readonly string[]): (_: string) => boolean;
 export declare function placeholderProblems(_: Project, _: readonly EditOp[]): PlaceholderProblem[];
 export declare function rangeContains(_: TextRange, _: number): boolean;
+export declare function renderExplanation(_: ProjectExplanation, _?: string | undefined): string;
 export declare function renderPrompt(_: PromptData): string;
 export declare function replaceKeyPrefix(_: KeyString, _: KeyString, _: KeyString): KeyString;
 export declare function resolveConfig(_: ResolveConfigOptions): Promise<Setup>;

@@ -28,6 +28,7 @@ export interface Requests {
   'x18n/decorations': [DocumentParams, DecorationsResult]
   'x18n/openUi': [OpenUiParams, OpenUiResult]
   'x18n/translatePrompt': [TranslatePromptParams, string]
+  'x18n/explain': [undefined, string]
 }
 
 /** The slice of the language client the view models need; tests pass a fake. */

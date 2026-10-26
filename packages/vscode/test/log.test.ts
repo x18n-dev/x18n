@@ -50,6 +50,12 @@ describe('output channel log', () => {
   })
 
   it('says what to do without a project', () => {
-    expect(formatStatus([], { projects: [] })[0]).toContain('x18n init')
+    expect(formatStatus([], { projects: [] })[0]).toContain('Explain Projects')
+  })
+
+  it('points to the explanation when a project has no keys', () => {
+    expect(formatStatus([
+      { ...project, keys: 0 },
+    ], { projects: [] })).toContain('    Run `x18n: Explain Projects` to see why no keys were found.')
   })
 })

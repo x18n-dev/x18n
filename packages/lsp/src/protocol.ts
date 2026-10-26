@@ -157,6 +157,7 @@ export interface Methods {
   readonly setDisplayLocale: 'x18n/setDisplayLocale'
   readonly openUi: 'x18n/openUi'
   readonly translatePrompt: 'x18n/translatePrompt'
+  readonly explain: 'x18n/explain'
   readonly changed: 'x18n/changed'
 }
 
@@ -172,6 +173,7 @@ export const methods: Methods = {
   setDisplayLocale: 'x18n/setDisplayLocale',
   openUi: 'x18n/openUi',
   translatePrompt: 'x18n/translatePrompt',
+  explain: 'x18n/explain',
   changed: 'x18n/changed',
 }
 
