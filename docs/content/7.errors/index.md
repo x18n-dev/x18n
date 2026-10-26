@@ -38,7 +38,6 @@ The first digit is the group:
 | [X18N4007](/errors/x18n4007) | Placeholder mismatch | `1` |
 | [X18N4008](/errors/x18n4008) | Invalid edit input | `1` |
 | [X18N5001](/errors/x18n5001) | Review file could not be read | `1` |
-| [X18N5002](/errors/x18n5002) | More than one review store | `1` |
 | [X18N5003](/errors/x18n5003) | Reviews are not available | `1` |
 | [X18N5004](/errors/x18n5004) | Review not found | `1` |
 | [X18N5005](/errors/x18n5005) | Not an open suggestion | `1` |

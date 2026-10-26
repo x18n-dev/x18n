@@ -277,7 +277,7 @@ describe('language server', () => {
         locale: 'de',
         state: 'changes-requested',
         comments: [
-          { type: 'request-change', text: 'Use "Servus"', resolved: false },
+          { type: 'request-change', text: 'Use "Servus"' },
         ],
       },
     ])

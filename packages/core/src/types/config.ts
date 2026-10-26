@@ -127,8 +127,6 @@ export interface ReviewOptions {
   readonly enabled?: boolean | undefined
   /** Review file, relative to the project root. Default `.x18n/reviews.yml`. */
   readonly file?: string | undefined
-  /** Id of the review store to use when plugins add more than one. */
-  readonly store?: string | undefined
   /** Author of new reviews, instead of the host identity (git `user.name` and `user.email`). */
   readonly author?: ReviewAuthor | undefined
 }
@@ -243,7 +241,7 @@ export interface ResolvedConfig {
   readonly ignoreKeys: readonly string[]
   readonly glossary: readonly GlossaryEntry[]
   readonly history: false | HistorySettings
-  readonly review: { readonly enabled: boolean, readonly file: string, readonly store: string | undefined, readonly author: ReviewAuthor | undefined }
+  readonly review: { readonly enabled: boolean, readonly file: string, readonly author: ReviewAuthor | undefined }
   readonly pluginConfigs: Partial<PluginConfigs>
   /** Origin of each top-level value, for `explain()`. */
   readonly origins: { readonly [key: string]: ConfigOrigin }

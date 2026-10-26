@@ -117,14 +117,15 @@ export interface Range {
 export interface ReviewCommentInfo {
   readonly id: string;
   readonly type: "comment" | "approve" | "request-change" | "suggestion";
-  readonly author: {
+  readonly author?: {
     readonly name?: string | undefined;
     readonly email?: string | undefined;
   } | undefined;
   readonly time: string;
-  readonly text: string | undefined;
-  readonly suggestion: string | undefined;
-  readonly resolved: boolean;
+  readonly text?: string | undefined;
+  readonly suggestion?: string | undefined;
+  readonly value?: string | undefined;
+  readonly resolved?: boolean | undefined;
   readonly stale: boolean;
 }
 export interface ReviewsParams {

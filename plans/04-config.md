@@ -74,7 +74,7 @@ Project settings live only in the config file. Editors have UX settings only and
 | `glossary` | `{ term, translations?, note?, doNotTranslate? }[]` or path | `[]` | Used by translate prompts and the optional `glossary` check. |
 | `projects` | string[] (globs) | - | Monorepo, see below. |
 | `typegen` | `boolean \| { output? }` | `false` | 1.x, TS projects only ([18-typegen.md](./18-typegen.md)). |
-| `review` | `{ enabled?, file?, store?, author? }` | `{ enabled: true, file: '.x18n/reviews.yml' }` | [12-reviews.md](./12-reviews.md). `store` picks one when plugins add several. |
+| `review` | `{ enabled?, file?, author? }` | `{ enabled: true, file: '.x18n/reviews.yml' }` | [12-reviews.md](./12-reviews.md). |
 
 Plugin options live under the plugin's own key in `PluginConfigs` (see [03-plugins.md](./03-plugins.md)) or in the factory call.
 

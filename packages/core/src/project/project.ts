@@ -4,7 +4,7 @@ import type { FileEvent, Host } from '../types/host'
 import type { KeyString, LocaleCode, LocaleInfo, Message, MessageLeaf, MessageTree, Resource, TextRange, Usage } from '../types/model'
 import type { HardString, HistoryContext, ScanResult, SourceFile } from '../types/plugin'
 import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, ResourceNode, SearchMatch, SearchOptions, UsageMatch } from '../types/project'
-import type { ReviewData, ReviewFilter, ReviewStore, ReviewThread } from '../types/review'
+import type { ReviewData, ReviewFilter, ReviewThread } from '../types/review'
 import type { ResourceState } from './analysis'
 import type { ReviewSource } from './planner'
 import type { UsageResolver } from './usages'
@@ -128,29 +128,13 @@ export function createProject(options: CreateProjectOptions): Project {
 
   // ---- Reviews ----
 
-  const reviewStore = ((): { store?: ReviewStore | undefined, error?: X18nError | undefined } => {
-    if (!config.review.enabled)
-      return {}
-    const stores = registry.reviewStores
-    const ids = stores.map(store => store.id)
-    if (config.review.store !== undefined) {
-      const store = stores.find(item => item.id === config.review.store)
-      return store
-        ? { store }
-        : {
-            error: errors.X18N5003({ reason: `no review store "${config.review.store}" (${ids.join(', ') || 'none registered'})` }),
-          }
-    }
-    return stores.length > 1
-      ? {
-          error: errors.X18N5002({ stores: ids }),
-        }
-      : { store: stores[0] }
-  })()
+  // A plugin's store replaces the built-in one, which comes first.
+  const reviewStore = config.review.enabled
+    ? registry.reviewStores.at(-1)
+    : undefined
 
   async function loadReviews(): Promise<void> {
-    const { store } = reviewStore
-    if (!store)
+    if (!reviewStore)
       return
     reviewText = await host.readFile(reviewFile)
     reviewError = undefined
@@ -158,7 +142,7 @@ export function createProject(options: CreateProjectOptions): Project {
     if (reviewText === undefined)
       return
     try {
-      reviewData = store.parse(reviewText)
+      reviewData = reviewStore.parse(reviewText)
     }
     catch (error) {
       reviewError = errors.X18N5001({
@@ -173,10 +157,9 @@ export function createProject(options: CreateProjectOptions): Project {
 
   /** Reviews the planner may change: none while the file cannot be read, so a write never drops what is in it. */
   function reviewSource(): ReviewSource | undefined {
-    const { store } = reviewStore
-    return store && !reviewError
+    return reviewStore && !reviewError
       ? {
-          store,
+          store: reviewStore,
           file: reviewFile,
           text: reviewText,
           data: reviewData,
@@ -184,24 +167,10 @@ export function createProject(options: CreateProjectOptions): Project {
       : undefined
   }
 
-  function reviewProblem(): string | undefined {
-    if (!config.review.enabled)
-      return '`review.enabled` is false'
-    const error = reviewStore.error ?? reviewError
-    if (error)
-      return error.message
-    return reviewStore.store
-      ? undefined
-      : 'no review store is registered'
-  }
-
-  function reviewErrors(): { error: X18nError, path: string }[] {
-    const error = reviewStore.error ?? reviewError
-    return error
-      ? [
-          { error, path: reviewFile },
-        ]
-      : []
+  function reviewProblem(): string {
+    return reviewError?.message ?? (config.review.enabled
+      ? 'no review store is registered'
+      : '`review.enabled` is false')
   }
 
   function reviews(filter: ReviewFilter = {}): ReviewThread[] {
@@ -797,7 +766,11 @@ export function createProject(options: CreateProjectOptions): Project {
         : []),
       discoveryErrors: [
         ...discoveryErrors,
-        ...reviewErrors(),
+        ...reviewError
+          ? [
+              { error: reviewError, path: reviewFile },
+            ]
+          : [],
       ],
       messages: idx().messages,
       parents: idx().parents,
@@ -954,7 +927,11 @@ export function createProject(options: CreateProjectOptions): Project {
       conflicts: registry.conflicts,
       errors: [
         ...discoveryErrors,
-        ...reviewErrors(),
+        ...reviewError
+          ? [
+              { error: reviewError, path: reviewFile },
+            ]
+          : [],
         ...resources.flatMap(state => state.error
           ? [
               { error: state.error, path: state.resource.path },
@@ -1204,9 +1181,7 @@ export function createProject(options: CreateProjectOptions): Project {
     history: history.get,
     valueAt: history.valueAt,
     reviews,
-    reviewFile: reviewStore.store
-      ? reviewFile
-      : undefined,
+    reviewFile: reviewStore && reviewFile,
     async reviewAuthor() {
       return config.review.author ?? await host.identity?.()
     },
@@ -1221,7 +1196,7 @@ export function createProject(options: CreateProjectOptions): Project {
     text: path => fileTexts.get(path) ?? files.get(path)?.text ?? (path === reviewFile
       ? reviewText
       : undefined),
-    owns: path => fileTexts.has(path) || files.has(path) || usageEligible(path) || (path === reviewFile && reviewStore.store !== undefined),
+    owns: path => fileTexts.has(path) || files.has(path) || usageEligible(path),
     plan: ops => planner.plan(ops),
     apply: (plan, applyOptions) => planner.apply(plan, applyOptions?.answers ?? {}),
     update,

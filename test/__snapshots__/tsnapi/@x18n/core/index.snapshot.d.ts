@@ -766,7 +766,6 @@ export interface ResolvedConfig {
   readonly review: {
     readonly enabled: boolean;
     readonly file: string;
-    readonly store: string | undefined;
     readonly author: ReviewAuthor | undefined;
   };
   readonly pluginConfigs: Partial<PluginConfigs>;
@@ -861,7 +860,6 @@ export interface ReviewFilter {
 export interface ReviewOptions {
   readonly enabled?: boolean | undefined;
   readonly file?: string | undefined;
-  readonly store?: string | undefined;
   readonly author?: ReviewAuthor | undefined;
 }
 export interface ReviewStore {

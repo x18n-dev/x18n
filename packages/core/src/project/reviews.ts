@@ -99,104 +99,110 @@ export function findReview(data: ReviewData, id: string): { key: KeyString, loca
   return undefined
 }
 
-function sorted<T>(map: ReadonlyMap<string, ReadonlyMap<string, T>>): { [key: string]: { [locale: string]: T } } {
-  return Object.fromEntries([...map]
-    .filter(([, inner]) => inner.size > 0)
+interface Section<T> { readonly [key: KeyString]: { readonly [locale: LocaleCode]: T } }
+
+function sortSection<T>(section: Section<T>): Section<T> {
+  return Object.fromEntries(Object.entries(section)
+    .filter(([, byLocale]) => Object.keys(byLocale).length > 0)
     .sort(([a], [b]) => byCode(a, b))
-    .map(([key, inner]) => [
+    .map(([key, byLocale]) => [
       key,
-      Object.fromEntries([...inner].sort(([a], [b]) => byCode(a, b))),
+      Object.fromEntries(Object.entries(byLocale).sort(([a], [b]) => byCode(a, b))),
     ]))
+}
+
+/** Sorted keys and locales, so edits from two branches merge well. */
+export function sortReviews(data: ReviewData): ReviewData {
+  return {
+    threads: sortSection(data.threads),
+    sources: sortSection(data.sources),
+  }
+}
+
+function rekey<T>(section: Section<T>, from: KeyString, to: KeyString): Section<T> {
+  const { [from]: entry, ...rest } = section
+  return entry
+    ? { ...rest, [to]: entry }
+    : section
+}
+
+function without<T>(section: Section<T>, key: KeyString, locales: 'all' | readonly LocaleCode[]): Section<T> {
+  const { [key]: byLocale, ...rest } = section
+  if (!byLocale || locales === 'all')
+    return rest
+  return {
+    ...rest,
+    [key]: Object.fromEntries(Object.entries(byLocale).filter(([locale]) => !locales.includes(locale))),
+  }
 }
 
 /** Review data being changed by an edit plan. */
 export class ReviewDraft {
-  readonly threads: Map<KeyString, Map<LocaleCode, ReviewComment[]>>
-  readonly sources: Map<KeyString, Map<LocaleCode, string>>
   changed = false
 
-  constructor(data: ReviewData) {
-    this.threads = new Map(Object.entries(data.threads).map(([key, byLocale]) => [
-      key,
-      new Map(Object.entries(byLocale).map(([locale, comments]) => [
-        locale,
-        [...comments],
-      ])),
-    ]))
-    this.sources = new Map(Object.entries(data.sources).map(([key, byLocale]) => [
-      key,
-      new Map(Object.entries(byLocale)),
-    ]))
+  constructor(public data: ReviewData) {}
+
+  private update(next: ReviewData): void {
+    this.changed = true
+    this.data = next
+  }
+
+  private thread(key: KeyString, locale: LocaleCode, comments: readonly ReviewComment[]): void {
+    const { threads } = this.data
+    this.update({
+      ...this.data,
+      threads: {
+        ...threads,
+        [key]: { ...threads[key], [locale]: comments },
+      },
+    })
   }
 
   add(key: KeyString, locale: LocaleCode, comment: ReviewComment): void {
-    const byLocale = this.threads.get(key) ?? new Map<LocaleCode, ReviewComment[]>()
-    this.threads.set(key, byLocale)
-    byLocale.set(locale, [
-      ...byLocale.get(locale) ?? [],
+    this.thread(key, locale, [
+      ...this.data.threads[key]?.[locale] ?? [],
       comment,
     ])
-    this.changed = true
   }
 
   resolve(id: string): void {
-    for (const byLocale of this.threads.values()) {
-      for (const [locale, list] of byLocale) {
-        if (list.some(c => c.id === id)) {
-          byLocale.set(locale, list.map(c => c.id === id
-            ? { ...c, resolved: true }
-            : c))
-          this.changed = true
-        }
-      }
+    const found = findReview(this.data, id)
+    if (found) {
+      this.thread(found.key, found.locale, this.data.threads[found.key]![found.locale]!.map(c => c.id === id
+        ? { ...c, resolved: true }
+        : c))
     }
   }
 
   record(key: KeyString, locale: LocaleCode, hash: string): void {
-    const byLocale = this.sources.get(key) ?? new Map<LocaleCode, string>()
-    this.sources.set(key, byLocale)
-    if (byLocale.get(locale) !== hash) {
-      byLocale.set(locale, hash)
-      this.changed = true
+    const { sources } = this.data
+    if (sources[key]?.[locale] !== hash) {
+      this.update({
+        ...this.data,
+        sources: {
+          ...sources,
+          [key]: { ...sources[key], [locale]: hash },
+        },
+      })
     }
   }
 
   /** Threads and records follow a renamed key. */
   move(from: KeyString, to: KeyString): void {
-    const rekey = <T>(map: Map<KeyString, T>): void => {
-      const entry = map.get(from)
-      if (entry === undefined)
-        return
-      map.delete(from)
-      map.set(to, entry)
-      this.changed = true
+    if (this.data.threads[from] || this.data.sources[from]) {
+      this.update({
+        threads: rekey(this.data.threads, from, to),
+        sources: rekey(this.data.sources, from, to),
+      })
     }
-    rekey(this.threads)
-    rekey(this.sources)
   }
 
   remove(key: KeyString, locales: 'all' | readonly LocaleCode[]): void {
-    for (const map of [this.threads, this.sources]) {
-      const byLocale = map.get(key)
-      if (!byLocale)
-        continue
-      for (const locale of [
-        ...byLocale.keys(),
-      ]) {
-        if (locales === 'all' || locales.includes(locale)) {
-          byLocale.delete(locale)
-          this.changed = true
-        }
-      }
-      if (byLocale.size === 0)
-        map.delete(key)
-    }
-  }
-
-  data(): ReviewData {
-    return {
-      threads: sorted(this.threads),
-      sources: sorted(this.sources),
+    if (this.data.threads[key] || this.data.sources[key]) {
+      this.update({
+        threads: without(this.data.threads, key, locales),
+        sources: without(this.data.sources, key, locales),
+      })
     }
   }
 }

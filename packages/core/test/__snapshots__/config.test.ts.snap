@@ -411,9 +411,6 @@ exports[`schemas > config schema 1`] = `
         "file": {
           "type": "string",
         },
-        "store": {
-          "type": "string",
-        },
       },
       "required": [],
       "type": "object",

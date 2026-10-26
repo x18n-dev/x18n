@@ -10,7 +10,7 @@ import { errors } from '../errors'
 import { isKeyUnder, replaceKeyPrefix, splitKey } from '../keys'
 import { applyMessageOps, isMessageLeaf, pathId, sortTree, walkLeaves } from '../message-tree'
 import { applyTextEdits, diffText, hashText } from '../text'
-import { findReview, noReviews, ReviewDraft, reviewId, sourceHash, valueText } from './reviews'
+import { findReview, noReviews, ReviewDraft, reviewId, sortReviews, sourceHash, valueText } from './reviews'
 
 interface PlannerState {
   readonly revision: number
@@ -659,7 +659,7 @@ class PlanBuilder {
 
   applySuggestion(id: string): void {
     const draft = this.requireReviews()
-    const found = findReview(draft.data(), id)
+    const found = findReview(draft.data, id)
     if (!found)
       throw errors.X18N5004({ id })
     const { key, locale, comment } = found
@@ -672,7 +672,7 @@ class PlanBuilder {
 
   resolveReview(id: string): void {
     const draft = this.requireReviews()
-    const found = findReview(draft.data(), id)
+    const found = findReview(draft.data, id)
     if (!found)
       throw errors.X18N5004({ id })
     this.touched.add(found.key)
@@ -878,7 +878,7 @@ class PlanBuilder {
     const reviews = this.state.reviews
     if (!reviews || !this.draft?.changed)
       return undefined
-    const next = reviews.store.serialize(this.draft.data())
+    const next = reviews.store.serialize(sortReviews(this.draft.data))
     if (reviews.text === undefined)
       return { type: 'create', path: reviews.file, content: next }
     return next === reviews.text

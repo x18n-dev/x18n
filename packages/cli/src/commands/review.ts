@@ -1,4 +1,4 @@
-import type { EditOp, ReviewAuthor, ReviewThread, ReviewType } from '@x18n/core'
+import type { EditOp, ReviewAuthor, ReviewType } from '@x18n/core'
 import type { GlobalOptions } from '../context'
 import { errors } from '@x18n/core'
 import { openWorkspace, out, printJson, runPlan, singleProject } from '../context'
@@ -17,14 +17,6 @@ const commentTypes: Readonly<Record<string, ReviewType>> = {
   'approve': 'approve',
   'request-change': 'request-change',
   'suggest': 'suggestion',
-}
-
-const stateLabels: Readonly<Record<NonNullable<ReviewThread['state']>, string>> = {
-  'changes-requested': 'changes requested',
-  'approved': 'approved',
-  'stale-approval': 'approved, value changed since',
-  'suggested': 'suggestion',
-  'commented': 'commented',
 }
 
 /** `Ada <ada@example.com>`, `Ada` or `ada@example.com`. */
@@ -73,7 +65,7 @@ async function list(target: string | undefined, options: ReviewOptions): Promise
     out(options.open ? 'No open reviews.' : 'No reviews.')
   for (const thread of threads) {
     out(`${thread.key}  ${thread.locale}${thread.state
-      ? `  ${stateLabels[thread.state]}`
+      ? `  ${thread.state.replace('-', ' ')}`
       : ''}`)
     for (const c of thread.comments) {
       const flags = [

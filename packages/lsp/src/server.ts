@@ -1,5 +1,5 @@
 import type { ExtractCandidate } from '@x18n/builtins/extractors'
-import type { EditOp, ErrorInfo, FileChange, KeyString, MessageChange, OverlayHost, Plan, Project, ResourceNode, ReviewThread, ReviewType, TextRange, Diagnostic as X18nDiagnostic } from '@x18n/core'
+import type { EditOp, ErrorInfo, FileChange, KeyString, MessageChange, OverlayHost, Plan, Project, ResourceNode, ReviewType, TextRange, Diagnostic as X18nDiagnostic } from '@x18n/core'
 import type { NodeHost } from '@x18n/node'
 import type {
   CodeAction,
@@ -63,14 +63,6 @@ interface Settings {
   codeLens: boolean
   /** Flag emoji next to locales in hovers. */
   showFlags: boolean
-}
-
-const reviewLabels: Record<NonNullable<ReviewThread['state']>, string> = {
-  'changes-requested': 'changes requested',
-  'approved': 'approved',
-  'stale-approval': 'approved, changed since',
-  'suggested': 'suggestion',
-  'commented': 'comments',
 }
 
 const reviewTypes: readonly ReviewType[] = [
@@ -552,7 +544,7 @@ class Server {
       })
       const threads = project.reviews({ key: target.key, open: true })
       if (threads.length > 0)
-        lines.push('', `**Reviews** ${threads.map(t => `${t.locale}: ${reviewLabels[t.state!]}`).join(' · ')}`)
+        lines.push('', `**Reviews** ${threads.map(t => `${t.locale}: ${t.state!.replace('-', ' ')}`).join(' · ')}`)
     }
     const usages = target.type === 'subtree'
       ? project.usages({ prefix: target.key })
@@ -921,20 +913,8 @@ class Server {
       }).map((thread): P.ReviewThreadInfo => {
         const node = entry.project.locations(thread.key).find(n => n.locale === thread.locale && n.leaf)
         return {
+          ...thread,
           project: entry.name,
-          key: thread.key,
-          locale: thread.locale,
-          state: thread.state,
-          comments: thread.comments.map(c => ({
-            id: c.id,
-            type: c.type,
-            author: c.author,
-            time: c.time,
-            text: c.text,
-            suggestion: c.suggestion,
-            resolved: c.resolved === true,
-            stale: c.stale,
-          })),
           location: node && this.entryLocation(entry, node),
         }
       })),

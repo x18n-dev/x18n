@@ -190,7 +190,6 @@ const configSchema = v.strictObject({
   review: v.optional(v.strictObject({
     enabled: v.optional(v.boolean()),
     file: v.optional(v.string()),
-    store: v.optional(v.string()),
     author: v.optional(reviewAuthor),
   })),
   projects: v.optional(strings),

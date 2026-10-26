@@ -187,20 +187,11 @@ Commands that write files (\`set\`, \`apply\`, \`rename\`, \`delete\`, \`fill\`,
 3. Or restore the file from git.`,
   },
 
-  X18N5002: {
-    title: 'More than one review store',
-    notes: `Plugins add more than one review store, and only one can be active.
-
-1. Run \`x18n doctor\` to see the plugins.
-2. Set \`review.store\` to the id of the store to use.`,
-  },
-
   X18N5003: {
     title: 'Reviews are not available',
     notes: `A review command ran, but the project cannot write reviews. The message says why:
 
 - \`review.enabled\` is \`false\` in the config.
-- \`review.store\` names a store that no plugin adds.
 - The review file could not be read (see [X18N5001](/errors/x18n5001)).`,
   },
 

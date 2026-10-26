@@ -54,7 +54,7 @@ interface ReviewStore {
 }
 ```
 
-Core reads and writes the file through the host and puts review writes into the edit plan (D41). The YAML store is the built-in one (`x18n:reviews` in `@x18n/builtins/reviews`). A plugin can add another through `reviewStores`. Only one store is active; a second one is X18N5002 unless `review.store` names one.
+Core reads and writes the file through the host and puts review writes into the edit plan (D41). The YAML store is the built-in one (`x18n:reviews` in `@x18n/builtins/reviews`). A plugin can add another through `reviewStores`; the last store is the active one, so a plugin's store replaces the built-in one.
 
 Edit ops: `review` (`{ key, locale, review, text?, suggestion?, author? }`), `resolve-review` (`{ id }`), `apply-suggestion` (`{ id }`: sets the value and resolves it), `mark-fresh` (`{ key, locales? }`). Reads: `project.reviews(filter)`, `KeyInfo.reviews`, `CheckContext.reviews`.
 
