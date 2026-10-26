@@ -35,6 +35,41 @@ describe('tier 1 presets', () => {
     expect(project.analyze().unused).toEqual([])
   })
 
+  it('next-intl: many scopes in one file and one function', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('next-intl'),
+      'messages/en.json': json({
+        common: { save: 'Save' },
+        components: {
+          specific: { label: 'L' },
+        },
+        Metadata: { title: 'T' },
+        Page: { heading: 'H' },
+      }),
+      'app/page.tsx': [
+        `import { useTranslations } from 'next-intl'`,
+        `import { getTranslations } from 'next-intl/server'`,
+        `export async function generateMetadata({ params: { locale } }) {`,
+        `  const t = await getTranslations({ locale, namespace: 'Metadata' })`,
+        `  const tPage = await getTranslations('Page')`,
+        `  return { title: t('title'), description: tPage('heading') }`,
+        `}`,
+        `export function Button() {`,
+        `  const t = useTranslations('common')`,
+        `  const tSpecific = useTranslations('components.specific')`,
+        `  return <button title={tSpecific('label')}>{t('save')}</button>`,
+        `}`,
+      ].join('\n'),
+    })
+    expect(project.usages().map(m => m.usage.key)).toEqual([
+      'Metadata.title',
+      'Page.heading',
+      'components.specific.label',
+      'common.save',
+    ])
+    expect(project.analyze().unused).toEqual([])
+  })
+
   it('react-intl: formatMessage, FormattedMessage and defineMessages', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('react-intl'),
