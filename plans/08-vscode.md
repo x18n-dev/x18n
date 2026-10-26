@@ -81,6 +81,7 @@ Editor UX only. There are no project settings and no overrides of `x18n.config.t
 ## Commands
 
 Generated into `src/generated/meta.ts` by `vscode-ext-gen` (`--scope x18n`). Initial set:
+- `x18n.findKeyByText` (reverse search over `x18n/search`; opens the usage, or the locale entry of an unused key)
 - `x18n.openUi`, `x18n.openKey`, `x18n.setDisplayLocale`
 - `x18n.editKey`, `x18n.renameKeyPrefix`, `x18n.deleteKey`
 - `x18n.extract`, `x18n.extractFile`, `x18n.copyTranslatePrompt`, `x18n.translateWithAgent`

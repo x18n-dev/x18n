@@ -88,6 +88,22 @@ export interface UsageReportResult {
   readonly missing: readonly { readonly project: string, readonly key: string, readonly locations: readonly Location[] }[]
 }
 
+export interface SearchParams {
+  /** Text a value contains, ignoring case. */
+  readonly query: string
+}
+
+export interface SearchMatch {
+  readonly project: string
+  readonly key: string
+  /** First locale, source first, whose value contains the query. */
+  readonly locale: string
+  readonly value: string
+  /** The entry holding the matched value. */
+  readonly definition: Location | undefined
+  readonly usages: readonly Location[]
+}
+
 export interface Decoration {
   readonly range: Range
   /** The whole call holding the key, when the scanner knows it. */
@@ -134,6 +150,7 @@ export interface Methods {
   readonly progress: 'x18n/progress'
   readonly fileKeys: 'x18n/fileKeys'
   readonly usageReport: 'x18n/usageReport'
+  readonly search: 'x18n/search'
   readonly decorations: 'x18n/decorations'
   readonly setDisplayLocale: 'x18n/setDisplayLocale'
   readonly openUi: 'x18n/openUi'
@@ -148,6 +165,7 @@ export const methods: Methods = {
   progress: 'x18n/progress',
   fileKeys: 'x18n/fileKeys',
   usageReport: 'x18n/usageReport',
+  search: 'x18n/search',
   decorations: 'x18n/decorations',
   setDisplayLocale: 'x18n/setDisplayLocale',
   openUi: 'x18n/openUi',

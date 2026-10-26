@@ -19,7 +19,7 @@ exports[`agent tools > names the tools for MCP 1`] = `
     "safety": "read",
   },
   {
-    "description": "List message keys, paged. Filter by \`missing\` locale (keys to translate), \`unused\` (keys no code uses), \`namespace\` or a key \`glob\`. Pass \`values: true\` to get the value per locale. Continue with \`cursor: nextCursor\`.",
+    "description": "List message keys, paged. Filter by \`missing\` locale (keys to translate), \`unused\` (keys no code uses), \`namespace\`, a key \`glob\`, or \`value\` (text the message contains). Pass \`values: true\` to get the value per locale. Continue with \`cursor: nextCursor\`.",
     "id": "x18n:keys",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -50,6 +50,10 @@ exports[`agent tools > names the tools for MCP 1`] = `
         "unused": {
           "description": "Only keys without usages in code.",
           "type": "boolean",
+        },
+        "value": {
+          "description": "Only keys whose value in some locale contains this text, ignoring case. Finds the key behind a text seen in the app.",
+          "type": "string",
         },
         "values": {
           "description": "Include the value per locale.",

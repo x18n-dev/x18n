@@ -118,6 +118,7 @@ export const AgentKeysSchema: v.GenericSchema<AgentKeysQuery> = v.object({
   missing: v.optional(text('Only keys missing or empty in this locale.')),
   unused: v.optional(v.pipe(v.boolean(), v.description('Only keys without usages in code.'))),
   namespace: v.optional(v.string()),
+  value: v.optional(text('Only keys whose value in some locale contains this text, ignoring case. Finds the key behind a text seen in the app.')),
   values: v.optional(v.pipe(v.boolean(), v.description('Include the value per locale.'))),
   limit: v.optional(v.pipe(v.number(), v.description('Page size. Default 100.'))),
   cursor: v.optional(text('`nextCursor` of the previous page.')),

@@ -66,6 +66,7 @@ export interface Methods {
   readonly progress: "x18n/progress";
   readonly fileKeys: "x18n/fileKeys";
   readonly usageReport: "x18n/usageReport";
+  readonly search: "x18n/search";
   readonly decorations: "x18n/decorations";
   readonly setDisplayLocale: "x18n/setDisplayLocale";
   readonly openUi: "x18n/openUi";
@@ -107,6 +108,17 @@ export interface ProjectInfo {
 export interface Range {
   readonly start: Position;
   readonly end: Position;
+}
+export interface SearchMatch {
+  readonly project: string;
+  readonly key: string;
+  readonly locale: string;
+  readonly value: string;
+  readonly definition: Location | undefined;
+  readonly usages: readonly Location[];
+}
+export interface SearchParams {
+  readonly query: string;
 }
 export interface ServerOptions {
   readonly loadProjects?: ((_: string, _: (_: NodeHost) => OverlayHost) => Promise<readonly Omit<ServerProject, "overlay">[]>) | undefined;

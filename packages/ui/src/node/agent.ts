@@ -53,13 +53,14 @@ export function registerAgentTools(ctx: DevframeNodeContext, projects: readonly 
         ]).map(summarize),
   }))
 
-  tool('keys', 'read', 'List message keys, paged. Filter by `missing` locale (keys to translate), `unused` (keys no code uses), `namespace` or a key `glob`. Pass `values: true` to get the value per locale. Continue with `cursor: nextCursor`.', AgentKeysSchema, (query) => {
+  tool('keys', 'read', 'List message keys, paged. Filter by `missing` locale (keys to translate), `unused` (keys no code uses), `namespace`, a key `glob`, or `value` (text the message contains). Pass `values: true` to get the value per locale. Continue with `cursor: nextCursor`.', AgentKeysSchema, (query) => {
     const { project } = pick(query.project)
     const keys = project.keys({
       glob: query.glob,
       missing: query.missing,
       unused: query.unused,
       namespace: query.namespace,
+      value: query.value,
     })
     const { items, ...rest } = page(keys, query)
     return {

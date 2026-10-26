@@ -26,6 +26,7 @@ Project settings live in `x18n.config.ts`; the settings below only change the ed
 
 | Command                    | Title                                  |
 | -------------------------- | -------------------------------------- |
+| `x18n.findKeyByText`       | x18n: Find Key by Text                 |
 | `x18n.openUi`              | x18n: Open UI                          |
 | `x18n.openKey`             | x18n: Open Key in UI                   |
 | `x18n.setDisplayLocale`    | x18n: Set Display Locale               |

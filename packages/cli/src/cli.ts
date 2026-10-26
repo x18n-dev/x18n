@@ -81,6 +81,7 @@ export function createCli(): CAC {
     .option('--missing <locale>', 'Only keys missing or empty in a locale')
     .option('--unused', 'Only keys without usages')
     .option('--namespace <ns>', 'Only keys of a namespace')
+    .option('--value <text>', 'Only keys whose value in some locale contains the text')
     .option('--values', 'Include the value per locale')
     .option('--limit <n>', 'Page size')
     .option('--cursor <cursor>', 'Start of the page (from `nextCursor`)')

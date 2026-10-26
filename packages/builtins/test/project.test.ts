@@ -56,6 +56,21 @@ describe('project read path', () => {
     expect(text.slice(missing.location!.range.start, missing.location!.range.end)).toBe('subtitle')
   })
 
+  it('finds keys by value in any locale, ignoring case', async () => {
+    const { project } = await createTestProject({
+      'src/locales/en.json': json({ title: 'Home', greeting: 'Welcome home', count: 3 }),
+      'src/locales/zh.json': json({ title: '主页', greeting: '你好' }),
+    }, {
+      resources: [
+        { pattern: 'src/locales/{locale}.json' },
+      ],
+    })
+    expect(project.keys({ value: 'HOME' })).toEqual(['greeting', 'title'])
+    expect(project.keys({ value: '你好' })).toEqual(['greeting'])
+    expect(project.keys({ value: '3' })).toEqual(['count'])
+    expect(project.keys({ value: 'home', glob: 't*' })).toEqual(['title'])
+  })
+
   it('treats locales with a fallback as overrides', async () => {
     const { project } = await createTestProject({
       'locales/en.json': json({ color: 'Color', save: 'Save' }),

@@ -279,6 +279,7 @@ export interface KeyQuery {
   readonly namespace?: string | undefined;
   readonly missing?: LocaleCode | undefined;
   readonly unused?: boolean | undefined;
+  readonly value?: string | undefined;
 }
 export interface LazyFormat extends FormatEntry {
   readonly id: string;

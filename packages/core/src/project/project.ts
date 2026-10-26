@@ -733,6 +733,10 @@ export function createProject(options: CreateProjectOptions): Project {
         return message(key, sourceLocale) !== undefined && (value === undefined || value === '') && needs(key, locale)
       })
     }
+    if (query.value) {
+      const text = query.value.toLowerCase()
+      list = list.filter(key => locales.some(locale => String(message(key, locale)?.value ?? '').toLowerCase().includes(text)))
+    }
     if (query.unused) {
       const unused = new Set(analyzer.analyze().unused)
       list = list.filter(key => unused.has(key))

@@ -584,6 +584,12 @@ const methodDocs = {
     result: 'UsageReportResult',
     doc: 'Unused keys, and used keys that are not defined.',
   },
+  search: {
+    kind: 'request',
+    params: 'SearchParams',
+    result: 'SearchMatch[]',
+    doc: 'Keys whose value in some locale contains the query, ignoring case, with the matched value, its locale entry and the usages. At most 100.',
+  },
   decorations: {
     kind: 'request',
     params: 'DocumentParams',
@@ -889,7 +895,7 @@ ${invalidResource.notes}
 
 - ${sourceLink('packages/core/src/project/analysis.ts')}
 `)
-  const reporterIds = reporters().reporters?.map(r => code(r.id)).join(', ') ?? ''
+  const reporterIds = Object.keys(reporters).map(code).join(', ')
   page('content/9.checks/index.md', 'Checks', 'Every built-in check of x18n check, with its default severity.', `
 A check reads the project and reports diagnostics. A diagnostic is one reported issue with a code, a severity and optional fixes. \`x18n check\` runs every check, and the editor shows the same diagnostics.
 

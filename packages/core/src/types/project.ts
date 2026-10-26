@@ -28,6 +28,8 @@ export interface KeyQuery {
   readonly missing?: LocaleCode | undefined
   /** Only keys without usages. */
   readonly unused?: boolean | undefined
+  /** Only keys whose value in some locale contains this text, ignoring case. */
+  readonly value?: string | undefined
 }
 
 export interface UsageMatch {

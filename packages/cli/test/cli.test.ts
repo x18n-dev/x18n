@@ -117,6 +117,16 @@ describe('x18n binary', () => {
         { key: 'auth:login.title' },
       ],
     })
+    const byValue = json(await x18n(dir, [
+      'keys',
+      '--json',
+      '--value',
+      'anmelden',
+    ])).data.projects[0]
+    expect(byValue.keys).toEqual([
+      { key: 'auth:login.submit' },
+      { key: 'auth:login.title' },
+    ])
     const get = json(await x18n(dir, ['get', 'common:save', '--json'])).data.projects[0]
     expect(get.messages.map((m: any) => [m.locale, m.value])).toEqual([
       ['en', 'Save'],
