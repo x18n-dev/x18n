@@ -1,6 +1,6 @@
 ---
 name: x18n
-description: Manage a project's translations with x18n (`@x18n/cli`). Use when the task touches locale files or translation keys - adding, renaming or deleting keys, finding missing or unused keys, translating missing messages, reviewing translations, extracting hard-coded strings, keeping a glossary of terms.
+description: Manage a project's translations with x18n (`@x18n/cli`). Use when the task touches locale files or translation keys - adding, renaming or deleting keys, finding the key behind a text shown in the app, finding missing or unused keys, translating missing messages, reviewing translations, extracting hard-coded strings, keeping a glossary of terms.
 ---
 
 # x18n
@@ -23,7 +23,7 @@ Batch the questions into one message. Routine work needs no question: adding a k
 ## Rules
 
 - Change locale files through `x18n set`, `x18n apply`, `x18n rename` and `x18n delete`. The config file (`x18n.config.ts`) is the one i18n file you edit by hand.
-- Check a key before you use it in code: `x18n get <key> --json`. Reuse an existing key with the same meaning.
+- Check a key before you use it in code: `x18n get <key> --json`. Reuse an existing key with the same meaning: `x18n search "<text>" --json` finds keys whose value already says it.
 - Keep every placeholder of the source message (`{name}`, `{{count}}`, `%{name}`, `:name`, `%s`, `@:key`).
 - Pass `--json` and read the envelope `{ "x18n": 2, "command", "data", "diagnostics", "errors" }`.
 - Run renames and deletes with `--dry-run` first, and read the plan.
@@ -108,15 +108,27 @@ Maintain it while you work:
 
 ## Loops
 
+### Find the key behind a text
+
+When the user names a text they see in the app, and not a key, search the values:
+
+```sh
+x18n search "Sign in" --json
+x18n search "Anmelden" --exact --json
+```
+
+The search covers every locale and ignores case. It is fuzzy by default, and values that contain the query rank first. `--exact` keeps only those. Each match in `data.projects[].matches` has `key`, `locale`, `value` and `usages` (`file`, `line`, `column`), so you can open the code that shows the text.
+
 ### Add a key while coding
 
 ```sh
+x18n search "Settings" --exact --json
 x18n get settings.title --json
 x18n set settings.title --value "Settings" --json
 x18n keys --missing de --json --limit 50
 ```
 
-`x18n set` without `--locale` writes the source locale. Then use the key in code, for example `t('settings.title')`.
+Reuse a key that `x18n search` finds with the same meaning. `x18n set` without `--locale` writes the source locale. Then use the key in code, for example `t('settings.title')`.
 
 ### Translate missing messages
 

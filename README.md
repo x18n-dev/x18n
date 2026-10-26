@@ -25,6 +25,7 @@ Universal toolkits for linting, viewing and managing i18n for any frameworks.
 - ✅ **Lint & Check** - Missing, unused and invalid keys, placeholder mismatches and glossary violations, ready for CI
 - 🕐 **Stale Detection** - Find translations whose source text changed since they were written
 - ⚡ **Find Missing** - Report and fill in missing keys and translations for any locale
+- 🔍 **Search by Text** - Find the key behind any text in any locale, fuzzy or exact, and jump to where the code uses it
 - 📦 **Extract Hard Strings** - Detect hard-coded strings and move them into locale files
 
 **Built for agents and CI**
