@@ -76,6 +76,50 @@ describe('in-place edits', () => {
     ])
     expect(files.get('locales/en.yml')).toContain('# keep')
     expect(project.message('app.added', 'en')?.value).toBe('New')
+    await write(project, [
+      { type: 'delete', key: 'app' },
+    ])
+    expect(files.get('locales/en.yml')).toBe('# top\nlist: plain\n')
+  })
+
+  // Each file: `a` with a comment, `b` without one. The edit sets `a`, adds `c` and deletes `b`.
+  it.each([
+    ['json', '{\n  // c1\n  "a": "A", // c2\n  /* c3 */\n  "b": "B"\n}\n', '{\n  // c1\n  "a": "A2", // c2\n  /* c3 */\n  "c": "C"\n}\n'],
+    ['jsonc', '{\n\t// c1\n\t"a": "A", // c2\n\t"b": "B",\n}\n', '{\n\t// c1\n\t"a": "A2", // c2\n\t"c": "C",\n}\n'],
+    ['json5', '{\n  // c1\n  a: \'A\', // c2\n  /* c3 */\n  b: \'B\',\n}\n', '{\n  // c1\n  a: \'A2\', // c2\n  /* c3 */\n  c: \'C\',\n}\n'],
+    ['yml', '# c1\na: A # c2\n# c3\nb: B\n', '# c1\na: A2 # c2\n# c3\nc: C\n'],
+    ['po', '# c1\nmsgid ""\nmsgstr ""\n\n# c2\nmsgid "a"\nmsgstr "A"\n\nmsgid "b"\nmsgstr "B"\n', '# c1\nmsgid ""\nmsgstr ""\n\n# c2\nmsgid "a"\nmsgstr "A2"\n\nmsgid "c"\nmsgstr "C"\n'],
+    ['properties', '# c1\na = A\n! c2\nb = B\n', '# c1\na = A2\n! c2\nc = C\n'],
+    ['ftl', '### c1\n\n# c2\na = A\nb = B\n', '### c1\n\n# c2\na = A2\nc = C\n'],
+    ['ini', '; c1\na = A ; c2\n# c3\nb = B\n', '; c1\na = A2 ; c2\n# c3\nc = C\n'],
+    ['php', '<?php\n// c1\nreturn [\n    \'a\' => \'A\', # c2\n    /* c3 */\n    \'b\' => \'B\',\n];\n', '<?php\n// c1\nreturn [\n    \'a\' => \'A2\', # c2\n    /* c3 */\n    \'c\' => \'C\',\n];\n'],
+    ['ts', '// c1\nexport default {\n  a: \'A\', // c2\n  /* c3 */\n  b: \'B\',\n} as const\n', '// c1\nexport default {\n  a: \'A2\', // c2\n  /* c3 */\n  c: \'C\',\n} as const\n'],
+    ['resx', '<root>\n  <!-- c1 -->\n  <data name="a"><value>A</value><comment>c2</comment></data>\n  <data name="b"><value>B</value></data>\n</root>\n', '<root>\n  <!-- c1 -->\n  <data name="a"><value>A2</value><comment>c2</comment></data>\n  <data name="c" xml:space="preserve">\n    <value>C</value>\n  </data>\n</root>\n'],
+  ])('%s keeps comments when it sets, adds and deletes keys', async (extension, before, after) => {
+    const path = `locales/en.${extension}`
+    const { project, files } = await createTestProject({ [path]: before }, {
+      resources: [
+        { pattern: `locales/{locale}.${extension}` },
+      ],
+    })
+    const plan = await write(project, [
+      {
+        type: 'set',
+        key: 'a',
+        locale: 'en',
+        value: 'A2',
+      },
+      {
+        type: 'set',
+        key: 'c',
+        locale: 'en',
+        value: 'C',
+      },
+      { type: 'delete', key: 'b' },
+    ])
+    expect(plan.warnings).toEqual([])
+    expect(files.get(path)).toBe(after)
+    expect(project.message('c', 'en')?.value).toBe('C')
   })
 
   it('follows the nesting style of the target file', async () => {

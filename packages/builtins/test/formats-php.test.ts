@@ -71,25 +71,33 @@ describe('php format', () => {
     ])).toBe(source.replace('=> 3', '=> 4'))
   })
 
-  it('rewrites only the array for structural changes', () => {
-    const added = edit(source, [
+  it('adds and deletes items in place, keeping comments and order', () => {
+    expect(edit(source, [
       {
         type: 'set',
         path: ['nav', 'about'],
         value: 'Über',
       },
-    ])
-    expect(added.startsWith('<?php\n\n// Header comment\nreturn [\n')).toBe(true)
-    // Integer-like keys come first: the tree is a JS object.
-    expect(added).toContain('    \'welcome\' => "Hallo\\n\\"du\\"",\n    \'nav\' => [\n        \'1\' => \'eins\',\n        \'home\' => \'Start\',\n        \'about\' => \'Über\',\n    ],\n')
-    expect(format.parse(added, ctx).tree.nav).toEqual({ home: 'Start', 1: 'eins', about: 'Über' })
-    const removed = edit(source, [
+    ])).toBe(source.replace('        1 => \'eins\',\n', '        1 => \'eins\',\n        \'about\' => \'Über\',\n'))
+    expect(edit(source, [
+      {
+        type: 'set',
+        path: ['extra', 'deep'],
+        value: 'x',
+      },
+    ])).toBe(source.replace('];\n', '    \'extra\' => [\n        \'deep\' => \'x\',\n    ],\n];\n'))
+    expect(edit(source, [
       {
         type: 'delete',
-        path: ['on'],
+        path: ['nav', 'home'],
       },
-    ])
-    expect(format.parse(removed, ctx).tree).not.toHaveProperty('on')
+    ])).toBe(source.replace('        \'home\' => \'Start\', /* block */\n', ''))
+    expect(edit(source, [
+      {
+        type: 'delete',
+        path: ['welcome'],
+      },
+    ])).toBe(source.replace('    "welcome" => "Hallo\\n\\"du\\"", # hash comment\n', ''))
   })
 
   it('serializes and round-trips', () => {
