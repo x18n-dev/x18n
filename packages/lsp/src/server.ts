@@ -751,21 +751,33 @@ class Server {
     const query = params.query.toLowerCase()
     const out: SymbolInformation[] = []
     for (const entry of this.projects) {
-      for (const key of entry.project.keys()) {
-        const value = display(entry.project.message(key, entry.project.sourceLocale)?.value) ?? ''
-        if (query && !key.toLowerCase().includes(query) && !value.toLowerCase().includes(query))
+      const { project } = entry
+      const locales = [
+        project.sourceLocale,
+        ...project.locales.filter(locale => locale !== project.sourceLocale),
+      ]
+      for (const key of project.keys()) {
+        const values = locales.map(locale => display(project.message(key, locale)?.value) ?? '')
+        const value = !query || key.toLowerCase().includes(query)
+          ? values[0]
+          : values.find(v => v.toLowerCase().includes(query))
+        if (value === undefined)
           continue
-        const node = entry.project.locations(key)[0]
-        if (node) {
+        // Searching by value finds where a string shown in the app comes from, so prefer usages over the locale file.
+        const usages = project.usages({ key }).filter(match => !match.possible)
+        const locations = usages.length
+          ? usages.map(match => this.location(entry, match.usage.path, match.usage.range))
+          : project.locations(key).slice(0, 1).map(node => this.entryLocation(entry, node))
+        for (const location of locations) {
           out.push({
             name: key,
             kind: SymbolKind.String,
             containerName: value,
-            location: this.entryLocation(entry, node),
+            location,
           })
         }
         if (out.length >= 500)
-          return out
+          return out.slice(0, 500)
       }
     }
     return out

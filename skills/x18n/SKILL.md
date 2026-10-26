@@ -23,7 +23,7 @@ Batch the questions into one message. Routine work needs no question: adding a k
 ## Rules
 
 - Change locale files through `x18n set`, `x18n apply`, `x18n rename` and `x18n delete`. The config file (`x18n.config.ts`) is the one i18n file you edit by hand.
-- Check a key before you use it in code: `x18n get <key> --json`. Reuse an existing key with the same meaning.
+- Check a key before you use it in code: `x18n get <key> --json`. Reuse an existing key with the same meaning; `x18n keys --value <text> --json` finds keys by their text in any locale.
 - Keep every placeholder of the source message (`{name}`, `{{count}}`, `%{name}`, `:name`, `%s`, `@:key`).
 - Pass `--json` and read the envelope `{ "x18n": 2, "command", "data", "diagnostics", "errors" }`.
 - Run renames and deletes with `--dry-run` first, and read the plan.

@@ -87,6 +87,7 @@ export interface AgentKeysQuery extends ProjectQuery, PageQuery {
   readonly missing?: LocaleCode | undefined
   readonly unused?: boolean | undefined
   readonly namespace?: string | undefined
+  readonly value?: string | undefined
   readonly values?: boolean | undefined
 }
 

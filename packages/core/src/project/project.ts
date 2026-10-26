@@ -737,6 +737,12 @@ export function createProject(options: CreateProjectOptions): Project {
       const unused = new Set(analyzer.analyze().unused)
       list = list.filter(key => unused.has(key))
     }
+    if (query.value) {
+      const text = query.value.toLowerCase()
+      list = list.filter(key => [
+        ...messages.get(key)!.values(),
+      ].some(([m]) => String(m?.value).toLowerCase().includes(text)))
+    }
     return list.sort()
   }
 

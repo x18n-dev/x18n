@@ -42,7 +42,7 @@ Package `@x18n/lsp`, binary `x18n-lsp` (`--stdio`, `--node-ipc`, `--socket=<port
 | `textDocument/publishDiagnostics` (pull diagnostics when supported) | **Exactly the diagnostics `x18n check` reports** for the file, with the same config. The only extra is `hard-string` when `extract.autoDetect` is on. | `editor/problems.ts` |
 | `textDocument/codeAction` | Quick fixes from diagnostic `fixes`: add missing key, fill from source, extract string, ignore string, replace a selection with an existing key that has the same value. | `editor/refactor.ts`, `editor/extract.ts` |
 | `textDocument/documentSymbol` | Key tree in resource files. | new |
-| `workspace/symbol` | Search keys and values across the project. | new |
+| `workspace/symbol` | Search keys and their values in every locale; each match points at its usages, or at the source-locale message when unused. | new |
 | `textDocument/codeLens` (opt-in) | In resource files: "used 3 times", "missing in de, fr". | new |
 | `workspace/executeCommand` | `x18n.set`, `x18n.delete`, `x18n.extract`, `x18n.renamePrefix`. | commands |
 

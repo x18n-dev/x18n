@@ -1,5 +1,5 @@
 import type { MessageConnection } from 'vscode-jsonrpc/node'
-import type { Location, PublishDiagnosticsParams, WorkspaceEdit } from 'vscode-languageserver/node'
+import type { Location, PublishDiagnosticsParams, SymbolInformation, WorkspaceEdit } from 'vscode-languageserver/node'
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
@@ -205,6 +205,26 @@ describe('language server', () => {
       'linked',
     ])
     expect(symbols[0]!.children.map(c => c.name)).toEqual(['title', 'greeting'])
+  })
+
+  it('finds keys by a value in any locale as workspace symbols at their usages', async () => {
+    const used: SymbolInformation[] = await client.sendRequest('workspace/symbol', { query: 'start' })
+    expect(used.map(s => [
+      s.name,
+      s.containerName,
+      relativeOf(s.location),
+    ])).toEqual([
+      ['nav.home', 'Start', 'src/App.vue'],
+    ])
+    expect(used[0]!.location.range.start).toEqual(await position('src/App.vue', 'nav.home', 0))
+
+    const unused: SymbolInformation[] = await client.sendRequest('workspace/symbol', { query: 'niemand' })
+    expect(unused.map(s => [
+      s.name,
+      relativeOf(s.location),
+    ])).toEqual([
+      ['unused', 'src/locales/en.json'],
+    ])
   })
 
   it('answers x18n/keyAt and x18n/decorations', async () => {

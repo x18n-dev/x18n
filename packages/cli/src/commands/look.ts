@@ -71,6 +71,7 @@ export interface KeysOptions extends GlobalOptions {
   readonly missing?: string | undefined
   readonly unused?: boolean | undefined
   readonly namespace?: string | undefined
+  readonly value?: string | undefined
   readonly values?: boolean | undefined
   readonly limit?: number | undefined
   readonly cursor?: string | undefined
@@ -100,6 +101,10 @@ export async function keys(glob: string | undefined, options: KeysOptions): Prom
       missing: options.missing,
       unused: options.unused,
       namespace: options.namespace,
+      // cac turns numeric arguments into numbers
+      value: options.value === undefined
+        ? undefined
+        : String(options.value),
     })
     const { items, total, nextCursor } = page(list, options)
     const values = (key: KeyString): Record<string, unknown> => Object.fromEntries(project.locales.map(locale => [locale, project.message(key, locale)?.value]))

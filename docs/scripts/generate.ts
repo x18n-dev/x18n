@@ -669,7 +669,7 @@ The server also accepts \`--node-ipc\` and \`--socket=<port>\`. It loads the pro
 
 ## Standard features
 
-The server treats keys as symbols. It supports go to definition, go to implementation, references, rename (with prepare), hover, inlay hints, completion of keys, code actions (quick fixes and extraction), document symbols, workspace symbols, code lenses and diagnostics. Diagnostics are the same as the ones from \`x18n check\`.
+The server treats keys as symbols. It supports go to definition, go to implementation, references, rename (with prepare), hover, inlay hints, completion of keys, code actions (quick fixes and extraction), document symbols, workspace symbols (keys and their values in every locale, located at their usages), code lenses and diagnostics. Diagnostics are the same as the ones from \`x18n check\`.
 
 ## Initialization options
 
