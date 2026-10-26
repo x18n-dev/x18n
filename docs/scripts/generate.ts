@@ -889,7 +889,7 @@ ${invalidResource.notes}
 
 - ${sourceLink('packages/core/src/project/analysis.ts')}
 `)
-  const reporterIds = reporters().reporters?.map(r => code(r.id)).join(', ') ?? ''
+  const reporterIds = Object.keys(reporters).map(id => code(id)).join(', ')
   page('content/9.checks/index.md', 'Checks', 'Every built-in check of x18n check, with its default severity.', `
 A check reads the project and reports diagnostics. A diagnostic is one reported issue with a code, a severity and optional fixes. \`x18n check\` runs every check, and the editor shows the same diagnostics.
 
@@ -902,7 +902,10 @@ export default defineConfig({
   checks: {
     'unused-key': 'error',
     'identical-to-source': 'warning',
-    'key-style': ['warning', { case: 'camel' }],
+    'key-style': [
+      'warning',
+      { case: 'camel' }
+    ],
   },
 })
 \`\`\`
