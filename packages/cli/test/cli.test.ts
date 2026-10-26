@@ -117,16 +117,10 @@ describe('x18n binary', () => {
         { key: 'auth:login.title' },
       ],
     })
-    const byValue = json(await x18n(dir, [
-      'keys',
-      '--json',
-      '--value',
-      'anmelden',
-    ])).data.projects[0]
-    expect(byValue.keys).toEqual([
-      { key: 'auth:login.submit' },
-      { key: 'auth:login.title' },
-    ])
+    const search = async (...args: string[]): Promise<string[]> => json(await x18n(dir, ['search', ...args, '--json'])).data.projects[0].matches.map((m: any) => `${m.key}:${m.locale}`)
+    expect(await search('anmelden', '--exact')).toEqual(['auth:login.title:de', 'auth:login.submit:de'])
+    expect(await search('sgn n')).toEqual(['auth:login.submit:en'])
+    expect(await search('sgn n', '--exact')).toEqual([])
     const get = json(await x18n(dir, ['get', 'common:save', '--json'])).data.projects[0]
     expect(get.messages.map((m: any) => [m.locale, m.value])).toEqual([
       ['en', 'Save'],
@@ -288,6 +282,7 @@ describe('x18n binary', () => {
       ['status'],
       ['keys', '--values'],
       ['get', 'app.greeting'],
+      ['search', 'my app'],
       ['usages'],
       ['locales'],
       ['check'],

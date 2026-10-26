@@ -222,13 +222,13 @@ describe('language server', () => {
   })
 
   it('finds keys by value with their usages through x18n/search', async () => {
-    const matches: { key: string, locale: string, value: string, definition: Location, usages: Location[] }[] = await client.sendRequest(methods.search, { query: 'WILLKOMMEN' })
+    const matches: { key: string, locale: string, value: string, definition: Location, usages: Location[] }[] = await client.sendRequest(methods.search, { query: 'WILLKOMMEN', exact: true })
     expect(matches.map(m => [m.key, m.locale, m.value])).toEqual([
       ['pages.home.title', 'de', 'Willkommen'],
     ])
     expect(relativeOf(matches[0]!.definition)).toBe('src/locales/de.json')
     expect(matches[0]!.definition.range.start).toEqual(await position('src/locales/de.json', '"title": "Willkommen"'))
-    const [app]: typeof matches = await client.sendRequest(methods.search, { query: 'my app' })
+    const [app]: typeof matches = await client.sendRequest(methods.search, { query: 'mapp' })
     expect(app).toMatchObject({ key: 'app.title', locale: 'en' })
     expect(app!.usages.map(relativeOf)).toEqual(['src/App.vue'])
     expect(await client.sendRequest(methods.search, { query: '' })).toEqual([])

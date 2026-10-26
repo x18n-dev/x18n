@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { KeyRow } from '../../../src/node/types'
 import { useVirtualList } from '@vueuse/core'
+import { fuzzyScore } from '@x18n/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from '#imports'
 import LocaleFlag from '../../components/LocaleFlag.vue'
@@ -8,7 +9,6 @@ import MessageText from '../../components/MessageText.vue'
 import UiSegmented from '../../components/ui/UiSegmented.vue'
 import UiToggle from '../../components/ui/UiToggle.vue'
 import { describeProblem, setMessage } from '../../edit'
-import { fuzzyScore } from '../../fuzzy'
 import { t } from '../../i18n'
 import { backend, currentProject, useLive, visibleLocales } from '../../state'
 

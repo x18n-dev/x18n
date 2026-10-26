@@ -15,13 +15,16 @@ export interface AgentKeysQuery extends ProjectQuery, PageQuery {
   readonly missing?: LocaleCode | undefined;
   readonly unused?: boolean | undefined;
   readonly namespace?: string | undefined;
-  readonly value?: string | undefined;
   readonly values?: boolean | undefined;
 }
 export interface AgentRenameQuery extends ProjectQuery, Confirmable {
   readonly from: KeyString;
   readonly to: KeyString;
   readonly usages?: boolean | undefined;
+}
+export interface AgentSearchQuery extends ProjectQuery, PageQuery {
+  readonly query: string;
+  readonly exact?: boolean | undefined;
 }
 export interface AgentSetQuery extends ProjectQuery {
   readonly messages: Readonly<Record<LocaleCode, Readonly<Record<string, MessageLeaf>>>>;

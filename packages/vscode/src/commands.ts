@@ -130,9 +130,8 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
   register(commands.findKeyByText, async () => {
     const editor = window.activeTextEditor
     const selected = editor?.document.getText(editor.selection).trim() ?? ''
-    const pick = window.createQuickPick<{ label: string, description: string, detail: string, match: SearchMatch }>()
+    const pick = window.createQuickPick<{ label: string, description: string, detail: string, alwaysShow: boolean, match: SearchMatch }>()
     pick.placeholder = 'Text shown in the app, in any locale'
-    pick.matchOnDescription = true
     const search = async (query: string): Promise<void> => {
       pick.busy = true
       const matches = await x18n.request('x18n/search', { query })
@@ -147,6 +146,8 @@ export function useCommands({ client, x18n, openUi }: CommandDeps): { extractAtC
         detail: `${match.locale} · ${match.usages.length === 1
           ? '1 usage'
           : `${match.usages.length} usages`}`,
+        // The server matches fuzzily; the quick pick's own filter would hide some matches.
+        alwaysShow: true,
         match,
       }))
       pick.busy = false

@@ -1020,34 +1020,21 @@ class Server {
     return { unused, missing }
   }
 
+  /** Matches of every project, best first. */
   search(params: P.SearchParams): P.SearchMatch[] {
-    const query = params.query.toLowerCase()
-    if (!query)
-      return []
-    const out: P.SearchMatch[] = []
-    for (const entry of this.projects) {
+    const found = this.projects.flatMap(entry => entry.project.search(params.query, { exact: params.exact }).map(match => ({ entry, match })))
+    return found.sort((a, b) => b.match.score - a.match.score).slice(0, 100).map(({ entry, match }) => {
       const { project } = entry
-      for (const key of project.keys({ value: query })) {
-        const hit = project.locales
-          .map(locale => [locale, display(project.message(key, locale)?.value) ?? ''] as const)
-          .find(([, value]) => value.toLowerCase().includes(query))
-        if (!hit)
-          continue
-        const [locale, value] = hit
-        const node = project.locations(key).find(node => node.locale === locale)
-        out.push({
-          project: entry.name,
-          key,
-          locale,
-          value,
-          definition: node && this.entryLocation(entry, node),
-          usages: project.usages({ key }).map(m => this.location(entry, m.usage.path, m.usage.range)),
-        })
-        if (out.length >= 100)
-          return out
+      const node = project.locations(match.key).find(node => node.locale === match.locale)
+      return {
+        project: entry.name,
+        key: match.key,
+        locale: match.locale,
+        value: match.value,
+        definition: node && this.entryLocation(entry, node),
+        usages: project.usages({ key: match.key }).map(m => this.location(entry, m.usage.path, m.usage.range)),
       }
-    }
-    return out
+    })
   }
 
   async decorations(params: P.DocumentParams): Promise<P.DecorationsResult> {

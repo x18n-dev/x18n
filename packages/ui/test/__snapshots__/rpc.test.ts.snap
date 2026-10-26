@@ -19,7 +19,7 @@ exports[`agent tools > names the tools for MCP 1`] = `
     "safety": "read",
   },
   {
-    "description": "List message keys, paged. Filter by \`missing\` locale (keys to translate), \`unused\` (keys no code uses), \`namespace\`, a key \`glob\`, or \`value\` (text the message contains). Pass \`values: true\` to get the value per locale. Continue with \`cursor: nextCursor\`.",
+    "description": "List message keys, paged. Filter by \`missing\` locale (keys to translate), \`unused\` (keys no code uses), \`namespace\` or a key \`glob\`. Pass \`values: true\` to get the value per locale. Continue with \`cursor: nextCursor\`.",
     "id": "x18n:keys",
     "inputSchema": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -51,10 +51,6 @@ exports[`agent tools > names the tools for MCP 1`] = `
           "description": "Only keys without usages in code.",
           "type": "boolean",
         },
-        "value": {
-          "description": "Only keys whose value in some locale contains this text, ignoring case. Finds the key behind a text seen in the app.",
-          "type": "string",
-        },
         "values": {
           "description": "Include the value per locale.",
           "type": "boolean",
@@ -82,6 +78,40 @@ exports[`agent tools > names the tools for MCP 1`] = `
       },
       "required": [
         "key",
+      ],
+      "type": "object",
+    },
+    "safety": "read",
+  },
+  {
+    "description": "Find keys by their value, best match first: the key behind a text seen in the app. Searches every locale, ignoring case, and matches fuzzily unless \`exact\`. Each match has the matched locale and value, and the usages in code with file, line and column.",
+    "id": "x18n:search",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "cursor": {
+          "description": "\`nextCursor\` of the previous page.",
+          "type": "string",
+        },
+        "exact": {
+          "description": "Only values containing the query. By default a fuzzy match also counts.",
+          "type": "boolean",
+        },
+        "limit": {
+          "description": "Page size. Default 100.",
+          "type": "number",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+        "query": {
+          "description": "Text of the message, as seen in the app, in any locale.",
+          "type": "string",
+        },
+      },
+      "required": [
+        "query",
       ],
       "type": "object",
     },
@@ -571,6 +601,27 @@ exports[`agent tools > reports status, keys, check and the translate prompt 2`] 
 
 exports[`agent tools > reports status, keys, check and the translate prompt 3`] = `
 {
+  "matches": [
+    {
+      "key": "pages.home.title",
+      "locale": "en",
+      "usages": [
+        {
+          "column": 15,
+          "line": 16,
+          "path": "src/App.vue",
+          "possible": true,
+        },
+      ],
+      "value": "Welcome",
+    },
+  ],
+  "total": 1,
+}
+`;
+
+exports[`agent tools > reports status, keys, check and the translate prompt 4`] = `
+{
   "diagnostics": [
     {
       "code": "missing-translation",
@@ -622,7 +673,7 @@ exports[`agent tools > reports status, keys, check and the translate prompt 3`] 
 }
 `;
 
-exports[`agent tools > reports status, keys, check and the translate prompt 4`] = `
+exports[`agent tools > reports status, keys, check and the translate prompt 5`] = `
 {
   "total": 1,
   "usages": [
@@ -651,7 +702,7 @@ exports[`agent tools > reports status, keys, check and the translate prompt 4`] 
 }
 `;
 
-exports[`agent tools > reports status, keys, check and the translate prompt 5`] = `
+exports[`agent tools > reports status, keys, check and the translate prompt 6`] = `
 {
   "diagnostics": [],
   "key": "nav.home",

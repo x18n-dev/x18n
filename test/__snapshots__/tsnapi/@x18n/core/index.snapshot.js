@@ -18,6 +18,7 @@ export function definePreset(_) {}
 export function diffText(_, _) {}
 export function envelope(_, _, _, _) {}
 export function extensionOf(_) {}
+export function fuzzyScore(_, _) {}
 export function globToRegExp(_, _) {}
 export function hashText(_) {}
 export function isJsonObject(_) {}

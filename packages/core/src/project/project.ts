@@ -3,10 +3,11 @@ import type { Setup } from '../resolve'
 import type { FileEvent, Host } from '../types/host'
 import type { KeyString, LocaleCode, LocaleInfo, Message, MessageLeaf, MessageTree, Resource, TextRange, Usage } from '../types/model'
 import type { HardString, HistoryContext, ScanResult, SourceFile } from '../types/plugin'
-import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, ResourceNode, UsageMatch } from '../types/project'
+import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, ResourceNode, SearchMatch, SearchOptions, UsageMatch } from '../types/project'
 import type { ResourceState } from './analysis'
 import type { UsageResolver } from './usages'
 import { errors, isX18nError, toErrorInfo } from '../errors'
+import { fuzzyScore } from '../fuzzy'
 import { isKeyUnder, joinKey, keyMatcher, pathMatcher } from '../keys'
 import { parseLocaleInfo, resolveFallbacks } from '../locale'
 import { isMessageLeaf, isMessageTree, pathId, walkLeaves } from '../message-tree'
@@ -733,15 +734,36 @@ export function createProject(options: CreateProjectOptions): Project {
         return message(key, sourceLocale) !== undefined && (value === undefined || value === '') && needs(key, locale)
       })
     }
-    if (query.value) {
-      const text = query.value.toLowerCase()
-      list = list.filter(key => locales.some(locale => String(message(key, locale)?.value ?? '').toLowerCase().includes(text)))
-    }
     if (query.unused) {
       const unused = new Set(analyzer.analyze().unused)
       list = list.filter(key => unused.has(key))
     }
     return list.sort()
+  }
+
+  function search(query: string, options: SearchOptions = {}): SearchMatch[] {
+    if (!query)
+      return []
+    const lower = query.toLowerCase()
+    const score = (value: string): number => !options.exact || value.toLowerCase().includes(lower)
+      ? fuzzyScore(query, value)
+      : -1
+    const found: SearchMatch[] = []
+    for (const key of idx().messages.keys()) {
+      let best: SearchMatch | undefined
+      for (const locale of locales) {
+        const leaf = message(key, locale)?.value
+        if (leaf === undefined || leaf === null)
+          continue
+        const value = String(leaf)
+        const s = score(value)
+        if (s >= 0 && (!best || s > best.score))
+          best = { key, locale, value, score: s }
+      }
+      if (best)
+        found.push(best)
+    }
+    return found.sort((a, b) => b.score - a.score || a.value.length - b.value.length || a.key.localeCompare(b.key))
   }
 
   function get(key: KeyString): KeyInfo | undefined {
@@ -990,6 +1012,7 @@ export function createProject(options: CreateProjectOptions): Project {
       ...registry.extractors.flatMap(extractor => extractor.templates),
     ],
     keys,
+    search,
     get,
     message,
     parseKey(input) {

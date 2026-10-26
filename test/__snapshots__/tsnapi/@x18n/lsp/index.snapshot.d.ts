@@ -119,6 +119,7 @@ export interface SearchMatch {
 }
 export interface SearchParams {
   readonly query: string;
+  readonly exact?: boolean | undefined;
 }
 export interface ServerOptions {
   readonly loadProjects?: ((_: string, _: (_: NodeHost) => OverlayHost) => Promise<readonly Omit<ServerProject, "overlay">[]>) | undefined;

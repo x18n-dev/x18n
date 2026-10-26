@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { KeyRowItem } from '../key-tree'
 import { useLocalStorage, useVirtualList } from '@vueuse/core'
+import { fuzzyScore } from '@x18n/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { NuxtLink } from '#components'
 import { useRoute } from '#imports'
-import { fuzzyScore } from '../fuzzy'
 import { t } from '../i18n'
 import { folderIds, treeRows } from '../key-tree'
 import { useLive } from '../state'

@@ -486,6 +486,39 @@ exports[`x18n binary > keeps the JSON contract of every read command > prompt tr
 "
 `;
 
+exports[`x18n binary > keeps the JSON contract of every read command > search my app 1`] = `
+"{
+  "x18n": 2,
+  "command": "search",
+  "data": {
+    "projects": [
+      {
+        "name": "<fixture>",
+        "total": 1,
+        "matches": [
+          {
+            "key": "app.title",
+            "locale": "en",
+            "value": "My App",
+            "usages": [
+              {
+                "possible": false,
+                "file": "src/App.vue",
+                "line": 5,
+                "column": 18
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": [],
+  "errors": []
+}
+"
+`;
+
 exports[`x18n binary > keeps the JSON contract of every read command > status 1`] = `
 "{
   "x18n": 2,

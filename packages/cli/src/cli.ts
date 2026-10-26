@@ -11,7 +11,7 @@ import { version } from '../package.json' with { type: 'json' }
 import { apply, fill, format, remove, rename, set } from './commands/change'
 import { check } from './commands/check'
 import { extract } from './commands/extract'
-import { doctor, get, keys, locales, status, usages } from './commands/look'
+import { doctor, get, keys, locales, search, status, usages } from './commands/look'
 import { migrate } from './commands/migrate'
 import { prompt } from './commands/prompt'
 import { eject, init, schema } from './commands/setup'
@@ -74,18 +74,22 @@ export function createCli(): CAC {
   cli.command('', 'Show the status and the main commands').action(run('status', async (options: GlobalOptions) => {
     await status(options)
     if (!options.json)
-      process.stdout.write('\nCommands: check, keys, get, usages, set, apply, rename, delete, fill, prompt translate, ui. Run `x18n --help` for all.\n')
+      process.stdout.write('\nCommands: check, keys, search, get, usages, set, apply, rename, delete, fill, prompt translate, ui. Run `x18n --help` for all.\n')
   }))
   cli.command('status', 'Locales with coverage, resources, keys and diagnostics').action(run('status', status))
   cli.command('keys [glob]', 'List keys')
     .option('--missing <locale>', 'Only keys missing or empty in a locale')
     .option('--unused', 'Only keys without usages')
     .option('--namespace <ns>', 'Only keys of a namespace')
-    .option('--value <text>', 'Only keys whose value in some locale contains the text')
     .option('--values', 'Include the value per locale')
     .option('--limit <n>', 'Page size')
     .option('--cursor <cursor>', 'Start of the page (from `nextCursor`)')
     .action(run('keys', keys))
+  cli.command('search <query>', 'Find keys by their value in any locale, with their usages')
+    .option('--exact', 'Only values containing the query, instead of a fuzzy match')
+    .option('--limit <n>', 'Page size')
+    .option('--cursor <cursor>', 'Start of the page')
+    .action(run('search', search))
   cli.command('get <key>', 'Values, resources, usages and diagnostics of one key').action(run('get', get))
   cli.command('usages [key]', 'Usages of a key, or all usages')
     .option('--file <path>', 'Only usages in a file')

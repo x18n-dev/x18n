@@ -588,7 +588,7 @@ const methodDocs = {
     kind: 'request',
     params: 'SearchParams',
     result: 'SearchMatch[]',
-    doc: 'Keys whose value in some locale contains the query, ignoring case, with the matched value, its locale entry and the usages. At most 100.',
+    doc: 'Keys found by their value in any locale, best first: fuzzy unless `exact`, ignoring case. Each match has the matched value, its locale entry and the usages. At most 100.',
   },
   decorations: {
     kind: 'request',

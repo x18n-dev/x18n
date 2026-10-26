@@ -89,14 +89,16 @@ export interface UsageReportResult {
 }
 
 export interface SearchParams {
-  /** Text a value contains, ignoring case. */
+  /** Text of a value in any locale, ignoring case. */
   readonly query: string
+  /** Only values containing the query; by default a fuzzy match also counts. */
+  readonly exact?: boolean | undefined
 }
 
 export interface SearchMatch {
   readonly project: string
   readonly key: string
-  /** First locale, source first, whose value contains the query. */
+  /** The best-matching locale, source first on ties. */
   readonly locale: string
   readonly value: string
   /** The entry holding the matched value. */

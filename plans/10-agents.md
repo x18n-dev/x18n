@@ -50,7 +50,8 @@ Tools are the RPC functions marked `agent` in [09-ui.md](./09-ui.md), with descr
 | Tool | Purpose |
 | --- | --- |
 | `x18n_status` | Locales, coverage, diagnostics summary. |
-| `x18n_keys` | Keys with filters (`missing`, `unused`, `namespace`, glob, `value`), paged. |
+| `x18n_keys` | Keys with filters (`missing`, `unused`, `namespace`, glob), paged. |
+| `x18n_search` | Keys by value in any locale (fuzzy, or `exact`), with usages; paged. |
 | `x18n_get` | One key with values, usages and reviews. |
 | `x18n_usages` | Usages of a key. |
 | `x18n_check` | Run checks, return diagnostics. |
