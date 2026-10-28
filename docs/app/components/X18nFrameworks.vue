@@ -11,7 +11,7 @@ const frameworks: { name: string, icon: string, class?: string, to: string, mono
   },
   { name: 'Svelte', icon: 'logos:svelte-icon', to: '/presets/svelte-i18n' },
   { name: 'Solid', icon: 'logos:solidjs-icon', to: '/presets/solid-primitives-i18n' },
-  { name: 'Angular', icon: 'logos:angular-icon', to: '/presets/ngx-translate' },
+  { name: 'Angular', icon: 'logos:angular-icon', to: '/presets/angular-localize' },
   {
     name: 'i18next',
     icon: 'simple-icons:i18next',

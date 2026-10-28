@@ -809,6 +809,74 @@ describe('namespaces', () => {
     })
   })
 
+  it('angular-localize: XLIFF files and messages without custom ids', async () => {
+    const { project, files } = await createTestProject({
+      'package.json': pkg('@angular/core', '@angular/localize'),
+      'angular.json': json({
+        projects: {
+          app: {
+            root: '',
+            i18n: {
+              locales: { tr: 'src/locale/messages.tr.xlf' },
+            },
+            architect: {
+              'extract-i18n': {
+                options: { outputPath: 'src/locale' },
+              },
+            },
+          },
+        },
+      }),
+      'src/locale/messages.xlf': [
+        `<?xml version="1.0" encoding="UTF-8" ?>`,
+        `<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">`,
+        `  <file source-language="en-US" datatype="plaintext" original="ng2.template">`,
+        `    <body>`,
+        `      <trans-unit id="2023484548631819319" datatype="html">`,
+        `        <source>Hello world</source>`,
+        `      </trans-unit>`,
+        `      <trans-unit id="8889534073701065911" datatype="html">`,
+        `        <source>Welcome, <x id="INTERPOLATION" equiv-text="{{ name }}"/>!</source>`,
+        `      </trans-unit>`,
+        `    </body>`,
+        `  </file>`,
+        `</xliff>`,
+        ``,
+      ].join('\n'),
+      'src/locale/messages.tr.xlf': [
+        `<?xml version="1.0" encoding="UTF-8" ?>`,
+        `<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">`,
+        `  <file source-language="en-US" target-language="tr" datatype="plaintext" original="ng2.template">`,
+        `    <body>`,
+        `      <trans-unit id="2023484548631819319" datatype="html">`,
+        `        <source>Hello world</source>`,
+        `        <target>Merhaba dünya</target>`,
+        `      </trans-unit>`,
+        `      <trans-unit id="8889534073701065911" datatype="html">`,
+        `        <source>Welcome, <x id="INTERPOLATION" equiv-text="{{ name }}"/>!</source>`,
+        `      </trans-unit>`,
+        `    </body>`,
+        `  </file>`,
+        `</xliff>`,
+        ``,
+      ].join('\n'),
+      'src/app/app.html': `<h1 i18n>Hello world</h1>\n<p i18n="site intro|Shown on the home page">Welcome, {{ name }}!</p>`,
+    })
+    expect(project.sourceLocale).toBe('en-US')
+    expect(project.usages().map(m => m.usage.key)).toEqual(['2023484548631819319', '8889534073701065911'])
+    expect(project.analyze().unused).toEqual([])
+    expect(project.analyze().diagnostics.filter(d => d.code === 'missing-translation').map(d => d.key)).toEqual(['8889534073701065911'])
+    await write(project, [
+      {
+        type: 'set',
+        key: '8889534073701065911',
+        locale: 'tr',
+        value: 'Hoş geldin, {$INTERPOLATION}!',
+      },
+    ])
+    expect(files.get('src/locale/messages.tr.xlf')).toContain('<target>Hoş geldin, <x id="INTERPOLATION" equiv-text="{{ name }}"/>!</target>')
+  })
+
   it('angular-localize: not detected without an i18n block', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('@angular/core', '@angular/localize'),

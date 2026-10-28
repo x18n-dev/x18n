@@ -1,11 +1,13 @@
-import type { MessageTree, Preset, ResourceSpec } from '@x18n/core'
+import type { MessageTree, Preset, ResourceSpec, Scanner, UsageCandidate } from '@x18n/core'
 import { createLibraryPlugin, isMessageLeaf } from '@x18n/core'
 import { angular } from '../../placeholders'
 import { angularTemplates } from '../shared/angular-templates'
+import { inlineTemplates, localizeMessages, templateMessages } from './messages'
 
 type Translation = string | readonly string[]
 
 interface AngularProject {
+  readonly root?: string
   readonly i18n?: {
     readonly sourceLocale?: string | { readonly code?: string }
     readonly locales?: Readonly<Record<string, Translation | { readonly translation?: Translation }>>
@@ -13,7 +15,22 @@ interface AngularProject {
   readonly architect?: Readonly<Record<string, { readonly options?: { readonly format?: string, readonly outputPath?: string, readonly outFile?: string } }>>
 }
 
-/** The JSON files of an `i18n` block: each locale's translations and the extracted source, as resources. */
+/** `ng extract-i18n --format` values and the extension of the file each writes. */
+const extractExtensions: Readonly<Record<string, string>> = {
+  'xlf': 'xlf',
+  'xlif': 'xlf',
+  'xliff': 'xlf',
+  'xlf2': 'xlf',
+  'xliff2': 'xlf',
+  'xmb': 'xmb',
+  'json': 'json',
+  'legacy-migrate': 'json',
+  'arb': 'arb',
+}
+
+const readable = /\.(?:json|arb|xlf|xliff|xmb|xtb)$/
+
+/** The files of an `i18n` block: each locale's translations and the extracted source, as resources. */
 function readWorkspace(text: string): { sourceLocale: string | undefined, resources: ResourceSpec[] } {
   let workspace: { projects?: Readonly<Record<string, AngularProject>> }
   try {
@@ -37,14 +54,15 @@ function readWorkspace(text: string): { sourceLocale: string | undefined, resour
         ? entry
         : (entry as { translation?: Translation }).translation
       for (const path of [translation ?? []].flat()) {
-        if (path.endsWith('.json'))
+        if (readable.test(path))
           resources.push({ pattern: path, locale })
       }
     }
     const extract = project.architect?.['extract-i18n']?.options
-    if (extract?.format === 'json') {
-      const dir = extract.outputPath?.replace(/\/+$/, '')
-      const file = extract.outFile ?? 'messages.json'
+    const extension = extractExtensions[extract?.format ?? 'xlf']
+    if (extension) {
+      const dir = (extract?.outputPath ?? project.root ?? '').replace(/\/+$/, '')
+      const file = extract?.outFile ?? `messages.${extension}`
       resources.push({
         pattern: dir
           ? `${dir}/${file}`
@@ -56,9 +74,43 @@ function readWorkspace(text: string): { sourceLocale: string | undefined, resour
   return { sourceLocale, resources }
 }
 
+function candidate(id: string, range: { start: number, end: number }): UsageCandidate {
+  return {
+    raw: id,
+    range,
+    kind: 'marker',
+    dynamic: false,
+  }
+}
+
+/** Usages of `i18n` attributes and `$localize`, by custom id or by the id Angular computes from the message. */
+const scanner: Scanner = {
+  id: 'angular-localize',
+  extensions: [
+    ...angularTemplates,
+    'mts',
+    'mjs',
+  ],
+  scan(file) {
+    if (file.extension === 'html') {
+      return {
+        usages: templateMessages(file.text).map(m => candidate(m.id, m.range)),
+      }
+    }
+    if (!file.text.includes('$localize') && !/\btemplate\s*:/.test(file.text))
+      return { usages: [] }
+    return {
+      usages: [
+        ...localizeMessages(file.text),
+        ...inlineTemplates(file.text).flatMap(t => templateMessages(t.text, t.offset)),
+      ].map(m => candidate(m.id, m.range)),
+    }
+  },
+}
+
 /**
- * Angular's built-in i18n: `i18n="@@id"` attributes in templates and `$localize` in code, with the JSON
- * translation files listed in `angular.json`. Those files read `{ "locale": "fr", "translations": { "id": "..." } }`.
+ * Angular's built-in i18n: `i18n` attributes in templates and `$localize` in code, with the translation files listed in
+ * `angular.json` in any format `ng extract-i18n` writes: XLIFF 1.2 and 2.0, XMB with XTB, JSON and ARB.
  */
 export function angularLocalize(): Preset {
   const paths = new Set<string>()
@@ -67,29 +119,26 @@ export function angularLocalize(): Preset {
     plugins: [
       createLibraryPlugin({
         name: 'x18n:angular-localize',
-        regex: [
-          {
-            extensions: angularTemplates,
-            patterns: ['\\bi18n(?:-[\\w.-]+)?\\s*=\\s*["\'][^"\']*?@@({key})["\']'],
-          },
-          {
-            extensions: ['ts', 'js', 'mts', 'mjs'],
-            patterns: ['\\$localize\\s*`:[^:`]*?@@({key}):'],
-          },
-        ],
         keyStyle: 'flat',
+        // `{ "locale": "fr", "translations": { "id": "..." } }` and ARB's `@@locale` and `@id` metadata hold messages around them.
         transformResource: {
-          applies: ctx => paths.has(ctx.path),
-          read(tree) {
+          applies: ctx => paths.has(ctx.path) && /\.(?:json|arb)$/.test(ctx.path),
+          read(tree, ctx) {
+            if (ctx.path.endsWith('.arb'))
+              return Object.fromEntries(Object.entries(tree).filter(([key]) => !key.startsWith('@')))
             const translations = tree.translations
             return translations && !isMessageLeaf(translations)
               ? translations as MessageTree
               : {}
           },
-          toStored: path => [
-            'translations',
-            path.join('.'),
-          ],
+          toStored: (path, ctx) => ctx.path.endsWith('.arb')
+            ? [
+                path.join('.'),
+              ]
+            : [
+                'translations',
+                path.join('.'),
+              ],
         },
         placeholders: [angular],
         async extra(draft, ctx) {
@@ -107,6 +156,10 @@ export function angularLocalize(): Preset {
           ]
         },
       }),
+      {
+        name: 'x18n:angular-localize-scanner',
+        scanners: [scanner],
+      },
     ],
   }
 }

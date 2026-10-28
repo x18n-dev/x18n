@@ -1,4 +1,5 @@
 import type { FormatEntry } from '@x18n/core'
+import arb from './arb/entry'
 import ecmascript from './ecmascript/entry'
 import ftl from './ftl/entry'
 import ini from './ini/entry'
@@ -9,6 +10,8 @@ import php from './php/entry'
 import po from './po/entry'
 import properties from './properties/entry'
 import resx from './resx/entry'
+import xliff from './xliff/entry'
+import xmb from './xmb/entry'
 import yaml from './yaml/entry'
 
 /**
@@ -23,6 +26,9 @@ export const formats: { readonly [id: string]: FormatEntry } = {
   po,
   properties,
   resx,
+  xliff,
+  xmb,
+  arb,
   ftl,
   ini,
   php,
