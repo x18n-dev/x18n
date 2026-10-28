@@ -81,10 +81,12 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await rm(root, { recursive: true, force: true })
+  // Windows can keep a directory locked for a moment after the process using it exits.
+  await rm(root, { recursive: true, force: true, maxRetries: 5 })
 })
 
-describe('git history provider', () => {
+// Each test runs several git commands, and Windows runners are slow at spawning them.
+describe('git history provider', { timeout: 30_000 }, () => {
   it('reports translations whose source changed in a later commit', async () => {
     await commit({
       'locales/en.json': { title: 'Home', save: 'Save' },

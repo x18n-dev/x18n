@@ -49,14 +49,16 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await rm(work, { recursive: true, force: true })
+  // Windows can keep a directory locked for a moment after the process using it exits.
+  await rm(work, { recursive: true, force: true, maxRetries: 5 })
 })
 
 function json(result: Result): any {
   return JSON.parse(result.stdout)
 }
 
-describe('x18n binary', () => {
+// Every test spawns the binary, some spawn git too, and Windows runners are slow at both.
+describe('x18n binary', { timeout: 30_000 }, () => {
   it('prints its version', async () => {
     const { stdout } = await x18n(work, ['--version'])
     expect(stdout).toContain(`x18n/${version}`)
