@@ -714,6 +714,111 @@ describe('namespaces', () => {
     expect(files.get('src/a.ts')).toBe(`const { t } = useSharedTranslation(); t('common|bug'); t('common|ok')`)
   })
 
+  it('angular-localize: reads angular.json, i18n attributes and $localize', async () => {
+    const { project, files } = await createTestProject({
+      'package.json': pkg('@angular/core', '@angular/localize'),
+      'angular.json': json({
+        projects: {
+          app: {
+            i18n: {
+              sourceLocale: { code: 'en-GB', subPath: '' },
+              locales: {
+                tr: 'src/locale/messages.tr.json',
+                es: { translation: 'src/locale/messages.es.json' },
+              },
+            },
+            architect: {
+              'extract-i18n': {
+                options: { format: 'json', outputPath: 'src/locale' },
+              },
+            },
+          },
+        },
+      }),
+      'src/locale/messages.json': json({
+        locale: 'en-GB',
+        translations: {
+          'home.intro': 'Hi, I\'m {$START_LINK}kæm{$CLOSE_LINK}.',
+          'nav.blog': 'Blog',
+          'title.projects': 'Projects',
+          'unused.key': 'Unused',
+        },
+      }),
+      'src/locale/messages.tr.json': json({
+        locale: 'tr',
+        translations: {
+          'home.intro': 'Merhaba, ben {$START_LINK}kæm{$CLOSE_LINK}.',
+          'nav.blog': 'Blog',
+          'title.projects': 'Projeler',
+          'unused.key': 'Kullanılmıyor',
+        },
+      }),
+      'src/locale/messages.es.json': json({
+        locale: 'es',
+        translations: {
+          'home.intro': 'Hola, soy {$START_LINK}kæm.',
+          'title.projects': 'Proyectos',
+          'unused.key': 'Sin usar',
+        },
+      }),
+      'src/app/home.html': [
+        `<p i18n="@@home.intro">Hi, I'm <a routerLink="/kam">kæm</a>.</p>`,
+        `<a title="Blog" i18n-title="site menu|Blog link@@nav.blog">Blog</a>`,
+        `<p i18n="@@missing.key">Missing</p>`,
+      ].join('\n'),
+      'src/app/app.routes.ts': `export const routes = [{ path: 'projects', title: $localize\`:@@title.projects:Projects\` }]`,
+    })
+    expect(project.explain().presets.find(p => p.name === 'angular-localize')?.reason).toBe('detected')
+    expect(project.sourceLocale).toBe('en-GB')
+    expect([...project.locales].sort()).toEqual(['en-GB', 'es', 'tr'])
+    expect(project.keys()).toEqual([
+      'home.intro',
+      'nav.blog',
+      'title.projects',
+      'unused.key',
+    ])
+    expect(project.usages().map(m => m.usage.key).sort()).toEqual([
+      'home.intro',
+      'missing.key',
+      'nav.blog',
+      'title.projects',
+    ])
+    const analysis = project.analyze()
+    expect(analysis.unused).toEqual(['unused.key'])
+    expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['missing.key'])
+    expect(analysis.diagnostics.filter(d => d.code === 'placeholder-mismatch').map(d => [d.key, d.locale])).toEqual([
+      ['home.intro', 'es'],
+    ])
+
+    await write(project, [
+      {
+        type: 'set',
+        key: 'nav.blog',
+        locale: 'es',
+        value: 'Blog',
+      },
+    ])
+    expect(JSON.parse(files.get('src/locale/messages.es.json')!)).toEqual({
+      locale: 'es',
+      translations: {
+        'home.intro': 'Hola, soy {$START_LINK}kæm.',
+        'title.projects': 'Proyectos',
+        'unused.key': 'Sin usar',
+        'nav.blog': 'Blog',
+      },
+    })
+  })
+
+  it('angular-localize: not detected without an i18n block', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('@angular/core', '@angular/localize'),
+      'angular.json': json({
+        projects: { app: {} },
+      }),
+    })
+    expect(project.explain().presets.find(p => p.name === 'angular-localize')?.reason).toBe('not-detected')
+  })
+
   it('transloco: a kebab-case scope folder is a camelCase key prefix', async () => {
     const { project, files } = await createTestProject({
       'package.json': pkg('@jsverse/transloco'),

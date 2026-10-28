@@ -7,6 +7,7 @@ export declare function placeholders(..._: PlaceholderSyntax[]): Plugin;
 // #endregion
 
 // #region Variables
+export declare const angular: PlaceholderSyntax;
 export declare const braces: PlaceholderSyntax;
 export declare const colon: PlaceholderSyntax;
 export declare const dollars: PlaceholderSyntax;

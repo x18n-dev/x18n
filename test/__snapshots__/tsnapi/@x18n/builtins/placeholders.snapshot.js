@@ -7,6 +7,7 @@ export function placeholders(..._) {}
 // #endregion
 
 // #region Variables
+export var angular /* const */
 export var braces /* const */
 export var colon /* const */
 export var dollars /* const */

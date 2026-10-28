@@ -1,4 +1,5 @@
 import type { PresetEntry } from '@x18n/core'
+import angularLocalize from './angular-localize/entry'
 import cargoI18n from './cargo-i18n/entry'
 import chromeExtension from './chrome-extension/entry'
 import dotnetResx from './dotnet-resx/entry'
@@ -69,6 +70,7 @@ export const presets: { readonly [name: string]: PresetEntry } = {
   'paraglide': paraglide,
   'gravity-ui-i18n': gravityUiI18n,
   'typesafe-i18n': typesafeI18n,
+  'angular-localize': angularLocalize,
   'ngx-translate': ngxTranslate,
   'transloco': transloco,
   'lingui': lingui,

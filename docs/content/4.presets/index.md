@@ -25,6 +25,7 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | [`paraglide`](/presets/paraglide) | Paraglide JS | `@inlang/paraglide-js`, `@inlang/paraglide-sveltekit`, `@inlang/paraglide-next`, `@inlang/paraglide-astro`, `@inlang/paraglide-vite` |
 | [`gravity-ui-i18n`](/presets/gravity-ui-i18n) | @gravity-ui/i18n | `@gravity-ui/i18n` |
 | [`typesafe-i18n`](/presets/typesafe-i18n) | typesafe-i18n | `typesafe-i18n` |
+| [`angular-localize`](/presets/angular-localize) | @angular/localize | `@angular/localize` with an `i18n` block in `angular.json` |
 | [`ngx-translate`](/presets/ngx-translate) | ngx-translate | `@ngx-translate/core` |
 | [`transloco`](/presets/transloco) | Transloco | `@jsverse/transloco`, `@ngneat/transloco` |
 | [`lingui`](/presets/lingui) | Lingui | `@lingui/core`, `@lingui/react`, `@lingui/macro` |
@@ -135,6 +136,7 @@ A placeholder syntax tells x18n how placeholders look in messages. The [`placeho
 | colon | `:name` | laravel |
 | dollars | `$name$` | chrome-extension |
 | dotnet | `{0}`, `{0:C}`, `{0,-10}`, `{name}` | dotnet-resx |
+| angular | `{$INTERPOLATION}`, `{$START_LINK}` | angular-localize |
 
 A linked message (`@:key`) and a nesting placeholder (`$t(key)`) name another key. That key then counts as used. The [`invalid-syntax`](/checks/invalid-syntax) check reports a linked message whose key does not exist, and ICU messages that do not parse or that lack an `other` case.
 

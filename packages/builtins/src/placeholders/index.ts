@@ -47,6 +47,8 @@ export const fluent: PlaceholderSyntax = byRegex('fluent', /\{\s*\$([\w-]+)(?:\s
 export const colon: PlaceholderSyntax = byRegex('colon', /(?<![\w:]):([a-z_]\w*)/gi, ':name')
 /** `$name$`: Chrome extension messages. */
 export const dollars: PlaceholderSyntax = byRegex('dollars', /\$(\w+)\$/g, '$name$')
+/** `{$INTERPOLATION}`, `{$START_LINK}`: Angular `$localize` placeholders in translation files. */
+export const angular: PlaceholderSyntax = byRegex('angular', /\{\$([A-Z][A-Z0-9_]*)\}/g, '{$NAME}')
 
 /** `{0}`, `{0:C}`, `{0,-10}`, `{name}`: .NET composite format items. `{{` and `}}` are literal braces. */
 export const dotnet: PlaceholderSyntax = {
