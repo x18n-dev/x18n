@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { presets } from '@x18n/builtins/presets'
 import { errors, isX18nError, PluginFileSchema, validate } from '@x18n/core'
 import { createJiti } from 'jiti'
 import { glob } from 'tinyglobby'
@@ -67,22 +68,24 @@ function resolveOwn(specifier: string): string | undefined {
   catch {}
 }
 
-const core = resolveOwn('@x18n/core')
-const presets = resolveOwn('@x18n/builtins/presets')
-
 // Configs and plugins import x18n's own packages; resolve them to the copies x18n runs from,
 // so a project needs no install of its own (`npx @x18n/cli`, a config written by `x18n init`).
+// jiti matches aliases by prefix, so each preset subpath gets its own exact alias.
+const ownSpecifiers = [
+  '@x18n/core',
+  ...Object.keys(presets).map(name => `@x18n/builtins/presets/${name}`),
+]
+const alias: Record<string, string> = {}
+for (const specifier of ownSpecifiers) {
+  const file = resolveOwn(specifier)
+  if (file)
+    alias[specifier] = file
+}
+
 const jiti = createJiti(import.meta.url ?? pathToFileURL(__filename).href, {
   moduleCache: false,
   interopDefault: true,
-  alias: core && presets
-    ? {
-        '@x18n/core': core,
-        '@x18n/cli/presets': presets,
-        '@x18n/cli': core,
-        '@x18n/builtins/presets': presets,
-      }
-    : {},
+  alias,
 })
 
 /** Imports a JS or TS module (config, plugin, executed resource). */

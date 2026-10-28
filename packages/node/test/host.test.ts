@@ -90,6 +90,23 @@ describe('loadWorkspace', () => {
     expect(workspace.projects[0]!.project.sourceLocale).toBe('de')
   })
 
+  it('resolves preset factories in a TS config without a project install', async () => {
+    await write({
+      ...locales,
+      'x18n.config.ts': [
+        'import { i18next } from \'@x18n/builtins/presets/i18next\'',
+        'import { reactI18next } from \'@x18n/builtins/presets/react-i18next\'',
+        'import { defineConfig } from \'@x18n/core\'',
+        'export default defineConfig({ presets: [i18next(), reactI18next()] })',
+      ].join('\n'),
+    })
+    const [loaded] = (await loadWorkspace({ cwd: root, cache: false })).projects
+    expect(loaded!.project.explain().presets.map(p => [p.name, p.reason])).toEqual([
+      ['i18next', 'listed'],
+      ['react-i18next', 'listed'],
+    ])
+  })
+
   it('reports invalid YAML config keys', async () => {
     await write({ 'x18n.config.yml': 'sourceLocal: de\n' })
     await expect(loadWorkspace({ cwd: root, cache: false })).rejects.toMatchObject({ code: 'X18N0001' })
