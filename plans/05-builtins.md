@@ -14,7 +14,7 @@
 
 Formats, scanners, reporters and presets are maps, so a consumer loads only what it uses. A preset is a folder: `entry.ts` (detection plus a `load`) is always loaded and `index.ts` (the preset) is imported only after detection passes. Formats and scanners are folders too: `entry.ts` holds `{ extensions, load }` and the module loads when a file of that format is first read, or a file it scans is first scanned. `regex` is always loaded. Each module exports its factory by name and as `default`. `createBuiltins()` is async because it loads the reporters, which are always on. Files in a `shared/` folder are not entries. The entry modules are bundled apart, so `index.ts` imports the maps through the package name and tsdown leaves those imports external.
 
-`@x18n/cli` re-exports the preset factories as `@x18n/cli/presets` so a TS config has one import source.
+`@x18n/cli` re-exports the preset factories as `@x18n/cli/presets`. Docs show preset names (`presets: ['vue-i18n']`) first, and `@x18n/builtins/presets/<name>` for the factories: `@x18n/node` aliases each of those subpaths and `@x18n/core` to its own copies, so a config needs no project install.
 
 Tiers decide the release: tier 1 ships in 1.0 with full parity tests, tier 2 in 1.x (M15), tier 3 when someone asks.
 

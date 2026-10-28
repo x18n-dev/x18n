@@ -20,7 +20,7 @@ Before you act on one of these, stop and ask, with your recommendation and the f
 
 1. Run `npx @x18n/cli doctor` in the project root. Without a config, x18n uses the project's i18n-ally settings if it has any, and detects the i18n library and the locale files. Check the detected presets, the locale files and the source locale. **Done when** the doctor output names the library the project uses and lists every locale file.
 2. If the project has i18n-ally settings (`i18n-ally.*` keys in `.vscode/settings.json`), follow [references/migrate-i18n-ally.md](references/migrate-i18n-ally.md) instead of step 3.
-3. If detection is wrong or incomplete, run `x18n init` to write `x18n.config.ts`, then fix `resources`, `sourceLocale` or `presets` in it. `x18n init --format yml` writes YAML. **Done when** `x18n doctor` shows the right result.
+3. If detection is wrong or incomplete, run `x18n init` to write `x18n.config.ts`, then fix `resources`, `sourceLocale` or `presets` in it. List presets by name, as in `presets: ['react-i18next']`; the names are on [x18n.dev/presets](https://x18n.dev/presets). `x18n init --format yml` writes YAML. **Done when** `x18n doctor` shows the right result, with each listed preset marked `(listed)`.
 4. Install the CLI as a dev dependency with the project's package manager (`pnpm add -D @x18n/cli`), and add a script such as `"i18n:check": "x18n check"`. Ask the user before you add it to CI.
 5. Run `x18n check --json` and report the summary to the user: errors and warnings per check (`code` of each diagnostic) and coverage per locale. Do not fix anything in this skill. **Done when** the user has the counts and knows that the `x18n-check` skill fixes them.
 

@@ -295,7 +295,7 @@ export const configNotes: { readonly [field: string]: string } = {
   'GlossaryEntry.term': 'The term as written in source values.',
   'GlossaryEntry.note': 'A note for translators. Translate prompts show it.',
   'GlossaryEntry.doNotTranslate': 'Keep the term as it is in every locale.',
-  'UserConfig.presets': 'As in YAML, plus preset objects such as `vueI18n()` from `@x18n/cli/presets`. `false` and `undefined` entries are skipped.',
+  'UserConfig.presets': 'As in YAML, plus preset objects such as `vueI18n()` from `@x18n/builtins/presets/vue-i18n`. `false` and `undefined` entries are skipped.',
   'UserConfig.plugins': 'As in YAML, plus plugin and preset objects, for example from `definePlugin`.',
   'UserConfig.checks': 'As in YAML. Plugins add their check ids to the type, so the editor completes them.',
   'UserConfig.pluginConfigs': 'Options of plugins, under the key that each plugin declares.',

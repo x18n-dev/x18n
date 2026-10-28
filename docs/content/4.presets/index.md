@@ -68,14 +68,10 @@ To pick the presets yourself, list them. x18n then applies exactly the listed pr
 ::code-group
 
 ```ts [x18n.config.ts]
-import { general, vueI18n } from '@x18n/cli/presets'
 import { defineConfig } from '@x18n/core'
 
 export default defineConfig({
-  presets: [
-    vueI18n(),
-    general()
-  ],
+  presets: ['vue-i18n', 'general'],
 })
 ```
 
@@ -85,7 +81,20 @@ presets: [vue-i18n, general]
 
 ::
 
-In TS, the presets are functions from `@x18n/cli/presets`: `nuxtI18n`, `nuxtI18nMicro`, `vueI18n`, `fluentVue`, `fluentReact`, `i18nextShopify`, `reactI18next`, `svelteI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `solidPrimitivesI18n`, `paraglide`, `gravityUiI18n`, `typesafeI18n`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravelVueI18n`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter`, `easyLocalization`, `flutterTranslate`, `pythonGettext`, `i18nice`, `cargoI18n`, `dotnetResx` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
+The names are those in the first column of the table, in every config format. `presets: []` turns every preset off.
+
+In TS, each preset is also a function in `@x18n/builtins/presets/<name>`, named in camelCase. Use it when a config builds on the preset object:
+
+```ts [x18n.config.ts]
+import { vueI18n } from '@x18n/builtins/presets/vue-i18n'
+import { defineConfig } from '@x18n/core'
+
+export default defineConfig({
+  presets: [
+    vueI18n()
+  ],
+})
+```
 
 ## What a preset adds
 
