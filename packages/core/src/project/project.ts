@@ -44,7 +44,19 @@ interface Candidate {
   readonly finder: string
 }
 
-const scanConcurrency = 64
+// Caps file reads and scans in flight, so large projects stay under the open file limit.
+const ioConcurrency = 64
+
+async function forEachLimit<T>(items: readonly T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
+  let next = 0
+  const worker = async (): Promise<void> => {
+    while (next < items.length)
+      await fn(items[next++]!)
+  }
+  await Promise.all(Array.from({
+    length: Math.min(limit, items.length),
+  }, worker))
+}
 
 interface ResourceIndex {
   readonly messages: Map<KeyString, Map<LocaleCode, Message[]>>
@@ -367,7 +379,7 @@ export function createProject(options: CreateProjectOptions): Project {
     const paths = [
       ...new Set(candidates.map(c => c.path)),
     ]
-    await Promise.all(paths.map(async (path) => {
+    await forEachLimit(paths, ioConcurrency, async (path) => {
       if (reread === 'all' || reread.has(path) || !fileTexts.has(path)) {
         const text = await host.readFile(path)
         if (text === undefined)
@@ -375,7 +387,7 @@ export function createProject(options: CreateProjectOptions): Project {
         else
           fileTexts.set(path, text)
       }
-    }))
+    })
     namespaced = config.namespace.separator !== '.' && candidates.some(c => c.namespace !== undefined)
     await Promise.all(candidates.map(candidate => registry.loadFormatFor(candidate.path, candidate.format)))
     for (const candidate of candidates) {
@@ -467,7 +479,7 @@ export function createProject(options: CreateProjectOptions): Project {
   async function scanPaths(paths: readonly string[]): Promise<void> {
     const pending: SourceFile[] = []
     const cacheKeys = new Map<string, string>()
-    await Promise.all(paths.map(async (path) => {
+    await forEachLimit(paths, ioConcurrency, async (path) => {
       const text = await host.readFile(path)
       if (text === undefined) {
         files.delete(path)
@@ -496,7 +508,7 @@ export function createProject(options: CreateProjectOptions): Project {
         text,
         extension: extensionOf(path),
       })
-    }))
+    })
 
     const store = (file: SourceFile, result: ScanResult | undefined, error?: X18nError): void => {
       files.set(file.path, {
@@ -510,22 +522,20 @@ export function createProject(options: CreateProjectOptions): Project {
         void host.cache.set(cacheKey, JSON.stringify(result))
     }
 
-    for (let i = 0; i < pending.length; i += scanConcurrency) {
-      await Promise.all(pending.slice(i, i + scanConcurrency).map(async (file) => {
-        try {
-          store(file, await scanOne(file))
-        }
-        catch (error) {
-          store(file, undefined, errors.X18N3001({
-            path: file.path,
-            reason: error instanceof Error
-              ? error.message
-              : String(error),
-            cause: error,
-          }))
-        }
-      }))
-    }
+    await forEachLimit(pending, ioConcurrency, async (file) => {
+      try {
+        store(file, await scanOne(file))
+      }
+      catch (error) {
+        store(file, undefined, errors.X18N3001({
+          path: file.path,
+          reason: error instanceof Error
+            ? error.message
+            : String(error),
+          cause: error,
+        }))
+      }
+    })
   }
 
   async function scanAll(): Promise<void> {
