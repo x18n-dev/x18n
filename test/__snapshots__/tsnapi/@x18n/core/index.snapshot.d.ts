@@ -345,6 +345,8 @@ export interface LocaleInfo {
   readonly flag: string | undefined;
   readonly pluralCategories: readonly Intl.LDMLPluralRule[];
   readonly ordinalCategories: readonly Intl.LDMLPluralRule[];
+  readonly requiredPluralCategories: readonly Intl.LDMLPluralRule[];
+  readonly requiredOrdinalCategories: readonly Intl.LDMLPluralRule[];
 }
 export interface Location {
   readonly path: string;

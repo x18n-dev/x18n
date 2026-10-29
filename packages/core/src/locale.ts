@@ -111,6 +111,18 @@ export function parseLocaleInfo(code: LocaleCode): LocaleInfo {
       ? pluralOrder.filter(category => found.includes(category))
       : ['other']
   }
+  // Required vs allowed categories, after i18next-cli (MIT), src/utils/plural-rules.ts.
+  // Required: `other` and what a whole number below 1,000,000 selects. CLDR integer rules read small
+  // values and n % 10, % 100 and % 1000, so 0..1999 meets the same categories.
+  const required = (type: Intl.PluralRuleType): Intl.LDMLPluralRule[] => {
+    const found = new Set<Intl.LDMLPluralRule>(['other'])
+    if (language && safe(() => Intl.PluralRules.supportedLocalesOf([tag]).length > 0)) {
+      const rules = new Intl.PluralRules(tag, { type })
+      for (let n = 0; n < 2000; n++)
+        found.add(rules.select(n))
+    }
+    return pluralOrder.filter(category => found.has(category))
+  }
   // Traditional Chinese is written mostly in Taiwan, Hong Kong and Macau; a bare `zh-Hant` is not China's.
   const flagRegion = region ?? (language === 'zh' && script === 'Hant'
     ? 'TW'
@@ -125,6 +137,8 @@ export function parseLocaleInfo(code: LocaleCode): LocaleInfo {
       : undefined,
     pluralCategories: categories('cardinal'),
     ordinalCategories: categories('ordinal'),
+    requiredPluralCategories: required('cardinal'),
+    requiredOrdinalCategories: required('ordinal'),
   }
 }
 

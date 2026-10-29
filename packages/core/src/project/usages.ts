@@ -132,8 +132,14 @@ export function suppressedRanges(text: string): TextRange[] {
   return ranges
 }
 
-/** The plural categories of a locale's language: Japanese has only `other`. */
-export function categoriesOf(info: LocaleInfo, type: Intl.PluralRuleType): readonly Intl.LDMLPluralRule[] {
+/** The plural categories of a locale's language: Japanese has only `other`. `required` keeps those whole numbers select. */
+export function categoriesOf(info: LocaleInfo, type: Intl.PluralRuleType, required = false): readonly Intl.LDMLPluralRule[] {
+  if (required) {
+    const allowed = categoriesOf(info, type)
+    return (type === 'ordinal'
+      ? info.requiredOrdinalCategories
+      : info.requiredPluralCategories).filter(category => category === 'other' || allowed.includes(category))
+  }
   return type === 'ordinal'
     ? info.ordinalCategories
     : info.pluralCategories

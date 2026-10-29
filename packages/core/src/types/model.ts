@@ -47,9 +47,13 @@ export interface LocaleInfo {
   readonly region: string | undefined
   readonly displayName: string | undefined
   readonly flag: string | undefined
+  /** The plural categories a message may have. */
   readonly pluralCategories: readonly Intl.LDMLPluralRule[]
   /** Categories of ordinal numbers (1st, 2nd), which differ from the cardinal ones. */
   readonly ordinalCategories: readonly Intl.LDMLPluralRule[]
+  /** The plural categories a message must have: those whole numbers select. French may leave out `many`, from 1,000,000 only. */
+  readonly requiredPluralCategories: readonly Intl.LDMLPluralRule[]
+  readonly requiredOrdinalCategories: readonly Intl.LDMLPluralRule[]
 }
 
 /** Embedded resource inside a file, for example a Vue `<i18n>` block. */

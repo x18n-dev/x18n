@@ -132,10 +132,10 @@ export function createProject(options: CreateProjectOptions): Project {
     return info
   }
 
-  /** Whether `locale` needs `key`: not a plural form of a category its language lacks. */
+  /** Whether `locale` needs `key`: not a plural form of a category its language lacks or may leave out. */
   function needs(key: KeyString, locale: LocaleCode): boolean {
     const form = formOf(key)
-    return !form || categoriesOf(localeInfo(locale), form.type).includes(form.category)
+    return !form || categoriesOf(localeInfo(locale), form.type, true).includes(form.category)
   }
 
   // ---- Reviews ----

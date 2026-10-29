@@ -67,7 +67,7 @@ function levelOf(setting: CheckSetting | undefined): { level: Severity | 'off', 
 
 /**
  * The keys a locale needs: the reference keys, with plural forms swapped for the categories of the locale's
- * language. Forms the language lacks (`item_zero` in English) count only where they exist.
+ * language. Forms the language lacks or may leave out (`item_zero` in English, `item_many` in French) count only where they exist.
  */
 function expectedKeys(state: AnalyzerState, options: AnalyzerOptions, reference: readonly KeyString[], locale: LocaleCode): KeyString[] {
   const info = options.localeInfo(locale)
@@ -76,7 +76,7 @@ function expectedKeys(state: AnalyzerState, options: AnalyzerOptions, reference:
     const form = options.formOf(key)
     if (!form || state.messages.get(key)?.has(locale))
       keys.add(key)
-    form && categoriesOf(info, form.type).forEach(category => keys.add(form.keyOf(category)))
+    form && categoriesOf(info, form.type, true).forEach(category => keys.add(form.keyOf(category)))
   }
   return [...keys].sort()
 }

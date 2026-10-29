@@ -18,6 +18,7 @@ interface LocaleInfo {
   readonly displayName: string | undefined // 'Chinese (China)', via Intl.DisplayNames
   readonly flag: string | undefined
   readonly pluralCategories: readonly Intl.LDMLPluralRule[] // used by prompts and typegen
+  readonly requiredPluralCategories: readonly Intl.LDMLPluralRule[] // `other` and what whole numbers select, used by coverage
 }
 
 /** Canonical key: optional namespace plus path segments. Segments may contain dots when the key style is flat. */

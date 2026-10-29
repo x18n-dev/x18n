@@ -391,6 +391,21 @@ describe('tier 1 presets', () => {
     expect(project.lookup('translation:place', 'en')?.value).toBe('{{count}}th')
   })
 
+  it('i18next: a locale needs only the plural categories whole numbers select', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('i18next'),
+      'locales/en/translation.json': json({ apple_one: 'an apple', apple_other: 'apples' }),
+      'locales/fr/translation.json': json({ apple_one: 'une pomme', apple_other: 'pommes' }),
+      'locales/es/translation.json': json({ apple_one: 'una manzana', apple_other: 'manzanas', apple_many: 'de manzanas' }),
+      'src/a.ts': `i18next.t('apple', { count })`,
+    })
+    const missing = Object.fromEntries(project.analyze().coverage.map(c => [c.locale, c.missing]))
+    // French `many` starts at 1,000,000: it is allowed, not required.
+    expect(missing).toEqual({ en: [], es: [], fr: [] })
+    expect(project.get('translation:apple_many')?.missing).toEqual([])
+    expect(project.analyze().diagnostics.filter(d => d.code === 'missing-translation')).toEqual([])
+  })
+
   it('i18next: each locale needs the plural categories of its own language', async () => {
     const { project } = await createTestProject({
       'package.json': pkg('i18next'),

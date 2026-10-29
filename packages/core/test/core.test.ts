@@ -71,6 +71,51 @@ describe('locale info', () => {
     expect(parseLocaleInfo('en').ordinalCategories).toEqual(['one', 'two', 'few', 'other'])
     expect(parseLocaleInfo('not a code')).toMatchObject({ code: 'not a code', language: undefined })
   })
+
+  it('requires only the plural categories whole numbers select', () => {
+    const categories = (code: string): [readonly string[], readonly string[]] => {
+      const info = parseLocaleInfo(code)
+      return [info.pluralCategories, info.requiredPluralCategories]
+    }
+    expect(categories('en')).toEqual([
+      ['one', 'other'],
+      ['one', 'other'],
+    ])
+    // French `many` starts at 1,000,000; Czech `many` is for fractions.
+    expect(categories('fr')).toEqual([
+      ['one', 'many', 'other'],
+      ['one', 'other'],
+    ])
+    expect(categories('cs')).toEqual([
+      ['one', 'few', 'many', 'other'],
+      ['one', 'few', 'other'],
+    ])
+    expect(categories('ru')).toEqual([
+      ['one', 'few', 'many', 'other'],
+      ['one', 'few', 'many', 'other'],
+    ])
+    expect(categories('ar')).toEqual([
+      [
+        'zero',
+        'one',
+        'two',
+        'few',
+        'many',
+        'other',
+      ],
+      [
+        'zero',
+        'one',
+        'two',
+        'few',
+        'many',
+        'other',
+      ],
+    ])
+    expect(parseLocaleInfo('xx').requiredPluralCategories).toEqual(['other'])
+    expect(parseLocaleInfo('not a code').requiredPluralCategories).toEqual(['other'])
+    expect(parseLocaleInfo('en').requiredOrdinalCategories).toEqual(['one', 'two', 'few', 'other'])
+  })
 })
 
 describe('isMessageTree', () => {
