@@ -128,7 +128,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `unused-key` | warning | A key with no usage, after `keysInUse`, derived keys and dynamic prefixes. Skipped when the project has no scanners. |
 | `locale-code-conflict` | warning | Two locale codes that differ only in spelling (`zh_CN` and `zh-CN`). |
 | `dynamic-key` | off | A fully dynamic key (`t(key)`) that no check can follow. |
-| `identical-to-source` | off | Target equals source (often untranslated copy). |
+| `identical-to-source` | off | Target equals source (often untranslated copy). Skips locales of the source language, values without letters once placeholders and tags are removed, URLs, e-mail addresses, short all-caps words and `doNotTranslate` glossary terms. Off: cognates ("Plugins" in German) still match. |
 | `key-style` | off | Key does not match a naming rule (options: `case`, `pattern`). |
 | `hard-string` | off | Detected hard-coded string; on with `extract.autoDetect` ([11-extraction.md](./11-extraction.md)). |
 | `glossary` | off | A glossary term is translated differently from the glossary. |

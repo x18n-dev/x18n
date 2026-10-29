@@ -248,6 +248,15 @@ export default defineConfig({
 
 In CI, fetch the full history: a shallow clone (the \`actions/checkout\` default) reports nothing. Set \`fetch-depth: 0\`. Limit the walk with \`history: { git: { maxDepth, since } }\`, or turn history off with \`history: false\`. \`x18n prompt translate --to <locale> --stale\` adds stale translations to the prompt, with the source text from when they last changed.`,
   'review-changes-requested': 'The check reports each message whose open review comments end in a change request, at the message in the reviewed locale. The quick fix resolves the request. A later approval by anyone clears it too. See [Reviews](/guide/reviews).',
+  'identical-to-source': `A target value equal to the source value is often an untranslated copy. The check skips:
+
+- locales of the source locale's language (\`en-GB\` and \`en_US\` against \`en\`),
+- values with no letters once placeholders, nesting references and tags are removed (\`{{count}}\`, \`100 %\`, \`<0/>\`),
+- URLs and e-mail addresses,
+- short all-caps words of up to five letters (\`OK\`, \`FAQ\`),
+- \`doNotTranslate\` terms of the \`glossary\`, such as brand names.
+
+Words that are the same in both languages, such as "Plugins" in German, are still reported. \`ignoreKeys\` removes such keys, from every check.`,
   'dynamic-key': 'A fully dynamic key, such as `t(key)`, has no static prefix. No check can follow it. Turn this check on to find such usages.',
 }
 

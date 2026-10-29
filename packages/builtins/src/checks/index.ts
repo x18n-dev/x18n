@@ -1,5 +1,5 @@
-import type { Check, DiagnosticInput, GlossaryEntry, KeyString, MessageChange, Plugin } from '@x18n/core'
-import { createPlaceholderComparer, localeSpellingKey } from '@x18n/core'
+import type { Check, DiagnosticInput, GlossaryEntry, KeyString, MessageChange, Placeholder, Plugin } from '@x18n/core'
+import { createPlaceholderComparer, localeSpellingKey, parseLocaleInfo } from '@x18n/core'
 import { extractableHardStrings } from '../extractors'
 
 function list(items: readonly string[]): string {
@@ -347,15 +347,36 @@ export const dynamicKey: Check = {
   },
 }
 
+// Skip rules after i18next-cli (MIT), status.checkIdentical: https://github.com/i18next/i18next-cli
+/** A value that reads the same in every language: no letters once placeholders and tags are removed, a URL, an e-mail address, a short all-caps word or a do-not-translate glossary term. */
+function staysTheSame(value: string, placeholders: readonly Placeholder[], terms: ReadonlySet<string>): boolean {
+  const chars = value.split('')
+  // Placeholders with sub-messages (`{count, plural, one {# item} other {# items}}`) keep their text.
+  for (const placeholder of placeholders) {
+    if (!/[^{]\{/.test(placeholder.text))
+      chars.fill(' ', placeholder.range.start, placeholder.range.end)
+  }
+  const text = chars.join('').replace(/<[^>]*>/g, ' ').trim()
+  const letters = text.match(/\p{L}/gu)?.length ?? 0
+  if (!letters || terms.has(text.toLowerCase()))
+    return true
+  if (/^(?:https?:\/\/|www\.|mailto:)\S*$|^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/i.test(text))
+    return true
+  return letters <= 5 && !/\p{Ll}/u.test(text)
+}
+
 export const identicalToSource: Check = {
   id: 'identical-to-source',
   defaultSeverity: 'off',
-  description: 'A target value that equals the source value.',
+  description: 'A target value that equals the source value, except values that stay the same in every language.',
   * run(ctx) {
+    const language = parseLocaleInfo(ctx.sourceLocale).language
+    const skipped = new Set(ctx.locales.filter(locale => locale === ctx.sourceLocale || (language !== undefined && parseLocaleInfo(locale).language === language)))
+    const terms = new Set(ctx.config.glossary.filter(entry => entry.doNotTranslate).map(entry => entry.term.toLowerCase()))
     for (const message of ctx.messages()) {
-      if (message.locale === ctx.sourceLocale || typeof message.value !== 'string' || message.value === '')
+      if (skipped.has(message.locale) || typeof message.value !== 'string' || message.value === '')
         continue
-      if (ctx.message(message.key, ctx.sourceLocale)?.value === message.value)
+      if (ctx.message(message.key, ctx.sourceLocale)?.value === message.value && !staysTheSame(message.value, ctx.placeholders(message.value), terms))
         yield { key: message.key, locale: message.locale, message: `"${message.key}" in ${message.locale} is the same as in ${ctx.sourceLocale}.` }
     }
   },
