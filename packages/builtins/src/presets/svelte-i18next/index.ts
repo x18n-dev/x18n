@@ -1,5 +1,6 @@
 import type { Preset } from '@x18n/core'
 import { createLibraryPlugin } from '@x18n/core'
+import { i18nextCliPlugin } from '../i18next/cli-config'
 import { i18nextPlugin } from '../i18next/plugin'
 
 export function svelteI18next(): Preset {
@@ -28,6 +29,7 @@ export function svelteI18next(): Preset {
           },
         ],
       }),
+      i18nextCliPlugin,
     ],
   }
 }

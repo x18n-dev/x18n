@@ -679,6 +679,131 @@ describe('namespaces', () => {
     expect(project.analyze().undefinedUsages.map(u => u.key)).toEqual(['event:nope'])
   })
 
+  const i18nextCliConfig = [
+    `import { defineConfig } from 'i18next-cli'`,
+    `export default defineConfig({`,
+    `  locales: ['de', 'en'],`,
+    `  extract: {`,
+    `    input: ['src/**/*.{ts,tsx}'],`,
+    `    output: 'public/locales/{{language}}/{{namespace}}.json',`,
+    `    primaryLanguage: 'en',`,
+    `    defaultNS: 'app',`,
+    `    fallbackNS: 'common',`,
+    `    nsSeparator: '|',`,
+    `    keySeparator: false,`,
+    `    functions: ['t', '*.t', 'translate'],`,
+    `    transComponents: ['Trans', 'Message'],`,
+    `    useTranslationNames: ['useTranslation', { name: 'useScoped', nsArg: 1 }],`,
+    `    ignore: ['src/legacy/**'],`,
+    `  },`,
+    `})`,
+  ].join('\n')
+
+  it('react-i18next: reads the i18next-cli config', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('react-i18next', 'i18next'),
+      'i18next.config.ts': i18nextCliConfig,
+      'public/locales/en/app.json': json({ 'title': 'App', 'menu.open': 'Open' }),
+      'public/locales/en/common.json': json({ save: 'Save' }),
+      'public/locales/en/pages/home.json': json({ hello: 'Hello' }),
+      'public/locales/de/app.json': json({ title: 'App' }),
+      'public/locales/fr/app.json': json({ title: 'App' }),
+      'src/App.tsx': [
+        `const { t } = useTranslation(); t('menu.open'); t('save'); t('pages/home|hello')`,
+        `translate('title'); <Message i18nKey="save" />`,
+        `function Home() { const { t } = useScoped('x', 'pages/home'); return t('hello') }`,
+      ].join('\n'),
+      'src/legacy/old.ts': `translate('gone')`,
+    })
+    expect(project.config).toMatchObject({
+      sourceLocale: 'en',
+      locales: ['de', 'en'],
+      keyStyle: 'flat',
+      resources: [
+        { pattern: 'public/locales/{locale}/{namespaces}.json' },
+      ],
+      namespace: {
+        separator: '|',
+        default: 'app',
+        fallback: ['common'],
+      },
+    })
+    expect(project.config.usage.exclude).toContain('src/legacy/**')
+    expect(project.config.usage.calls.filter(spec => spec.callee === 'useTranslation')).toHaveLength(1)
+    expect(project.config.usage.calls.find(spec => spec.callee === 'translate')?.params).toMatchObject({
+      arg: [1, 2],
+    })
+    expect(project.usages().map(m => m.usage.key)).toEqual([
+      'app:menu.open',
+      'common:save',
+      'pages/home:hello',
+      'app:title',
+      'common:save',
+      'pages/home:hello',
+    ])
+    expect(project.analyze().undefinedUsages).toEqual([])
+  })
+
+  it('i18next: the x18n config wins over the i18next-cli config', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('i18next'),
+      'i18next.config.ts': i18nextCliConfig,
+      'locales/de/common.json': json({ save: 'Speichern' }),
+    }, {
+      sourceLocale: 'de',
+      locales: ['de'],
+      keyStyle: 'nested',
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+      namespace: { default: 'common', separator: ':' },
+    })
+    expect(project.config).toMatchObject({
+      sourceLocale: 'de',
+      locales: ['de'],
+      keyStyle: 'nested',
+      resources: [
+        { pattern: 'locales/{locale}/{namespace}.json' },
+      ],
+      namespace: {
+        separator: ':',
+        default: 'common',
+        fallback: ['common'],
+      },
+    })
+  })
+
+  it('i18next: values of the i18next-cli config that are not literals are skipped', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('i18next'),
+      'i18next.config.js': [
+        `const locales = process.env.LOCALES.split(',')`,
+        `const config = {`,
+        `  locales,`,
+        `  extract: {`,
+        `    output: (language, namespace) => \`locales/\${language}/\${namespace}.json\`,`,
+        `    primaryLanguage: process.env.PRIMARY,`,
+        `    defaultNS: false,`,
+        `    fallbackNS: [getFallback(), 'shared'],`,
+        `    functions: [...names, \`tr\`],`,
+        `    ...more,`,
+        `  },`,
+        `}`,
+        `module.exports = config`,
+      ].join('\n'),
+      'locales/en/translation.json': json({ a: 'A' }),
+    })
+    expect(project.config).toMatchObject({
+      sourceLocale: 'en',
+      locales: undefined,
+      resources: [],
+      namespace: {
+        default: undefined,
+        fallback: ['shared'],
+      },
+    })
+  })
+
   it('namespace.byFile names the namespace of keys per source folder', async () => {
     const { project } = await createTestProject({
       'locales/en/a.json': json({ productName: 'A' }),

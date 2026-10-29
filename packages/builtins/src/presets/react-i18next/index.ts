@@ -2,6 +2,7 @@ import type { Preset } from '@x18n/core'
 import { createLibraryPlugin } from '@x18n/core'
 // Detection and syntax adapted from i18n-ally (MIT), src/frameworks/*
 import { regexScopes } from '../../scanners/regex-scopes'
+import { i18nextCliPlugin } from '../i18next/cli-config'
 import { i18nextArgs, i18nextPlugin } from '../i18next/plugin'
 import { scriptExtensions } from '../shared'
 
@@ -50,6 +51,7 @@ export function reactI18next(): Preset {
       }),
       // `withTranslation('ns', { keyPrefix })(Component)` passes `t` through props, usually below the component.
       regexScopes('\\bwithTranslation\\(\\s*(?:\\[?\\s*[\'"`](?<namespace>[^\'"`]+)[\'"`])?(?:[^)]*?\\bkeyPrefix\\s*:\\s*[\'"`](?<keyPrefix>[^\'"`]+)[\'"`])?', 'react-i18next-hoc', { wholeFile: true, extensions: scriptExtensions }),
+      i18nextCliPlugin,
     ],
   }
 }

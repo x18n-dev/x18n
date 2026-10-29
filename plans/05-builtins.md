@@ -77,7 +77,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `vue-i18n` | vue-i18n, vuex-i18n, @intlify/*, petite-vue-i18n | `$t`, `t`, `tc`, `te`, `d`, `n`, `v-t`, `<i18n-t>`, `useI18n` factory, linked messages `@:key`, `sfc-blocks` | 1 |
 | `nuxt-i18n` | @nuxtjs/i18n | `vue-i18n` + Nuxt `langDir` from `nuxt.config` when static, `i18n/locales` default | 1 |
 | `nuxt-i18n-micro` | nuxt-i18n-micro | `$t`, `$ts`, `$tc`, `$has`, `useI18n` / `useNuxtApp` factories, `translationDir` from `nuxt.config` (`locales` default), page files as `pages.{route}` keys that a page component's usages prefer over global keys | 2 |
-| `i18next` | i18next | `t`, the selector form `t($ => $.a.b)`, namespaces `ns:key` (folder namespaces keep `/`), plural and context suffixes, `{{x}}` placeholders | 1 |
+| `i18next` | i18next | `t`, the selector form `t($ => $.a.b)`, namespaces `ns:key` (folder namespaces keep `/`), plural and context suffixes, `{{x}}` placeholders; reads an i18next-cli `i18next.config.*` statically (locales, output pattern, namespaces, extra calls, ignore) | 1 |
 | `react-i18next` | react-i18next, next-i18next | `i18next` + `useTranslation(ns)` factory, `<Trans i18nKey>`, `<Translation>` render prop, `withTranslation(ns)` for the whole file, `keyPrefix` on all three factories | 1 |
 | `next-intl` | next-intl | `useTranslations(ns)` / `getTranslations` factories, `t.rich`, `t.markup`, `t.raw`, ICU placeholders | 1 |
 | `react-intl` | react-intl, @formatjs/* | `formatMessage({ id })`, `<FormattedMessage id>`, `defineMessages`, ICU | 1 |
