@@ -120,6 +120,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `missing-key` | error | Invalid key: a usage whose key is not defined in the source locale. |
 | `invalid-syntax` | error | Message syntax errors (ICU, vue-i18n linked messages, i18next nesting). |
 | `placeholder-mismatch` | error | Target value placeholders differ from the source value. |
+| `param-mismatch` | warning | A translate call whose params (`t('greet', { name })`) differ from the placeholders of the source message. Skips calls whose params are not a plain object literal. |
 | `key-conflict` | error | A key is both a leaf and a parent (`a` and `a.b`), or is duplicated across files of the same locale and namespace. |
 | `stale-translation` | warning | A target message that last changed before its source message, by the history providers ([19-history.md](./19-history.md)). |
 | `missing-translation` | warning | Untranslated: a source-locale key that target locales lack. One diagnostic per key, at the source entry, listing the missing locales. |

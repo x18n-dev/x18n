@@ -25,7 +25,7 @@ export const missingKey: Check = {
                 type: 'set',
                 key: usage.key!,
                 locale: ctx.sourceLocale,
-                value: '',
+                value: usage.defaultValue ?? '',
               },
             ],
           },
@@ -308,6 +308,47 @@ export const placeholderMismatch: Check = {
   },
 }
 
+/** After the interpolation check of i18next-cli (MIT), src/linter.ts: https://github.com/i18next/i18next-cli */
+export const paramMismatch: Check = {
+  id: 'param-mismatch',
+  defaultSeverity: 'warning',
+  description: 'A translate call whose params differ from the placeholders of the source message.',
+  * run(ctx) {
+    const options = new Set(ctx.config.usage.calls.flatMap(call => call.params?.options ?? []))
+    const references = new Set(ctx.placeholderSyntaxes.filter(syntax => syntax.reference).map(syntax => syntax.id))
+    for (const usage of ctx.usages()) {
+      if (!usage.params || usage.key === undefined || usage.dynamic !== false)
+        continue
+      const source = ctx.message(usage.key, ctx.sourceLocale)
+      if (typeof source?.value !== 'string')
+        continue
+      const found = ctx.placeholders(source.value)
+      // `{{author.name}}` reads the `author` param.
+      const used = new Set(found.filter(p => !references.has(p.syntax)).map(p => p.name.split('.')[0]!))
+      const missing = [...used].filter(name => !usage.params!.includes(name))
+      // Unused params count only in a message with placeholders, and without nested messages (`$t(key)`), which may use any param.
+      const extra = used.size === 0 || found.some(p => references.has(p.syntax))
+        ? []
+        : usage.params.filter(name => !used.has(name) && !options.has(name))
+      if (missing.length || extra.length) {
+        const parts = [
+          missing.length
+            ? `missing ${list(missing)}`
+            : '',
+          extra.length
+            ? `unused ${list(extra)}`
+            : '',
+        ].filter(Boolean)
+        yield {
+          key: usage.key,
+          location: { path: usage.path, range: usage.range },
+          message: `The params of "${usage.key}" differ from its placeholders in ${ctx.sourceLocale}: ${parts.join('; ')}.`,
+        }
+      }
+    }
+  },
+}
+
 export const invalidSyntax: Check = {
   id: 'invalid-syntax',
   defaultSeverity: 'error',
@@ -453,6 +494,7 @@ export const allChecks: readonly Check[] = [
   missingKey,
   invalidSyntax,
   placeholderMismatch,
+  paramMismatch,
   keyConflict,
   missingTranslation,
   staleTranslation,

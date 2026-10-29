@@ -31,6 +31,7 @@ A severity is `error`, `warning`, `info`, `hint` or `off`. `strict: true` (or `x
 | [missing-key](/checks/missing-key) | `error` | A usage whose key is not defined in the source locale. |
 | [invalid-syntax](/checks/invalid-syntax) | `error` | Message syntax errors (ICU, linked messages, nesting). |
 | [placeholder-mismatch](/checks/placeholder-mismatch) | `error` | Target value placeholders differ from the source value. |
+| [param-mismatch](/checks/param-mismatch) | `warning` | A translate call whose params differ from the placeholders of the source message. |
 | [key-conflict](/checks/key-conflict) | `error` | A key that is both a leaf and a parent, or is duplicated across files of one locale. |
 | [missing-translation](/checks/missing-translation) | `warning` | A source-locale key that target locales lack, or a plural form their language needs. One diagnostic per key, at the source entry. |
 | [stale-translation](/checks/stale-translation) | `warning` | A translation that last changed before its source message, by the history providers (git). |

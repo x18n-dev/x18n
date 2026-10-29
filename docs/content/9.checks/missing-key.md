@@ -11,6 +11,8 @@ The check is on by default, with the severity `error`.
 
 Usages with a dynamic key are not reported. A usage with a static prefix, such as ``t(`pages.${id}.title`)``, is a prefix usage: it makes every key under `pages` count as used, and it is never a missing key.
 
+The fix adds the key with the default value written in the call (`t('save', 'Save')` or `t('save', { defaultValue: 'Save' })` with i18next), else with an empty value.
+
 ## Configure
 
 Change the severity, or turn the check off, in `checks`:

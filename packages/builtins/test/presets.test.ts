@@ -988,6 +988,68 @@ describe('placeholder-mismatch', () => {
   })
 })
 
+describe('param-mismatch', () => {
+  it('compares the params of i18next calls with the placeholders of the source message', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('react-i18next'),
+      'locales/en/translation.json': json({
+        greet: 'Hello {{name}}',
+        author: 'By {{author.name}}',
+        plain: 'Hello',
+        nested: '$t(greet)',
+        place_ordinal_one: '{{count}}st',
+        items: '{{count}} items',
+      }),
+      'src/a.tsx': [
+        `const { t } = useTranslation()`,
+        `t('greet', { nam: 1 })`,
+        `t('greet', { name, count: 1, ns: 'translation', defaultValue: 'Hi', context: 'x' })`,
+        `t('author', { author })`,
+        `t('greet', opts)`,
+        `t('greet', { ...opts })`,
+        `t('greet', { [k]: 1 })`,
+        `t('greet', 'Hello {{name}}', { name })`,
+        `t('greet')`,
+        `t('plain', { name })`,
+        `t('nested', { name })`,
+        `t('place', { count: 1, ordinal: true })`,
+        `t('items', { count })`,
+      ].join('\n'),
+    })
+    const problems = project.analyze().diagnostics.filter(d => d.code === 'param-mismatch')
+    expect(problems.map(d => [d.message, d.severity, d.location?.path])).toEqual([
+      ['The params of "translation:greet" differ from its placeholders in en: missing name; unused nam.', 'warning', 'src/a.tsx'],
+      ['The params of "translation:greet" differ from its placeholders in en: missing name.', 'warning', 'src/a.tsx'],
+    ])
+    expect(problems.map(d => project.usages({ key: d.key }).find(m => m.usage.range.start === d.location?.range?.start)?.usage.params)).toEqual([
+      ['nam'],
+      [],
+    ])
+  })
+
+  it('reads the default value of a call, which the missing-key fix writes', async () => {
+    const { project } = await createTestProject({
+      'package.json': pkg('i18next'),
+      'locales/en/translation.json': json({}),
+      'src/a.ts': `i18next.t('a', 'Default A'); i18next.t('b', { defaultValue: 'Default B', n }); i18next.t('c', 'Default C', { n }); i18next.t('d', { defaultValue: x })`,
+    })
+    expect(project.usages().map(m => m.usage.defaultValue)).toEqual([
+      'Default A',
+      'Default B',
+      'Default C',
+      undefined,
+    ])
+    for (const diagnostic of project.analyze().diagnostics.filter(d => d.code === 'missing-key'))
+      await project.apply(project.plan(diagnostic.fixes[0]!.ops))
+    expect(['a', 'b', 'c', 'd'].map(key => project.message(`translation:${key}`, 'en')?.value)).toEqual([
+      'Default A',
+      'Default B',
+      'Default C',
+      '',
+    ])
+  })
+})
+
 describe('vue-i18n <i18n src> blocks', () => {
   it('reads every locale of the referenced file and writes edits to it', async () => {
     const { project, files } = await createTestProject({

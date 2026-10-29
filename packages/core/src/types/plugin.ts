@@ -145,6 +145,10 @@ export interface UsageCandidate {
   readonly range: TextRange
   /** Range of the whole call that holds the key, when the scanner knows it. */
   readonly expression?: TextRange | undefined
+  /** Names of the params the call passes, when they are all static. */
+  readonly params?: readonly string[] | undefined
+  /** The default value the call writes in code. */
+  readonly defaultValue?: string | undefined
   readonly kind: UsageKind
   readonly dynamic: false | 'prefix' | 'unknown'
   readonly namespace?: string | undefined

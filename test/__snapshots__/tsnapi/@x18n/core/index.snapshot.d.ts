@@ -36,6 +36,8 @@ export interface CallSpec {
   readonly key?: number | ArgSource | undefined;
   readonly namespace?: ArgSource | string | undefined;
   readonly keyPrefix?: ArgSource | undefined;
+  readonly params?: ParamsSource | undefined;
+  readonly defaultValue?: readonly ArgSource[] | undefined;
   readonly factory?: boolean | undefined;
   readonly returns?: readonly string[] | undefined;
   readonly types?: readonly string[] | undefined;
@@ -401,6 +403,10 @@ export interface OverlayHost extends Host {
   readonly setOverlay: (_: string, _: string) => void;
   readonly clearOverlay: (_: string) => void;
   readonly hasOverlay: (_: string) => boolean;
+}
+export interface ParamsSource {
+  readonly arg: number | readonly number[];
+  readonly options?: readonly string[] | undefined;
 }
 export interface ParseResult {
   readonly tree: MessageTree;
@@ -978,6 +984,8 @@ export interface Usage {
   readonly path: string;
   readonly range: TextRange;
   readonly expression: TextRange | undefined;
+  readonly params?: readonly string[] | undefined;
+  readonly defaultValue?: string | undefined;
   readonly scanner: string;
   readonly kind: UsageKind;
   readonly dynamic: false | "prefix" | "unknown";
@@ -989,6 +997,8 @@ export interface UsageCandidate {
   readonly raw: string;
   readonly range: TextRange;
   readonly expression?: TextRange | undefined;
+  readonly params?: readonly string[] | undefined;
+  readonly defaultValue?: string | undefined;
   readonly kind: UsageKind;
   readonly dynamic: false | "prefix" | "unknown";
   readonly namespace?: string | undefined;

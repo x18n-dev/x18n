@@ -85,6 +85,16 @@ export function createUsageResolver(
         path,
         range: candidate.range,
         expression: candidate.expression,
+        ...candidate.params
+          ? {
+              params: candidate.params,
+            }
+          : {},
+        ...candidate.defaultValue === undefined
+          ? {}
+          : {
+              defaultValue: candidate.defaultValue,
+            },
         scanner,
         kind: candidate.kind,
         dynamic: candidate.dynamic,

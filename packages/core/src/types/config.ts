@@ -8,6 +8,14 @@ export interface ArgSource {
   readonly property?: string | undefined
 }
 
+/** Where the params of a call are: the static keys of an object literal argument. */
+export interface ParamsSource {
+  /** Arguments that may hold the params object, in order; string arguments are skipped (`t(key, 'Default', { n })`). */
+  readonly arg: number | readonly number[]
+  /** Option names the library reads itself, which a message need not use (`ns`, `defaultValue`). */
+  readonly options?: readonly string[] | undefined
+}
+
 /** Data that drives the AST scanners: which calls are translate calls and where the key is. */
 export interface CallSpec {
   /** Function or member path: 't', '$t', 'i18n.t', 'intl.formatMessage'. */
@@ -20,6 +28,10 @@ export interface CallSpec {
   readonly namespace?: ArgSource | string | undefined
   /** Where a key prefix comes from (`keyPrefix` option, or next-intl `useTranslations('a.b')`). */
   readonly keyPrefix?: ArgSource | undefined
+  /** Where the params passed to the message are. For factories, those of the returned functions. */
+  readonly params?: ParamsSource | undefined
+  /** Where a default value written in code comes from; the first string found wins. For factories, that of the returned functions. */
+  readonly defaultValue?: readonly ArgSource[] | undefined
   /** The callee is a factory that returns the translate function, for example `useI18n()` returning `{ t }`. */
   readonly factory?: boolean | undefined
   /** For factories: the names of the returned translate functions. Default `['t']`. */

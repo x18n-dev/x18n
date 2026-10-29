@@ -6,6 +6,7 @@ import type {
   ExtractTemplate,
   GlossaryEntry,
   NamespaceOptions,
+  ParamsSource,
   RegexScannerSpec,
   ResourceSpec,
   SerializableConfig,
@@ -41,6 +42,14 @@ const argSource = v.strictObject({
   property: v.optional(v.string()),
 }) satisfies v.GenericSchema<ArgSource>
 
+const paramsSource = v.strictObject({
+  arg: v.union([
+    v.number(),
+    v.array(v.number()),
+  ]),
+  options: v.optional(strings),
+}) satisfies v.GenericSchema<ParamsSource>
+
 const callSpec = v.strictObject({
   callee: v.union([
     v.string(),
@@ -56,6 +65,8 @@ const callSpec = v.strictObject({
     v.string(),
   ])),
   keyPrefix: v.optional(argSource),
+  params: v.optional(paramsSource),
+  defaultValue: v.optional(v.array(argSource)),
   factory: v.optional(v.boolean()),
   returns: v.optional(strings),
   types: v.optional(strings),

@@ -165,7 +165,8 @@ const configTree: ConfigNode = {
         calls: {
           iface: 'CallSpec',
           children: {
-            namespace: { iface: 'ArgSource', caption: 'An `ArgSource`, as in `key`, `namespace` and `keyPrefix`' },
+            namespace: { iface: 'ArgSource', caption: 'An `ArgSource`, as in `key`, `namespace`, `keyPrefix` and `defaultValue`' },
+            params: { iface: 'ParamsSource', caption: 'A `ParamsSource`, as in `params`' },
           },
         },
         regex: { iface: 'RegexScannerSpec' },

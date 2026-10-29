@@ -18,6 +18,7 @@ export var keyStyle /* const */
 export var localeCodeConflict /* const */
 export var missingKey /* const */
 export var missingTranslation /* const */
+export var paramMismatch /* const */
 export var placeholderMismatch /* const */
 export var redundantTranslation /* const */
 export var reviewChangesRequested /* const */

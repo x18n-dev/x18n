@@ -136,6 +136,47 @@ describe('js scanner', () => {
     ])
   })
 
+  it('reads the params and default value of a call where the spec says', async () => {
+    const spec: CallSpec = {
+      callee: 'tx',
+      params: {
+        arg: [1, 2],
+      },
+      defaultValue: [
+        { arg: 1 },
+        { arg: 1, property: 'defaultValue' },
+      ],
+    }
+    const code = `tx('a'); tx('b', { n, 'm': 1, f() {} }); tx('c', 'C', { n }); tx('d', { defaultValue: 'D' }); tx('e', opts); tx('f', { ...opts }); tx('g', { [k]: 1 }); tx(ok ? 'h' : 'i', { n })`
+    const result = scanSource(await loadParser(), code, {
+      calls: [spec],
+      filename: 'a.ts',
+    })
+    expect(result.usages.map(u => [u.raw, u.params, u.defaultValue])).toEqual([
+      ['a', [], undefined],
+      [
+        'b',
+        ['n', 'm', 'f'],
+        undefined,
+      ],
+      [
+        'c',
+        ['n'],
+        'C',
+      ],
+      [
+        'd',
+        ['defaultValue'],
+        'D',
+      ],
+      ['e', undefined, undefined],
+      ['f', undefined, undefined],
+      ['g', undefined, undefined],
+      ['h', undefined, undefined],
+      ['i', undefined, undefined],
+    ])
+  })
+
   it('collects hard strings outside translate calls', async () => {
     const code = `import x from 'mod'; console.log('debug'); const a = <p title="Hover me">Hello world</p>; const b = 'Some text'; t('key')`
     const hard = (await scan(code)).hardStrings!.map(h => `${h.kind}:${h.text}`)

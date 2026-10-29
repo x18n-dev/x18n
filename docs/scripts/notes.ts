@@ -214,7 +214,14 @@ Commands that write files (\`set\`, \`apply\`, \`rename\`, \`delete\`, \`fill\`,
 
 /** Extra text on the page of a check. */
 export const checkNotes: { readonly [id: string]: string } = {
-  'missing-key': `Usages with a dynamic key are not reported. A usage with a static prefix, such as \`\`t(\`pages.\${id}.title\`)\`\`, is a prefix usage: it makes every key under \`pages\` count as used, and it is never a missing key.`,
+  'missing-key': `Usages with a dynamic key are not reported. A usage with a static prefix, such as \`\`t(\`pages.\${id}.title\`)\`\`, is a prefix usage: it makes every key under \`pages\` count as used, and it is never a missing key.
+
+The fix adds the key with the default value written in the call (\`t('save', 'Save')\` or \`t('save', { defaultValue: 'Save' })\` with i18next), else with an empty value.`,
+  'param-mismatch': `The check compares the params a translate call passes with the placeholders of the source message. For \`"greet": "Hello {{name}}"\`, it reports \`t('greet', { nam })\`: \`name\` is missing and \`nam\` is unused.
+
+It needs a preset that tells where the params of a call are; the i18next presets do. Options the library reads itself, such as i18next \`count\`, \`context\` and \`defaultValue\`, are never unused. Unused params are reported only when the message has placeholders and no nested messages (\`$t(key)\`), which may use them.
+
+The check skips a call whose params it cannot read, such as a variable or a spread (\`t('greet', opts)\`), and a key whose source message is not a string, such as a plural key that only has \`greet_one\` and \`greet_other\`.`,
   'missing-translation': 'The check reports one diagnostic per key, at the entry in the source locale, and lists the locales that lack the key. An empty string is not missing: the `empty-translation` check reports it.',
   'unused-key': `A key counts as used when:
 

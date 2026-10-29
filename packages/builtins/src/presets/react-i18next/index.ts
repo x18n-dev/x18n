@@ -2,7 +2,7 @@ import type { Preset } from '@x18n/core'
 import { createLibraryPlugin } from '@x18n/core'
 // Detection and syntax adapted from i18n-ally (MIT), src/frameworks/*
 import { regexScopes } from '../../scanners/regex-scopes'
-import { i18nextPlugin } from '../i18next/plugin'
+import { i18nextArgs, i18nextPlugin } from '../i18next/plugin'
 import { scriptExtensions } from '../shared'
 
 export function reactI18next(): Preset {
@@ -19,6 +19,7 @@ export function reactI18next(): Preset {
             returns: ['t'],
             namespace: { arg: 0 },
             keyPrefix: { arg: 1, property: 'keyPrefix' },
+            ...i18nextArgs,
           },
           {
             callee: 'Trans',
@@ -31,6 +32,7 @@ export function reactI18next(): Preset {
             returns: ['t'],
             namespace: { arg: 0, property: 'ns' },
             keyPrefix: { arg: 0, property: 'keyPrefix' },
+            ...i18nextArgs,
           },
         ],
         templates: [

@@ -98,6 +98,10 @@ export interface Usage {
   readonly range: TextRange
   /** Range of the whole call that holds the key (`t('a', { n })`), when the scanner knows it. */
   readonly expression: TextRange | undefined
+  /** Names of the params the call passes (`t('a', { n })` gives `['n']`); undefined when the scanner cannot tell, as with a spread or a variable. */
+  readonly params?: readonly string[] | undefined
+  /** The default value written in code (`t('a', 'Default')`), when the scanner knows it. */
+  readonly defaultValue?: string | undefined
   readonly scanner: string
   readonly kind: UsageKind
   /** `t(`pages.${id}.title`)` gives 'prefix' with key `pages`. */

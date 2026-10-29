@@ -444,6 +444,24 @@ exports[`schemas > config schema 1`] = `
                   },
                 ],
               },
+              "defaultValue": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "arg": {
+                      "type": "number",
+                    },
+                    "property": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "arg",
+                  ],
+                  "type": "object",
+                },
+                "type": "array",
+              },
               "factory": {
                 "type": "boolean",
               },
@@ -513,6 +531,34 @@ exports[`schemas > config schema 1`] = `
                     "type": "string",
                   },
                 ],
+              },
+              "params": {
+                "additionalProperties": false,
+                "properties": {
+                  "arg": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                      },
+                      {
+                        "items": {
+                          "type": "number",
+                        },
+                        "type": "array",
+                      },
+                    ],
+                  },
+                  "options": {
+                    "items": {
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                },
+                "required": [
+                  "arg",
+                ],
+                "type": "object",
               },
               "returns": {
                 "items": {
@@ -893,6 +939,24 @@ exports[`schemas > plugin schema 1`] = `
                   },
                 ],
               },
+              "defaultValue": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "arg": {
+                      "type": "number",
+                    },
+                    "property": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "arg",
+                  ],
+                  "type": "object",
+                },
+                "type": "array",
+              },
               "factory": {
                 "type": "boolean",
               },
@@ -962,6 +1026,34 @@ exports[`schemas > plugin schema 1`] = `
                     "type": "string",
                   },
                 ],
+              },
+              "params": {
+                "additionalProperties": false,
+                "properties": {
+                  "arg": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                      },
+                      {
+                        "items": {
+                          "type": "number",
+                        },
+                        "type": "array",
+                      },
+                    ],
+                  },
+                  "options": {
+                    "items": {
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                },
+                "required": [
+                  "arg",
+                ],
+                "type": "object",
               },
               "returns": {
                 "items": {

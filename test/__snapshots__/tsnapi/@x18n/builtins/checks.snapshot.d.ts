@@ -18,6 +18,7 @@ export declare const keyStyle: Check;
 export declare const localeCodeConflict: Check;
 export declare const missingKey: Check;
 export declare const missingTranslation: Check;
+export declare const paramMismatch: Check;
 export declare const placeholderMismatch: Check;
 export declare const redundantTranslation: Check;
 export declare const reviewChangesRequested: Check;

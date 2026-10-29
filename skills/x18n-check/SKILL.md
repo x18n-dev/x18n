@@ -33,6 +33,7 @@ Before you act on one of these, stop and ask, with your recommendation and the f
 | `missing-key` | A usage names a key the source locale lacks. If it is a typo, fix the usage to an existing key (`x18n keys` lists them). Else add it: `x18n set <key> --value <text> --json`. |
 | `missing-translation`, `empty-translation` | Translate: `x18n prompt translate --to <locale> --limit 50`, write the result to a file, then `x18n apply <file> --json`. Follow `nextCursor` when the prompt reports more keys. |
 | `placeholder-mismatch` | Rewrite the target value with every placeholder of the source: `x18n set <key> --locale <locale> --value <text> --json`. |
+| `param-mismatch` | A call passes other params than the source message's placeholders read. Fix the call, or the source message with `x18n set`. Ask when it is unclear which one is wrong. |
 | `invalid-syntax` | Fix the message syntax (ICU braces, linked messages) with `x18n set`. When a linked message does not exist, fix the link or add that key. |
 | `key-conflict` | A key is both a message and a parent, or is defined twice in one locale. Ask which one to keep, then `x18n rename` or `x18n delete` with `--dry-run` first. |
 | `unused-key` | Show the list from `x18n keys --unused --json` and delete only the keys the user confirms: `x18n delete <key> --dry-run --json`, then without `--dry-run`. Keys built at runtime go in `usage.keysInUse` in the config instead. |

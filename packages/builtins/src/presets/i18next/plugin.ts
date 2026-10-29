@@ -1,4 +1,4 @@
-import type { ConfigContext, Plugin } from '@x18n/core'
+import type { CallSpec, ConfigContext, Plugin } from '@x18n/core'
 import { createLibraryPlugin } from '@x18n/core'
 import { doubleBraces, nesting } from '../../placeholders'
 
@@ -22,6 +22,38 @@ async function findNamespaces(host: ConfigContext['host']): Promise<{ default: s
   return found
 }
 
+/** Params and default value of a translate function: `t(key, 'Default', { name })`, `t(key, { name, defaultValue })`. */
+export const i18nextArgs: Pick<CallSpec, 'params' | 'defaultValue'> = {
+  params: {
+    arg: [1, 2],
+    // The options i18next reads itself, after i18next-cli (MIT), src/linter.ts.
+    options: [
+      'defaultValue',
+      'count',
+      'context',
+      'ns',
+      'lng',
+      'lngs',
+      'fallbackLng',
+      'returnDetails',
+      'returnObjects',
+      'joinArrays',
+      'postProcess',
+      'interpolation',
+      'skipInterpolation',
+      'replace',
+      'ordinal',
+      'keySeparator',
+      'nsSeparator',
+      'tDescription',
+    ],
+  },
+  defaultValue: [
+    { arg: 1 },
+    { arg: 1, property: 'defaultValue' },
+  ],
+}
+
 export const i18nextPlugin: Plugin = createLibraryPlugin({
   name: 'x18n:i18next',
   // i18next names a namespace in a folder by its path: `useTranslation('pages/home')`.
@@ -41,6 +73,7 @@ export const i18nextPlugin: Plugin = createLibraryPlugin({
     {
       callee: ['t', 'i18next.t', 'i18n.t'],
       namespace: { arg: 1, property: 'ns' },
+      ...i18nextArgs,
     },
     {
       callee: ['getFixedT', 'i18next.getFixedT', 'i18n.getFixedT'],
@@ -48,10 +81,12 @@ export const i18nextPlugin: Plugin = createLibraryPlugin({
       returns: ['t'],
       namespace: { arg: 1 },
       keyPrefix: { arg: 2 },
+      ...i18nextArgs,
     },
     {
       callee: 'tr',
       types: ['TFunction'],
+      ...i18nextArgs,
     },
   ],
   // Plural forms first, so each locale needs its own categories; `*` covers contexts and the v3 `_plural`.

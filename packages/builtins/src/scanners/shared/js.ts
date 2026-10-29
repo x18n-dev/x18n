@@ -1,4 +1,4 @@
-import type { ArgSource, CallSpec, HardString, ScanResult, TextRange, UsageCandidate } from '@x18n/core'
+import type { ArgSource, CallSpec, HardString, ParamsSource, ScanResult, TextRange, UsageCandidate } from '@x18n/core'
 import type { CallExpression, Comment, JSXElement, JSXOpeningElement, Node, ObjectExpression, Program, TSSignature } from 'oxc-parser'
 
 /** Where a callee name came from: a declared spec, or a factory binding with its namespace and prefix. */
@@ -12,6 +12,12 @@ interface Binding {
 interface KeyBase {
   readonly namespace: string | undefined
   readonly keyPrefix: string | undefined
+}
+
+/** What a call passes besides the key: its params and a default value. */
+interface CallDetails {
+  readonly params?: readonly string[]
+  readonly defaultValue?: string
 }
 
 /** A value read from call arguments: an AST node, or the props of a JSX element seen as one object argument. */
@@ -263,6 +269,54 @@ class FileScan {
     }), [arg])
   }
 
+  /** The keys of the first object literal at the params positions; `[]` when there is none, undefined when unknown. */
+  paramNames(args: readonly ArgValue[], source: ParamsSource): string[] | undefined {
+    for (const index of [source.arg].flat()) {
+      const value = args[index]
+      if (!value)
+        return []
+      if ('props' in value)
+        return undefined
+      const node = unwrap(value)
+      if (node.type === 'ObjectExpression')
+        return this.staticKeys(node)
+      if (!isStringLiteral(node) && node.type !== 'TemplateLiteral')
+        return undefined
+    }
+    return []
+  }
+
+  /** Property names of an object literal, or undefined with a spread or a computed key. */
+  staticKeys(object: ObjectExpression): string[] | undefined {
+    const names: string[] = []
+    for (const property of object.properties) {
+      const name = property.type === 'Property' && !property.computed
+        ? propertyName(property.key)
+        : undefined
+      if (name === undefined)
+        return undefined
+      names.push(name)
+    }
+    return names
+  }
+
+  callDetails(args: readonly ArgValue[], spec: CallSpec): CallDetails {
+    const params = spec.params
+      ? this.paramNames(args, spec.params)
+      : undefined
+    const defaultValue = spec.defaultValue
+      ?.map(source => this.stringArg(this.argValues(args, source, 0)[0]))
+      .find(value => value !== undefined)
+    return {
+      ...params
+        ? { params }
+        : {},
+      ...defaultValue === undefined
+        ? {}
+        : { defaultValue },
+    }
+  }
+
   allValues(object: ObjectExpression): Node[] {
     return object.properties.flatMap(p => p.type === 'Property'
       ? [p.value]
@@ -271,13 +325,14 @@ class FileScan {
 
   /** ---- Usages ---- */
   /** `expression` is the call holding `value`, kept only when the key is the call's own literal. */
-  addKey(value: ArgValue, base: KeyBase, expression?: TextRange): void {
+  addKey(value: ArgValue, base: KeyBase, expression?: TextRange, details?: CallDetails): void {
     if ('props' in value)
       return
     const node = unwrap(value)
     const call = expression
       ? {
           expression: this.range(expression),
+          ...details,
         }
       : {}
     if (isStringLiteral(node)) {
@@ -404,7 +459,7 @@ class FileScan {
         if (binding.spec.keyPrefix && keyPrefix === undefined)
           this.addUnknown(unwrap(value), base)
         else
-          this.addKey(value, base, expression)
+          this.addKey(value, base, expression, expression && this.callDetails(args, binding.spec))
       }
     }
     return bindings.length > 0
@@ -490,7 +545,12 @@ class FileScan {
       const complete = (!spec.namespace || namespace !== undefined) && (!spec.keyPrefix || keyPrefix !== undefined)
       return {
         binding: {
-          spec: { callee: spec.callee, returns: spec.returns },
+          spec: {
+            callee: spec.callee,
+            returns: spec.returns,
+            params: spec.params,
+            defaultValue: spec.defaultValue,
+          },
           namespace,
           keyPrefix,
         },
