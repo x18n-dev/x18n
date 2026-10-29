@@ -79,6 +79,10 @@ export const prettyReporter: Reporter = {
       ].filter(Boolean)
       blocks.push(parts.join('  '))
     }
+    if (ctx.baseline?.suppressed)
+      blocks.push(paint(ctx, 'gray', `The baseline left out ${plural(ctx.baseline.suppressed, 'known diagnostic')}.`))
+    if (ctx.baseline?.fixed)
+      blocks.push(paint(ctx, 'gray', `Fixed since the baseline: ${ctx.baseline.fixed}. Run \`x18n check --update-baseline\` to drop them from it.`))
     return `${blocks.join('\n\n')}\n`
   },
 }

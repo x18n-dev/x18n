@@ -514,7 +514,7 @@ ${ts(declaration(errors, 'ErrorInfo'))}
 
 ## Diagnostics
 
-Checks report diagnostics. \`x18n check --json\` puts them in \`diagnostics\` of the envelope, and its \`data\` holds a summary and the coverage per project. \`x18n get --json\` puts the diagnostics of one key in \`data\`. Both use this shape:
+Checks report diagnostics. \`x18n check --json\` puts them in \`diagnostics\` of the envelope, and its \`data\` holds a summary and the coverage per project, and \`baseline\` (\`suppressed\` and \`fixed\` counts) when a [baseline](/surfaces/cli#x18n-check-baseline) applies. \`x18n get --json\` puts the diagnostics of one key in \`data\`. Both use this shape:
 
 ${ts(declaration(contracts, 'WireDiagnostic'), declaration(contracts, 'WireRange'), declaration(model, 'Severity'), declaration(model, 'Fix'), declaration(model, 'EditOp'))}
 

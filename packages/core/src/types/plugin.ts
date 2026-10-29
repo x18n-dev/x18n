@@ -316,10 +316,20 @@ export interface ReportInput {
   readonly summary: ReportSummary
 }
 
+/** What a check baseline left out (`x18n check --baseline`). */
+export interface BaselineSummary {
+  /** Known diagnostics that the baseline left out of the report. */
+  readonly suppressed: number
+  /** Baseline entries that no longer occur, to drop with `--update-baseline`. */
+  readonly fixed: number
+}
+
 export interface ReporterContext {
   /** Turns a project path into the path to print (relative to the cwd). */
   readonly displayPath: (path: string, project: string) => string
   readonly color: boolean
+  /** Set when a baseline applies; the inputs then hold only new diagnostics. */
+  readonly baseline?: BaselineSummary | undefined
 }
 
 export interface Reporter {

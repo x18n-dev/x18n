@@ -106,6 +106,95 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     expect(github.stdout).toContain('::warning file=src/locales/de.json,line=8,col=6')
   })
 
+  it('check --update-baseline writes a stable baseline that leaves out known diagnostics', async () => {
+    const dir = await fixture('vue-i18n')
+    const file = join(dir, '.x18n/check-baseline.json')
+    const update = await x18n(dir, ['check', '--update-baseline'])
+    expect(update.code).toBe(0)
+    expect(update.stderr).toContain('Wrote 6 diagnostics to the baseline .x18n/check-baseline.json.')
+    expect(update.stdout).toContain('Found no errors.\n\nThe baseline left out 6 known diagnostics.\n')
+    const written = await readFile(file, 'utf8')
+    const { diagnostics } = JSON.parse(written)
+    expect(diagnostics[0]).toEqual({
+      path: 'src/App.vue',
+      code: 'missing-key',
+      key: 'app.titel',
+      locale: 'en',
+      message: '"app.titel" is not defined in en.',
+      count: 1,
+    })
+    expect(diagnostics.find((e: any) => e.code === 'unused-key')).not.toHaveProperty('locale')
+    expect(diagnostics.map((e: any) => `${e.path} ${e.code} ${e.key}`)).toEqual(diagnostics.map((e: any) => `${e.path} ${e.code} ${e.key}`).sort())
+    expect((await x18n(dir, ['check', '--update-baseline'])).code).toBe(0)
+    expect(await readFile(file, 'utf8')).toBe(written)
+
+    const known = json(await x18n(dir, ['check', '--json']))
+    expect(known.diagnostics).toEqual([])
+    expect(known.data.baseline).toEqual({ suppressed: 6, fixed: 0 })
+
+    // A moved line stays known; one more identical diagnostic in the same file is new.
+    const app = join(dir, 'src/App.vue')
+    const source = await readFile(app, 'utf8')
+    await writeFile(app, source.replace('<header>', '<header>\n    <p>moved</p>'))
+    expect((await x18n(dir, ['check'])).code).toBe(0)
+    await writeFile(app, source.replace(`<p>{{ title }}</p>`, `<p>{{ title }}</p>\n    <p>{{ $t('app.titel') }}</p>`))
+    const duplicate = await x18n(dir, ['check', '--json'])
+    expect(duplicate.code).toBe(1)
+    expect(json(duplicate).diagnostics).toMatchObject([
+      {
+        code: 'missing-key',
+        key: 'app.titel',
+        file: 'src/App.vue',
+        range: { line: 19 },
+      },
+    ])
+    expect(json(duplicate).data.baseline).toEqual({ suppressed: 6, fixed: 0 })
+
+    // Fixed diagnostics are counted, and --update-baseline drops them.
+    await writeFile(app, source.replace(`<p>{{ $t('app.titel') }}</p>`, ''))
+    const fixed = await x18n(dir, ['check'])
+    expect(fixed.code).toBe(0)
+    expect(fixed.stdout).toContain('The baseline left out 5 known diagnostics.\n\nFixed since the baseline: 1. Run `x18n check --update-baseline` to drop them from it.\n')
+    await x18n(dir, [
+      'check',
+      '--update-baseline',
+      '--skip',
+      'unused-key',
+    ])
+    expect(JSON.parse(await readFile(file, 'utf8')).diagnostics).toHaveLength(5)
+    expect(json(await x18n(dir, ['check', '--json'])).data.baseline).toEqual({ suppressed: 5, fixed: 0 })
+  })
+
+  it('check --baseline reads another file, and fails on a new diagnostic', async () => {
+    const dir = await fixture('vue-i18n')
+    await x18n(dir, [
+      'check',
+      '--update-baseline',
+      '--baseline',
+      'baseline.json',
+      '--skip',
+      'missing-key',
+    ])
+    const result = await x18n(dir, [
+      'check',
+      '--baseline',
+      'baseline.json',
+      '--json',
+    ])
+    expect(result.code).toBe(1)
+    expect(json(result).diagnostics).toMatchObject([
+      { code: 'missing-key' },
+    ])
+    // Without the file nothing is left out, and the JSON has no baseline.
+    const all = json(await x18n(dir, ['check', '--json']))
+    expect(all.diagnostics).toHaveLength(6)
+    expect(all.data).not.toHaveProperty('baseline')
+    await writeFile(join(dir, 'baseline.json'), '{')
+    const invalid = await x18n(dir, ['check', '--baseline', 'baseline.json'])
+    expect(invalid.code).toBe(2)
+    expect(invalid.stderr).toContain('is not valid. Run `x18n check --update-baseline` to write it again.')
+  })
+
   it('status, keys, get and locales return JSON', async () => {
     const dir = await fixture('i18next')
     const status = json(await x18n(dir, ['status', '--json'])).data.projects[0]

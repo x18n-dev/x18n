@@ -31,6 +31,7 @@ Use these names in code, docs and UI. Avoid the "not" column.
 | **Stale translation** | A target message that last changed before its source message did. | outdated key (fine in UI labels) |
 | **Reporter** | Turns diagnostics and analysis into text output. | formatter |
 | **Diagnostic** | One reported issue with a code, severity and optional fixes. | problem, error (unless severity is error) |
+| **Baseline** | The committed file of known diagnostics (`.x18n/check-baseline.json`); `x18n check` then reports only new ones. | suppressions, allowlist |
 | **Plan** | The side-effect-free result of planning edits: file changes plus decisions. | patch, diff |
 | **Decision** | A question in a plan that a surface must answer before apply. | prompt (that word is for LLM prompts) |
 | **In-place annotation** | Editor decoration that hides a key and shows its display-locale value. | inline translation |

@@ -50,6 +50,10 @@ Found 1 error and 1 warning in 2 files.
 | `--only <checkIds>` / `--skip <checkIds>` | Narrow the checks. |
 | `--max-warnings <n>` | Fail when there are more than `n` warnings. |
 | `--reporter <id>` | `pretty` (default), `json`, `markdown`, `github`, `sarif`. Repeatable, with `--output <file>`. |
+| `--update-baseline` | Write the reported diagnostics into the baseline. Entries that `--only`, `--skip` or `--locale` leave out stay. |
+| `--baseline <file>` | Baseline file (default `.x18n/check-baseline.json` in the workspace root). |
+
+While the baseline file exists, `check` reports and fails only on diagnostics it does not hold, and says how many it left out and how many of its entries no longer occur (`data.baseline` in `--json`). An entry is a path relative to the workspace root, a check id, a key, a locale and a message, with a count; no line, so moving code keeps it known, while one more identical diagnostic in the same file is new. The file is sorted for small diffs. The editor still shows every diagnostic. The idea comes from [i18next-cli](https://github.com/i18next/i18next-cli) `lint --update-baseline` and ESLint bulk suppressions.
 
 `x18n check` is read-only and has no `--fix`. Fixes go through explicit commands (`x18n delete`, `x18n fill`, `x18n rename`, ...) or through editor code actions.
 

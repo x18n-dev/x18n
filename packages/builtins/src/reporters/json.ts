@@ -4,7 +4,7 @@ import { envelope, toWireDiagnostic } from '@x18n/core'
 /** The versioned JSON contract of `x18n check --json`. */
 export const jsonReporter: Reporter = {
   id: 'json',
-  report(inputs) {
+  report(inputs, ctx) {
     const diagnostics = inputs.flatMap(input => input.diagnostics.map(d => toWireDiagnostic(input.project, d, input.text)))
     const data = {
       projects: inputs.map(input => ({
@@ -19,6 +19,10 @@ export const jsonReporter: Reporter = {
           outdated: c.outdated.length,
         })),
       })),
+      // Optional: only when a baseline applies.
+      ...ctx.baseline && {
+        baseline: { suppressed: ctx.baseline.suppressed, fixed: ctx.baseline.fixed },
+      },
     }
     return `${JSON.stringify(envelope('check', data, diagnostics), null, 2)}\n`
   },

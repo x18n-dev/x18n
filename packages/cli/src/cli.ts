@@ -109,6 +109,8 @@ export function createCli(): CAC {
     .option('--max-warnings <n>', 'Fail when there are more warnings')
     .option('--reporter <id>', 'pretty, json, markdown, github or sarif (repeatable)')
     .option('--output <file>', 'Write the matching reporter output to a file (repeatable)')
+    .option('--baseline <file>', 'Report only diagnostics that are not in this baseline (default: .x18n/check-baseline.json, when it exists)')
+    .option('--update-baseline', 'Write the current diagnostics into the baseline')
     .action(run('check', check))
 
   cli.command('set <key>', 'Set one value')
