@@ -17,6 +17,11 @@ interface KeyBase {
 /** A value read from call arguments: an AST node, or the props of a JSX element seen as one object argument. */
 type ArgValue = Node | { readonly props: ReadonlyMap<string, Node> }
 
+type StringLiteral = Extract<Node, { type: 'Literal', value: string }>
+
+/** A finite dynamic key expands to at most this many keys; above it, it stays a prefix usage. */
+const maxVariants = 32
+
 const textAttributeWords = new Set([
   'title',
   'subtitle',
@@ -136,6 +141,12 @@ class FileScan {
   readonly consumed = new Set<number>()
   /** Render-prop functions of factory components (`<Translation>{t => ...}</Translation>`), by start offset. */
   readonly renderProps = new Map<number, Binding>()
+  /** Callbacks over a same-file array (`KEYS.map(k => ...)`): its string literals, by function start offset. */
+  readonly callbacks = new Map<number, readonly StringLiteral[]>()
+  /** Callback parameters bound to those literals, per scope; undefined when a parameter shadows an outer one. */
+  readonly elements: Map<string, readonly StringLiteral[] | undefined>[] = [
+    new Map(),
+  ]
 
   constructor(readonly text: string, readonly offset: number, calls: readonly CallSpec[], readonly collectHardStrings: boolean, readonly ignoredCallees: ReadonlySet<string> = new Set(), readonly textAttributes: readonly string[] = []) {
     for (const spec of calls) {
@@ -299,6 +310,8 @@ class FileScan {
       return
     }
     if (node.type === 'TemplateLiteral') {
+      if (node.expressions.length > 0 && this.addExpanded(node, base, call))
+        return
       const first = node.quasis[0]!
       const raw = first.value.cooked ?? first.value.raw
       this.consumed.add(node.start)
@@ -322,22 +335,162 @@ class FileScan {
     }
     if (node.type === 'ArrowFunctionExpression' && node.params[0]?.type === 'Identifier')
       return this.addSelector(node.params[0].name, node.body, base)
-    const constant = node.type === 'Identifier'
-      ? this.constants.get(node.name)
-      : node.type === 'MemberExpression'
-        ? this.memberConstant(node)
-        : undefined
-    if (constant && isStringLiteral(constant)) {
-      this.usages.push({
-        ...base,
-        raw: constant.value,
-        range: this.range(innerRange(constant)),
-        kind: 'constant',
-        dynamic: false,
-      })
+    const leaves: StringLiteral[] = []
+    const constants = this.constantLiterals(node, leaves)
+    if (constants) {
+      leaves.forEach(leaf => this.consumed.add(leaf.start))
+      for (const constant of constants) {
+        this.usages.push({
+          ...base,
+          raw: constant.value,
+          range: this.range(innerRange(constant)),
+          kind: 'constant',
+          dynamic: false,
+        })
+      }
       return
     }
     this.addUnknown(node, base)
+  }
+
+  /**
+   * Finite dynamic keys, after i18next-cli (MIT), src/extractor/parsers/expression-resolver.ts: a template whose
+   * expressions each stand for a few string literals (`state.${done ? 'done' : 'open'}.title`) gives one usage per key.
+   * The key text is not one piece of the source, so the range covers the template and rename leaves it alone.
+   */
+  addExpanded(node: Extract<Node, { type: 'TemplateLiteral' }>, base: KeyBase, call: Pick<UsageCandidate, 'expression'>): boolean {
+    const leaves: StringLiteral[] = []
+    const keys = this.variants(node, leaves)
+    if (!keys)
+      return false
+    this.consumed.add(node.start)
+    leaves.forEach(leaf => this.consumed.add(leaf.start))
+    for (const raw of keys) {
+      this.usages.push({
+        ...base,
+        ...call,
+        raw,
+        range: this.range(innerRange(node)),
+        kind: 'expanded',
+        dynamic: false,
+      })
+    }
+    return true
+  }
+
+  /** Every string an expression may be, when it is one of a few: literals, templates, `?:`, `??`, `||` and constants. */
+  variants(value: Node, leaves: StringLiteral[]): string[] | undefined {
+    const node = unwrap(value)
+    if (isStringLiteral(node)) {
+      leaves.push(node)
+      return [node.value]
+    }
+    if (node.type === 'TemplateLiteral') {
+      let out = [
+        '',
+      ]
+      for (const [i, quasi] of node.quasis.entries()) {
+        const expression = node.expressions[i]
+        const parts = expression
+          ? this.variants(expression, leaves)
+          : [
+              '',
+            ]
+        if (!parts)
+          return undefined
+        const text = quasi.value.cooked ?? quasi.value.raw
+        out = out.flatMap(prefix => parts.map(part => `${prefix}${text}${part}`))
+        if (out.length > maxVariants)
+          return undefined
+      }
+      return out
+    }
+    if (node.type === 'ConditionalExpression' || (node.type === 'LogicalExpression' && (node.operator === '??' || node.operator === '||'))) {
+      const [a, b] = node.type === 'ConditionalExpression'
+        ? [node.consequent, node.alternate]
+        : [node.left, node.right]
+      const left = this.variants(a, leaves)
+      const right = left && this.variants(b, leaves)
+      if (!left || !right)
+        return undefined
+      const out = [
+        ...new Set([
+          ...left,
+          ...right,
+        ]),
+      ]
+      return out.length <= maxVariants
+        ? out
+        : undefined
+    }
+    return this.constantLiterals(node, leaves)?.map(literal => literal.value)
+  }
+
+  /**
+   * The string literals a name stands for: a constant, a callback parameter over a constant array, or a member of a
+   * constant object or array (`MAP.ok`, `MAP[ok ? 'ok' : 'err']`, `KEYS[0]`).
+   */
+  constantLiterals(node: Node, leaves: StringLiteral[]): readonly StringLiteral[] | undefined {
+    if (node.type === 'Identifier') {
+      const elements = this.elementsOf(node.name)
+      if (elements)
+        return elements
+      const constant = this.constants.get(node.name)
+      return constant && isStringLiteral(constant)
+        ? [constant]
+        : undefined
+    }
+    if (node.type !== 'MemberExpression')
+      return undefined
+    if (!node.computed) {
+      const constant = this.memberConstant(node)
+      return constant && isStringLiteral(constant)
+        ? [constant]
+        : undefined
+    }
+    const object = unwrap(node.object)
+    const target = object.type === 'Identifier'
+      ? this.constants.get(object.name)
+      : undefined
+    const property = unwrap(node.property)
+    if (target?.type === 'ArrayExpression') {
+      const element = property.type === 'Literal' && typeof property.value === 'number'
+        ? target.elements[property.value]
+        : undefined
+      return isStringLiteral(element)
+        ? [element]
+        : undefined
+    }
+    if (target?.type !== 'ObjectExpression')
+      return undefined
+    const literals = this.variants(property, leaves)?.map(name => objectProperty(target, name))
+    return literals?.every(isStringLiteral)
+      ? literals
+      : undefined
+  }
+
+  elementsOf(name: string): readonly StringLiteral[] | undefined {
+    for (let i = this.elements.length - 1; i >= 0; i--) {
+      if (this.elements[i]!.has(name))
+        return this.elements[i]!.get(name)
+    }
+    return undefined
+  }
+
+  /** `KEYS.map(k => ...)` and `KEYS.forEach(k => ...)` over a same-file array of string literals. */
+  callback(node: CallExpression): void {
+    const callee = unwrap(node.callee)
+    const fn = node.arguments[0]
+    if (callee.type !== 'MemberExpression' || callee.computed || callee.property.type !== 'Identifier' || (callee.property.name !== 'map' && callee.property.name !== 'forEach'))
+      return
+    if (fn?.type !== 'ArrowFunctionExpression' && fn?.type !== 'FunctionExpression')
+      return
+    const object = unwrap(callee.object)
+    const array = object.type === 'Identifier'
+      ? this.constants.get(object.name)
+      : object
+    if (array?.type === 'ArrayExpression' && array.elements.length > 0 && array.elements.every(isStringLiteral))
+      this.callbacks.set(fn.start, array.elements)
   }
 
   addUnknown(node: Node, base: KeyBase): void {
@@ -414,6 +567,7 @@ class FileScan {
     const name = calleeName(node.callee)
     if (name !== undefined)
       this.handleCall(name, node.arguments, { start: node.start, end: node.end })
+    this.callback(node)
   }
 
   jsxProps(node: JSXOpeningElement): ArgValue {
@@ -458,7 +612,7 @@ class FileScan {
     if (!init)
       return
     const value = unwrap(init)
-    if (id.type === 'Identifier' && (isStringLiteral(value) || value.type === 'ObjectExpression'))
+    if (id.type === 'Identifier' && (isStringLiteral(value) || value.type === 'ObjectExpression' || value.type === 'ArrayExpression'))
       this.constants.set(id.name, value)
     if (value.type === 'CallExpression') {
       const factory = calleeName(value.callee)
@@ -623,8 +777,10 @@ class FileScan {
   /** ---- Walk ---- */
   walk(node: Node, parent: Node | undefined, parentKey: string): void {
     const scoped = node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression' || node.type === 'BlockStatement'
-    if (scoped)
+    if (scoped) {
       this.frames.push(new Map())
+      this.elements.push(new Map())
+    }
     this.visit(node, parent, parentKey)
     for (const [key, child] of Object.entries(node)) {
       if (key === 'parent')
@@ -639,8 +795,10 @@ class FileScan {
         this.walk(child, node, key)
       }
     }
-    if (scoped)
+    if (scoped) {
       this.frames.pop()
+      this.elements.pop()
+    }
   }
 
   visit(node: Node, parent: Node | undefined, parentKey: string): void {
@@ -664,6 +822,14 @@ class FileScan {
         const binding = this.renderProps.get(node.start)
         if (binding && node.params[0]?.type === 'Identifier')
           this.bind(node.params[0].name, binding)
+        const elements = this.callbacks.get(node.start)
+        for (const [i, param] of node.params.entries()) {
+          if (param.type === 'Identifier') {
+            this.elements.at(-1)!.set(param.name, i === 0
+              ? elements
+              : undefined)
+          }
+        }
         break
       }
       case 'ImportSpecifier':

@@ -86,7 +86,8 @@ export interface Message {
   readonly range: NodeRange | undefined
 }
 
-export type UsageKind = 'call' | 'selector' | 'accessor' | 'constant' | 'marker'
+/** 'expanded': one of the keys a finite dynamic key stands for. Its range covers the whole template, so rename leaves it. */
+export type UsageKind = 'call' | 'selector' | 'accessor' | 'constant' | 'marker' | 'expanded'
 
 export interface Usage {
   /** Undefined when the key is fully dynamic. */

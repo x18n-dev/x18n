@@ -179,6 +179,7 @@ Keys that are not literal arguments are also resolved:
 Dynamic keys:
 - A template literal with a static prefix (`t(`pages.${id}.title`)`) gives a `dynamic: 'prefix'` usage. Checks treat every key under `pages` as used, and references list it as "possible".
 - A fully dynamic key (`t(key)`) is ignored. The opt-in `dynamic-key` check can report it.
+- A finite dynamic key expands to its keys, after i18next-cli but syntactic and same-file only: `?:`, `??` and `||` over string literals in a template (`` t(`state.${done ? 'done' : 'open'}.title`) ``, at most 32 keys), callback parameters over a constant array (`` KEYS.map(k => t(`item.${k}`)) ``), and constant objects indexed by such keys (`t(MAP[ok ? 'ok' : 'err'])`). Template keys are `kind: 'expanded'` usages over the whole template, which rename does not rewrite; keys picked from constants are `constant` usages. Anything else stays a prefix usage.
 
 Opt-outs for false positives of name-based matching: `usage.ignoreCallees`, `usage.exclude` globs, and the inline comments `// x18n-disable-next-line` and `/* x18n-disable */ ... /* x18n-enable */`.
 

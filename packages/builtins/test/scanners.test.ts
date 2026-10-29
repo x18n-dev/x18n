@@ -136,6 +136,66 @@ describe('js scanner', () => {
     ])
   })
 
+  it('expands finite dynamic keys', async () => {
+    const code = [
+      `const MODE = 'm'`,
+      `t(\`state.\${isDone ? 'done' : 'notDone'}.title\`)`,
+      `t(\`\${ok ? 'x' : 'y'}.\${MODE ?? 'z'}\`, { ns: 'auth' })`,
+      `const KEYS = ['a', 'b'] as const`,
+      `KEYS.map(k => t(\`item.\${k}\`))`,
+      `KEYS.forEach(function (k) { t(k) })`,
+      `const MAP = { ok: 'result.ok', err: 'result.err' } as const`,
+      `t(MAP[cond ? 'ok' : 'err']); t(MAP['ok']); t(KEYS[1])`,
+    ].join('\n')
+    const result = await scan(code)
+    expect(keys(result, code)).toEqual([
+      `state.done.title|state.\${isDone ? 'done' : 'notDone'}.title|expanded|false||`,
+      `state.notDone.title|state.\${isDone ? 'done' : 'notDone'}.title|expanded|false||`,
+      `x.m|\${ok ? 'x' : 'y'}.\${MODE ?? 'z'}|expanded|false|auth|`,
+      `x.z|\${ok ? 'x' : 'y'}.\${MODE ?? 'z'}|expanded|false|auth|`,
+      `y.m|\${ok ? 'x' : 'y'}.\${MODE ?? 'z'}|expanded|false|auth|`,
+      `y.z|\${ok ? 'x' : 'y'}.\${MODE ?? 'z'}|expanded|false|auth|`,
+      `item.a|item.\${k}|expanded|false||`,
+      `item.b|item.\${k}|expanded|false||`,
+      // Picked from constants, the keys are literals that rename can rewrite.
+      'a|a|constant|false||',
+      'b|b|constant|false||',
+      'result.ok|result.ok|constant|false||',
+      'result.err|result.err|constant|false||',
+      'result.ok|result.ok|constant|false||',
+      'b|b|constant|false||',
+    ])
+    expect(result.usages[0]!.expression).toEqual({
+      start: code.indexOf('t(`state'),
+      end: code.indexOf('\n', code.indexOf('t(`state')),
+    })
+    // The literals inside the template are key parts, not hard strings.
+    expect(result.hardStrings!.map(h => h.text)).not.toContain('notDone')
+  })
+
+  it('keeps a prefix usage when a dynamic key is not a few string literals', async () => {
+    const twoTo = (n: number): string => Array.from({ length: n }).fill(`\${a ? 'a' : 'b'}`).join('')
+    const code = [
+      `const KEYS = ['a', 'b']`,
+      `t(\`a.\${unknown}\`); t(\`b.\${ok ? 'x' : other}\`); items.map(k => t(\`c.\${k}\`))`,
+      // An inner parameter shadows the outer one.
+      `KEYS.map(k => [x].map(k => t(\`d.\${k}\`)))`,
+      `;[].map(k => t(\`g.\${k}\`))`,
+      // 2^6 keys is over the cap, 2^5 is not.
+      `t(\`e.${twoTo(6)}\`); t(\`f.${twoTo(5)}\`)`,
+    ].join('\n')
+    const result = keys(await scan(code), code)
+    expect(result.slice(0, 6)).toEqual([
+      'a.|a.|call|prefix||',
+      'b.|b.|call|prefix||',
+      'c.|c.|call|prefix||',
+      'd.|d.|call|prefix||',
+      'g.|g.|call|prefix||',
+      'e.|e.|call|prefix||',
+    ])
+    expect(result.slice(6)).toHaveLength(32)
+  })
+
   it('collects hard strings outside translate calls', async () => {
     const code = `import x from 'mod'; console.log('debug'); const a = <p title="Hover me">Hello world</p>; const b = 'Some text'; t('key')`
     const hard = (await scan(code)).hardStrings!.map(h => `${h.kind}:${h.text}`)
@@ -339,5 +399,35 @@ describe('project usages', () => {
     })
     expect(project.analyze().unused).toEqual([])
     expect(project.analyze().undefinedUsages).toEqual([])
+  })
+
+  it('counts each key of a finite dynamic key as used, and only those', async () => {
+    const { project } = await createTestProject({
+      'locales/en.json': json({
+        state: {
+          done: { title: 'Done' },
+          other: { title: 'Other' },
+        },
+        item: { a: 'A', b: 'B' },
+        result: { ok: 'OK', err: 'Error' },
+      }),
+      'src/a.ts': [
+        `t(\`state.\${isDone ? 'done' : 'notDone'}.title\`)`,
+        `const KEYS = ['a', 'b'] as const`,
+        `KEYS.map(k => t(\`item.\${k}\`))`,
+        `const MAP = { ok: 'result.ok', err: 'result.err' } as const`,
+        `t(MAP[cond ? 'ok' : 'err'])`,
+      ].join('\n'),
+    }, {
+      presets: [
+        i18next(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+    })
+    const analysis = project.analyze()
+    expect(analysis.unused).toEqual(['state.other.title'])
+    expect(analysis.undefinedUsages.map(u => u.key)).toEqual(['state.notDone.title'])
   })
 })

@@ -60,8 +60,8 @@ interface Usage {
   /** Range of the key text only (inside the quotes), the range rename rewrites. */
   readonly range: TextRange
   readonly scanner: string // scanner id
-  /** How the key was found: a call argument, a selector (`$ => $.a.b`), an accessor (`m.a_b()`), a same-file constant, or a `@x18n-key` marker. */
-  readonly kind: 'call' | 'selector' | 'accessor' | 'constant' | 'marker'
+  /** How the key was found: a call argument, a selector (`$ => $.a.b`), an accessor (`m.a_b()`), a same-file constant, a `@x18n-key` marker, or one key of a finite dynamic key (rename leaves those alone). */
+  readonly kind: 'call' | 'selector' | 'accessor' | 'constant' | 'marker' | 'expanded'
   /** `t(`pages.${id}.title`)` gives 'prefix' with key `pages`. Prefix usages are "possible" references of every key under the prefix. */
   readonly dynamic: false | 'prefix' | 'unknown'
   readonly locale: LocaleCode | undefined // when the call pins a locale

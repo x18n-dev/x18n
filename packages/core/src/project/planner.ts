@@ -491,6 +491,11 @@ class PlanBuilder {
     for (const { usage, possible } of this.options.usageMatches({ key: from })) {
       if (possible || usage.key !== from)
         continue
+      // An expanded key (`state.${done ? 'done' : 'open'}`) is not one piece of text, and its other keys stay.
+      if (usage.kind === 'expanded') {
+        this.warnings.push(`${usage.path}: usage of "${from}" is built from several parts and was not updated.`)
+        continue
+      }
       const raw = this.rawFor(usage, to)
       if (raw === undefined)
         this.warnings.push(`${usage.path}: usage of "${from}" is under the key prefix "${usage.scopePrefix}" and was not updated.`)

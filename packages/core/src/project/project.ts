@@ -461,7 +461,8 @@ export function createProject(options: CreateProjectOptions): Project {
     const suppressed = suppressedRanges(file.text)
     const seen = new Set<string>()
     const kept = usages.filter((usage) => {
-      const id = `${usage.range.start}:${usage.range.end}`
+      // Keys expanded from one dynamic key share its range.
+      const id = `${usage.range.start}:${usage.range.end}:${usage.raw}`
       if (seen.has(id))
         return false
       seen.add(id)

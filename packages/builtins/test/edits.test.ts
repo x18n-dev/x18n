@@ -1,5 +1,6 @@
 import type { Project } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
+import { i18next } from '../src/presets/i18next'
 import { reactI18next } from '../src/presets/react-i18next'
 import { vueI18n } from '../src/presets/vue-i18n'
 import { createTestProject, json } from './_utils'
@@ -400,6 +401,55 @@ describe('rename', () => {
     expect(plan.warnings).toEqual([
       expect.stringContaining('dynamic usage "pages."'),
     ])
+  })
+
+  it('leaves the code of a finite dynamic key alone, and rewrites the constants keys come from', async () => {
+    const code = [
+      `t(\`state.\${isDone ? 'done' : 'open'}.title\`)`,
+      `const MAP = { ok: 'result.ok', err: 'result.err' } as const`,
+      `t(MAP[cond ? 'ok' : 'err'])`,
+    ].join('\n')
+    const { project, files } = await createTestProject({
+      'package.json': json({
+        dependencies: { i18next: '*' },
+      }),
+      'locales/en.json': json({
+        state: {
+          done: { title: 'Done' },
+          open: { title: 'Open' },
+        },
+        result: { ok: 'OK', err: 'Error' },
+      }),
+      'src/a.ts': code,
+    }, {
+      presets: [
+        i18next(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+    })
+    const rename = await write(project, [
+      { type: 'rename', from: 'state.done.title', to: 'state.finished.title' },
+      { type: 'rename', from: 'result.ok', to: 'result.success' },
+    ])
+    expect(rename.warnings).toEqual([
+      'src/a.ts: usage of "state.done.title" is built from several parts and was not updated.',
+    ])
+    const renamePrefix = await write(project, [
+      { type: 'rename-prefix', from: 'state', to: 'status' },
+    ])
+    expect(renamePrefix.warnings).toEqual([
+      'src/a.ts: usage of "state.open.title" is built from several parts and was not updated.',
+    ])
+    expect(JSON.parse(files.get('locales/en.json')!)).toEqual({
+      status: {
+        finished: { title: 'Done' },
+        open: { title: 'Open' },
+      },
+      result: { success: 'OK', err: 'Error' },
+    })
+    expect(files.get('src/a.ts')).toBe(code.replace(`'result.ok'`, `'result.success'`))
   })
 
   it('moves keys across namespaces, creating files, and rewrites scoped usages', async () => {

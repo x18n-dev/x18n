@@ -1167,7 +1167,7 @@ export type ResourceId = string;
 export type ReviewState = "changes-requested" | "approved" | "stale-approval" | "suggested" | "commented";
 export type ReviewType = "comment" | "approve" | "request-change" | "suggestion";
 export type Severity = "error" | "warning" | "info" | "hint";
-export type UsageKind = "call" | "selector" | "accessor" | "constant" | "marker";
+export type UsageKind = "call" | "selector" | "accessor" | "constant" | "marker" | "expanded";
 export type X18nError = Diagnostic$1 & {
   readonly name: ErrorCode;
   readonly code: ErrorCode;
