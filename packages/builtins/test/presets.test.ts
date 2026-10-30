@@ -1113,6 +1113,23 @@ describe('glossary check', () => {
       ['b', 'zh'],
     ])
   })
+
+  it('matches a term followed by letters of an unspaced script, and is on by default', async () => {
+    const { project } = await createTestProject({
+      'locales/en.json': json({ a: 'Connect to x18n', b: 'Open x18n' }),
+      'locales/ko.json': json({ a: 'x18n에 연결', b: 'x18nx 열기' }),
+    }, {
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+      glossary: [
+        { term: 'x18n', doNotTranslate: true },
+      ],
+    })
+    expect(project.analyze().diagnostics.filter(d => d.code === 'glossary').map(d => [d.key, d.locale, d.severity])).toEqual([
+      ['b', 'ko', 'warning'],
+    ])
+  })
 })
 
 describe('placeholder-mismatch', () => {

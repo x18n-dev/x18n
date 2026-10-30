@@ -7,7 +7,7 @@ description: 'A target value that equals the source value, except values that st
 
 A target value that equals the source value, except values that stay the same in every language.
 
-The check is off by default.
+The check is on by default, with the severity `info`.
 
 A target value equal to the source value is often an untranslated copy. The check skips:
 
@@ -17,18 +17,18 @@ A target value equal to the source value is often an untranslated copy. The chec
 - short all-caps words of up to five letters (`OK`, `FAQ`),
 - `doNotTranslate` terms of the `glossary`, such as brand names.
 
-Words that are the same in both languages, such as "Plugins" in German, are still reported. `ignoreKeys` removes such keys, from every check.
+Words that are the same in both languages, such as "Plugins" in German, are still reported. That is why the check reports at `info`, which `strict` does not turn into an error. `ignoreKeys` removes such keys, from every check.
 
 ## Configure
 
-Turn the check on in `checks`:
+Change the severity, or turn the check off, in `checks`:
 
 ```ts [x18n.config.ts]
 import { defineConfig } from '@x18n/core'
 
 export default defineConfig({
   checks: {
-    'identical-to-source': 'warning',
+    'identical-to-source': 'off',
   },
 })
 ```

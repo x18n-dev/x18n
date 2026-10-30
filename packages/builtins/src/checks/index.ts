@@ -408,7 +408,7 @@ function staysTheSame(value: string, placeholders: readonly Placeholder[], terms
 
 export const identicalToSource: Check = {
   id: 'identical-to-source',
-  defaultSeverity: 'off',
+  defaultSeverity: 'info',
   description: 'A target value that equals the source value, except values that stay the same in every language.',
   * run(ctx) {
     const language = parseLocaleInfo(ctx.sourceLocale).language
@@ -473,14 +473,20 @@ const unspaced = '\\p{scx=Han}\\p{scx=Hiragana}\\p{scx=Katakana}\\p{scx=Hangul}\
 const startsUnspaced = new RegExp(`^[${unspaced}]`, 'u')
 const endsUnspaced = new RegExp(`[${unspaced}]$`, 'u')
 
-/** A term as a whole word, so "Home" does not match "Homepage"; a plain substring at edges in unspaced scripts. */
+// A letter or digit of a spaced script, which next to a term makes it part of a longer word.
+const spacedWordChar = `(?![${unspaced}])[\\p{L}\\p{N}]`
+
+/**
+ * A term as a whole word, so "Home" does not match "Homepage". A plain substring at edges in unspaced scripts,
+ * and next to their letters, so "x18n" matches "x18n에".
+ */
 function wordPattern(term: string): RegExp {
   const before = startsUnspaced.test(term)
     ? ''
-    : '(?<![\\p{L}\\p{N}])'
+    : `(?<!${spacedWordChar})`
   const after = endsUnspaced.test(term)
     ? ''
-    : '(?![\\p{L}\\p{N}])'
+    : `(?!${spacedWordChar})`
   return new RegExp(`${before}${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${after}`, 'iu')
 }
 
@@ -503,7 +509,7 @@ function* glossaryDiagnostics(ctx: Parameters<Check['run']>[0], entry: GlossaryE
 
 export const glossary: Check = {
   id: 'glossary',
-  defaultSeverity: 'off',
+  defaultSeverity: 'warning',
   description: 'A glossary term translated differently from the glossary.',
   * run(ctx) {
     for (const entry of ctx.config.glossary)

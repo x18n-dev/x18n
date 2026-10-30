@@ -263,7 +263,7 @@ In CI, fetch the full history: a shallow clone (the \`actions/checkout\` default
 - short all-caps words of up to five letters (\`OK\`, \`FAQ\`),
 - \`doNotTranslate\` terms of the \`glossary\`, such as brand names.
 
-Words that are the same in both languages, such as "Plugins" in German, are still reported. \`ignoreKeys\` removes such keys, from every check.`,
+Words that are the same in both languages, such as "Plugins" in German, are still reported. That is why the check reports at \`info\`, which \`strict\` does not turn into an error. \`ignoreKeys\` removes such keys, from every check.`,
   'dynamic-key': 'A fully dynamic key, such as `t(key)`, has no static prefix. No check can follow it. Turn this check on to find such usages.',
 }
 
