@@ -1,5 +1,5 @@
 import type { Check, DiagnosticInput, GlossaryEntry, KeyString, MessageChange, Placeholder, Plugin } from '@x18n/core'
-import { createPlaceholderComparer, localeSpellingKey, parseLocaleInfo } from '@x18n/core'
+import { createPlaceholderComparer, localeSpellingKey } from '@x18n/core'
 import { extractableHardStrings } from '../extractors'
 
 function list(items: readonly string[]): string {
@@ -411,8 +411,9 @@ export const identicalToSource: Check = {
   defaultSeverity: 'info',
   description: 'A target value that equals the source value, except values that stay the same in every language.',
   * run(ctx) {
-    const language = parseLocaleInfo(ctx.sourceLocale).language
-    const skipped = new Set(ctx.locales.filter(locale => locale === ctx.sourceLocale || (language !== undefined && parseLocaleInfo(locale).language === language)))
+    // `ctx.localeInfo` is cached; `parseLocaleInfo` builds `Intl` objects, and the analysis reruns on every edit.
+    const language = ctx.localeInfo(ctx.sourceLocale).language
+    const skipped = new Set(ctx.locales.filter(locale => locale === ctx.sourceLocale || (language !== undefined && ctx.localeInfo(locale).language === language)))
     const terms = new Set(ctx.config.glossary.filter(entry => entry.doNotTranslate).map(entry => entry.term.toLowerCase()))
     for (const message of ctx.messages()) {
       if (skipped.has(message.locale) || typeof message.value !== 'string' || message.value === '')
