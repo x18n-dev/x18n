@@ -19,6 +19,8 @@ A target value equal to the source value is often an untranslated copy. The chec
 
 Words that are the same in both languages, such as "Plugins" in German, are still reported. That is why the check reports at `info`, which `strict` does not turn into an error. `ignoreKeys` removes such keys, from every check.
 
+`x18n prompt translate --to <locale> --check identical-to-source` puts the reported values on the translate prompt. See [Translate reported values](/agents/prompts#translate-reported-values).
+
 ## Configure
 
 Change the severity, or turn the check off, in `checks`:
