@@ -111,15 +111,14 @@ export async function extract(files: readonly string[], options: ExtractCommandO
     out(`${candidates.length} strings. Apply with \`x18n extract --yes\`, or review with \`x18n extract --plan plan.json\`.`)
     return
   }
-  const chosen = candidates
-  if (chosen.length === 0) {
+  if (candidates.length === 0) {
     out('Nothing to extract.')
     return
   }
   await runPlan('extract', loaded, project.plan([
     {
       type: 'extract',
-      items: extractItems(project, chosen),
+      items: extractItems(project, candidates),
     },
   ]), options)
 }
