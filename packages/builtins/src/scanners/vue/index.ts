@@ -135,10 +135,12 @@ class TemplateScan {
     if (node.type === TEXT) {
       const text = node.content.trim()
       if (text && /\p{L}/u.test(text)) {
-        const start = node.loc.start.offset + node.content.indexOf(text)
+        // `content` condenses whitespace and decodes entities, so its offsets do not match the source.
+        const raw = node.loc.source
+        const start = node.loc.start.offset + (raw.length - raw.trimStart().length)
         this.out.hardStrings.push({
           text,
-          range: { start, end: start + text.length },
+          range: { start, end: node.loc.start.offset + raw.trimEnd().length },
           kind: 'vue-template-text',
         })
       }
