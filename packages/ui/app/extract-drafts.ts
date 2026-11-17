@@ -28,40 +28,40 @@ function sourceOf(candidate: Pick<ExtractSelection, 'path' | 'original' | 'conte
   ])
 }
 
+/** Items by source, oldest position first. */
+function groupBy<T>(items: readonly T[], source: (item: T) => string, start: (item: T) => number): Map<string, T[]> {
+  const groups = new Map<string, T[]>()
+  for (const item of items) {
+    const key = source(item)
+    const list = groups.get(key) ?? []
+    groups.set(key, list)
+    list.push(item)
+  }
+  for (const list of groups.values())
+    list.sort((a, b) => start(a) - start(b))
+  return groups
+}
+
 /**
  * Carries key edits and picks over to a refreshed candidate list.
  *
- * The exact id wins. A source that moved (an extraction rewrote the text before it) keeps its draft through `sourceOf`
- * and the order of its copies. `submitted` holds the drafts of the rows just applied: drop them before pairing, or a
- * surviving copy of the same text inherits the edit of the one that left.
+ * Copies of the same text pair by position order. A range that moved says nothing about identity: two copies of the
+ * same text are only told apart by the place they hold in their group. `submitted` holds the drafts of the rows just
+ * applied, dropped before pairing.
  */
 export function mergeDrafts(previous: readonly ExtractDraft[], rows: readonly ExtractSelection[], submitted: readonly string[] = []): ExtractDraft[] {
   const gone = new Set(submitted)
   const kept = previous.filter(draft => !gone.has(draft.id))
-  const byId = new Map(kept.map(draft => [draft.id, draft]))
-  const groups = new Map<string, ExtractDraft[]>()
-  for (const draft of kept) {
-    const source = sourceOf(draft.candidate)
-    const list = groups.get(source) ?? []
-    groups.set(source, list)
-    list.push(draft)
-  }
-  for (const list of groups.values())
-    list.sort((a, b) => a.candidate.range.start - b.candidate.range.start)
+  const drafts = groupBy(kept, draft => sourceOf(draft.candidate), draft => draft.candidate.range.start)
+  const lines = groupBy(rows, row => sourceOf(row), row => row.range.start)
 
-  const used = new Set<string>()
-  const position = new Map<string, number>()
   const carried = new Map<ExtractSelection, ExtractDraft>()
-  for (const candidate of [
-    ...rows,
-  ].sort((a, b) => a.range.start - b.range.start)) {
-    const source = sourceOf(candidate)
-    const at = position.get(source) ?? 0
-    position.set(source, at + 1)
-    const before = byId.get(draftId(candidate)) ?? groups.get(source)?.[at]
-    if (before && !used.has(before.id)) {
-      used.add(before.id)
-      carried.set(candidate, before)
+  for (const [source, group] of lines) {
+    const available = drafts.get(source) ?? []
+    for (const [i, row] of group.entries()) {
+      const draft = available[i]
+      if (draft)
+        carried.set(row, draft)
     }
   }
 
