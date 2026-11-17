@@ -28,53 +28,47 @@ function sourceOf(candidate: Pick<ExtractSelection, 'path' | 'original' | 'conte
   ])
 }
 
-/** Drafts by the source they belong to, oldest position first. */
-function groupBySource(drafts: readonly ExtractDraft[]): Map<string, ExtractDraft[]> {
-  const groups = new Map<string, ExtractDraft[]>()
-  for (const draft of drafts) {
-    const source = sourceOf(draft.candidate)
-    const list = groups.get(source) ?? []
-    groups.set(source, list)
-    list.push(draft)
+/** Items by source, oldest position first. */
+function groupBy<T>(items: readonly T[], source: (item: T) => string, start: (item: T) => number): Map<string, T[]> {
+  const groups = new Map<string, T[]>()
+  for (const item of items) {
+    const key = source(item)
+    const list = groups.get(key) ?? []
+    groups.set(key, list)
+    list.push(item)
   }
   for (const list of groups.values())
-    list.sort((a, b) => a.candidate.range.start - b.candidate.range.start)
+    list.sort((a, b) => start(a) - start(b))
   return groups
 }
 
-/** A row at its exact position keeps its draft, whatever happened to the other copies. */
-function takeExact(byId: ReadonlyMap<string, ExtractDraft>, rows: readonly ExtractSelection[]): Map<ExtractSelection, ExtractDraft> {
-  const carried = new Map<ExtractSelection, ExtractDraft>()
-  for (const candidate of rows) {
-    const draft = byId.get(draftId(candidate))
-    if (draft)
-      carried.set(candidate, draft)
-  }
-  return carried
-}
-
 /**
- * A moved row keeps its draft only while every copy of its source is still there. One copy that came or went and the
- * order no longer says which draft was this row's own, so the row starts over instead of taking someone else's edit.
+ * Pairs one source's rows with its drafts, both in position order.
+ *
+ * Nothing is carried over when a copy came or went: the order no longer says which draft was this row's own. A row
+ * that kept its exact position keeps its draft only while it holds the same place in the group, or a moved range that
+ * lands on another copy's old position would take that copy's draft.
  */
-function takeMoved(groups: ReadonlyMap<string, readonly ExtractDraft[]>, rows: readonly ExtractSelection[], taken: ReadonlySet<string>): Map<ExtractSelection, ExtractDraft> {
-  const moved = new Map<string, ExtractSelection[]>()
-  for (const candidate of rows) {
-    const source = sourceOf(candidate)
-    const list = moved.get(source) ?? []
-    moved.set(source, list)
-    list.push(candidate)
-  }
+function pairGroup(available: readonly ExtractDraft[], group: readonly ExtractSelection[]): Map<ExtractSelection, ExtractDraft> {
   const carried = new Map<ExtractSelection, ExtractDraft>()
-  for (const [source, candidates] of moved) {
-    const left = groups.get(source)?.filter(draft => !taken.has(draft.id)) ?? []
-    if (left.length !== candidates.length)
-      continue
-    for (const [i, candidate] of candidates.entries()) {
-      const draft = left[i]
-      if (draft)
-        carried.set(candidate, draft)
+  if (available.length !== group.length)
+    return carried
+
+  const taken = new Set<ExtractDraft>()
+  for (const [i, row] of group.entries()) {
+    const draft = available[i]
+    if (draft && draftId(row) === draft.id) {
+      carried.set(row, draft)
+      taken.add(draft)
     }
+  }
+
+  const left = available.filter(draft => !taken.has(draft))
+  const moved = group.filter(row => !carried.has(row))
+  for (const [i, row] of moved.entries()) {
+    const draft = left[i]
+    if (draft)
+      carried.set(row, draft)
   }
   return carried
 }
@@ -87,20 +81,14 @@ function takeMoved(groups: ReadonlyMap<string, readonly ExtractDraft[]>, rows: r
 export function mergeDrafts(previous: readonly ExtractDraft[], rows: readonly ExtractSelection[], submitted: readonly string[] = []): ExtractDraft[] {
   const gone = new Set(submitted)
   const kept = previous.filter(draft => !gone.has(draft.id))
-  const byId = new Map(kept.map(draft => [draft.id, draft]))
-  const sorted = [
-    ...rows,
-  ].sort((a, b) => a.range.start - b.range.start)
+  const drafts = groupBy(kept, draft => sourceOf(draft.candidate), draft => draft.candidate.range.start)
+  const lines = groupBy(rows, row => sourceOf(row), row => row.range.start)
 
-  const exact = takeExact(byId, sorted)
-  const taken = new Set([
-    ...exact.values(),
-  ].map(draft => draft.id))
-  const moved = takeMoved(groupBySource(kept), sorted.filter(row => !exact.has(row)), taken)
-  const carried = new Map([
-    ...exact,
-    ...moved,
-  ])
+  const carried = new Map<ExtractSelection, ExtractDraft>()
+  for (const [source, group] of lines) {
+    for (const [row, draft] of pairGroup(drafts.get(source) ?? [], group))
+      carried.set(row, draft)
+  }
 
   return rows.map((candidate) => {
     const before = carried.get(candidate)

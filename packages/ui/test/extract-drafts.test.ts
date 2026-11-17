@@ -85,6 +85,24 @@ describe('mergeDrafts', () => {
     expect(after[0]!.picked).toBe(false)
   })
 
+  it('keeps each copy with its own draft when a moved range lands on another copy', () => {
+    const before = mergeDrafts([], [
+      selection(10, 'Same message'),
+      selection(30, 'Same message'),
+    ])
+    const drafts = [
+      { ...before[0]!, key: 'first.edit', picked: true },
+      { ...before[1]!, key: 'second.edit', picked: true },
+    ]
+    // Both copies moved by 20, so the first one now sits exactly where the second one was.
+    const after = mergeDrafts(drafts, [
+      selection(30, 'Same message'),
+      selection(50, 'Same message'),
+    ])
+    expect(after.map(draft => draft.key)).toEqual(['first.edit', 'second.edit'])
+    expect(after.map(draft => draft.picked)).toEqual([true, true])
+  })
+
   it('starts over when the rendering context changed', () => {
     const before = mergeDrafts([], [
       selection(10, 'First string', 'v1'),
