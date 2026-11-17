@@ -52,7 +52,8 @@
     "new": "Crée une nouvelle clé",
     "none": "Aucune chaîne codée en dur trouvée.",
     "one": "Extraire cette chaîne",
-    "strings": "Chaînes : {count}"
+    "strings": "Chaînes : {count}",
+    "uncertain": "Associé par ordre : le même texte est apparu ou a disparu ailleurs, vérifiez cette clé avant d'extraire."
   },
   "keys": {
     "allNamespaces": "Tous les espaces de noms",

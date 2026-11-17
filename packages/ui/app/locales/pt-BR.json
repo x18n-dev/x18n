@@ -52,7 +52,8 @@
     "new": "Cria uma chave nova",
     "none": "Nenhuma string fixa encontrada.",
     "one": "Extrair esta string",
-    "strings": "Strings: {count}"
+    "strings": "Strings: {count}",
+    "uncertain": "Pareado por ordem: o mesmo texto apareceu ou desapareceu em outro lugar, verifique esta chave antes de extrair."
   },
   "keys": {
     "allNamespaces": "Todos os namespaces",

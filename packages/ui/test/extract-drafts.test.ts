@@ -114,4 +114,34 @@ describe('mergeDrafts', () => {
     expect(after.map(draft => draft.key)).toEqual(['brandnew', 'first.edit'])
     expect(after.map(draft => draft.picked)).toEqual([false, true])
   })
+
+  it('marks a row it paired by order after a copy came or went', () => {
+    const before = mergeDrafts([], [
+      selection(10, 'Same message'),
+      selection(30, 'Same message'),
+    ])
+    const drafts = [
+      { ...before[0]!, key: 'first.edit', picked: true },
+      before[1]!,
+    ]
+    // The first copy is gone, so the survivor cannot know which draft was its own.
+    const after = mergeDrafts(drafts, [
+      selection(8, 'Same message'),
+    ])
+    expect(after[0]!.key).toBe('first.edit')
+    expect(after[0]!.uncertain).toBe(true)
+  })
+
+  it('does not mark a text that had no copies before', () => {
+    const before = mergeDrafts([], [
+      selection(10, 'First string'),
+    ])
+    const after = mergeDrafts([
+      { ...before[0]!, key: 'first.edit', picked: true },
+    ], [
+      selection(0, 'Brand new'),
+      selection(20, 'First string'),
+    ])
+    expect(after.map(draft => draft.uncertain)).toEqual([false, false])
+  })
 })

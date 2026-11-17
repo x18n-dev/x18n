@@ -52,7 +52,8 @@
     "new": "Crea una clave nueva",
     "none": "No se encontraron cadenas fijas en el código.",
     "one": "Extraer esta cadena",
-    "strings": "Cadenas: {count}"
+    "strings": "Cadenas: {count}",
+    "uncertain": "Emparejado por orden: el mismo texto apareció o desapareció en otro lugar, revisa esta clave antes de extraer."
   },
   "keys": {
     "allNamespaces": "Todos los espacios de nombres",

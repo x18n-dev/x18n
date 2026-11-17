@@ -189,7 +189,8 @@
     "existing": "Reuses an existing key",
     "new": "Creates a new key",
     "file": "Extract this file",
-    "differs": "Its source message differs from this string; extraction keeps the existing messages."
+    "differs": "Its source message differs from this string; extraction keeps the existing messages.",
+    "uncertain": "Paired by order: another row with the same text appeared or disappeared, so check this key before extracting."
   },
   "project": {
     "presets": "Presets",
