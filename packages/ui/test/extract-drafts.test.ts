@@ -68,6 +68,23 @@ describe('mergeDrafts', () => {
     expect(after[0]!.picked).toBe(true)
   })
 
+  it('starts over when a copy of the same text came or went', () => {
+    const before = mergeDrafts([], [
+      selection(10, 'Same message'),
+      selection(30, 'Same message'),
+    ])
+    const drafts = [
+      { ...before[0]!, key: 'first.edit', picked: true },
+      before[1]!,
+    ]
+    // The first copy is gone from the source, so the survivor cannot know which draft was its own.
+    const after = mergeDrafts(drafts, [
+      selection(8, 'Same message'),
+    ])
+    expect(after[0]!.key).toBe('samemessage')
+    expect(after[0]!.picked).toBe(false)
+  })
+
   it('starts over when the rendering context changed', () => {
     const before = mergeDrafts([], [
       selection(10, 'First string', 'v1'),
