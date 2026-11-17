@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ExtractSelection } from '@x18n/builtins/extractors'
+import type { ExtractDraft as Draft } from '../extract-drafts'
 import { computed, ref, watch } from 'vue'
 import FilePath from '../components/FilePath.vue'
 import InfoPop from '../components/InfoPop.vue'
@@ -7,6 +7,7 @@ import LocaleFlag from '../components/LocaleFlag.vue'
 import MessageText from '../components/MessageText.vue'
 import UiPage from '../components/ui/UiPage.vue'
 import UiSection from '../components/ui/UiSection.vue'
+import { mergeDrafts } from '../extract-drafts'
 import { t } from '../i18n'
 import { backend, locales, projectName, useLive } from '../state'
 
@@ -14,36 +15,19 @@ const candidates = useLive(async (b, project) => ({ project, rows: await b.extra
 const table = useLive((b, project) => b.keys(project))
 const existing = computed(() => new Map(table.value?.rows.map(row => [row.key, row])))
 
-interface Draft { id: string, candidate: ExtractSelection, key: string, picked: boolean }
 const drafts = ref<Draft[]>([])
+// Ids of the rows handed to the last apply, so a refresh does not pass their edits to a copy that stayed behind.
+const submitted = ref<readonly string[]>([])
 // Candidates reload after every extraction; keep the picks and edited keys of the strings still left.
 watch(projectName, () => {
   drafts.value = []
+  submitted.value = []
 }, { flush: 'sync' })
 watch(candidates, (list) => {
   if (list?.project !== projectName.value)
     return
-  const previous = new Map(drafts.value.map(d => [d.id, d]))
-  drafts.value = (list?.rows ?? []).map((candidate) => {
-    const { path, range, original, context } = candidate
-    const id = JSON.stringify([
-      path,
-      range.start,
-      range.end,
-      original,
-      context,
-    ])
-    const before = previous.get(id)
-    const key = before && before.key !== before.candidate.key
-      ? before.key
-      : candidate.key
-    return {
-      id,
-      candidate,
-      key,
-      picked: before?.picked ?? false,
-    }
-  })
+  drafts.value = mergeDrafts(drafts.value, list?.rows ?? [], submitted.value)
+  submitted.value = []
 })
 
 const byFile = computed(() => {
@@ -67,10 +51,16 @@ async function extract(list: readonly Draft[]): Promise<void> {
     key,
     context: c.context,
   }))
+  // Set before the call: the refresh can arrive before this promise settles.
+  submitted.value = list.map(draft => draft.id)
   busy.value = true
   try {
     const applied = await backend.value!.extractSelected({ project: projectName.value, items })
     result.value = { count: applied.keys.length, files: applied.changes.length }
+  }
+  catch (error) {
+    submitted.value = []
+    throw error
   }
   finally {
     busy.value = false
