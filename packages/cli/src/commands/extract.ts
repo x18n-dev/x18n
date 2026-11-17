@@ -1,11 +1,10 @@
-import type { ExtractSelection } from '@x18n/builtins/extractors'
 import type { GlobalOptions } from '../context'
 import { readFile, writeFile } from 'node:fs/promises'
 import process from 'node:process'
-import { createInterface } from 'node:readline/promises'
 import { extractItems, findCandidates, findSelections, renderSelections, toPlanFile } from '@x18n/builtins/extractors'
 import { errors, isJsonObject } from '@x18n/core'
 import { displayPath, openWorkspace, out, printJson, runPlan, singleProject } from '../context'
+import { review } from '../extract-review'
 
 export interface ExtractCommandOptions extends GlobalOptions {
   readonly list?: boolean | undefined
@@ -36,32 +35,6 @@ async function readPlan(file: string): Promise<PlanItem[]> {
   return data.items
 }
 
-/** One question per string in a TTY: extract with the proposed key, a typed key, or skip. */
-async function review(candidates: readonly ExtractSelection[], root: string): Promise<ExtractSelection[]> {
-  const rl = createInterface({ input: process.stdin, output: process.stderr })
-  const picked: ExtractSelection[] = []
-  try {
-    for (const candidate of candidates) {
-      process.stderr.write(`\n${displayPath(root, candidate.path)}:${candidate.line}  ${JSON.stringify(candidate.text)}\n  → ${candidate.replacement}\n`)
-      const reply = (await rl.question(`Extract as "${candidate.key}"? [Y/n/key/q] `)).trim()
-      if (reply === 'q')
-        break
-      if (reply === 'n')
-        continue
-      picked.push(reply && reply !== 'y'
-        ? {
-            ...candidate,
-            key: reply,
-          }
-        : candidate)
-    }
-  }
-  finally {
-    rl.close()
-  }
-  return picked
-}
-
 export async function extract(files: readonly string[], options: ExtractCommandOptions): Promise<void> {
   const loaded = singleProject(await openWorkspace(options))
   const { project } = loaded
@@ -74,7 +47,9 @@ export async function extract(files: readonly string[], options: ExtractCommandO
   }
   const interactive = !options.plan && !options.list && !options.yes && !options.json && process.stdin.isTTY
   if (interactive) {
-    const selected = await review(findSelections(project, { files }), loaded.root)
+    const selected = await review(findSelections(project, { files }), {
+      label: path => displayPath(loaded.root, path),
+    })
     if (selected.length === 0) {
       out('Nothing to extract.')
       return
