@@ -25,7 +25,7 @@ const expressionTypes = new Set([
   'KeyBlock',
 ])
 
-function textHardString(node: SvelteNode, data: string, attribute: SvelteNode & { name?: unknown } | undefined, textAttributes: readonly string[] | undefined, out: HardString[]): void {
+function textHardString(node: SvelteNode, data: string, raw: string, attribute: SvelteNode & { name?: unknown } | undefined, textAttributes: readonly string[] | undefined, out: HardString[]): void {
   const text = data.trim()
   if (!text || !/\p{L}/u.test(text))
     return
@@ -41,10 +41,11 @@ function textHardString(node: SvelteNode, data: string, attribute: SvelteNode & 
     }
     return
   }
-  const start = node.start + data.indexOf(text)
+  // `data` decodes entities, so its offsets do not match the source. `raw` is the source text.
+  const start = node.start + (raw.length - raw.trimStart().length)
   out.push({
     text,
-    range: { start, end: start + text.length },
+    range: { start, end: node.start + raw.trimEnd().length },
     kind: 'svelte-text',
   })
 }
@@ -101,8 +102,8 @@ export function svelte(): Plugin {
         }
         if (expressionTypes.has(node.type) && 'expression' in node && isSvelteNode(node.expression))
           scan(file.text.slice(node.expression.start, node.expression.end), node.expression.start, true)
-        if (node.type === 'Text' && 'data' in node && typeof node.data === 'string') {
-          textHardString(node, node.data, parentType === 'Attribute'
+        if (node.type === 'Text' && 'data' in node && typeof node.data === 'string' && 'raw' in node && typeof node.raw === 'string') {
+          textHardString(node, node.data, node.raw, parentType === 'Attribute'
             ? attribute
             : undefined, ctx.config.extract.attributes, hardStrings)
         }

@@ -239,6 +239,57 @@ describe('extraction per preset', () => {
     })
   })
 
+  it('vue-i18n: replaces indented, multi-line and entity template text at the source range', async () => {
+    const { project, files } = await createTestProject({
+      'src/locales/en.json': json({}),
+      'src/App.vue': [
+        '<template>',
+        '  <p>',
+        '    <strong>Note:</strong>',
+        '    Changes are saved automatically.',
+        '  </p>',
+        '  <p>Tom &amp; Jerry</p>',
+        '</template>',
+      ].join('\n'),
+    }, {
+      presets: [
+        vueI18n(),
+      ],
+    })
+    await extractAll(project)
+    expect(files.get('src/App.vue')).toBe([
+      '<template>',
+      '  <p>',
+      '    <strong>{{ $t(\'note\') }}</strong>',
+      '    {{ $t(\'changesAreSavedAutomatically\') }}',
+      '  </p>',
+      '  <p>{{ $t(\'tomJerry\') }}</p>',
+      '</template>',
+    ].join('\n'))
+    expect(JSON.parse(files.get('src/locales/en.json')!)).toEqual({
+      note: 'Note:',
+      changesAreSavedAutomatically: 'Changes are saved automatically.',
+      tomJerry: 'Tom & Jerry',
+    })
+  })
+
+  it('svelte-i18n: replaces an entity at the source range and keeps the decoded message', async () => {
+    const { project, files } = await createTestProject({
+      'locales/en.json': json({}),
+      'src/App.svelte': '<p>Tom &amp; Jerry</p>\n',
+    }, {
+      presets: [
+        svelteI18n(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+    })
+    await extractAll(project)
+    expect(files.get('src/App.svelte')).toBe('import { _ } from \'svelte-i18n\'\n<p>{$_(\'tomJerry\')}</p>\n')
+    expect(JSON.parse(files.get('locales/en.json')!)).toEqual({ tomJerry: 'Tom & Jerry' })
+  })
+
   it('laravel-vue-i18n with laravel: sentence keys, $t in templates, trans in scripts, :name placeholders', async () => {
     const { project, files } = await createTestProject({
       'lang/en.json': json({}),
