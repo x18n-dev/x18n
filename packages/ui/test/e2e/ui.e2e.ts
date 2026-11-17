@@ -1,5 +1,6 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { chmod, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import process from 'node:process'
 import { expect, test } from '@playwright/test'
 import { buildReport, fixture, project, serveStatic, startUi } from './workspace'
 
@@ -411,6 +412,48 @@ export default withTranslation('${namespace}')(App)`
     await expect(key).toHaveValue('translation:welcomeAboard')
   }
   finally {
+    child.kill()
+    await dispose()
+  }
+})
+
+test('reports a failed extraction, keeps the row and clears the banner on retry', async ({ page }) => {
+  test.skip(process.platform === 'win32', 'chmod has no read-only folder on Windows')
+  const { root, dispose } = await project({
+    'x18n.config.json': JSON.stringify({
+      presets: ['vue-i18n'],
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+    }),
+    'locales/en.json': '{}',
+    'src/App.vue': '<template><p>First string</p></template>',
+  })
+  const { info, child } = await startUi(root)
+  const locales = join(root, 'locales')
+  const messages = join(locales, 'en.json')
+  try {
+    await page.goto(info.link!)
+    await page.getByRole('link', { name: 'Extract', exact: true }).click()
+    // The write happens in the RPC, so a read-only folder fails after the click and not on the page.
+    await chmod(locales, 0o500)
+    await chmod(messages, 0o400)
+    await page.getByRole('button', { name: 'Extract this string', exact: true }).click()
+    const alert = page.getByRole('alert')
+    await expect(alert).toBeVisible()
+    await expect(alert).toContainText('Not done')
+    await expect(page.getByRole('textbox', { name: 'Key', exact: true })).toHaveCount(1)
+    await expect(page.getByText('No hard-coded strings found.')).toHaveCount(0)
+
+    await chmod(locales, 0o700)
+    await chmod(messages, 0o600)
+    await page.getByRole('button', { name: 'Extract this string', exact: true }).click()
+    await expect(page.getByRole('alert')).toHaveCount(0)
+    await expect.poll(async () => JSON.parse(await readFile(messages, 'utf8')).firstString).toBe('First string')
+  }
+  finally {
+    await chmod(locales, 0o700).catch(() => {})
+    await chmod(messages, 0o600).catch(() => {})
     child.kill()
     await dispose()
   }

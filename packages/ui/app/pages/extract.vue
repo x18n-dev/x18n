@@ -7,6 +7,7 @@ import LocaleFlag from '../components/LocaleFlag.vue'
 import MessageText from '../components/MessageText.vue'
 import UiPage from '../components/ui/UiPage.vue'
 import UiSection from '../components/ui/UiSection.vue'
+import { describeProblem } from '../edit'
 import { mergeDrafts } from '../extract-drafts'
 import { t } from '../i18n'
 import { backend, locales, projectName, useLive } from '../state'
@@ -16,12 +17,16 @@ const table = useLive((b, project) => b.keys(project))
 const existing = computed(() => new Map(table.value?.rows.map(row => [row.key, row])))
 
 const drafts = ref<Draft[]>([])
+const result = ref<{ count: number, files: number }>()
+const failure = ref<string>()
 // Ids of the rows handed to the last apply, so a refresh does not pass their edits to a copy that stayed behind.
 const submitted = ref<readonly string[]>([])
 // Candidates reload after every extraction; keep the picks and edited keys of the strings still left.
 watch(projectName, () => {
   drafts.value = []
   submitted.value = []
+  failure.value = undefined
+  result.value = undefined
 }, { flush: 'sync' })
 watch(candidates, (list) => {
   if (list?.project !== projectName.value)
@@ -40,7 +45,6 @@ const byFile = computed(() => {
   return [...groups]
 })
 const picked = computed(() => drafts.value.filter(d => d.picked))
-const result = ref<{ count: number, files: number }>()
 const busy = ref(false)
 
 async function extract(list: readonly Draft[]): Promise<void> {
@@ -51,16 +55,34 @@ async function extract(list: readonly Draft[]): Promise<void> {
     key,
     context: c.context,
   }))
+  const project = projectName.value
   // Set before the call: the refresh can arrive before this promise settles.
   submitted.value = list.map(draft => draft.id)
+  failure.value = undefined
+  result.value = undefined
   busy.value = true
   try {
-    const applied = await backend.value!.extractSelected({ project: projectName.value, items })
+    const applied = await backend.value!.extractSelected({ project, items })
+    if (project !== projectName.value)
+      return
+    if (!applied.applied) {
+      submitted.value = []
+      failure.value = t('menu.failed', {
+        message: applied.problems.map(describeProblem).join('; '),
+      })
+      return
+    }
     result.value = { count: applied.keys.length, files: applied.changes.length }
   }
   catch (error) {
+    if (project !== projectName.value)
+      return
     submitted.value = []
-    throw error
+    failure.value = t('menu.failed', {
+      message: error instanceof Error
+        ? error.message
+        : String(error),
+    })
   }
   finally {
     busy.value = false
@@ -85,6 +107,13 @@ function differs(draft: Draft): boolean {
         {{ t('extract.apply', { count: picked.length }) }}
       </button>
     </header>
+    <div v-if="failure" class="shrink-0 flex items-center gap-2 border-b border-base px-4 py-1.5 color-error" role="alert">
+      <span class="i-ph-x-circle-duotone" />
+      <span class="flex-auto color-base">{{ failure }}</span>
+      <button class="btn-ghost h-7" @click="failure = undefined">
+        {{ t('edit.dismiss') }}
+      </button>
+    </div>
     <p v-if="candidates && candidates.project === projectName && !drafts.length" class="px-4 py-3 color-muted">
       {{ t('extract.none') }}
     </p>
