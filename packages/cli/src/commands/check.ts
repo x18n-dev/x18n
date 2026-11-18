@@ -1,12 +1,12 @@
 import type { BaselineSummary, Diagnostic, FixSummary, Reporter, ReportInput } from '@x18n/core'
-import type { LoadedProject, Workspace } from '@x18n/node'
-import type { Baseline, Located } from '../baseline'
+import type { LoadedProject, LoadedWorkspace, Workspace } from '@x18n/node'
+import type { Baseline, BaselineEntry, Located } from '../baseline'
 import type { GlobalOptions } from '../context'
 import { writeFile } from 'node:fs/promises'
 import { join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { errors } from '@x18n/core'
-import { applyBaseline, createBaseline, readBaseline, writeBaseline } from '../baseline'
+import { applyBaseline, createBaseline, includeUnreportedEntries, readBaseline, writeBaseline } from '../baseline'
 import { answer, cwd, displayPath, formatPlan, openWorkspace, out, useColor } from '../context'
 
 export interface CheckOptions extends GlobalOptions {
@@ -59,11 +59,12 @@ function filterDiagnostics(diagnostics: readonly Diagnostic[], options: CheckOpt
 }
 
 /** The reported diagnostics of every project, with the path the baseline knows each one by. */
-function locate(workspace: Workspace, options: CheckOptions): (Located & { readonly project: LoadedProject })[] {
+function locate(workspace: LoadedWorkspace, options: CheckOptions): (Located & { readonly project: LoadedProject })[] {
   return workspace.projects.flatMap((loaded) => {
     const posix = (path: string): string => relative(workspace.root, join(loaded.root, path)).replace(/\\/g, '/') || '.'
     return filterDiagnostics(loaded.project.analyze().diagnostics, options).map(diagnostic => ({
       project: loaded,
+      owner: loaded.definition,
       path: posix(diagnostic.location?.path ?? ''),
       diagnostic,
     }))
@@ -72,7 +73,7 @@ function locate(workspace: Workspace, options: CheckOptions): (Located & { reado
 
 type Fixes = ReadonlyMap<LoadedProject, FixSummary>
 
-function reportInputs(workspace: Workspace, options: CheckOptions, baseline: Baseline | undefined, fixes?: Fixes): { inputs: ReportInput[], summary: BaselineSummary | undefined } {
+function reportInputs(workspace: LoadedWorkspace, options: CheckOptions, baseline: Baseline | undefined, fixes?: Fixes): { inputs: ReportInput[], summary: BaselineSummary | undefined } {
   const located = locate(workspace, options)
   const applied = baseline && applyBaseline(located, baseline, entry => reported(entry, options))
   const kept = applied?.kept ?? located
@@ -108,7 +109,7 @@ function needsHistory(loaded: LoadedProject, options: CheckOptions): boolean {
   return level !== 'off' && (only.length === 0 || only.includes('stale-translation')) && !list(options.skip).includes('stale-translation')
 }
 
-async function report(workspace: Workspace, options: CheckOptions, baseline: Baseline | undefined, fixes?: Fixes): Promise<number> {
+async function report(workspace: LoadedWorkspace, options: CheckOptions, baseline: Baseline | undefined, fixes?: Fixes): Promise<number> {
   const { inputs, summary } = reportInputs(workspace, options, baseline, fixes)
   const reporterIds = list(options.reporter)
   const ids = reporterIds.length
@@ -151,14 +152,57 @@ function baselineFile(workspace: Workspace, options: CheckOptions): string {
     : resolve(cwd(), String(options.baseline))
 }
 
+/** Preserve the configuration discovery context and baseline file when dropping the project selector. */
+function migrationHint(workspace: LoadedWorkspace, options: CheckOptions): string {
+  function argument(path: string): string {
+    // CAC treats a bare number as a number and a leading dash as another option.
+    const value = path.startsWith('-') || Number.isFinite(Number(path))
+      ? `./${path}`
+      : path
+    return /^[\w./-]+$/.test(value)
+      ? value
+      : `'${value.replaceAll('\'', '\'\\\'\'')}'`
+  }
+  let command = 'x18n check'
+  for (const flag of ['root', 'config', 'baseline'] as const) {
+    if (options[flag] !== undefined)
+      command += ` --${flag} ${argument(String(options[flag]))}`
+  }
+  const where = cwd() === workspace.root
+    ? 'the workspace root'
+    : 'the same directory as this check'
+  return `From ${where}, run \`${command}\` to review the workspace check, then \`${command} --update-baseline\` once.`
+}
+
+/** Resource paths can cross project roots, so they cannot identify the project that reported a legacy entry. */
+async function readProjectBaseline(workspace: LoadedWorkspace, options: CheckOptions, file: string): Promise<{ selected: Baseline | undefined, outsideScope: BaselineEntry[] }> {
+  const baseline = await readBaseline(file)
+  const selected: BaselineEntry[] = []
+  const outsideScope: BaselineEntry[] = []
+  for (const entry of baseline?.diagnostics ?? []) {
+    const owner = entry.project
+    if (reported(entry, options)) {
+      if (!owner && entry.count !== 0)
+        throw new Error(`The baseline does not identify the project that reported "${entry.path}". ${migrationHint(workspace, options)}`)
+      if (owner && workspace.projects.some(({ definition }) => definition.declaredIn === owner.declaredIn && definition.directory === owner.directory)) {
+        selected.push(entry)
+        continue
+      }
+    }
+    outsideScope.push(entry)
+  }
+  return { selected: baseline && { diagnostics: selected }, outsideScope }
+}
+
 /**
  * Writes the diagnostics this run reports into the baseline. Entries that `--only`, `--skip` or `--locale` leave
  * out stay as they are.
  */
-async function updateBaseline(workspace: Workspace, options: CheckOptions, file: string, previous: Baseline | undefined): Promise<Baseline> {
+async function updateBaseline(workspace: LoadedWorkspace, options: CheckOptions, file: string, previous: Baseline | undefined, outsideScope: readonly BaselineEntry[] = []): Promise<Baseline> {
   const baseline = createBaseline(locate(workspace, options), previous?.diagnostics.filter(entry => !reported(entry, options)))
-  await writeBaseline(file, baseline)
-  const count = baseline.diagnostics.reduce((sum, entry) => sum + entry.count, 0)
+  const combined = includeUnreportedEntries(baseline, outsideScope)
+  await writeBaseline(file, combined)
+  const count = combined.diagnostics.reduce((sum, entry) => sum + entry.count, 0)
   process.stderr.write(`Wrote ${count} ${count === 1
     ? 'diagnostic'
     : 'diagnostics'} to the baseline ${relative(cwd(), file).replace(/\\/g, '/')}.\n`)
@@ -242,16 +286,21 @@ export async function check(options: CheckOptions): Promise<number> {
     await loaded.project.loadHistory({ watch: options.watch })
     await loaded.host.flush()
   }))
-  const fixes = level && await fix(workspace, options, level)
   const file = baselineFile(workspace, options)
-  // An invalid file is no reason to refuse writing a new one.
-  let baseline = await readBaseline(file).catch((error: unknown) => {
-    if (options.updateBaseline)
-      return undefined
-    throw error
-  })
+  // Check ownership before --fix can edit a resource in a project-scoped run.
+  const scoped = options.project === undefined
+    ? undefined
+    : await readProjectBaseline(workspace, options, file)
+  const fixes = level && await fix(workspace, options, level)
+  let baseline = scoped
+    ? scoped.selected
+    : await readBaseline(file).catch((error: unknown) => {
+        if (options.updateBaseline)
+          return undefined
+        throw error
+      })
   if (options.updateBaseline)
-    baseline = await updateBaseline(workspace, options, file, baseline)
+    baseline = await updateBaseline(workspace, options, file, baseline, scoped?.outsideScope)
   const code = await report(workspace, options, baseline, fixes)
   if (!options.watch)
     return code
