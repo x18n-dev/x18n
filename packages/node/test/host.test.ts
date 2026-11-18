@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createNodeHost, loadWorkspace } from '../src'
+import { createNodeHost, loadWorkspace, loadWorkspaceWithDefinitions } from '../src'
 
 let root: string
 
@@ -143,8 +143,9 @@ describe('loadWorkspace', () => {
         ['a'],
       ],
     ])
-    const only = await loadWorkspace({ cwd: root, cache: false, project: 'apps/web' })
+    const only = await loadWorkspaceWithDefinitions({ cwd: root, cache: false, project: 'apps/web' })
     expect(only.projects.map(p => p.name)).toEqual(['apps/web'])
+    expect(only.projects[0]!.definition).toEqual({ declaredIn: '.', directory: 'apps/web' })
   })
 
   it('does not expand a literal projects path into nested directories', async () => {
@@ -194,8 +195,12 @@ describe('loadWorkspace', () => {
       'apps/shop/packages/cart/locales/fr.json': '{"b":"B"}',
       'node_modules/lib/x18n.config.json': '{}',
     })
-    const workspace = await loadWorkspace({ cwd: root, cache: false })
+    const workspace = await loadWorkspaceWithDefinitions({ cwd: root, cache: false })
     expect(workspace.root).toBe(root)
+    expect(workspace.projects.map(({ definition }) => [definition.declaredIn, definition.directory])).toEqual([
+      ['apps/shop', 'apps/shop/packages/cart'],
+      ['apps/web', 'apps/web'],
+    ])
     expect(workspace.projects.map(p => [
       p.name,
       p.project.sourceLocale,
@@ -211,6 +216,20 @@ describe('loadWorkspace', () => {
         'de',
         ['a'],
       ],
+    ])
+  })
+
+  it('keeps distinct declarations when two configs match the same directory', async () => {
+    await write({
+      'a/x18n.config.json': '{"root":"..","projects":["shared"]}',
+      'b/x18n.config.json': '{"root":"..","projects":["shared"]}',
+      'shared/x18n.config.json': '{"root":"app"}',
+      'shared/app/locales/en.json': '{"a":"A"}',
+    })
+    const workspace = await loadWorkspaceWithDefinitions({ cwd: root, cache: false })
+    expect(workspace.projects.map(p => p.definition)).toEqual([
+      { declaredIn: 'a', directory: 'shared' },
+      { declaredIn: 'b', directory: 'shared' },
     ])
   })
 

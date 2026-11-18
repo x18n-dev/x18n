@@ -1,14 +1,17 @@
 // Baseline after i18next-cli (MIT, https://github.com/i18next/i18next-cli), src/utils/lint-baseline.ts,
 // and ESLint bulk suppressions.
 import type { BaselineSummary, Diagnostic } from '@x18n/core'
+import type { ProjectDefinition } from '@x18n/node'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 /**
- * One known diagnostic and how often it occurs. It is identified by its path, check, key, locale and message, not by
+ * One known diagnostic and how often it occurs. It is identified by its reporting project, path, check, key, locale and message, not by
  * its line, so moving code keeps it in the baseline, while one more identical diagnostic in the same file is new.
  */
 export interface BaselineEntry {
+  /** Present when the baseline records which project reported this diagnostic. */
+  readonly project?: ProjectDefinition
   /** File relative to the workspace root, with `/`; the project directory for diagnostics without a location. */
   readonly path: string
   readonly code: string
@@ -25,14 +28,16 @@ export interface Baseline {
 
 /** A diagnostic with the path the baseline knows it by. */
 export interface Located {
+  readonly owner: ProjectDefinition
   readonly path: string
   readonly diagnostic: Diagnostic
 }
 
-type Identity = Pick<BaselineEntry, 'path' | 'code' | 'key' | 'locale' | 'message'>
+type Identity = Pick<BaselineEntry, 'project' | 'path' | 'code' | 'key' | 'locale' | 'message'>
 
-function identity({ path, diagnostic: d }: Located): Identity {
+function identity({ owner, path, diagnostic: d }: Located): Identity {
   return {
+    project: owner,
     path,
     code: d.code,
     key: d.key,
@@ -40,8 +45,10 @@ function identity({ path, diagnostic: d }: Located): Identity {
     message: d.message,
   }
 }
-function idOf(e: Identity): string {
+function idOf(e: Identity, project: ProjectDefinition | null | undefined = e.project): string {
   return JSON.stringify([
+    project?.declaredIn,
+    project?.directory,
     e.path,
     e.code,
     e.key ?? null,
@@ -61,6 +68,7 @@ function compare(a: string, b: string): number {
 function order(a: Identity, b: Identity): number {
   return compare(a.path, b.path) || compare(a.code, b.code)
     || compare(a.key ?? '', b.key ?? '') || compare(a.locale ?? '', b.locale ?? '') || compare(a.message, b.message)
+    || compare(a.project?.declaredIn ?? '', b.project?.declaredIn ?? '') || compare(a.project?.directory ?? '', b.project?.directory ?? '')
 }
 
 /** The baseline that holds these diagnostics, sorted so that diffs stay small. */
@@ -70,13 +78,15 @@ export function createBaseline(located: readonly Located[], kept: readonly Basel
     entries.set(idOf(entry), entry)
   for (const item of located) {
     const id = identity(item)
-    const entry = entries.get(idOf(id))
-    entries.set(idOf(id), { ...id, count: (entry?.count ?? 0) + 1 })
+    const key = idOf(id)
+    const entry = entries.get(key)
+    entries.set(key, { ...id, count: (entry?.count ?? 0) + 1 })
   }
   return {
     diagnostics: [
       ...entries.values(),
     ].sort(order).map(e => ({
+      ...e.project && { project: e.project },
       path: e.path,
       code: e.code,
       ...e.key !== undefined && { key: e.key },
@@ -87,6 +97,18 @@ export function createBaseline(located: readonly Located[], kept: readonly Basel
   }
 }
 
+/** Keep entries outside this project check unchanged, including their occurrence counts. */
+export function includeUnreportedEntries(selected: Baseline, outsideScope: readonly BaselineEntry[]): Baseline {
+  return outsideScope.length
+    ? {
+        diagnostics: [
+          ...selected.diagnostics,
+          ...outsideScope,
+        ].sort(order),
+      }
+    : selected
+}
+
 /**
  * Leaves out the diagnostics the baseline holds, up to the count of each entry. `fixed` counts the entries that no
  * longer occur; `relevant` limits it to the entries this run could have reported (see `--only`).
@@ -94,12 +116,18 @@ export function createBaseline(located: readonly Located[], kept: readonly Basel
 export function applyBaseline<T extends Located>(located: readonly T[], baseline: Baseline, relevant: (entry: BaselineEntry) => boolean = () => true): { kept: T[] } & BaselineSummary {
   const left = new Map<string, number>()
   for (const entry of baseline.diagnostics) {
-    if (relevant(entry))
-      left.set(idOf(entry), (left.get(idOf(entry)) ?? 0) + entry.count)
+    if (relevant(entry)) {
+      const id = idOf(entry)
+      left.set(id, (left.get(id) ?? 0) + entry.count)
+    }
   }
   let suppressed = 0
   const kept = located.filter((item) => {
-    const id = idOf(identity(item))
+    const e = identity(item)
+    let id = idOf(e)
+    // A full workspace can still match unowned rows from an older baseline.
+    if (!left.get(id))
+      id = idOf(e, null)
     const count = left.get(id) ?? 0
     if (count === 0)
       return true
@@ -130,8 +158,10 @@ export async function readBaseline(file: string): Promise<Baseline | undefined> 
   }
   catch {}
   const diagnostics = (value as Partial<Baseline> | null)?.diagnostics
-  if (!Array.isArray(diagnostics) || !diagnostics.every(e => typeof e?.path === 'string' && typeof e.code === 'string' && typeof e.message === 'string' && Number.isInteger(e.count)))
+  if (!Array.isArray(diagnostics) || !diagnostics.every(e => typeof e?.path === 'string' && typeof e.code === 'string' && typeof e.message === 'string' && Number.isInteger(e.count)
+    && (e.project === undefined || (typeof e.project?.declaredIn === 'string' && typeof e.project.directory === 'string')))) {
     throw new Error(`the check baseline ${file} is not valid. Run \`x18n check --update-baseline\` to write it again.`)
+  }
   return { diagnostics }
 }
 

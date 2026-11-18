@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -41,6 +41,13 @@ async function fixture(name: string): Promise<string> {
   const dir = join(work, `${name}-${Math.random().toString(36).slice(2)}`)
   await cp(join(fixtures, name), dir, { recursive: true })
   await writeFile(join(dir, '.gitignore'), '')
+  return dir
+}
+
+async function vueWorkspace(): Promise<string> {
+  const dir = await mkdtemp(join(work, 'baseline-projects-'))
+  for (const name of ['web', 'docs'])
+    await cp(join(fixtures, 'vue-i18n'), join(dir, 'apps', name), { recursive: true })
   return dir
 }
 
@@ -244,6 +251,7 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     const written = await readFile(file, 'utf8')
     const { diagnostics } = JSON.parse(written)
     expect(diagnostics[0]).toEqual({
+      project: { declaredIn: '.', directory: '.' },
       path: 'src/App.vue',
       code: 'missing-key',
       key: 'app.titel',
@@ -321,6 +329,305 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     const invalid = await x18n(dir, ['check', '--baseline', 'baseline.json'])
     expect(invalid.code).toBe(2)
     expect(invalid.stderr).toContain('is not valid. Run `x18n check --update-baseline` to write it again.')
+  })
+
+  it('keeps sibling baseline counts on a scoped refresh and migrates moved projects on a full refresh', async () => {
+    const dir = await vueWorkspace()
+    await writeFile(join(dir, 'x18n.config.json'), JSON.stringify({
+      projects: ['apps/*'],
+    }))
+    const file = join(dir, '.x18n/check-baseline.json')
+    const check = (...args: string[]): Promise<Result> => x18n(dir, [
+      'check',
+      '--only',
+      'missing-key',
+      '--json',
+      ...args,
+    ])
+    expect((await check('--update-baseline')).code).toBe(0)
+    const { diagnostics } = JSON.parse(await readFile(file, 'utf8'))
+    const docs = diagnostics.find((entry: { path: string }) => entry.path.startsWith('apps/docs/'))
+    // A merge can leave repeated entries for the sibling.
+    await writeFile(file, JSON.stringify({
+      diagnostics: [
+        ...diagnostics,
+        { ...docs, count: 2 },
+      ],
+    }))
+
+    expect(json(await check('--project', 'apps/web')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    expect((await check('--project', 'apps/web', '--update-baseline')).code).toBe(0)
+    expect(json(await check('--project', 'apps/docs')).data.baseline).toEqual({ suppressed: 1, fixed: 2 })
+
+    expect((await x18n(dir, [
+      'check',
+      '--project',
+      'apps/docs',
+      '--only',
+      'empty-translation',
+      '--update-baseline',
+    ])).code).toBe(0)
+    expect(json(await check('--project', 'apps/docs')).data.baseline).toEqual({ suppressed: 1, fixed: 2 })
+
+    await rename(join(dir, 'apps/docs'), join(dir, 'apps/manual'))
+    const moved = await check()
+    expect(moved.code).toBe(1)
+    expect(json(moved).diagnostics).toMatchObject([
+      { project: 'apps/manual', code: 'missing-key' },
+    ])
+    expect(json(moved).data.baseline).toEqual({ suppressed: 1, fixed: 3 })
+    expect((await x18n(dir, ['check', '--update-baseline'])).code).toBe(0)
+    expect(json(await x18n(dir, ['check', '--json'])).data.baseline.fixed).toBe(0)
+    expect(json(await check('--project', 'apps/manual')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+  })
+
+  it.each([
+    { admin: 'apps/shop/admin', pattern: 'admin/locales/{locale}.json' },
+    { admin: 'apps/admin', pattern: '../admin/locales/{locale}.json' },
+  ])('tracks each project reporting the same diagnostic from $admin', async ({ admin, pattern }) => {
+    const dir = await mkdtemp(join(work, 'shared-resource-'))
+    const shop = join(dir, 'apps/shop')
+    const locales = join(dir, admin, 'locales')
+    await mkdir(shop, { recursive: true })
+    await mkdir(locales, { recursive: true })
+    await writeFile(join(locales, 'en.json'), '{"hello":"Hello"}')
+    await writeFile(join(locales, 'de.json'), '{}')
+    await writeFile(join(dir, 'x18n.config.json'), JSON.stringify({
+      projects: ['apps/shop', admin],
+      sourceLocale: 'en',
+      checks: { 'missing-translation': 'error' },
+    }))
+    await writeFile(join(dir, admin, 'x18n.config.json'), JSON.stringify({
+      name: 'admin',
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+    }))
+    const configureShop = (name: string, level: string): Promise<void> => writeFile(join(shop, 'x18n.config.json'), JSON.stringify({
+      name,
+      resources: [
+        { pattern },
+      ],
+      checks: { 'missing-translation': level },
+    }))
+    const check = (...args: string[]): Promise<Result> => x18n(dir, [
+      'check',
+      '--only',
+      'missing-translation',
+      '--json',
+      ...args,
+    ])
+    await configureShop('shop', 'off')
+    expect((await check('--update-baseline')).code).toBe(0)
+    await configureShop('shop', 'error')
+    const fresh = await check('--project', 'shop')
+    expect(fresh.code).toBe(1)
+    expect(json(fresh).diagnostics).toMatchObject([
+      { project: 'shop', key: 'hello' },
+    ])
+    expect(json(fresh).data.baseline).toEqual({ suppressed: 0, fixed: 0 })
+
+    expect((await check('--project', 'shop', '--update-baseline')).code).toBe(0)
+    const { diagnostics } = JSON.parse(await readFile(join(dir, '.x18n/check-baseline.json'), 'utf8'))
+    expect(diagnostics).toHaveLength(2)
+    for (const directory of ['apps/shop', admin]) {
+      expect(diagnostics).toContainEqual(expect.objectContaining({
+        project: { declaredIn: '.', directory },
+        path: `${admin}/locales/en.json`,
+        count: 1,
+      }))
+    }
+    await configureShop('storefront', 'error')
+    expect(json(await check('--project', 'storefront')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    await configureShop('storefront', 'off')
+    expect(json(await check('--project', 'storefront')).data.baseline).toEqual({ suppressed: 0, fixed: 1 })
+    expect((await check('--project', 'storefront', '--update-baseline')).code).toBe(0)
+    expect(json(await check()).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+  })
+
+  it('requires a workspace refresh of legacy entries even when just one project remains', async () => {
+    const dir = await vueWorkspace()
+    const web = join(dir, 'apps/web')
+    const config = join(dir, '-ci.json')
+    const file = join(dir, '001')
+    await writeFile(config, JSON.stringify({
+      projects: ['apps/web', 'apps/docs'],
+    }))
+    const check = (...args: string[]): Promise<Result> => x18n(web, [
+      'check',
+      '--config',
+      '../../-ci.json',
+      '--baseline',
+      '../../001',
+      '--json',
+      ...args,
+    ])
+    const scoped = ['--project', 'apps/web']
+    const legacy = {
+      path: 'apps/docs/src/App.vue',
+      code: 'missing-key',
+      key: 'app.titel',
+      locale: 'en',
+      message: '"app.titel" is not defined in en.',
+      count: 1,
+    }
+    await writeFile(file, JSON.stringify({
+      diagnostics: [
+        { ...legacy, count: 0 },
+      ],
+    }))
+    expect((await check(...scoped, '--only', 'missing-key')).code).toBe(1)
+    await writeFile(file, JSON.stringify({
+      diagnostics: [legacy],
+    }))
+    expect(json(await check('--only', 'missing-key')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    expect(json(await check(...scoped, '--skip', 'missing-key')).data.baseline).toEqual({ suppressed: 0, fixed: 0 })
+    expect((await check(...scoped, '--only', 'empty-translation', '--update-baseline')).code).toBe(0)
+    const before = await readFile(file, 'utf8')
+    expect(JSON.parse(before).diagnostics).toContainEqual(legacy)
+    expect(json(await check(...scoped, '--only', 'empty-translation')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    expect((await check('--project', 'apps/docs')).code).toBe(2)
+
+    await writeFile(config, JSON.stringify({
+      projects: ['apps/web'],
+    }))
+    const en = join(web, 'src/locales/en.json')
+    const original = await readFile(en, 'utf8')
+    for (const flags of [
+      [],
+      ['--fix'],
+      ['--update-baseline', '--fix'],
+    ]) {
+      const refused = await check(...scoped, ...flags)
+      expect(refused.code).toBe(2)
+      const envelope = json(refused)
+      expect(envelope).toMatchObject({ data: null, diagnostics: [] })
+      const reason = envelope.errors[0].why
+      expect(reason).toContain('same directory as this check')
+      expect(reason).toContain('`x18n check --config ../../-ci.json --baseline ../../001`')
+      expect(reason).toContain('`x18n check --config ../../-ci.json --baseline ../../001 --update-baseline`')
+      expect(await readFile(file, 'utf8')).toBe(before)
+      expect(await readFile(en, 'utf8')).toBe(original)
+    }
+
+    expect((await check()).code).toBe(1)
+    expect((await check('--update-baseline')).code).toBe(0)
+    expect(json(await check(...scoped, '--only', 'missing-key')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    await check(...scoped, '--only', 'missing-key', '--fix')
+    expect(JSON.parse(await readFile(en, 'utf8')).app.titel).toBe('')
+  })
+
+  it('preserves the working directory and paths for an executable config during migration', async () => {
+    const dir = await vueWorkspace()
+    const web = join(dir, 'apps/web')
+    await writeFile(join(dir, 'ci.mjs'), `import { readFileSync } from 'node:fs'
+export default { projects: JSON.parse(readFileSync('projects.json', 'utf8')) }`)
+    await writeFile(join(web, 'projects.json'), '["apps/web"]')
+    await writeFile(join(dir, 'projects.json'), '["apps/docs"]')
+    const command = [
+      'check',
+      '--root',
+      '../..',
+      '--config',
+      'ci.mjs',
+      '--baseline',
+      './001',
+    ]
+    const file = join(web, '001')
+    expect((await x18n(web, [...command, '--update-baseline'])).code).toBe(0)
+    const { diagnostics } = JSON.parse(await readFile(file, 'utf8'))
+    expect(diagnostics.length).toBeGreaterThan(0)
+    const legacy = diagnostics.map(({ project: _project, ...entry }: { project: unknown }) => entry)
+    await writeFile(file, JSON.stringify({ diagnostics: legacy }))
+
+    const selected = [
+      ...command,
+      '--project',
+      'apps/web',
+      '--json',
+    ]
+    const refused = await x18n(web, selected)
+    expect(refused.code).toBe(2)
+    const reason = json(refused).errors[0].why
+    expect(reason).toContain('From the same directory as this check')
+    expect(reason).toContain(`\`x18n ${command.join(' ')}\``)
+    expect(reason).toContain(`\`x18n ${command.join(' ')} --update-baseline\``)
+    expect(json(await x18n(web, [...command, '--json'])).data.baseline).toEqual({ suppressed: legacy.length, fixed: 0 })
+    expect((await x18n(web, [...command, '--update-baseline'])).code).toBe(0)
+    expect(JSON.parse(await readFile(file, 'utf8')).diagnostics).toEqual(diagnostics)
+    expect((await x18n(web, selected)).code).toBe(0)
+  })
+
+  it('keeps shell-specific quoting with the caller when a migration path contains spaces', async () => {
+    const dir = await vueWorkspace()
+    const config = 'ci settings.json'
+    await writeFile(join(dir, config), '{"projects":["apps/web","apps/docs"]}')
+    const file = 'team\'s baseline.json'
+    const legacy = {
+      path: 'old.json',
+      code: 'missing-key',
+      message: 'old entry',
+      count: 1,
+    }
+    await writeFile(join(dir, file), JSON.stringify({
+      diagnostics: [legacy],
+    }))
+    const args = [
+      'check',
+      '--config',
+      config,
+      '--baseline',
+      file,
+    ]
+    const refused = await x18n(dir, [
+      ...args,
+      '--project',
+      'apps/web',
+      '--json',
+    ])
+    expect(refused.code).toBe(2)
+    const reason = json(refused).errors[0].why
+    expect(reason).toContain('run `x18n check` with only the --root, --config and --baseline arguments you originally supplied')
+    expect(reason).toContain('Copy those arguments with their original quoting')
+    expect(reason).toContain('add `--update-baseline` to that command')
+    expect(json(await x18n(dir, [...args, '--json'])).data.baseline.fixed).toBe(1)
+    expect((await x18n(dir, [...args, '--update-baseline'])).code).toBe(0)
+    expect((await x18n(dir, [...args, '--project', 'apps/web'])).code).toBe(0)
+  })
+
+  it('keeps inherited i18n-ally settings when migrating from a subdirectory', async () => {
+    const dir = await fixture('vue-i18n')
+    const src = join(dir, 'src')
+    await mkdir(join(dir, '.vscode'))
+    await writeFile(join(dir, '.vscode/settings.json'), '{"i18n-ally.localesPaths":["src/locales"]}')
+    await mkdir(join(dir, 'other'))
+    await writeFile(join(dir, 'other/x18n.config.json'), '{}')
+
+    const file = join(dir, '.x18n/check-baseline.json')
+    expect((await x18n(src, ['check', '--update-baseline'])).code).toBe(0)
+    const { diagnostics } = JSON.parse(await readFile(file, 'utf8'))
+    const legacy = diagnostics.map(({ project: _project, ...entry }: { project: unknown }) => entry)
+    expect(legacy.length).toBeGreaterThan(0)
+    await writeFile(file, JSON.stringify({ diagnostics: legacy }))
+
+    // Starting at the root discovers other/x18n.config.json before the fallback settings.
+    expect(json(await x18n(dir, ['check', '--json'])).data.baseline.fixed).toBe(legacy.length)
+    const refused = await x18n(src, [
+      'check',
+      '--project',
+      basename(dir),
+      '--json',
+    ])
+    expect(refused.code).toBe(2)
+    expect(json(refused).errors[0].why).toContain('From the same directory as this check, run `x18n check`')
+    expect(json(await x18n(src, ['check', '--json'])).data.baseline.suppressed).toBe(legacy.length)
+    expect((await x18n(src, ['check', '--update-baseline'])).code).toBe(0)
+    expect(json(await x18n(src, [
+      'check',
+      '--project',
+      basename(dir),
+      '--json',
+    ])).data.baseline).toEqual({ suppressed: legacy.length, fixed: 0 })
   })
 
   it('status, keys, get and locales return JSON', async () => {

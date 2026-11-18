@@ -1,12 +1,12 @@
 import type { Answers, Diagnostic, Envelope, ErrorCode, ErrorInfo, Plan, Project, WireDiagnostic } from '@x18n/core'
-import type { LoadedProject, Workspace } from '@x18n/node'
+import type { LoadedProject, LoadedWorkspace, Workspace } from '@x18n/node'
 import { Buffer } from 'node:buffer'
 import { readFile } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { applyTextEdits, envelope, errors, isX18nError, toWireDiagnostic, toWireRange } from '@x18n/core'
-import { loadWorkspace, stderrLogger } from '@x18n/node'
+import { loadWorkspaceWithDefinitions, stderrLogger } from '@x18n/node'
 
 export interface GlobalOptions {
   readonly root?: string | undefined
@@ -27,8 +27,8 @@ export function useColor(options: GlobalOptions): boolean {
   return process.stdout.isTTY === true
 }
 
-export async function openWorkspace(options: GlobalOptions): Promise<Workspace> {
-  return loadWorkspace({
+export async function openWorkspace(options: GlobalOptions): Promise<LoadedWorkspace> {
+  return loadWorkspaceWithDefinitions({
     cwd: options.root ?? cwd(),
     configFile: options.config,
     upward: options.root === undefined,
