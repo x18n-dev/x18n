@@ -154,23 +154,19 @@ function baselineFile(workspace: Workspace, options: CheckOptions): string {
 
 /** Preserve the configuration discovery context and baseline file when dropping the project selector. */
 function migrationHint(workspace: LoadedWorkspace, options: CheckOptions): string {
-  function argument(path: string): string {
-    // CAC treats a bare number as a number and a leading dash as another option.
-    const value = path.startsWith('-') || Number.isFinite(Number(path))
-      ? `./${path}`
-      : path
-    return /^[\w./-]+$/.test(value)
-      ? value
-      : `'${value.replaceAll('\'', '\'\\\'\'')}'`
-  }
-  let command = 'x18n check'
-  for (const flag of ['root', 'config', 'baseline'] as const) {
-    if (options[flag] !== undefined)
-      command += ` --${flag} ${argument(String(options[flag]))}`
-  }
   const where = cwd() === workspace.root
     ? 'the workspace root'
     : 'the same directory as this check'
+  let command = 'x18n check'
+  for (const flag of ['root', 'config', 'baseline'] as const) {
+    if (options[flag] === undefined)
+      continue
+    const path = String(options[flag])
+    // The caller's shell knows how to quote its paths. CAC also treats bare numbers and leading dashes specially.
+    if (!/^[\w./-]+$/.test(path) || path.startsWith('-') || Number.isFinite(Number(path)))
+      return `From ${where}, run \`x18n check\` with only the --root, --config and --baseline arguments you originally supplied. Copy those arguments with their original quoting. Review the result, then add \`--update-baseline\` to that command and run it once.`
+    command += ` --${flag} ${path}`
+  }
   return `From ${where}, run \`${command}\` to review the workspace check, then \`${command} --update-baseline\` once.`
 }
 

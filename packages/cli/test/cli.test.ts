@@ -558,6 +558,43 @@ export default { projects: JSON.parse(readFileSync('projects.json', 'utf8')) }`)
     expect((await x18n(web, selected)).code).toBe(0)
   })
 
+  it('keeps shell-specific quoting with the caller when a migration path contains spaces', async () => {
+    const dir = await vueWorkspace()
+    const config = 'ci settings.json'
+    await writeFile(join(dir, config), '{"projects":["apps/web","apps/docs"]}')
+    const file = 'team\'s baseline.json'
+    const legacy = {
+      path: 'old.json',
+      code: 'missing-key',
+      message: 'old entry',
+      count: 1,
+    }
+    await writeFile(join(dir, file), JSON.stringify({
+      diagnostics: [legacy],
+    }))
+    const args = [
+      'check',
+      '--config',
+      config,
+      '--baseline',
+      file,
+    ]
+    const refused = await x18n(dir, [
+      ...args,
+      '--project',
+      'apps/web',
+      '--json',
+    ])
+    expect(refused.code).toBe(2)
+    const reason = json(refused).errors[0].why
+    expect(reason).toContain('run `x18n check` with only the --root, --config and --baseline arguments you originally supplied')
+    expect(reason).toContain('Copy those arguments with their original quoting')
+    expect(reason).toContain('add `--update-baseline` to that command')
+    expect(json(await x18n(dir, [...args, '--json'])).data.baseline.fixed).toBe(1)
+    expect((await x18n(dir, [...args, '--update-baseline'])).code).toBe(0)
+    expect((await x18n(dir, [...args, '--project', 'apps/web'])).code).toBe(0)
+  })
+
   it('keeps inherited i18n-ally settings when migrating from a subdirectory', async () => {
     const dir = await fixture('vue-i18n')
     const src = join(dir, 'src')
