@@ -6,6 +6,8 @@ export interface ExtractDraft {
   readonly candidate: ExtractSelection
   readonly key: string
   readonly picked: boolean
+  /** The group changed size, so the row was paired by order and may hold another copy's key. */
+  readonly uncertain: boolean
 }
 
 /** The source position and rendering context a draft belongs to. */
@@ -48,6 +50,9 @@ function groupBy<T>(items: readonly T[], source: (item: T) => string, start: (it
  * Copies of the same text pair by position order. A range that moved says nothing about identity: two copies of the
  * same text are only told apart by the place they hold in their group. `submitted` holds the drafts of the rows just
  * applied, dropped before pairing.
+ *
+ * When a group changed size outside an extraction, the order cannot say which copy is which. The rows are still paired
+ * by order so no edit is lost, and marked `uncertain` so the page can ask for a check.
  */
 export function mergeDrafts(previous: readonly ExtractDraft[], rows: readonly ExtractSelection[], submitted: readonly string[] = []): ExtractDraft[] {
   const gone = new Set(submitted)
@@ -56,8 +61,12 @@ export function mergeDrafts(previous: readonly ExtractDraft[], rows: readonly Ex
   const lines = groupBy(rows, row => sourceOf(row), row => row.range.start)
 
   const carried = new Map<ExtractSelection, ExtractDraft>()
+  const uncertain = new Set<string>()
   for (const [source, group] of lines) {
     const available = drafts.get(source) ?? []
+    // Only a group that had copies before and changed size is ambiguous. A new text or a removed one has nothing to pair.
+    if (available.length > 0 && available.length !== group.length)
+      uncertain.add(source)
     for (const [i, row] of group.entries()) {
       const draft = available[i]
       if (draft)
@@ -74,6 +83,7 @@ export function mergeDrafts(previous: readonly ExtractDraft[], rows: readonly Ex
         ? before.key
         : candidate.key,
       picked: before?.picked ?? false,
+      uncertain: uncertain.has(sourceOf(candidate)),
     }
   })
 }

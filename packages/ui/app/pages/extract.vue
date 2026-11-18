@@ -154,6 +154,13 @@ function differs(draft: Draft): boolean {
             </div>
           </InfoPop>
           <span v-else class="i-ph-plus-circle-duotone shrink-0 text-base color-ok" role="img" :title="t('extract.new')" :aria-label="t('extract.new')" />
+          <span
+            v-if="draft.uncertain"
+            class="i-ph-warning-circle-duotone shrink-0 text-base color-warn"
+            role="img"
+            :title="t('extract.uncertain')"
+            :aria-label="t('extract.uncertain')"
+          />
           <input v-model="draft.key" class="input min-w-0 flex-auto font-mono text-xs" :readonly="!backend?.capabilities.write" :aria-label="t('extract.key')">
         </div>
         <button v-if="backend?.capabilities.write" class="btn-icon" :disabled="busy || !draft.key" :title="t('extract.one')" :aria-label="t('extract.one')" @click="extract([draft])">

@@ -52,7 +52,8 @@
     "new": "建立新鍵",
     "none": "找不到寫死的字串。",
     "one": "擷取此字串",
-    "strings": "字串：{count}"
+    "strings": "字串：{count}",
+    "uncertain": "依順序配對：相同文字在其他位置出現或消失，提取前請檢查這個 key。"
   },
   "keys": {
     "allNamespaces": "所有命名空間",

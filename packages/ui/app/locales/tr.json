@@ -189,7 +189,8 @@
     "existing": "Mevcut bir anahtarı kullanır",
     "new": "Yeni bir anahtar oluşturur",
     "file": "Bu dosyayı çıkar",
-    "differs": "Kaynak mesajı bu metinden farklı; çıkarma işlemi mevcut mesajları korur."
+    "differs": "Kaynak mesajı bu metinden farklı; çıkarma işlemi mevcut mesajları korur.",
+    "uncertain": "Sırayla eşlendi: aynı metin başka bir yerde göründü veya kayboldu, ayıklamadan önce bu anahtarı kontrol edin."
   },
   "project": {
     "presets": "Ön ayarlar",
