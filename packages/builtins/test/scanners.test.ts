@@ -1,8 +1,10 @@
 import type { CallSpec, ScanResult } from '@x18n/core'
+import { createLineIndex } from '@x18n/core'
 import { describe, expect, it } from 'vitest'
 import { i18next } from '../src/presets/i18next'
 import { reactI18next } from '../src/presets/react-i18next'
 import { reactIntl } from '../src/presets/react-intl'
+import { svelteI18n } from '../src/presets/svelte-i18n'
 import { vueI18n } from '../src/presets/vue-i18n'
 import { loadParser, scanSource } from '../src/scanners/shared/js'
 import { createTestProject, json } from './_utils'
@@ -334,6 +336,49 @@ describe('project usages', () => {
       ],
     })
     expect(project.usages().map(m => m.usage.key)).toEqual(expected)
+  })
+
+  it('scans Svelte components whose style block is SCSS, at the source positions', async () => {
+    const { project } = await createTestProject({
+      'locales/en.json': json({ title: 'T', greeting: 'Hello', footer: 'Bye' }),
+      'src/App.svelte': [
+        '<script>',
+        '  import { _ } from \'svelte-i18n\'',
+        '  const title = $_(\'title\')',
+        '</script>',
+        '',
+        '<p>{$_(\'greeting\')}</p>',
+        '',
+        '<style lang="scss">',
+        '  $accent: #c00;',
+        '  @mixin muted { opacity: 0.5; }',
+        '  // nested rules',
+        '  p {',
+        '    color: $accent;',
+        '    &:hover { @include muted; }',
+        '  }',
+        '</style>',
+        '',
+        '<footer>{$_(\'footer\')}</footer>',
+      ].join('\n'),
+    }, {
+      presets: [
+        svelteI18n(),
+      ],
+      resources: [
+        { pattern: 'locales/{locale}.json' },
+      ],
+    })
+    const text = project.text('src/App.svelte')!
+    const lines = createLineIndex(text)
+    expect(project.usages().map(({ usage: { key, range } }) => {
+      const { line, character } = lines.position(range.start)
+      return `${key}|${text.slice(range.start, range.end)}|${line}:${character}`
+    })).toEqual([
+      'title|title|2:20',
+      'greeting|greeting|5:8',
+      'footer|footer|17:13',
+    ])
   })
 
   it('applies namespaces, key prefixes and derived keys with i18next', async () => {
