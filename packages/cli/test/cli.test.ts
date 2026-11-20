@@ -278,11 +278,21 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     ])
     expect(json(duplicate).data.baseline).toEqual({ suppressed: 6, fixed: 0 })
 
+    await writeFile(app, source.replace('app.titel', 'app.new'))
+    const mixed = await x18n(dir, ['check'])
+    expect(mixed.code).toBe(1)
+    expect(mixed.stdout).toContain('Baseline entries absent from this check: 1.')
+    expect(mixed.stdout).toContain('Review the new diagnostics above. Updating the baseline accepts them.')
+
     // Fixed diagnostics are counted, and --update-baseline drops them.
     await writeFile(app, source.replace(`<p>{{ $t('app.titel') }}</p>`, ''))
     const fixed = await x18n(dir, ['check'])
     expect(fixed.code).toBe(0)
-    expect(fixed.stdout).toContain('The baseline left out 5 known diagnostics.\n\nFixed since the baseline: 1. Run `x18n check --update-baseline` to drop them from it.\n')
+    expect(fixed.stdout).toContain('The baseline left out 5 known diagnostics.')
+    expect(fixed.stdout).toContain('Baseline entries absent from this check: 1.')
+    expect(fixed.stdout).toContain('Check which projects, checks and locales this baseline covers before updating it.')
+    expect(fixed.stdout).not.toContain('Review the new diagnostics')
+
     await x18n(dir, [
       'check',
       '--update-baseline',
@@ -317,10 +327,19 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     const all = json(await x18n(dir, ['check', '--json']))
     expect(all.diagnostics).toHaveLength(6)
     expect(all.data).not.toHaveProperty('baseline')
-    await writeFile(join(dir, 'baseline.json'), '{')
-    const invalid = await x18n(dir, ['check', '--baseline', 'baseline.json'])
+    const custom = 'team\'s baseline.json'
+    await writeFile(join(dir, custom), '{')
+    const args = ['check', '--baseline', custom]
+    const invalid = await x18n(dir, args)
     expect(invalid.code).toBe(2)
-    expect(invalid.stderr).toContain('is not valid. Run `x18n check --update-baseline` to write it again.')
+    const invalidJson = await x18n(dir, [...args, '--json'])
+    expect(invalidJson.code).toBe(2)
+    for (const message of [invalid.stderr, json(invalidJson).errors[0].why]) {
+      expect(message).toContain(`${custom} is not valid. Correct this file or restore a known-good copy.`)
+      expect(message).toContain('choose the projects, checks and locales this file should cover')
+      expect(message).toContain('Use --update-baseline with the same baseline file, working directory and workspace configuration')
+      expect(message).toContain('Rebuilding accepts the current diagnostics in the selected scope.')
+    }
   })
 
   it('status, keys, get and locales return JSON', async () => {

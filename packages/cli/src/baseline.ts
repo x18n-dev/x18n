@@ -130,8 +130,14 @@ export async function readBaseline(file: string): Promise<Baseline | undefined> 
   }
   catch {}
   const diagnostics = (value as Partial<Baseline> | null)?.diagnostics
-  if (!Array.isArray(diagnostics) || !diagnostics.every(e => typeof e?.path === 'string' && typeof e.code === 'string' && typeof e.message === 'string' && Number.isInteger(e.count)))
-    throw new Error(`the check baseline ${file} is not valid. Run \`x18n check --update-baseline\` to write it again.`)
+  if (!Array.isArray(diagnostics) || !diagnostics.every(e => typeof e?.path === 'string' && typeof e.code === 'string' && typeof e.message === 'string' && Number.isInteger(e.count))) {
+    throw new Error([
+      `the check baseline ${file} is not valid. Correct this file or restore a known-good copy.`,
+      'To rebuild it, first choose the projects, checks and locales this file should cover.',
+      'Use --update-baseline with the same baseline file, working directory and workspace configuration.',
+      'Rebuilding accepts the current diagnostics in the selected scope.',
+    ].join(' '))
+  }
   return { diagnostics }
 }
 
