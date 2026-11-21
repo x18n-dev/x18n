@@ -416,7 +416,7 @@ export interface FixSummary {
 export interface BaselineSummary {
   /** Known diagnostics that the baseline left out of the report. */
   readonly suppressed: number
-  /** Baseline entries that no longer occur, to drop with `--update-baseline`. */
+  /** Known diagnostic occurrences that passed the filters but did not match a diagnostic in this run. */
   readonly fixed: number
 }
 

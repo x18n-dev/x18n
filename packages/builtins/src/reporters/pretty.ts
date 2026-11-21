@@ -82,7 +82,7 @@ export const prettyReporter: Reporter = {
     if (ctx.baseline?.suppressed)
       blocks.push(paint(ctx, 'gray', `The baseline left out ${plural(ctx.baseline.suppressed, 'known diagnostic')}.`))
     if (ctx.baseline?.fixed) {
-      const advice = [`Baseline entries absent from this check: ${ctx.baseline.fixed}. Check which projects, checks and locales this baseline covers before updating it.`]
+      const advice = [`Known diagnostic occurrences absent from this check: ${ctx.baseline.fixed}. Check which projects, checks and locales this baseline covers before updating it.`]
       if (sum.errors + sum.warnings + sum.infos > 0)
         advice.push('Review the new diagnostics above. Updating the baseline accepts them.')
       blocks.push(paint(ctx, 'gray', advice.join(' ')))

@@ -88,8 +88,8 @@ export function createBaseline(located: readonly Located[], kept: readonly Basel
 }
 
 /**
- * Leaves out the diagnostics the baseline holds, up to the count of each entry. `fixed` counts the entries that no
- * longer occur; `relevant` limits it to the entries this run could have reported (see `--only`).
+ * Leaves out known diagnostics up to the count of each relevant baseline entry.
+ * `fixed` counts the occurrences left unmatched in those entries.
  */
 export function applyBaseline<T extends Located>(located: readonly T[], baseline: Baseline, relevant: (entry: BaselineEntry) => boolean = () => true): { kept: T[] } & BaselineSummary {
   const left = new Map<string, number>()

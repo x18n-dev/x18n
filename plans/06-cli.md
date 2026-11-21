@@ -56,7 +56,7 @@ Found 1 error and 1 warning in 2 files.
 | `--fix=unsafe` | Also apply the `unsafe` fixes, which delete. |
 | `--dry-run` | With `--fix`: print the plan, write nothing. |
 
-While the baseline file exists, `check` reports and fails only on diagnostics it does not hold, and says how many it left out and how many of its entries no longer occur (`data.baseline` in `--json`). An entry is a path relative to the workspace root, a check id, a key, a locale and a message, with a count; no line, so moving code keeps it known, while one more identical diagnostic in the same file is new. The file is sorted for small diffs. The editor still shows every diagnostic. The idea comes from [i18next-cli](https://github.com/i18next/i18next-cli) `lint --update-baseline` and ESLint bulk suppressions.
+While the baseline file exists, `check` reports and fails only on diagnostics it does not hold. After applying the check and locale filters, `data.baseline` in `--json` counts matched (`suppressed`) and unmatched (`fixed`) occurrences of known diagnostics. An entry is a path relative to the workspace root, a check id, a key, a locale and a message, with a count; no line, so moving code keeps it known, while one more identical diagnostic in the same file is new. The file is sorted for small diffs. The editor still shows every diagnostic. The idea comes from [i18next-cli](https://github.com/i18next/i18next-cli) `lint --update-baseline` and ESLint bulk suppressions.
 
 Without `--fix`, `x18n check` is read-only. Each fix of a diagnostic has a level ([03-plugins.md](./03-plugins.md)): `safe` fixes only add, `unsafe` fixes can lose data, and fixes without a level are offered in the editor only. The built-ins:
 
