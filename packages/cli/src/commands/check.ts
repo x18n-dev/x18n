@@ -278,6 +278,10 @@ async function fix(workspace: Workspace, options: CheckOptions, level: 'safe' | 
 export async function check(options: CheckOptions): Promise<number> {
   const level = fixLevel(options)
   const workspace = await openWorkspace(options)
+  if (options.project !== undefined && workspace.projects.length > 1) {
+    const matches = workspace.projects.map(({ definition }) => `${definition.directory} (declared in ${definition.declaredIn})`)
+    throw errors.X18N0001({ issue: `--project "${options.project}" matches multiple projects: ${matches.join(', ')}. Give them distinct names before running a project check.` })
+  }
   await Promise.all(workspace.projects.filter(loaded => needsHistory(loaded, options)).map(async (loaded) => {
     await loaded.project.loadHistory({ watch: options.watch })
     await loaded.host.flush()

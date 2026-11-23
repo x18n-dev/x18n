@@ -331,6 +331,37 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     expect(invalid.stderr).toContain('is not valid. Run `x18n check --update-baseline` to write it again.')
   })
 
+  it('refuses an ambiguous project before fixing resources or refreshing a baseline', async () => {
+    const dir = await vueWorkspace()
+    await writeFile(join(dir, 'x18n.config.json'), '{"projects":["apps/*"]}')
+    const apps = ['apps/docs', 'apps/web']
+    for (const app of apps)
+      await writeFile(join(dir, app, 'x18n.config.json'), '{"name":"portal"}')
+    const file = join(dir, 'baseline.json')
+    const original = '{"diagnostics":[]}\n'
+    await writeFile(file, original)
+    const check = (...args: string[]): Promise<Result> => x18n(dir, ['check', '--only', 'missing-key', '--baseline', file, '--json', ...args])
+    const resources = () => Promise.all(apps.map(app => readFile(join(dir, app, 'src/locales/en.json'), 'utf8')))
+    const before = await resources()
+
+    expect(json(await check()).diagnostics).toHaveLength(2)
+    for (const flags of [[], ['--update-baseline'], ['--fix']]) {
+      const result = await check('--project', 'portal', ...flags)
+      expect(result.code).toBe(2)
+      const reason = json(result).errors[0].why
+      for (const name of ['portal', ...apps])
+        expect(reason).toContain(name)
+      expect(await readFile(file, 'utf8')).toBe(original)
+      expect(await resources()).toEqual(before)
+    }
+
+    await writeFile(join(dir, 'apps/docs/x18n.config.json'), '{"name":"manual"}')
+    expect((await check('--project', 'portal', '--update-baseline')).code).toBe(0)
+    const remaining = await check()
+    expect(remaining.code).toBe(1)
+    expect(json(remaining).diagnostics).toMatchObject([{ project: 'manual', code: 'missing-key' }])
+  })
+
   it('keeps sibling baseline counts on a scoped refresh and migrates moved projects on a full refresh', async () => {
     const dir = await vueWorkspace()
     await writeFile(join(dir, 'x18n.config.json'), JSON.stringify({
