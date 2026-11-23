@@ -340,12 +340,24 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     const file = join(dir, 'baseline.json')
     const original = '{"diagnostics":[]}\n'
     await writeFile(file, original)
-    const check = (...args: string[]): Promise<Result> => x18n(dir, ['check', '--only', 'missing-key', '--baseline', file, '--json', ...args])
+    const check = (...args: string[]): Promise<Result> => x18n(dir, [
+      'check',
+      '--only',
+      'missing-key',
+      '--baseline',
+      file,
+      '--json',
+      ...args,
+    ])
     const resources = () => Promise.all(apps.map(app => readFile(join(dir, app, 'src/locales/en.json'), 'utf8')))
     const before = await resources()
 
     expect(json(await check()).diagnostics).toHaveLength(2)
-    for (const flags of [[], ['--update-baseline'], ['--fix']]) {
+    for (const flags of [
+      [],
+      ['--update-baseline'],
+      ['--fix'],
+    ]) {
       const result = await check('--project', 'portal', ...flags)
       expect(result.code).toBe(2)
       const reason = json(result).errors[0].why
@@ -359,7 +371,51 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     expect((await check('--project', 'portal', '--update-baseline')).code).toBe(0)
     const remaining = await check()
     expect(remaining.code).toBe(1)
-    expect(json(remaining).diagnostics).toMatchObject([{ project: 'manual', code: 'missing-key' }])
+    expect(json(remaining).diagnostics).toMatchObject([
+      { project: 'manual', code: 'missing-key' },
+    ])
+  })
+
+  it('preserves excluded baseline rows from older readers and rejects incomplete owners', async () => {
+    const dir = await fixture('vue-i18n')
+    const file = join(dir, 'baseline.json')
+    const check = (...args: string[]): Promise<Result> => x18n(dir, [
+      'check',
+      '--baseline',
+      file,
+      '--only',
+      'missing-key',
+      '--update-baseline',
+      ...args,
+    ])
+    const legacy = {
+      path: '.',
+      code: 'unused-key',
+      key: null,
+      locale: null,
+      message: 'Old diagnostic',
+      count: 2,
+      note: 'keep',
+    }
+    await writeFile(file, JSON.stringify({
+      diagnostics: [legacy],
+    }))
+    expect((await check('--project', basename(dir))).code).toBe(0)
+    expect(JSON.parse(await readFile(file, 'utf8')).diagnostics).toContainEqual(legacy)
+
+    const invalid = JSON.stringify({
+      diagnostics: [
+        {
+          ...legacy,
+          project: { directory: '.' },
+        },
+      ],
+    })
+    await writeFile(file, invalid)
+    const result = await check('--project', basename(dir))
+    expect(result.code).toBe(2)
+    expect(result.stderr).toContain('is not valid')
+    expect(await readFile(file, 'utf8')).toBe(invalid)
   })
 
   it('keeps sibling baseline counts on a scoped refresh and migrates moved projects on a full refresh', async () => {

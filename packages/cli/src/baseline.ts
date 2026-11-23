@@ -4,6 +4,7 @@ import type { BaselineSummary, Diagnostic } from '@x18n/core'
 import type { ProjectDefinition } from '@x18n/node'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import * as v from 'valibot'
 
 /**
  * One known diagnostic and how often it occurs. It is identified by its reporting project, path, check, key, locale and message, not by
@@ -25,6 +26,20 @@ export interface BaselineEntry {
 export interface Baseline {
   readonly diagnostics: readonly BaselineEntry[]
 }
+
+const BaselineSchema = v.object({
+  diagnostics: v.array(v.object({
+    project: v.exactOptional(v.object({
+      declaredIn: v.string(),
+      directory: v.string(),
+    })),
+    path: v.string(),
+    code: v.string(),
+    // Older readers passed through optional key and locale values, including null.
+    message: v.string(),
+    count: v.pipe(v.number(), v.integer()),
+  })),
+})
 
 /** A diagnostic with the path the baseline knows it by. */
 export interface Located {
@@ -157,12 +172,10 @@ export async function readBaseline(file: string): Promise<Baseline | undefined> 
     value = JSON.parse(text)
   }
   catch {}
-  const diagnostics = (value as Partial<Baseline> | null)?.diagnostics
-  if (!Array.isArray(diagnostics) || !diagnostics.every(e => typeof e?.path === 'string' && typeof e.code === 'string' && typeof e.message === 'string' && Number.isInteger(e.count)
-    && (e.project === undefined || (typeof e.project?.declaredIn === 'string' && typeof e.project.directory === 'string')))) {
-    throw new Error(`the check baseline ${file} is not valid. Run \`x18n check --update-baseline\` to write it again.`)
-  }
-  return { diagnostics }
+  // Keep the original rows, including extra fields on entries outside a scoped refresh.
+  if (v.is(BaselineSchema, value))
+    return value
+  throw new Error(`the check baseline ${file} is not valid. Run \`x18n check --update-baseline\` to write it again.`)
 }
 
 export async function writeBaseline(file: string, baseline: Baseline): Promise<void> {

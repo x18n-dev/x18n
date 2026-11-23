@@ -51,6 +51,7 @@
     "cac": "catalog:deps",
     "devframe": "catalog:deps",
     "nostics": "catalog:deps",
+    "valibot": "catalog:deps",
     "yaml": "catalog:deps"
   }
 }
