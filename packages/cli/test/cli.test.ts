@@ -174,6 +174,26 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     expect(result.stdout).toMatch(/✖ \d+ errors?(?: {2}⚠ \d+ warnings?)? {2}\d+ files?\n$/)
   })
 
+  it('check reports only the files it is given', async () => {
+    const dir = await fixture('vue-i18n')
+    const app = await x18n(dir, ['check', 'src/App.vue'])
+    expect(app.code).toBe(1)
+    expect(app.stdout).toContain('src/App.vue:17:15')
+    expect(app.stdout).not.toContain('src/locales/')
+    expect(app.stdout).toMatch(/✖ 1 error {2}1 file\n$/)
+
+    const locales = await x18n(dir, ['check', 'src/locales/de.json'])
+    expect(locales.stdout).toContain('src/locales/de.json')
+    expect(locales.stdout).not.toContain('src/App.vue')
+
+    // Tools such as lint-staged pass absolute paths, and files x18n does not read simply have no diagnostics.
+    expect((await x18n(dir, [
+      'check',
+      join(dir, 'src/App.vue'),
+    ])).stdout).toContain('src/App.vue:17:15')
+    expect((await x18n(dir, ['check', 'package.json'])).stdout).toBe('Found no errors.\n')
+  })
+
   it('check --json follows the contract', async () => {
     const dir = await fixture('i18next')
     const result = await x18n(dir, ['check', '--json'])
