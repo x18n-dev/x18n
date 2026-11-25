@@ -1,55 +1,92 @@
-import type { Format, MessageTree, NodeRange } from '@x18n/core'
+import type { Format, MessageNode, MessageTree, NodeRange } from '@x18n/core'
 import type { Node, ParseError } from 'jsonc-parser'
-import type { LiteralItem, LiteralObject, LiteralSyntax } from './literal'
+import type { LiteralObject, LiteralSyntax } from './literal'
 import { diffText, errors, pathId } from '@x18n/core'
 import { parseTree, printParseErrorCode } from 'jsonc-parser'
 import { indentUnit } from './index'
 import { editLiteral } from './literal'
 
-interface MutableTree { [segment: string]: MutableTree | string | number | boolean | null }
+interface MutableTree { [segment: string]: MessageNode }
 
-function readTree(node: Node, path: string[], ranges: Map<string, NodeRange>): MessageTree {
-  const out: MutableTree = {}
-  for (const property of node.children ?? []) {
+interface Member {
+  readonly key: string
+  /** Where the member starts: its key for a property, the value for an array item. */
+  readonly start: number
+  readonly keyRange: { start: number, end: number }
+  readonly valueNode: Node
+}
+
+/** The members of an object, or the items of an array keyed by index. */
+function membersOf(node: Node): Member[] {
+  if (node.type === 'array') {
+    return (node.children ?? []).map((valueNode, index) => ({
+      key: String(index),
+      start: valueNode.offset,
+      keyRange: { start: valueNode.offset, end: valueNode.offset + valueNode.length },
+      valueNode,
+    }))
+  }
+  return (node.children ?? []).flatMap((property) => {
     const [keyNode, valueNode] = property.children ?? []
     if (!keyNode || !valueNode || typeof keyNode.value !== 'string')
-      continue
-    const key = keyNode.value
-    const childPath = [...path, key]
-    ranges.set(pathId(childPath), {
-      key: { start: keyNode.offset + 1, end: keyNode.offset + keyNode.length - 1 },
-      value: { start: valueNode.offset, end: valueNode.offset + valueNode.length },
-    })
-    if (valueNode.type === 'object')
-      out[key] = readTree(valueNode, childPath, ranges) as MutableTree
-    else if (valueNode.type === 'string' || valueNode.type === 'number' || valueNode.type === 'boolean' || valueNode.type === 'null')
-      out[key] = valueNode.value as string | number | boolean | null // jsonc-parser types `value` loosely; `type` fixes it
+      return []
+    return [
+      {
+        key: keyNode.value,
+        start: property.offset,
+        keyRange: { start: keyNode.offset + 1, end: keyNode.offset + keyNode.length - 1 },
+        valueNode,
+      },
+    ]
+  })
+}
+
+function readNode(node: Node, path: string[], ranges: Map<string, NodeRange>): MessageNode {
+  if (node.type === 'array') {
+    return membersOf(node).map(({ key, keyRange, valueNode }) => readMember(valueNode, [...path, key], keyRange, ranges)).filter(item => item !== undefined)
+  }
+  const out: MutableTree = {}
+  for (const { key, keyRange, valueNode } of membersOf(node)) {
+    const child = readMember(valueNode, [...path, key], keyRange, ranges)
+    if (child !== undefined)
+      out[key] = child
   }
   return out
 }
 
+/** One property or item: its ranges are recorded, and its value read. Anything but a message, object or array is dropped. */
+function readMember(valueNode: Node, path: string[], keyRange: { start: number, end: number }, ranges: Map<string, NodeRange>): MessageNode | undefined {
+  ranges.set(pathId(path), {
+    key: keyRange,
+    value: { start: valueNode.offset, end: valueNode.offset + valueNode.length },
+  })
+  if (valueNode.type === 'object' || valueNode.type === 'array')
+    return readNode(valueNode, path, ranges)
+  if (valueNode.type === 'string' || valueNode.type === 'number' || valueNode.type === 'boolean' || valueNode.type === 'null')
+    return valueNode.value as string | number | boolean | null // jsonc-parser types `value` loosely; `type` fixes it
+  return undefined
+}
+
 function objectOf(node: Node): LiteralObject {
-  const items: LiteralItem[] = []
-  for (const property of node.children ?? []) {
-    const [keyNode, valueNode] = property.children ?? []
-    if (!keyNode || !valueNode || typeof keyNode.value !== 'string')
-      continue
-    items.push({
-      key: keyNode.value,
-      range: { start: property.offset, end: property.offset + property.length },
-      value: valueNode.type === 'object'
-        ? objectOf(valueNode)
-        : {
-            kind: 'scalar',
-            range: { start: valueNode.offset, end: valueNode.offset + valueNode.length },
-            quote: undefined,
-          },
-    })
-  }
   return {
     kind: 'object',
     range: { start: node.offset, end: node.offset + node.length },
-    items,
+    array: node.type === 'array',
+    items: membersOf(node).map(({ key, start, valueNode }) => {
+      const range = { start: valueNode.offset, end: valueNode.offset + valueNode.length }
+      return {
+        key,
+        range: { start, end: range.end },
+        value: valueNode.type === 'object' || valueNode.type === 'array'
+          ? objectOf(valueNode)
+          : {
+              kind: 'scalar' as const,
+              range,
+              quote: undefined,
+              empty: valueNode.value === '',
+            },
+      }
+    }),
   }
 }
 
@@ -77,7 +114,7 @@ export function createJsonFormat(id: string, extensions: readonly string[], allo
       const ranges = new Map<string, NodeRange>()
       return {
         tree: root
-          ? readTree(root, [], ranges)
+          ? readNode(root, [], ranges) as MessageTree
           : {},
         ranges,
       }
@@ -91,6 +128,7 @@ export function createJsonFormat(id: string, extensions: readonly string[], allo
         leaf: value => JSON.stringify(value),
         unit: indentUnit(text, ctx.indent ?? defaultIndent, '  '),
         trailingComma: false,
+        arrays: true,
       }
       let next = text.trim() === ''
         ? '{}\n'

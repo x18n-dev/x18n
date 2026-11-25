@@ -1,6 +1,6 @@
 import type { MessageLeaf, MessageOp, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
 import type { TextLine } from '../shared'
-import { buildTree, diffText, errors, isMessageLeaf, pathId } from '@x18n/core'
+import { buildTree, diffText, errors, isMessageLeaf, isMessageObject, pathId } from '@x18n/core'
 import { appendLines, detectEol, leafText, splice, splitLines } from '../shared'
 
 interface Entry {
@@ -160,7 +160,7 @@ function serialize(tree: MessageTree): string {
         : ''}${leaves.map(([key, value]) => `${key} = ${encode(leafText(value), undefined)}\n`).join('')}`)
     }
     for (const [key, child] of children) {
-      if (!isMessageLeaf(child))
+      if (isMessageObject(child))
         visit(child, [...path, key])
     }
   }

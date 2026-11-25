@@ -1,5 +1,5 @@
 import type { MessageTree, Preset } from '@x18n/core'
-import { createLibraryPlugin, isMessageLeaf, pathId } from '@x18n/core'
+import { createLibraryPlugin, isMessageLeaf, isMessageObject, pathId } from '@x18n/core'
 // Detection and syntax adapted from i18n-ally (MIT), src/frameworks/*
 import { dollars } from '../../placeholders'
 
@@ -30,9 +30,9 @@ export function chromeExtension(): Preset {
           read(tree) {
             const out: Record<string, MessageTree[string]> = {}
             for (const [name, entry] of Object.entries(tree)) {
-              const message = isMessageLeaf(entry)
-                ? undefined
-                : entry.message
+              const message = isMessageObject(entry)
+                ? entry.message
+                : undefined
               if (message !== undefined && isMessageLeaf(message))
                 out[name] = message
             }
@@ -45,9 +45,9 @@ export function chromeExtension(): Preset {
           describe(tree) {
             const descriptions = new Map<string, string>()
             for (const [name, entry] of Object.entries(tree)) {
-              const description = isMessageLeaf(entry)
-                ? undefined
-                : entry.description
+              const description = isMessageObject(entry)
+                ? entry.description
+                : undefined
               if (typeof description === 'string' && description.trim() !== '')
                 descriptions.set(pathId([name, 'message']), description)
             }

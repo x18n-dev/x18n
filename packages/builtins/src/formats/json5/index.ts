@@ -1,6 +1,6 @@
-import type { MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
+import type { MessageNode, MessageTree, NodeRange, Plugin, TextRange } from '@x18n/core'
 import type { LiteralItem, LiteralObject, LiteralScalar, LiteralSyntax } from '../shared/literal'
-import { diffText, errors, isMessageTree, pathId } from '@x18n/core'
+import { diffText, errors, isMessageObject, isMessageTree, pathId } from '@x18n/core'
 import JSON5 from 'json5'
 import { indentUnit } from '../shared'
 import { editLiteral } from '../shared/literal'
@@ -21,9 +21,14 @@ function parse(text: string, path: string): MessageTree {
       cause: error,
     })
   }
-  if (!isMessageTree(data))
+  if (!isMessageTree(data) || Object.values(data).some(holdsArray))
     throw errors.X18N2003({ path })
   return data
+}
+
+/** JSON5 cannot write an array back yet, so a file that holds one is refused instead of being damaged later. */
+function holdsArray(node: MessageNode): boolean {
+  return Array.isArray(node) || (isMessageObject(node) && Object.values(node).some(holdsArray))
 }
 
 /** Where the keys and values of valid JSON5 that holds a message tree are. */

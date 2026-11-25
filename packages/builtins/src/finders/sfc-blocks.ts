@@ -1,5 +1,5 @@
 import type { Format, MessageTree, NodeRange, Plugin, ResourceBlock, ResourceCandidate } from '@x18n/core'
-import { isMessageLeaf, pathId } from '@x18n/core'
+import { isMessageObject, pathId } from '@x18n/core'
 import { json } from '../formats/json'
 import { json5 } from '../formats/json5'
 import { yaml } from '../formats/yaml'
@@ -20,7 +20,7 @@ function localeRoot(base: Format): Format {
     parse(text, ctx) {
       const parsed = base.parse(text, ctx)
       const subtree = parsed.tree[ctx.locale]
-      const tree: MessageTree = subtree && !isMessageLeaf(subtree)
+      const tree: MessageTree = subtree !== undefined && isMessageObject(subtree)
         ? subtree
         : {}
       const ranges = new Map<string, NodeRange>()

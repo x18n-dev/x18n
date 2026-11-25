@@ -22,7 +22,7 @@ Tiers decide the release: tier 1 ships in 1.0 with full parity tests, tier 2 in 
 
 | Id | Extensions | Read | Write | Library | Tier |
 | --- | --- | --- | --- | --- | --- |
-| `json` | json | yes | in place | `jsonc-parser` to read, shared literal editor to write | 1 |
+| `json` | json | yes | in place | `jsonc-parser` to read, shared literal editor to write. An array stays an array in the tree and the file. Its items have the keys `list.0`, `list.1`. | 1 |
 | `jsonc` | jsonc | yes | in place | `jsonc-parser` | 1 |
 | `json5` | json5 | yes | in place | `json5` to read, shared literal editor to write | 1 |
 | `yaml` | yml, yaml | yes | in place, keeps comments | `yaml` v2 Document API | 1 |
