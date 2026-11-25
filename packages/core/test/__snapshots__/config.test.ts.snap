@@ -677,6 +677,9 @@ exports[`schemas > config schema 1`] = `
                 },
                 "type": "array",
               },
+              "subtree": {
+                "type": "boolean",
+              },
               "types": {
                 "items": {
                   "type": "string",
@@ -1207,6 +1210,9 @@ exports[`schemas > plugin schema 1`] = `
                   "type": "string",
                 },
                 "type": "array",
+              },
+              "subtree": {
+                "type": "boolean",
               },
               "types": {
                 "items": {

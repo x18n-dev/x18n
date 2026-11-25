@@ -1197,8 +1197,6 @@ exports[`rpc functions > explains the project 1`] = `
                 "$tc",
                 "te",
                 "$te",
-                "tm",
-                "$tm",
                 "i18n.t",
                 "i18n.global.t",
                 "$i18n.t",
@@ -1241,8 +1239,50 @@ exports[`rpc functions > explains the project 1`] = `
                 "t",
                 "tc",
                 "te",
+              ],
+            },
+            {
+              "callee": [
+                "tm",
+                "$tm",
+              ],
+              "params": {
+                "arg": [
+                  1,
+                  2,
+                ],
+                "options": [
+                  "locale",
+                  "fallbackLocale",
+                  "default",
+                  "missing",
+                  "plural",
+                  "escapeParameter",
+                ],
+              },
+              "subtree": true,
+            },
+            {
+              "callee": "useI18n",
+              "factory": true,
+              "params": {
+                "arg": [
+                  1,
+                  2,
+                ],
+                "options": [
+                  "locale",
+                  "fallbackLocale",
+                  "default",
+                  "missing",
+                  "plural",
+                  "escapeParameter",
+                ],
+              },
+              "returns": [
                 "tm",
               ],
+              "subtree": true,
             },
           ],
           "derivedKeys": [],

@@ -126,6 +126,8 @@ export interface Usage {
   readonly defaultValue?: string | undefined
   /** A description of the message written next to the key in code (`CallSpec.description`), when the scanner knows it. */
   readonly description?: string | undefined
+  /** The call takes the whole subtree under the key (`CallSpec.subtree`): the messages below it are used. */
+  readonly subtree?: boolean | undefined
   readonly scanner: string
   readonly kind: UsageKind
   /** `t(`pages.${id}.title`)` gives 'prefix' with key `pages`. */

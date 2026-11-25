@@ -216,6 +216,8 @@ interface CallSpec {
   readonly factory?: boolean
   /** Type names that mark a parameter or prop as a translate function: ['TFunction']. */
   readonly types?: readonly string[]
+  /** The call returns everything under its key (vue-i18n `tm('list')`). The messages below the key count as used. */
+  readonly subtree?: boolean
 }
 ```
 

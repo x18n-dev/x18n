@@ -188,6 +188,8 @@ export interface UsageCandidate {
   readonly defaultValue?: string | undefined
   /** A description of the message written next to the key in code. */
   readonly description?: string | undefined
+  /** The call takes the whole subtree under the key (`CallSpec.subtree`). */
+  readonly subtree?: boolean | undefined
   readonly kind: UsageKind
   readonly dynamic: false | 'prefix' | 'unknown'
   readonly namespace?: string | undefined

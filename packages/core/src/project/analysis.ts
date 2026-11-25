@@ -276,8 +276,18 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
         ? []
         : [usage.key])),
     ]
+    // `tm('list')` takes everything under `list`.
+    const subtrees = config.keySeparator === false
+      ? []
+      : [
+          ...new Set(state.usages.flatMap(usage => usage.subtree && usage.dynamic === false && usage.key !== undefined
+            ? [`${usage.key}${config.keySeparator}`]
+            : [])),
+        ]
     const isUsed = (key: KeyString): boolean => {
       if (state.usagesByKey.has(key) || inUse(key) || referenced.has(key))
+        return true
+      if (subtrees.some(subtree => key.startsWith(subtree)))
         return true
       if (options.basesOf(key).some(base => state.usagesByKey.has(base) || inUse(base)))
         return true

@@ -27,6 +27,7 @@ interface CallDetails {
   readonly params?: readonly string[]
   readonly paramValues?: Readonly<Record<string, string>>
   readonly defaultValue?: string
+  readonly subtree?: boolean
 }
 
 /** A value read from call arguments: an AST node, or the props of a JSX element seen as one object argument. */
@@ -426,6 +427,9 @@ class FileScan {
       ...defaultValue === undefined
         ? {}
         : { defaultValue },
+      ...spec.subtree
+        ? { subtree: true }
+        : {},
     }
   }
 

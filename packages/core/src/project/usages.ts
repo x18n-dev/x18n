@@ -166,6 +166,9 @@ function optionalFields(candidate: Parameters<UsageResolver['resolve']>[0]): Par
       : {
           description: candidate.description,
         },
+    ...candidate.subtree
+      ? { subtree: true }
+      : {},
   }
 }
 

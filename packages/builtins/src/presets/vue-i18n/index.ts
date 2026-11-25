@@ -25,8 +25,6 @@ const vueI18nCalls: CallSpec[] = [
       '$tc',
       'te',
       '$te',
-      'tm',
-      '$tm',
       'i18n.t',
       'i18n.global.t',
       '$i18n.t',
@@ -38,8 +36,21 @@ const vueI18nCalls: CallSpec[] = [
   {
     callee: 'useI18n',
     factory: true,
-    returns: ['t', 'tc', 'te', 'tm'],
+    returns: ['t', 'tc', 'te'],
     params: vueI18nParams,
+  },
+  // `tm` returns the messages under the key, such as a list.
+  {
+    callee: ['tm', '$tm'],
+    params: vueI18nParams,
+    subtree: true,
+  },
+  {
+    callee: 'useI18n',
+    factory: true,
+    returns: ['tm'],
+    params: vueI18nParams,
+    subtree: true,
   },
 ]
 

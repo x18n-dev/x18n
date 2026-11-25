@@ -79,6 +79,7 @@ export interface CallSpec {
   readonly factory?: boolean | undefined;
   readonly returns?: readonly string[] | undefined;
   readonly types?: readonly string[] | undefined;
+  readonly subtree?: boolean | undefined;
 }
 export interface CapabilityConflict {
   readonly capability: "format" | "scanner";
@@ -1411,6 +1412,7 @@ export interface Usage {
   readonly paramValues?: Readonly<Record<string, string>> | undefined;
   readonly defaultValue?: string | undefined;
   readonly description?: string | undefined;
+  readonly subtree?: boolean | undefined;
   readonly scanner: string;
   readonly kind: UsageKind;
   readonly dynamic: false | "prefix" | "unknown";
@@ -1426,6 +1428,7 @@ export interface UsageCandidate {
   readonly paramValues?: Readonly<Record<string, string>> | undefined;
   readonly defaultValue?: string | undefined;
   readonly description?: string | undefined;
+  readonly subtree?: boolean | undefined;
   readonly kind: UsageKind;
   readonly dynamic: false | "prefix" | "unknown";
   readonly namespace?: string | undefined;
