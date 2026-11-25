@@ -40,8 +40,11 @@ export interface CallSpec {
   readonly returns?: readonly string[] | undefined
   /** Type names that mark a parameter or prop as a translate function: ['TFunction']. */
   readonly types?: readonly string[] | undefined
-  /** The call returns the whole subtree under its key, such as vue-i18n `tm('list')` for an array. The messages below the key count as used. */
-  readonly subtree?: boolean | undefined
+  /**
+   * The call returns the whole subtree under its key, such as vue-i18n `tm('list')` for an array. The messages below the key count as used.
+   * `{ option }` does so only when the call passes that option as `true`, such as i18next `t('list', { returnObjects: true })`.
+   */
+  readonly subtree?: boolean | { readonly option: string } | undefined
 }
 
 export interface RegexScannerSpec {

@@ -50,7 +50,9 @@ async function findInitOptions(host: ConfigContext['host']): Promise<InitOptions
 }
 
 /** Params and default value of a translate function: `t(key, 'Default', { name })`, `t(key, { name, defaultValue })`. */
-export const i18nextArgs: Pick<CallSpec, 'params' | 'defaultValue'> = {
+export const i18nextArgs: Pick<CallSpec, 'params' | 'defaultValue' | 'subtree'> = {
+  // `returnObjects: true` returns the whole array or object under the key.
+  subtree: { option: 'returnObjects' },
   params: {
     arg: [1, 2],
     // The options i18next reads itself, after i18next-cli (MIT), src/linter.ts.

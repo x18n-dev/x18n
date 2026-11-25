@@ -407,6 +407,29 @@ class FileScan {
     return names
   }
 
+  /** True when the options object of the call has the property `name` written as `true`. */
+  optionIsTrue(args: readonly ArgValue[], source: ParamsSource, name: string): boolean {
+    return [source.arg].flat().some((index) => {
+      const value = args[index]
+      const node = value && !('props' in value)
+        ? unwrap(value)
+        : undefined
+      return node?.type === 'ObjectExpression' && node.properties.some(property => property.type === 'Property'
+        && !property.computed
+        && propertyName(property.key) === name
+        && property.value.type === 'Literal'
+        && property.value.value === true)
+    })
+  }
+
+  /** The call takes the subtree under its key: always, or when the option the spec names is `true`. */
+  takesSubtree(args: readonly ArgValue[], spec: CallSpec): boolean {
+    const { subtree } = spec
+    return typeof subtree === 'object'
+      ? spec.params !== undefined && this.optionIsTrue(args, spec.params, subtree.option)
+      : subtree === true
+  }
+
   callDetails(args: readonly ArgValue[], spec: CallSpec): CallDetails {
     const params = spec.params
       ? this.paramNames(args, spec.params)
@@ -427,7 +450,7 @@ class FileScan {
       ...defaultValue === undefined
         ? {}
         : { defaultValue },
-      ...spec.subtree
+      ...this.takesSubtree(args, spec)
         ? { subtree: true }
         : {},
     }
@@ -679,6 +702,7 @@ class FileScan {
             params: spec.params,
             defaultValue: spec.defaultValue,
             description: spec.description,
+            subtree: spec.subtree,
           },
           namespace,
           keyPrefix,

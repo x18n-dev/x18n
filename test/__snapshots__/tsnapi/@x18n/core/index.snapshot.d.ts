@@ -79,7 +79,9 @@ export interface CallSpec {
   readonly factory?: boolean | undefined;
   readonly returns?: readonly string[] | undefined;
   readonly types?: readonly string[] | undefined;
-  readonly subtree?: boolean | undefined;
+  readonly subtree?: boolean | {
+    readonly option: string;
+  } | undefined;
 }
 export interface CapabilityConflict {
   readonly capability: "format" | "scanner";

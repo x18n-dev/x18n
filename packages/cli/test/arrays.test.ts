@@ -173,3 +173,52 @@ describe('x18n binary with arrays', { timeout: 30_000 }, () => {
     })
   })
 })
+
+describe('x18n binary with an i18next project that reads an array with returnObjects', { timeout: 30_000 }, () => {
+  async function i18next(code: string): Promise<string> {
+    const dir = await mkdtemp(join(work, 'i-'))
+    const files: Record<string, string> = {
+      'package.json': JSON.stringify({
+        dependencies: { 'i18next': '*', 'react-i18next': '*' },
+      }),
+      '.gitignore': '',
+      'locales/en/translation.json': `${JSON.stringify({
+        list: ['A', 'B'],
+        title: 'T',
+      }, null, 2)}\n`,
+      'src/App.tsx': `const { t } = useTranslation()\nt('title')\n${code}\n`,
+    }
+    for (const [path, content] of Object.entries(files)) {
+      await mkdir(dirname(join(dir, path)), { recursive: true })
+      await writeFile(join(dir, path), content)
+    }
+    return dir
+  }
+
+  it('does not report the items as unused or plan them for deletion', async () => {
+    const dir = await i18next('t(\'list\', { returnObjects: true })')
+    expect(codes(await x18n(dir, ['check', '--json']))).toEqual([])
+    expect(json(await x18n(dir, [
+      'delete',
+      '--unused',
+      '--dry-run',
+      '--json',
+    ])).data.keys).toEqual([])
+  })
+
+  it('still reports them when the call does not ask for the objects', async () => {
+    const dir = await i18next('t(\'list\')')
+    expect(json(await x18n(dir, [
+      'delete',
+      '--unused',
+      '--dry-run',
+      '--json',
+    ])).data.keys).toEqual(['translation:list.0', 'translation:list.1'])
+  })
+
+  it('leaves the file alone when check --fix=unsafe runs', async () => {
+    const dir = await i18next('t(\'list\', { returnObjects: true })')
+    await x18n(dir, ['check', '--fix=unsafe', '--json'])
+    expect(JSON.parse(await readFile(join(dir, 'locales/en/translation.json'), 'utf8')).list).toEqual(['A', 'B'])
+  })
+})
