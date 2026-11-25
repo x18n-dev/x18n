@@ -4,6 +4,82 @@ import { createLibraryPlugin } from '@x18n/core'
 import { sfcBlocks } from '../../finders/sfc-blocks'
 import { braces, linked } from '../../placeholders'
 
+type Piece = { segment: string, end: number } | undefined
+
+const blank = /\s/
+
+/** The segment in the bracket that starts at `start` and the index after its `]`, or undefined when vue-i18n would not read it. */
+function bracket(raw: string, start: number): Piece {
+  let i = start + 1
+  while (blank.test(raw[i] ?? ''))
+    i++
+  let segment: string
+  const quote = raw[i]
+  if (quote === '"' || quote === '\'') {
+    // No escapes: the key ends at the next quote of the same kind.
+    const close = raw.indexOf(quote, i + 1)
+    if (close < 0)
+      return undefined
+    segment = raw.slice(i + 1, close)
+    i = close + 1
+  }
+  else {
+    const from = i
+    while (/\d/.test(raw[i] ?? ''))
+      i++
+    segment = raw.slice(from, i)
+  }
+  if (!segment)
+    return undefined
+  while (blank.test(raw[i] ?? ''))
+    i++
+  return raw[i] === ']'
+    ? { segment, end: i + 1 }
+    : undefined
+}
+
+/** The plain name that starts at `start` and runs up to a `.` or a `[`. */
+function plain(raw: string, start: number): Piece {
+  let end = start
+  while (end < raw.length && raw[end] !== '.' && raw[end] !== '[')
+    end++
+  const segment = raw.slice(start, end)
+  // vue-i18n stops reading at a blank or a stray bracket inside a plain name.
+  return segment && !/[\s\]]/.test(segment)
+    ? { segment, end }
+    : undefined
+}
+
+/**
+ * Rewrites the bracket segments of a vue-i18n path (`list[0].title`) to `.` segments (`list.0.title`).
+ * Returns undefined for a path without brackets or one vue-i18n does not read.
+ */
+function vueI18nKey(raw: string): string | undefined {
+  if (!raw.includes('['))
+    return undefined
+  const segments: string[] = []
+  let i = 0
+  while (i < raw.length) {
+    const piece = raw[i] === '['
+      ? bracket(raw, i)
+      : plain(raw, i)
+    if (!piece)
+      return undefined
+    segments.push(piece.segment)
+    i = piece.end
+    if (raw[i] === '.') {
+      // A dot is followed by a plain name, never by a bracket or the end.
+      i++
+      if (i === raw.length || raw[i] === '[')
+        return undefined
+    }
+    else if (i < raw.length && raw[i] !== '[') {
+      return undefined
+    }
+  }
+  return segments.join('.')
+}
+
 const vueI18nParams: NonNullable<CallSpec['params']> = {
   arg: [1, 2],
   options: [
@@ -61,6 +137,7 @@ export function vueI18n(): Preset {
       createLibraryPlugin({
         name: 'x18n:vue-i18n',
         calls: vueI18nCalls,
+        normalizeKey: vueI18nKey,
         templates: [
           {
             template: '{{ $t(\'{key}\'{args}) }}',
