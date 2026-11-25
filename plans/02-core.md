@@ -32,6 +32,11 @@ type KeyString = string & { readonly __brand: 'KeyString' }
 
 type MessageLeaf = string | number | boolean | null
 
+/** A tree holds objects and arrays. An array item has the key of its index (`list.0`). The root is an object. */
+type MessageNode = MessageLeaf | MessageTree | readonly MessageNode[]
+
+/** Array rule, shared by the tree operations and the formats (`planArrayDelete`): deleting an item in the middle empties it, deleting the last item cuts it off with the empty items right before it, and nothing left removes the array. The planner never adds an item past the end of an array, so a typo such as `list[99999999]` leaves no gap. */
+
 /** One stored value of one key in one locale. */
 interface Message {
   readonly key: KeyString

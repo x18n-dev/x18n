@@ -2,7 +2,7 @@ import type { X18nError } from '../errors'
 import type { Setup } from '../resolve'
 import type { KeySeparator } from '../types/config'
 import type { FileEvent, Host } from '../types/host'
-import type { Diagnostic, KeyString, LocaleCode, LocaleInfo, Message, MessageLeaf, MessageTree, Resource, TextRange, Usage } from '../types/model'
+import type { Diagnostic, KeyString, LocaleCode, LocaleInfo, Message, MessageLeaf, MessageNode, MessageTree, Resource, TextRange, Usage } from '../types/model'
 import type { FinderContext, HardString, HistoryContext, KeyFile, ParseResult, ScanResult, SourceFile } from '../types/plugin'
 import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, ResourceNode, SearchMatch, SearchOptions, UsageMatch } from '../types/project'
 import type { MachineRecord, ReviewData, ReviewFilter, ReviewThread } from '../types/review'
@@ -692,7 +692,7 @@ export function createProject(options: CreateProjectOptions): Project {
       const fileNodes = nodes.get(resource.path) ?? []
       nodes.set(resource.path, fileNodes)
       const shift = (range: TextRange): TextRange => ({ start: range.start + state.offset, end: range.end + state.offset })
-      const visit = (tree: MessageTree, stored: string[]): void => {
+      const visit = (tree: MessageTree | readonly MessageNode[], stored: string[]): void => {
         for (const [segment, child] of Object.entries(tree)) {
           const path = [...stored, segment]
           const key = keyFor(resource, path)

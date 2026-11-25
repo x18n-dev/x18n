@@ -113,8 +113,17 @@ export interface ParseResult {
 }
 
 export type MessageOp
-  = | { readonly type: 'set', readonly path: readonly string[], readonly value: MessageLeaf }
-    | { readonly type: 'delete', readonly path: readonly string[] }
+  = | {
+    readonly type: 'set'
+    readonly path: readonly string[]
+    readonly value: MessageLeaf
+    /**
+     * What each parent on the path is when it does not exist yet: `shape[i]` is the node at `path.slice(0, i + 1)`.
+     * A parent that exists keeps its own shape. Without a shape a new parent is an object.
+     */
+    readonly shape?: readonly ('array' | 'object')[] | undefined
+  }
+  | { readonly type: 'delete', readonly path: readonly string[] }
 
 /** A built-in format known by its extensions only: the module behind `load` is imported when a file of that format is read. */
 export interface FormatEntry {

@@ -2,14 +2,14 @@ import type { MutableTree } from '../message-tree'
 import type { PluginRegistry } from '../plugins'
 import type { KeySeparator, ResolvedConfig } from '../types/config'
 import type { FileEvent, Host } from '../types/host'
-import type { EditOp, ExtractItem, KeyString, LocaleCode, Message, MessageLeaf, MessageTree, Resource, TextEdit, Usage } from '../types/model'
+import type { EditOp, ExtractItem, KeyString, LocaleCode, Message, MessageLeaf, MessageNode, MessageTree, Resource, TextEdit, Usage } from '../types/model'
 import type { Format, KeyFile, MessageOp, ReviewEdit } from '../types/plugin'
 import type { Answers, ApplyResult, Decision, FileChange, Plan, ProjectChange, UsageMatch } from '../types/project'
 import type { ReviewData, ReviewStore } from '../types/review'
 import type { ResourceState } from './analysis'
 import { errors } from '../errors'
 import { isKeyUnder, keyJoiner, keySeparatorOf, replaceKeyPrefix, splitKey, splitKeyPath, splitNamespace } from '../keys'
-import { applyMessageOpsInPlace, cloneTree, isMessageLeaf, pathId, sortTree, walkLeaves } from '../message-tree'
+import { applyMessageOpsInPlace, childOf, cloneTree, indexName, isEmptyNode, isMessageLeaf, pathId, sortTree, walkLeaves } from '../message-tree'
 import { applyTextEdits, diffText, hashText } from '../text'
 import { findReview, noReviews, ReviewDraft, reviewId, sortReviews, sourceHash, valueHash, valueText } from './reviews'
 
@@ -88,14 +88,73 @@ function commonPrefix(a: readonly string[], b: readonly string[]): number {
   return i
 }
 
-function nodeAt(tree: MessageTree, path: readonly string[]): MessageLeaf | MessageTree | undefined {
-  let node: MessageLeaf | MessageTree | undefined = tree
+function nodeAt(tree: MessageTree, path: readonly string[]): MessageNode | undefined {
+  let node: MessageNode | undefined = tree
   for (const segment of path) {
     if (node === undefined || isMessageLeaf(node))
       return undefined
-    node = node[segment]
+    node = childOf(node, segment)
   }
   return node
+}
+
+type Shape = readonly ('array' | 'object')[]
+
+/** What each parent on `path` is in `tree`: the `shape` of a `set` that rebuilds the path. Undefined when no parent is an array. */
+function shapeOf(tree: MessageTree, path: readonly string[]): Shape | undefined {
+  const shape = path.slice(0, -1).map((_, i) => Array.isArray(nodeAt(tree, path.slice(0, i + 1)))
+    ? 'array' as const
+    : 'object' as const)
+  return shape.includes('array')
+    ? shape
+    : undefined
+}
+
+/**
+ * Why setting `path` would damage an array in `tree`: `gap` for an item past the end, which an array that is new in the file
+ * counts as well (its first item comes first), and `name` for a name that is not an index, which would replace the whole array.
+ * A typo such as `list[99999999]` must not fill the gap with empty messages, and `list.foo` must not delete the items.
+ */
+function arrayConflict(tree: MessageTree, path: readonly string[], shape: Shape | undefined): 'gap' | 'name' | undefined {
+  let node: MessageNode | undefined = tree
+  for (const [depth, segment] of path.entries()) {
+    const container: MessageTree | readonly MessageNode[] | undefined = node === undefined || isMessageLeaf(node)
+      ? undefined
+      : node
+    // A parent that is not there is built as the shape says, and an array starts empty.
+    const length = container === undefined
+      ? shape?.[depth - 1] === 'array'
+        ? 0
+        : undefined
+      : Array.isArray(container)
+        ? container.length
+        : undefined
+    if (length !== undefined) {
+      if (!indexName.test(segment) && container !== undefined)
+        return 'name'
+      if (indexName.test(segment) && Number(segment) > length)
+        return 'gap'
+    }
+    node = container && childOf(container, segment)
+  }
+  return undefined
+}
+
+/** The shape a moved node had, for its new path: the node and everything below it keep theirs, new parents are objects. */
+function movedShape(source: MessageTree, from: readonly string[], to: readonly string[], below: number): Shape | undefined {
+  const offset = from.length - to.length
+  const shape = to.slice(0, -1).map((_, i) => i >= to.length - 1 - below && i + offset >= 0 && Array.isArray(nodeAt(source, from.slice(0, i + offset + 1)))
+    ? 'array' as const
+    : 'object' as const)
+  return shape.includes('array')
+    ? shape
+    : undefined
+}
+
+function withShape(shape: Shape | undefined): { readonly shape?: Shape } {
+  return shape
+    ? { shape }
+    : {}
 }
 
 function leafAt(tree: MessageTree, path: readonly string[]): MessageLeaf | undefined {
@@ -118,7 +177,7 @@ function isFlatTree(tree: MessageTree, separator: string): boolean | undefined {
 }
 
 /** The longest key prefix a tree shares with `path`. */
-function longestPrefix(tree: MessageTree, prefix: readonly string[], path: readonly string[], separator: KeySeparator): number {
+function longestPrefix(tree: MessageTree | readonly MessageNode[], prefix: readonly string[], path: readonly string[], separator: KeySeparator): number {
   let best = 0
   for (const [segment, child] of Object.entries(tree)) {
     const next = [
@@ -435,7 +494,7 @@ class PlanBuilder {
    * Returns the value the set replaced in `before`. Undefined when `replace` is false and the value would replace other keys
    * or a message on its path: the set is then skipped with a warning.
    */
-  setValue(key: KeyString, locale: LocaleCode, value: MessageLeaf, replace = true): { readonly before: MessageLeaf | undefined } | undefined {
+  setValue(key: KeyString, locale: LocaleCode, value: MessageLeaf, replace = true, shapeFor?: (stored: readonly string[]) => Shape | undefined): { readonly before: MessageLeaf | undefined } | undefined {
     const existing = this.options.message(key, locale)
     if (existing) {
       this.touched.add(key)
@@ -447,7 +506,15 @@ class PlanBuilder {
     const target = this.pickTarget(key, locale)
     if (target.state)
       this.writable(target.state.resource.id)
+    const fresh = !this.work.has(target.id)
     const entry = this.workFor(target)
+    // A skipped set leaves the file as it is: an entry nothing was planned in would still re-write it, and sort it.
+    const skip = (warning: string): undefined => {
+      this.warnings.push(warning)
+      if (fresh)
+        this.work.delete(target.id)
+      return undefined
+    }
     const stored = this.storedPathFor(entry, this.relativePath(key, target)!)
     const occupied = nodeAt(entry.tree, stored)
     const parent = occupied !== undefined && !isMessageLeaf(occupied)
@@ -458,24 +525,41 @@ class PlanBuilder {
       })
       if (leaf !== -1) {
         const message = stored.slice(0, leaf + 1).join(keyJoiner(this.separatorOf(target)))
-        this.warnings.push(`"${key}" is not added: "${message}" is a message in ${target.path}, and adding "${key}" would replace it.`)
-        return undefined
+        return skip(`"${key}" is not added: "${message}" is a message in ${target.path}, and adding "${key}" would replace it.`)
       }
-      if (parent) {
-        this.warnings.push(`"${key}" is not added: it is a parent of other keys in ${target.path}, and adding it would replace them.`)
-        return undefined
-      }
+      if (parent)
+        return skip(`"${key}" is not added: it is a parent of other keys in ${target.path}, and adding it would replace them.`)
     }
     else if (parent) {
       this.warnings.push(`"${key}" is a parent of other keys in ${target.path}; they are replaced.`)
     }
+    const shape = shapeFor?.(stored) ?? this.shapeFromSource(key, stored.length)
+    const conflict = arrayConflict(entry.tree, stored, shape)
+    if (conflict === 'gap')
+      return skip(`"${key}" is not added: it would leave a gap in an array in ${target.path}. An item is added right after the last one.`)
+    if (conflict === 'name')
+      return skip(`"${key}" is not added: it would replace an array in ${target.path}, as a name that is not an index cannot be an item.`)
     this.touched.add(key)
-    this.pushOp(entry, { type: 'set', path: stored, value })
+    this.pushOp(entry, {
+      type: 'set',
+      path: stored,
+      value,
+      ...withShape(shape),
+    })
     return {
       before: isMessageLeaf(occupied)
         ? occupied
         : undefined,
     }
+  }
+
+  /** A parent that is new in a locale is built like the one the source locale has: an array there is an array here. */
+  private shapeFromSource(key: KeyString, length: number): Shape | undefined {
+    const source = this.options.message(key, this.state.sourceLocale)
+    const state = source && this.state.resources.find(s => s.resource.id === source.resource)
+    return state && source.storedPath.length === length
+      ? shapeOf(state.rawTree, source.storedPath)
+      : undefined
   }
 
   deleteMessage(m: Message): void {
@@ -484,10 +568,16 @@ class PlanBuilder {
       this.keyFilesLeft.add(s.resource.id)
     const entry = this.workFor(this.targetOf(s))
     // Delete the highest ancestor left empty, so formats that drop one property leave no `{}`.
+    // An array is left empty when every other item is empty already: deleting the last message of it removes it.
     let path = [...m.storedPath]
     while (path.length > 1) {
       const parent = nodeAt(entry.tree, path.slice(0, -1))
-      if (parent === undefined || isMessageLeaf(parent) || Object.keys(parent).length > 1)
+      if (parent === undefined || isMessageLeaf(parent))
+        break
+      const alone = Array.isArray(parent)
+        ? parent.every((item, index) => String(index) === path.at(-1) || isEmptyNode(item))
+        : Object.keys(parent).length <= 1
+      if (!alone)
         break
       path = path.slice(0, -1)
     }
@@ -512,7 +602,8 @@ class PlanBuilder {
       const range = s.ranges.get(pathId(stored))
       const last = next.at(-1)!
       const sameParent = next.length === stored.length && next.slice(0, -1).every((segment, i) => segment === stored[i])
-      if (node === undefined || isMessageLeaf(node) || !range || !sameParent || !safeSegment.test(last))
+      // An item of an array is moved, not renamed in place: its range is its value.
+      if (node === undefined || isMessageLeaf(node) || !range || !sameParent || !safeSegment.test(last) || Array.isArray(nodeAt(s.rawTree, stored.slice(0, -1))))
         continue
       const entry = this.workFor(this.targetOf(s))
       entry.keyRenames.push({
@@ -524,21 +615,30 @@ class PlanBuilder {
       ]
       this.applyOps(entry, [
         ...leaves.map(leaf => ({ type: 'delete' as const, path: leaf.path })),
-        ...leaves.map(leaf => ({
-          type: 'set' as const,
-          path: [
-            ...next,
-            ...leaf.path.slice(stored.length),
-          ],
-          value: leaf.value,
-        })),
+        ...leaves.map((leaf) => {
+          const tail = leaf.path.slice(stored.length)
+          // The node keeps its shape under the new name, and so does everything in it.
+          const inner = shapeOf({ [last]: node }, [last, ...tail])
+          return {
+            type: 'set' as const,
+            path: [
+              ...next,
+              ...tail,
+            ],
+            value: leaf.value,
+            ...withShape(inner && [
+              ...next.slice(0, -1).map(() => 'object' as const),
+              ...inner,
+            ]),
+          }
+        }),
       ])
       handled.add(s.resource.id)
     }
     return handled
   }
 
-  moveKey(from: KeyString, to: KeyString, renamed: ReadonlySet<string> = new Set()): void {
+  moveKey(from: KeyString, to: KeyString, renamed: ReadonlySet<string> = new Set(), root: KeyString = from): void {
     this.touched.add(from)
     this.touched.add(to)
     for (const list of this.options.messages(from)?.values() ?? []) {
@@ -546,7 +646,7 @@ class PlanBuilder {
       for (const m of [...list].reverse()) {
         if (renamed.has(m.resource))
           continue
-        const replaced = this.moveMessage(m, to)
+        const replaced = this.moveMessage(m, to, root)
         if (replaced !== undefined && replaced !== m.value) {
           const path = this.stateById.get(m.resource)?.resource.path ?? m.resource
           this.warnings.push(`Copies of "${from}" in ${m.locale} have different values; "${to}" keeps the one from ${path}.`)
@@ -555,13 +655,29 @@ class PlanBuilder {
     }
   }
 
-  moveMessage(m: Message, to: KeyString): MessageLeaf | undefined {
+  /** The segments of the key of `m` below `root`, the node that is renamed: what keeps its place under the new name. */
+  private belowRoot(m: Message, root: KeyString): number {
+    return Math.max(0, this.keyId(m.key).path.length - this.keyId(root).path.length)
+  }
+
+  moveMessage(m: Message, to: KeyString, root: KeyString = m.key): MessageLeaf | undefined {
     const s = this.writable(m.resource)
     const relative = this.relativePath(to, s.resource)
     const own = this.options.resolveKey(to, m.locale)
+    const below = this.belowRoot(m, root)
+    // The array a moved node held is an array in its new place.
+    const shapeOf = (path: readonly string[]): Shape | undefined => movedShape(s.rawTree, m.storedPath, path, below)
     if (!relative || (own && own.path !== s.resource.path)) {
+      // Added first: where the key cannot be added, nothing is deleted, and the rename stops.
+      const warned = this.warnings.length
+      const added = this.setValue(to, m.locale, m.value, true, shapeOf)
+      if (!added) {
+        throw errors.X18N4008({
+          reason: this.warnings.splice(warned).join(' '),
+        })
+      }
       this.deleteMessage(m)
-      return this.setValue(to, m.locale, m.value)?.before
+      return added.before
     }
     const entry = this.workFor(this.targetOf(s))
     const separator = this.separatorOf(s.resource)
@@ -573,7 +689,9 @@ class PlanBuilder {
       : this.options.toStored(s.resource, relative)
     const sameParent = next.length === m.storedPath.length && next.slice(0, -1).every((segment, i) => segment === m.storedPath[i])
     const last = next.at(-1)!
-    if (sameParent && m.range && (flat ? safeFlat : safeSegment).test(last)) {
+    // An item of an array has no key text: its range is the value, so it is moved, not renamed in place.
+    const item = Array.isArray(nodeAt(entry.tree, m.storedPath.slice(0, -1)))
+    if (sameParent && !item && m.range && (flat ? safeFlat : safeSegment).test(last)) {
       const replaced = leafAt(entry.tree, next)
       entry.keyRenames.push({ range: m.range.key, text: last })
       this.applyOps(entry, [
@@ -582,10 +700,23 @@ class PlanBuilder {
       ])
       return replaced
     }
-    this.deleteMessage(m)
     const path = this.storedPathFor(entry, relative)
+    const shape = shapeOf(path)
+    this.deleteMessage(m)
+    // Checked after the delete, which may cut the array: an item goes right after the last one that is left.
+    const conflict = arrayConflict(entry.tree, path, shape)
+    if (conflict) {
+      throw errors.X18N4008({ reason: `"${to}" cannot be added in ${m.locale}: it would ${conflict === 'gap'
+        ? 'leave a gap in'
+        : 'replace'} an array. An item is added right after the last one.` })
+    }
     const replaced = leafAt(entry.tree, path)
-    this.pushOp(entry, { type: 'set', path, value: m.value })
+    this.pushOp(entry, {
+      type: 'set',
+      path,
+      value: m.value,
+      ...withShape(shape),
+    })
     return replaced
   }
 
@@ -634,6 +765,19 @@ class PlanBuilder {
       const raw = this.rawFor(usage, to)
       if (raw === undefined)
         this.warnings.push(`${usage.path}: usage of "${from}" is under the key prefix "${usage.scopePrefix}" and was not updated.`)
+      else
+        this.editSource(usage.path, { range: usage.range, text: raw })
+    }
+  }
+
+  /** A call that takes a whole subtree (`tm('home.list')`) names a node, not a message, so it is not found by the keys of the messages. */
+  rewriteSubtreeUsages(from: KeyString, to: KeyString): void {
+    for (const { usage, possible } of this.options.usageMatches({ prefix: from })) {
+      if (possible || !usage.subtree || usage.key === undefined || usage.key === from)
+        continue
+      const raw = this.rawFor(usage, replaceKeyPrefix(usage.key, from, to))
+      if (raw === undefined)
+        this.warnings.push(`${usage.path}: usage of "${usage.key}" is under the key prefix "${usage.scopePrefix}" and was not updated.`)
       else
         this.editSource(usage.path, { range: usage.range, text: raw })
     }
@@ -699,7 +843,7 @@ class PlanBuilder {
       ? new Set<string>()
       : this.renameNode(op.from, op.to)
     for (const [from, to] of pairs) {
-      this.moveKey(from, to, renamed)
+      this.moveKey(from, to, renamed, op.from)
       this.reviewDraft()?.move(from, to)
       if (op.usages !== false)
         this.rewriteUsages(from, to)
@@ -709,6 +853,7 @@ class PlanBuilder {
     if (!keys.includes(op.from))
       this.rewriteUsages(op.from, op.to)
     this.rewritePrefixUsages(op.from, op.to)
+    this.rewriteSubtreeUsages(op.from, op.to)
   }
 
   delete(op: Extract<EditOp, { type: 'delete' }>): void {
@@ -965,7 +1110,12 @@ class PlanBuilder {
       else if (value !== undefined) {
         renameOps.push(...[
           ...walkLeaves(value, newPath),
-        ].map(leaf => ({ type: 'set' as const, path: leaf.path, value: leaf.value })))
+        ].map(leaf => ({
+          type: 'set' as const,
+          path: leaf.path,
+          value: leaf.value,
+          ...withShape(shapeOf(entry.tree, leaf.path)),
+        })))
       }
     }
     return applyTextEdits(s.content, edit(s.content, [

@@ -507,7 +507,7 @@ export interface MessageHistory {
   readonly valueAt?: ((_: KeyString, _: LocaleCode, _: number) => MessageLeaf | undefined) | undefined;
 }
 export interface MessageTree {
-  readonly [segment: string]: MessageLeaf | MessageTree;
+  readonly [segment: string]: MessageNode;
 }
 export interface NamespaceOptions {
   readonly separator?: string | false | undefined;
@@ -1498,6 +1498,14 @@ export interface WriteOptions {
 
 // #region Types
 export type ApprovalSkipReason = "empty" | "already-approved" | "value-changed" | "failing-check" | "changes-requested" | "stale" | "read-only" | "limit";
+export type ArrayDeletePlan = {
+  readonly kind: "empty";
+} | {
+  readonly kind: "truncate";
+  readonly from: number;
+} | {
+  readonly kind: "none";
+};
 export type CheckLevel = Severity | "off";
 export type CheckSetting = CheckLevel | readonly [CheckLevel, JsonObject];
 export type ConfigDraft = { -readonly [K in keyof Omit<ResolvedConfig, "origins" | "name">]: ResolvedConfig[K]; };
@@ -1586,10 +1594,12 @@ export type KeyTarget = {
 };
 export type LocaleCode = string;
 export type MessageLeaf = string | number | boolean | null;
+export type MessageNode = MessageLeaf | MessageTree | readonly MessageNode[];
 export type MessageOp = {
   readonly type: "set";
   readonly path: readonly string[];
   readonly value: MessageLeaf;
+  readonly shape?: readonly ("array" | "object")[] | undefined;
 } | {
   readonly type: "delete";
   readonly path: readonly string[];
@@ -1670,6 +1680,7 @@ export declare function hashText(_: string): string;
 export declare function isJsonObject(_: unknown): value is JsonObject;
 export declare function isKeyUnder(_: KeyString, _: KeyString, _?: KeySeparator): boolean;
 export declare function isMessageLeaf(_: unknown): value is MessageLeaf;
+export declare function isMessageObject(_: MessageNode): node is MessageTree;
 export declare function isMessageTree(_: unknown): value is MessageTree;
 export declare function isPreset(_: Plugin | Preset): value is Preset;
 export declare function isX18nError(_: unknown): error is X18nError;
@@ -1682,6 +1693,7 @@ export declare function parseMessageBatch(_: Project, _: JsonValue): EditOp[];
 export declare function pathId(_: readonly string[]): string;
 export declare function pathMatcher(_: readonly string[]): (_: string) => boolean;
 export declare function placeholderProblems(_: Project, _: readonly EditOp[]): PlaceholderProblem[];
+export declare function planArrayDelete(_: readonly boolean[], _: number): ArrayDeletePlan;
 export declare function rangeContains(_: TextRange, _: number): boolean;
 export declare function relatedLocales(_: LocaleCode, _: readonly LocaleCode[], _: LocaleCode, _: Readonly<Record<LocaleCode, LocaleCode>>): LocaleCode[];
 export declare function renderExplanation(_: ProjectExplanation, _?: string | undefined): string;
@@ -1701,7 +1713,7 @@ export declare function validate<T>(_: v.GenericSchema<T>, _: unknown): {
   readonly success: false;
   readonly issues: readonly SchemaIssue[];
 };
-export declare function walkLeaves(_: MessageTree, _?: readonly string[]): Generator<TreeLeaf>;
+export declare function walkLeaves(_: MessageTree | readonly MessageNode[], _?: readonly string[]): Generator<TreeLeaf>;
 export declare function wordDiff(_: string, _: string): string;
 // #endregion
 

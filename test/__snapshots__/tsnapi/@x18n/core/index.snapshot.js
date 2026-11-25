@@ -25,6 +25,7 @@ export function hashText(_) {}
 export function isJsonObject(_) {}
 export function isKeyUnder(_, _, _) {}
 export function isMessageLeaf(_) {}
+export function isMessageObject(_) {}
 export function isMessageTree(_) {}
 export function isPreset(_) {}
 export function isX18nError(_) {}
@@ -37,6 +38,7 @@ export function parseMessageBatch(_, _) {}
 export function pathId(_) {}
 export function pathMatcher(_) {}
 export function placeholderProblems(_, _) {}
+export function planArrayDelete(_, _) {}
 export function rangeContains(_, _) {}
 export function relatedLocales(_, _, _, _) {}
 export function renderExplanation(_, _) {}

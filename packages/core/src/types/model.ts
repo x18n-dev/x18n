@@ -16,8 +16,11 @@ export type ResourceId = string
 
 export type MessageLeaf = string | number | boolean | null
 
+/** A message, an object of nodes, or an array of nodes. An array item is keyed by its index (`list.0`). */
+export type MessageNode = MessageLeaf | MessageTree | readonly MessageNode[]
+
 export interface MessageTree {
-  readonly [segment: string]: MessageLeaf | MessageTree
+  readonly [segment: string]: MessageNode
 }
 
 /** UTF-16 offsets, the same as JS strings. */

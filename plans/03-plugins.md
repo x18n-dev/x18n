@@ -135,8 +135,14 @@ interface ParseResult {
 }
 
 type MessageOp
-  = | { type: 'set', path: readonly string[], value: MessageLeaf }
-    | { type: 'delete', path: readonly string[] }
+  = | {
+    type: 'set'
+    path: readonly string[]
+    value: MessageLeaf
+    /** What each new parent on the path is, `array` or `object` (`shape[i]` is the node at `path.slice(0, i + 1)`). A parent that exists keeps its shape. Without a shape a new parent is an object. */
+    shape?: readonly ('array' | 'object')[]
+  }
+  | { type: 'delete', path: readonly string[] }
 // Renames are planned by core: in-place key text edits, or delete + set (D33).
 ```
 
