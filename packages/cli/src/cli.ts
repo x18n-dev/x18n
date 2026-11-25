@@ -101,7 +101,7 @@ export function createCli(): CAC {
   cli.command('locales', 'Locale codes as found, with display names and resources').action(run('locales', locales))
   cli.command('doctor', 'How the project was understood: presets, finders, formats, scanners, config origins').action(run('doctor', doctor))
 
-  cli.command('check', 'Report invalid, untranslated and unused keys, like `tsc --noEmit`')
+  cli.command('check [...files]', 'Report invalid, untranslated and unused keys, like `tsc --noEmit`')
     .option('--watch', 'Re-check on change')
     .option('--strict', 'Turn every warning into an error')
     .option('--locale <locale>', 'Only report for these locales (repeatable)')

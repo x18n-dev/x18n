@@ -2,6 +2,7 @@ import type { BaselineSummary, Diagnostic, FixSummary, Reporter, ReportInput } f
 import type { LoadedProject, Workspace } from '@x18n/node'
 import type { Baseline, Located } from '../baseline'
 import type { GlobalOptions } from '../context'
+import { realpathSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { join, relative, resolve } from 'node:path'
 import process from 'node:process'
@@ -50,21 +51,51 @@ function reported(d: { readonly code: string, readonly locale?: string | undefin
     && !list(options.skip).includes(d.code)
 }
 
-function filterDiagnostics(diagnostics: readonly Diagnostic[], options: CheckOptions): Diagnostic[] {
+/** `[files...]`, as posix paths relative to the workspace root; `undefined` when the run reports every file. */
+type Scope = ReadonlySet<string> | undefined
+
+function scopeOf(workspace: Workspace, files: readonly string[]): Scope {
+  // `process.cwd()` is the physical path, so a symlinked directory in an argument would not match otherwise.
+  const absolute = (file: string): string => {
+    const path = resolve(cwd(), file)
+    try {
+      return realpathSync(path)
+    }
+    catch {
+      return path
+    }
+  }
+  return files.length === 0
+    ? undefined
+    : new Set(files.map(file => relative(workspace.root, absolute(file)).replace(/\\/g, '/')))
+}
+
+/** Whether the run reports a path. A diagnostic without a location stays: no file holds it. */
+function inScope(scope: Scope, path: string | undefined): boolean {
+  return scope === undefined || path === undefined || scope.has(path)
+}
+
+/** The path of a diagnostic, posix and relative to the workspace root; `undefined` when it has no location. */
+function pathOf(workspace: Workspace, loaded: LoadedProject, path: string | undefined): string | undefined {
+  return path === undefined
+    ? undefined
+    : relative(workspace.root, join(loaded.root, path)).replace(/\\/g, '/') || '.'
+}
+
+function filterDiagnostics(diagnostics: readonly Diagnostic[], options: CheckOptions, inFiles: (diagnostic: Diagnostic) => boolean = () => true): Diagnostic[] {
   return diagnostics
-    .filter(d => reported(d, options))
+    .filter(d => inFiles(d) && reported(d, options))
     .map(d => options.strict && d.severity === 'warning'
       ? { ...d, severity: 'error' as const }
       : d)
 }
 
 /** The reported diagnostics of every project, with the path the baseline knows each one by. */
-function locate(workspace: Workspace, options: CheckOptions): (Located & { readonly project: LoadedProject })[] {
+function locate(workspace: Workspace, options: CheckOptions, scope: Scope): (Located & { readonly project: LoadedProject })[] {
   return workspace.projects.flatMap((loaded) => {
-    const posix = (path: string): string => relative(workspace.root, join(loaded.root, path)).replace(/\\/g, '/') || '.'
-    return filterDiagnostics(loaded.project.analyze().diagnostics, options).map(diagnostic => ({
+    return filterDiagnostics(loaded.project.analyze().diagnostics, options, d => inScope(scope, pathOf(workspace, loaded, d.location?.path))).map(diagnostic => ({
       project: loaded,
-      path: posix(diagnostic.location?.path ?? ''),
+      path: pathOf(workspace, loaded, diagnostic.location?.path ?? '') ?? '.',
       diagnostic,
     }))
   })
@@ -72,9 +103,9 @@ function locate(workspace: Workspace, options: CheckOptions): (Located & { reado
 
 type Fixes = ReadonlyMap<LoadedProject, FixSummary>
 
-function reportInputs(workspace: Workspace, options: CheckOptions, baseline: Baseline | undefined, fixes?: Fixes): { inputs: ReportInput[], summary: BaselineSummary | undefined } {
-  const located = locate(workspace, options)
-  const applied = baseline && applyBaseline(located, baseline, entry => reported(entry, options))
+function reportInputs(workspace: Workspace, options: CheckOptions, scope: Scope, baseline: Baseline | undefined, fixes?: Fixes): { inputs: ReportInput[], summary: BaselineSummary | undefined } {
+  const located = locate(workspace, options, scope)
+  const applied = baseline && applyBaseline(located, baseline, entry => inScope(scope, entry.path) && reported(entry, options))
   const kept = applied?.kept ?? located
   const inputs = workspace.projects.map((loaded: LoadedProject) => {
     const analysis = loaded.project.analyze()
@@ -108,8 +139,8 @@ function needsHistory(loaded: LoadedProject, options: CheckOptions): boolean {
   return level !== 'off' && (only.length === 0 || only.includes('stale-translation')) && !list(options.skip).includes('stale-translation')
 }
 
-async function report(workspace: Workspace, options: CheckOptions, baseline: Baseline | undefined, fixes?: Fixes): Promise<number> {
-  const { inputs, summary } = reportInputs(workspace, options, baseline, fixes)
+async function report(workspace: Workspace, options: CheckOptions, scope: Scope, baseline: Baseline | undefined, fixes?: Fixes): Promise<number> {
+  const { inputs, summary } = reportInputs(workspace, options, scope, baseline, fixes)
   const reporterIds = list(options.reporter)
   const ids = reporterIds.length
     ? reporterIds
@@ -155,8 +186,8 @@ function baselineFile(workspace: Workspace, options: CheckOptions): string {
  * Writes the diagnostics this run reports into the baseline. Entries that `--only`, `--skip` or `--locale` leave
  * out stay as they are.
  */
-async function updateBaseline(workspace: Workspace, options: CheckOptions, file: string, previous: Baseline | undefined): Promise<Baseline> {
-  const baseline = createBaseline(locate(workspace, options), previous?.diagnostics.filter(entry => !reported(entry, options)))
+async function updateBaseline(workspace: Workspace, options: CheckOptions, scope: Scope, file: string, previous: Baseline | undefined): Promise<Baseline> {
+  const baseline = createBaseline(locate(workspace, options, scope), previous?.diagnostics.filter(entry => !reported(entry, options) || !inScope(scope, entry.path)))
   await writeBaseline(file, baseline)
   const count = baseline.diagnostics.reduce((sum, entry) => sum + entry.count, 0)
   process.stderr.write(`Wrote ${count} ${count === 1
@@ -191,10 +222,11 @@ function fixLevel(options: CheckOptions): 'safe' | 'unsafe' | undefined {
  * Plans the fixes of the diagnostics this run reports (after `--locale`, `--only` and `--skip`, before the baseline) and
  * applies them, or prints them with `--dry-run`. The summary goes to stderr, so stdout keeps only the report.
  */
-async function fix(workspace: Workspace, options: CheckOptions, level: 'safe' | 'unsafe'): Promise<Fixes> {
+async function fix(workspace: Workspace, options: CheckOptions, scope: Scope, level: 'safe' | 'unsafe'): Promise<Fixes> {
   const fixes = new Map<LoadedProject, FixSummary>()
   for (const loaded of workspace.projects) {
-    const { plan, fixed, skipped } = loaded.project.planFixes(filterDiagnostics(loaded.project.analyze().diagnostics, options), {
+    const diagnostics = filterDiagnostics(loaded.project.analyze().diagnostics, options, d => inScope(scope, pathOf(workspace, loaded, d.location?.path)))
+    const { plan, fixed, skipped } = loaded.project.planFixes(diagnostics, {
       unsafe: level === 'unsafe',
     })
     const files = plan.changes.map(change => change.path)
@@ -235,14 +267,15 @@ async function fix(workspace: Workspace, options: CheckOptions, level: 'safe' | 
   return fixes
 }
 
-export async function check(options: CheckOptions): Promise<number> {
+export async function check(files: readonly string[], options: CheckOptions): Promise<number> {
   const level = fixLevel(options)
   const workspace = await openWorkspace(options)
+  const scope = scopeOf(workspace, files)
   await Promise.all(workspace.projects.filter(loaded => needsHistory(loaded, options)).map(async (loaded) => {
     await loaded.project.loadHistory({ watch: options.watch })
     await loaded.host.flush()
   }))
-  const fixes = level && await fix(workspace, options, level)
+  const fixes = level && await fix(workspace, options, scope, level)
   const file = baselineFile(workspace, options)
   // An invalid file is no reason to refuse writing a new one.
   let baseline = await readBaseline(file).catch((error: unknown) => {
@@ -251,15 +284,15 @@ export async function check(options: CheckOptions): Promise<number> {
     throw error
   })
   if (options.updateBaseline)
-    baseline = await updateBaseline(workspace, options, file, baseline)
-  const code = await report(workspace, options, baseline, fixes)
+    baseline = await updateBaseline(workspace, options, scope, file, baseline)
+  const code = await report(workspace, options, scope, baseline, fixes)
   if (!options.watch)
     return code
   const rerun = async (): Promise<void> => {
     if (process.stdout.isTTY)
       process.stdout.write('\u001Bc')
     out(`[${new Date().toLocaleTimeString()}] File change detected. Checking...\n`)
-    await report(workspace, options, baseline)
+    await report(workspace, options, scope, baseline)
   }
   for (const loaded of workspace.projects) {
     loaded.project.watch()
