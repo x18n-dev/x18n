@@ -936,13 +936,19 @@ class Server {
         continue
       for (const fix of d.fixes) {
         try {
-          actions.push({
-            title: fix.title,
-            kind: CodeActionKind.QuickFix,
-            edit: this.workspaceEdit(entry, entry.project.plan(fix.ops)),
-          })
+          const plan = entry.project.plan(fix.ops)
+          // A fix that the plan skips, with a warning, changes nothing: offering it would be a click that does nothing.
+          if (plan.changes.length > 0) {
+            actions.push({
+              title: fix.title,
+              kind: CodeActionKind.QuickFix,
+              edit: this.workspaceEdit(entry, plan),
+            })
+          }
         }
-        catch {}
+        catch {
+          // A fix that cannot be planned is not offered.
+        }
       }
     }
     return [

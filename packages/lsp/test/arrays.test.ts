@@ -215,11 +215,10 @@ describe('arrays in the language server', () => {
       expect(JSON.parse(fix!.files['src/locales/en.json']!).list).toEqual(['A', 'B', 'C', ''])
     })
 
-    it('does not leave a gap: the fix of list[9] changes nothing', async () => {
+    it('offers no fix for an item that would leave a gap, as it would change nothing', async () => {
       const session = await arrays('t(\'list[9]\')\ntm(\'list\')\ntm(\'menu\')\nt(\'n\')')
       await expect.poll(() => session.diagnostics('src/A.vue')?.map(d => d.code)).toEqual(['missing-key'])
-      const fixes = await quickFixes(session, 'src/A.vue')
-      expect(fixes.map(f => f.files)).toEqual([{}])
+      expect(await quickFixes(session, 'src/A.vue')).toEqual([])
     })
   })
 })
