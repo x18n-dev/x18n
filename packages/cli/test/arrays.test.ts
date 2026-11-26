@@ -206,14 +206,26 @@ describe('x18n binary with an i18next project that reads an array with returnObj
     ])).data.keys).toEqual([])
   })
 
-  it('still reports them when the call does not ask for the objects', async () => {
-    const dir = await i18next('t(\'list\')')
+  it('counts the array as used however the call is written, as the key names the array', async () => {
+    for (const code of ['t(\'list\')', 't(\'list\', { returnObjects: flag })', 't(\'list\', options)']) {
+      const dir = await i18next(code)
+      expect(json(await x18n(dir, [
+        'delete',
+        '--unused',
+        '--dry-run',
+        '--json',
+      ])).data.keys).toEqual([])
+    }
+  })
+
+  it('reports the items when nothing names the array', async () => {
+    const dir = await i18next('t(\'list.0\')')
     expect(json(await x18n(dir, [
       'delete',
       '--unused',
       '--dry-run',
       '--json',
-    ])).data.keys).toEqual(['translation:list.0', 'translation:list.1'])
+    ])).data.keys).toEqual(['translation:list.1'])
   })
 
   it('leaves the file alone when check --fix=unsafe runs', async () => {

@@ -9,10 +9,10 @@ const messages = {
   other: { x: 'X' },
 }
 
-async function unusedWith(code: string, deps: Record<string, string> = { 'i18next': '*', 'react-i18next': '*' }, config: Parameters<typeof createTestProject>[1] = {}): Promise<string[]> {
+async function unusedWith(code: string, deps: Record<string, string> = { 'i18next': '*', 'react-i18next': '*' }, config: Parameters<typeof createTestProject>[1] = {}, data: object = messages): Promise<string[]> {
   const { project } = await createTestProject({
     'package.json': json({ dependencies: deps }),
-    'locales/en/translation.json': json(messages),
+    'locales/en/translation.json': json(data),
     'src/App.tsx': code,
   }, {
     resources: [
@@ -46,16 +46,13 @@ describe('a call that takes the subtree when an option is true', () => {
       expect(await unusedWith(code)).toEqual([])
     })
 
-    it('counts nothing below the key without the option', async () => {
-      expect(await unusedWith(`${head}${rest}t('list')\nt('menu')`)).toEqual(['list.0', 'list.1', 'menu.open'])
+    it('counts nothing below an object without the option', async () => {
+      expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu')`)).toEqual(['menu.open'])
     })
 
-    it('counts nothing when the option is false', async () => {
-      expect(await unusedWith(`${head}${rest}t('list', { returnObjects: false })\nt('menu.open')`)).toEqual(['list.0', 'list.1'])
-    })
-
-    it('counts nothing when the value is not written in the call, as it cannot be known', async () => {
-      expect(await unusedWith(`${head}${rest}t('list', { returnObjects: flag })\nt('menu.open')`)).toEqual(['list.0', 'list.1'])
+    it('counts nothing below an object when the option is false, or a value the call does not write', async () => {
+      expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu', { returnObjects: false })`)).toEqual(['menu.open'])
+      expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu', { returnObjects: flag })`)).toEqual(['menu.open'])
     })
 
     it('does not reach a sibling that shares the start of the name', async () => {
@@ -105,8 +102,8 @@ describe('a call that takes the subtree when an option is true', () => {
     })
 
     it('takes only the key when the named option is not there', async () => {
-      const code = `${head}${rest}tt('list')\ntt('menu.open')`
-      expect(await unusedWith(code, { i18next: '*' }, calls({ option: 'all' }))).toEqual(['list.0', 'list.1'])
+      const code = `${head}${rest}tt('list.0')\ntt('list.1')\ntt('menu')`
+      expect(await unusedWith(code, { i18next: '*' }, calls({ option: 'all' }))).toEqual(['menu.open'])
     })
 
     it('still takes the subtree of a call that says true', async () => {
@@ -116,6 +113,90 @@ describe('a call that takes the subtree when an option is true', () => {
 
     it('refuses a subtree that is neither true nor an option name', async () => {
       await expect(unusedWith(`${head}${rest}`, { i18next: '*' }, calls({ opt: 'all' }))).rejects.toThrow()
+    })
+  })
+
+  // The items of an array have no names, so a key that names an array can only mean the whole array, however it is read.
+  describe('a key that names an array', () => {
+    it.each([
+      ['without options', 't(\'list\')'],
+      ['with the option false', 't(\'list\', { returnObjects: false })'],
+      ['with a value the call does not write', 't(\'list\', { returnObjects: flag })'],
+      ['with options in a variable', 't(\'list\', options)'],
+      ['through getFixedT', 'const fixed = i18next.getFixedT(\'en\')\nfixed(\'list\')'],
+    ])('counts the items as used, %s', async (_why, call) => {
+      expect(await unusedWith(`${head}${rest}${call}\nt('menu.open')`)).toEqual([])
+    })
+
+    it('counts the items of an array of objects, and what is below them', async () => {
+      const data = {
+        steps: [
+          { title: 'S1' },
+          { title: 'S2', hint: 'H' },
+        ],
+        gone: 'Gone',
+      }
+      expect(await unusedWith(`${head}useTranslation()\nt('steps', { returnObjects: flag })`, undefined, {}, data)).toEqual(['gone'])
+    })
+
+    it('counts the items of an array in an object', async () => {
+      const data = {
+        home: {
+          list: ['A', 'B'],
+          t: 'T',
+        },
+        gone: 'Gone',
+      }
+      expect(await unusedWith(`${head}useTranslation()\nt('home.list', opts)\nt('home.t')`, undefined, {}, data)).toEqual(['gone'])
+    })
+
+    it('does not reach a sibling that shares the start of the name', async () => {
+      const data = {
+        list: ['A'],
+        lists: ['B'],
+      }
+      expect(await unusedWith(`${head}useTranslation()\nt('list')`, undefined, {}, data)).toEqual(['lists.0'])
+    })
+
+    it('counts nothing for the parent object of an array: the array is not named', async () => {
+      const data = {
+        home: {
+          list: ['A', 'B'],
+        },
+      }
+      expect(await unusedWith(`${head}useTranslation()\nt('home')`, undefined, {}, data)).toEqual(['home.list.0', 'home.list.1'])
+    })
+
+    it('counts the items for vue-i18n t() too', async () => {
+      const { project } = await createTestProject({
+        'package.json': json({
+          dependencies: { 'vue-i18n': '*', 'vue': '*' },
+        }),
+        'src/locales/en.json': json({
+          list: ['A', 'B'],
+          gone: 'Gone',
+        }),
+        'src/A.vue': '<script setup>\nconst { t } = useI18n()\nt(\'list\')\n</script>\n',
+      })
+      expect(project.analyze().unused).toEqual(['gone'])
+    })
+
+    it('is not planned for deletion', async () => {
+      const { project } = await createTestProject({
+        'package.json': json({
+          dependencies: { i18next: '*' },
+        }),
+        'locales/en/translation.json': json({
+          list: ['A', 'B'],
+          gone: 'Gone',
+        }),
+        'src/App.ts': 'import i18next from \'i18next\'\ni18next.t(\'list\', { returnObjects: flag })\n',
+      }, {
+        resources: [
+          { pattern: 'locales/{locale}/{namespaces}.json' },
+        ],
+      })
+      expect(project.planUnused().keys.map(k => k.key)).toEqual(['translation:gone'])
     })
   })
 })

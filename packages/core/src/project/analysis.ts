@@ -43,6 +43,8 @@ interface AnalyzerState {
   readonly discoveryErrors: readonly { readonly error: X18nError, readonly path: string }[]
   readonly messages: ReadonlyMap<KeyString, ReadonlyMap<LocaleCode, readonly Message[]>>
   readonly parents: ReadonlySet<KeyString>
+  /** The keys of the nodes that are arrays. */
+  readonly arrays: ReadonlySet<KeyString>
   readonly usages: readonly Usage[]
   readonly usagesByKey: ReadonlyMap<KeyString, readonly Usage[]>
   readonly prefixUsages: readonly Usage[]
@@ -276,11 +278,12 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
         ? []
         : [usage.key])),
     ]
-    // `tm('list')` takes everything under `list`.
+    // `tm('list')` takes everything under `list`. So does any call that names an array: the items of an array have
+    // no names, so a key that names one can only mean the whole array, however the library is asked to return it.
     const subtrees = config.keySeparator === false
       ? []
       : [
-          ...new Set(state.usages.flatMap(usage => usage.subtree && usage.dynamic === false && usage.key !== undefined
+          ...new Set(state.usages.flatMap(usage => usage.dynamic === false && usage.key !== undefined && (usage.subtree || state.arrays.has(usage.key))
             ? [`${usage.key}${config.keySeparator}`]
             : [])),
         ]
