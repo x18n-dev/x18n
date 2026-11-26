@@ -50,9 +50,36 @@ describe('a call that takes the subtree when an option is true', () => {
       expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu')`)).toEqual(['menu.open'])
     })
 
-    it('counts nothing below an object when the option is false, or a value the call does not write', async () => {
-      expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu', { returnObjects: false })`)).toEqual(['menu.open'])
-      expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu', { returnObjects: flag })`)).toEqual(['menu.open'])
+    it('counts nothing below an object when the option is false, or has no value that counts', async () => {
+      for (const value of ['false', 'null', '0', 'undefined'])
+        expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu', { returnObjects: ${value} })`)).toEqual(['menu.open'])
+    })
+
+    // The call names the option but x18n cannot read its value: it may be true, and a key that is kept is safer than one that is deleted.
+    it.each([
+      ['a variable', '{ returnObjects: flag }'],
+      ['a shorthand property', '{ returnObjects }'],
+      ['an expression', '{ returnObjects: props.flat || mode === \'all\' }'],
+    ])('counts the children of an object when the value is %s', async (_why, options) => {
+      expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu', ${options})`)).toEqual([])
+    })
+
+    it('counts nothing when the call does not name the option, even with options it cannot read', async () => {
+      expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu', { ...opts })`)).toEqual(['menu.open'])
+      expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu', { count: n })`)).toEqual(['menu.open'])
+      expect(await unusedWith(`${head}${rest}t('list.0')\nt('list.1')\nt('menu', options)`)).toEqual(['menu.open'])
+    })
+
+    it('counts what is below a parent object, arrays in it too, when the option may be true', async () => {
+      const data = {
+        home: {
+          list: ['A', 'B'],
+          menu: { open: 'Open' },
+          t: 'T',
+        },
+        gone: 'Gone',
+      }
+      expect(await unusedWith(`${head}useTranslation()\nt('home', { returnObjects: flag })`, undefined, {}, data)).toEqual(['gone'])
     })
 
     it('does not reach a sibling that shares the start of the name', async () => {
@@ -98,6 +125,11 @@ describe('a call that takes the subtree when an option is true', () => {
 
     it('takes the subtree when the named option is true', async () => {
       const code = `${head}${rest}tt('list', { all: true })\ntt('menu.open')`
+      expect(await unusedWith(code, { i18next: '*' }, calls({ option: 'all' }))).toEqual([])
+    })
+
+    it('takes the subtree when the named option is a value it cannot read', async () => {
+      const code = `${head}${rest}tt('list.0')\ntt('list.1')\ntt('menu', { all: flag })`
       expect(await unusedWith(code, { i18next: '*' }, calls({ option: 'all' }))).toEqual([])
     })
 

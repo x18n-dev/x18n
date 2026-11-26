@@ -42,7 +42,8 @@ export interface CallSpec {
   readonly types?: readonly string[] | undefined
   /**
    * The call returns the whole subtree under its key, such as vue-i18n `tm('list')` for an array. The messages below the key count as used.
-   * `{ option }` does so only when the call passes that option as `true`, such as i18next `t('list', { returnObjects: true })`.
+   * `{ option }` does so only when the call passes that option and its value is not plainly false, such as i18next `t('list', { returnObjects: true })`.
+   * A value that cannot be read, like a variable, counts as true: a key that is kept is safer than one that is deleted.
    */
   readonly subtree?: boolean | { readonly option: string } | undefined
 }

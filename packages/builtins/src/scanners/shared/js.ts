@@ -407,8 +407,11 @@ class FileScan {
     return names
   }
 
-  /** True when the options object of the call has the property `name` written as `true`. */
-  optionIsTrue(args: readonly ArgValue[], source: ParamsSource, name: string): boolean {
+  /**
+   * True when the options object of the call names the option, unless its value is plainly false. A value the scanner cannot
+   * read (a variable, an expression) may be true: a key that is kept is safer than one that is deleted.
+   */
+  optionMayBeTrue(args: readonly ArgValue[], source: ParamsSource, name: string): boolean {
     return [source.arg].flat().some((index) => {
       const value = args[index]
       const node = value && !('props' in value)
@@ -417,16 +420,17 @@ class FileScan {
       return node?.type === 'ObjectExpression' && node.properties.some(property => property.type === 'Property'
         && !property.computed
         && propertyName(property.key) === name
-        && property.value.type === 'Literal'
-        && property.value.value === true)
+        && !(property.value.type === 'Literal'
+          ? !property.value.value
+          : property.value.type === 'Identifier' && property.value.name === 'undefined'))
     })
   }
 
-  /** The call takes the subtree under its key: always, or when the option the spec names is `true`. */
+  /** The call takes the subtree under its key: always, or when the option the spec names may be `true`. */
   takesSubtree(args: readonly ArgValue[], spec: CallSpec): boolean {
     const { subtree } = spec
     return typeof subtree === 'object'
-      ? spec.params !== undefined && this.optionIsTrue(args, spec.params, subtree.option)
+      ? spec.params !== undefined && this.optionMayBeTrue(args, spec.params, subtree.option)
       : subtree === true
   }
 

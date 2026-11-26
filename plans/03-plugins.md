@@ -216,7 +216,7 @@ interface CallSpec {
   readonly factory?: boolean
   /** Type names that mark a parameter or prop as a translate function: ['TFunction']. */
   readonly types?: readonly string[]
-  /** The call returns everything under its key (vue-i18n `tm('list')`). The messages below the key count as used. `{ option }`: only when the call writes that option as `true` (i18next `returnObjects`). */
+  /** The call returns everything under its key (vue-i18n `tm('list')`). The messages below the key count as used. `{ option }`: only when the call writes that option and its value is not plainly false (i18next `returnObjects`). */
   readonly subtree?: boolean | { readonly option: string }
 }
 ```
