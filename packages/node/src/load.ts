@@ -1,7 +1,7 @@
 import type { Builtins, ConfigDraft, Host, Plugin, Project, SerializableConfig, UserConfig } from '@x18n/core'
 import type { NodeHost } from './host'
 import { existsSync, readFileSync } from 'node:fs'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 import { createBuiltins } from '@x18n/builtins'
 import { createProject, errors, resolveConfig } from '@x18n/core'
 import { glob } from 'tinyglobby'
@@ -44,8 +44,25 @@ export interface Workspace {
   readonly projects: readonly LoadedProject[]
 }
 
+export interface ProjectDefinition {
+  /** Workspace-relative directory of the config declaring this project. */
+  readonly declaredIn: string
+  /** Workspace-relative project directory before its own `root` option applies. */
+  readonly directory: string
+}
+
+interface WorkspaceProject extends LoadedProject {
+  readonly definition: ProjectDefinition
+}
+
+export interface LoadedWorkspace extends Workspace {
+  readonly projects: readonly WorkspaceProject[]
+}
+
 interface ProjectSpec {
   readonly root: string
+  readonly declaredIn: string
+  readonly directory: string
   readonly config: UserConfig
   readonly parent: UserConfig | undefined
   readonly configFile: string | undefined
@@ -184,6 +201,8 @@ async function projectSpecs(rootConfigFile: string | undefined, cwd: string, upw
         specs: [
           {
             root: settingsRoot,
+            declaredIn: join(settingsRoot, '.vscode'),
+            directory: settingsRoot,
             config: fallback,
             parent: undefined,
             configFile: join(settingsRoot, '.vscode/settings.json'),
@@ -205,6 +224,8 @@ async function projectSpecs(rootConfigFile: string | undefined, cwd: string, upw
       specs: [
         {
           root,
+          declaredIn: configDir,
+          directory: configDir,
           config: rootConfig,
           parent: undefined,
           configFile: rootConfigFile,
@@ -228,6 +249,8 @@ async function projectSpecs(rootConfigFile: string | undefined, cwd: string, upw
       : {}
     specs.push({
       root: resolve(projectRoot, config.root ?? '.'),
+      declaredIn: configDir,
+      directory: projectRoot,
       config,
       parent,
       configFile: file,
@@ -238,6 +261,11 @@ async function projectSpecs(rootConfigFile: string | undefined, cwd: string, upw
 
 /** Finds the config, resolves every project and waits until each is indexed. */
 export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
+  return loadWorkspaceWithDefinitions(options)
+}
+
+/** Also return stable project definitions for consumers that persist project-specific data. */
+export async function loadWorkspaceWithDefinitions(options: LoadOptions): Promise<LoadedWorkspace> {
   const configFile = options.configFile
     ? resolve(options.cwd, options.configFile)
     : options.upward === false
@@ -255,7 +283,8 @@ export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
         ],
       }
     : defaults
-  const loaded: LoadedProject[] = []
+  const loaded: WorkspaceProject[] = []
+  const workspacePath = (path: string): string => relative(root, path).split(sep).join('/') || '.'
   const names: string[] = []
   for (const spec of specs) {
     const name = spec.config.name ?? (spec.root === root
@@ -287,6 +316,10 @@ export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
     await project.ready
     await host.flush()
     loaded.push({
+      definition: {
+        declaredIn: workspacePath(spec.declaredIn),
+        directory: workspacePath(spec.directory),
+      },
       name,
       root: spec.root,
       configFile: spec.configFile,

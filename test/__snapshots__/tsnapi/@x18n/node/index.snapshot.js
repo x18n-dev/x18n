@@ -10,6 +10,7 @@ export function findGitRoot(_) {}
 export async function importModule(_) {}
 export async function loadConfigFile(_) {}
 export async function loadWorkspace(_) {}
+export async function loadWorkspaceWithDefinitions(_) {}
 export async function loadYamlPlugin(_) {}
 export async function migrateI18nAlly(_, _) {}
 // #endregion

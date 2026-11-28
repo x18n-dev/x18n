@@ -13,6 +13,9 @@ export interface LoadedProject {
   readonly host: NodeHost;
   readonly project: Project;
 }
+export interface LoadedWorkspace extends Workspace {
+  readonly projects: readonly WorkspaceProject[];
+}
 export interface LoadOptions {
   readonly cwd: string;
   readonly configFile?: string | undefined;
@@ -42,6 +45,10 @@ export interface NodeHostOptions {
   readonly cacheDir?: string | false | undefined;
   readonly logger?: Logger | undefined;
 }
+export interface ProjectDefinition {
+  readonly declaredIn: string;
+  readonly directory: string;
+}
 export interface Workspace {
   readonly root: string;
   readonly configFile: string | undefined;
@@ -58,6 +65,7 @@ export declare function findGitRoot(_: string): string | undefined;
 export declare function importModule(_: string): Promise<unknown>;
 export declare function loadConfigFile(_: string): Promise<UserConfig>;
 export declare function loadWorkspace(_: LoadOptions): Promise<Workspace>;
+export declare function loadWorkspaceWithDefinitions(_: LoadOptions): Promise<LoadedWorkspace>;
 export declare function loadYamlPlugin(_: string): Promise<Plugin | Preset>;
 export declare function migrateI18nAlly(_: string, _?: MigrateOptions): Promise<MigrationResult>;
 // #endregion
@@ -65,4 +73,10 @@ export declare function migrateI18nAlly(_: string, _?: MigrateOptions): Promise<
 // #region Variables
 export declare const configFileNames: readonly string[];
 export declare const stderrLogger: Logger;
+// #endregion
+
+// #region Referenced (internal)
+interface WorkspaceProject extends LoadedProject {
+  readonly definition: ProjectDefinition;
+}
 // #endregion
