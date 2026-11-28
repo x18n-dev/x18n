@@ -196,6 +196,7 @@ function migrationHint(workspace: LoadedWorkspace, options: CheckOptions): strin
   const where = cwd() === workspace.root
     ? 'the workspace root'
     : 'the same directory as this check'
+  const scopeHint = 'If this check loads only part of the original workspace, return to the directory and workspace options that created this baseline. Review a full check there using the same baseline file, then repeat it with `--update-baseline`. Use the following steps only for the full workspace.'
   let command = 'x18n check'
   for (const flag of ['root', 'config', 'baseline'] as const) {
     if (options[flag] === undefined)
@@ -203,10 +204,10 @@ function migrationHint(workspace: LoadedWorkspace, options: CheckOptions): strin
     const path = String(options[flag])
     // The caller's shell knows how to quote its paths. CAC also treats bare numbers and leading dashes specially.
     if (!/^[\w./-]+$/.test(path) || path.startsWith('-') || Number.isFinite(Number(path)))
-      return `From ${where}, run \`x18n check\` with only the --root, --config and --baseline arguments you originally supplied. Copy those arguments with their original quoting. Review the result, then add \`--update-baseline\` to that command and run it once.`
+      return `${scopeHint} From ${where}, run \`x18n check\` with only the --root, --config and --baseline arguments you originally supplied. Copy those arguments with their original quoting. Review the result, then add \`--update-baseline\` to that command and run it once.`
     command += ` --${flag} ${path}`
   }
-  return `From ${where}, run \`${command}\` to review the workspace check, then \`${command} --update-baseline\` once.`
+  return `${scopeHint} From ${where}, run \`${command}\` to review the workspace check, then \`${command} --update-baseline\` once.`
 }
 
 /** Resource paths can cross project roots, so they cannot identify the project that reported a legacy entry. */
@@ -317,7 +318,11 @@ export async function check(files: readonly string[], options: CheckOptions): Pr
   const workspace = await openWorkspace(options)
   if (options.project !== undefined && workspace.projects.length > 1) {
     const matches = workspace.projects.map(({ definition }) => `${definition.directory} (declared in ${definition.declaredIn})`)
-    throw errors.X18N0001({ issue: `--project "${options.project}" matches multiple projects: ${matches.join(', ')}. Give projects in different directories distinct names. If multiple configs declare the same directory, use --config to select one declaring config.` })
+    const directories = new Set(workspace.projects.map(({ definition }) => definition.directory))
+    const hint = directories.size === matches.length
+      ? 'Give projects in different directories distinct names.'
+      : 'If the shared baseline contains entries without a project, migrate it in the original workspace before selecting a config. Review the full check there, then repeat it with `--update-baseline`. Run `x18n status --config <file>` for one declaring config. Use the listed name with --project and that same --config.'
+    throw errors.X18N0001({ issue: `--project "${options.project}" matches multiple projects: ${matches.join(', ')}. ${hint}` })
   }
   const scope = scopeOf(workspace, files)
   await Promise.all(workspace.projects.filter(loaded => needsHistory(loaded, options)).map(async (loaded) => {

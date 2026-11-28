@@ -520,7 +520,7 @@ export default () => ({
     expect(await readFile(join(dir, 'watch-state'), 'utf8')).toBe('idle')
   })
 
-  it('explains how to select one config declaring a shared project directory', async () => {
+  it('migrates the shared baseline before selecting one declaration', async () => {
     const dir = await mkdtemp(join(work, 'shared-declarations-'))
     for (const parent of ['a', 'b']) {
       await mkdir(join(dir, parent))
@@ -528,21 +528,85 @@ export default () => ({
     }
     await cp(join(fixtures, 'vue-i18n'), join(dir, 'shared'), { recursive: true })
     await writeFile(join(dir, 'shared/x18n.config.json'), '{"name":"web"}')
-    const args = [
-      'check',
+    const check = (...args: string[]): Promise<Result> => x18n(dir, ['check', '--json', ...args])
+    const legacy = JSON.stringify({
+      diagnostics: [
+        {
+          path: 'shared/src/App.vue',
+          code: 'missing-key',
+          key: 'app.titel',
+          locale: 'en',
+          message: '"app.titel" is not defined in en.',
+          count: 2,
+        },
+      ],
+    })
+    const file = join(dir, '.x18n/check-baseline.json')
+    await mkdir(join(dir, '.x18n'), { recursive: true })
+    await writeFile(file, legacy)
+    const selected = [
       '--project',
       'web',
+      '--config',
+      'a/x18n.config.json',
+    ]
+    const ambiguous = await check('--project', 'web')
+    expect(ambiguous.code).toBe(2)
+    expect(json(ambiguous).errors[0].why).toContain('migrate it in the original workspace before selecting a config')
+    for (const refused of [
+      await check(...selected, '--update-baseline'),
+      await check('--root', 'a', '--project', 'web', '--update-baseline'),
+      await x18n(join(dir, 'a'), [
+        'check',
+        '--project',
+        'web',
+        '--update-baseline',
+        '--json',
+      ]),
+    ]) {
+      expect(refused.code).toBe(2)
+      expect(json(refused).errors[0].why).toContain('If this check loads only part of the original workspace')
+      expect(await readFile(file, 'utf8')).toBe(legacy)
+    }
+
+    expect(json(await check()).data.baseline).toEqual({ suppressed: 2, fixed: 0 })
+    expect((await check('--update-baseline')).code).toBe(0)
+    expect((await check(...selected, '--update-baseline')).code).toBe(0)
+    const workspace = await check('--only', 'missing-key')
+    expect(workspace.code).toBe(0)
+    expect(json(workspace).data.baseline).toEqual({ suppressed: 2, fixed: 0 })
+  })
+
+  it('finds the project name relative to the selected config', async () => {
+    const dir = await mkdtemp(join(work, 'project-names-'))
+    for (const parent of ['one', 'two']) {
+      await mkdir(join(dir, 'nested', parent), { recursive: true })
+      await writeFile(join(dir, 'nested', parent, 'x18n.config.json'), '{"root":"..","projects":["shared"]}')
+    }
+    await cp(join(fixtures, 'vue-i18n'), join(dir, 'nested/shared'), { recursive: true })
+    const check = [
+      'check',
       '--only',
       'missing-key',
       '--json',
+      '--project',
     ]
-    const ambiguous = await x18n(dir, args)
+    const ambiguous = await x18n(dir, [...check, 'nested/shared'])
     expect(ambiguous.code).toBe(2)
-    expect(json(ambiguous).errors[0].why).toContain('--config')
-    const selected = await x18n(dir, [...args, '--config', 'a/x18n.config.json'])
+    expect(json(ambiguous).errors[0].why).toContain('x18n status --config <file>')
+    const config = ['--config', 'nested/one/x18n.config.json']
+    const status = await x18n(dir, ['status', ...config, '--json'])
+    expect(status.code).toBe(0)
+    const [project] = json(status).data.projects
+    expect(project.name).toBe('shared')
+    const selected = await x18n(dir, [
+      ...check,
+      project.name,
+      ...config,
+    ])
     expect(selected.code).toBe(1)
     expect(json(selected).diagnostics).toMatchObject([
-      { project: 'web', code: 'missing-key' },
+      { project: 'shared', code: 'missing-key' },
     ])
   })
 
