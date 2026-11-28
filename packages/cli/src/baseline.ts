@@ -17,7 +17,7 @@ export interface BaselineEntry {
   readonly path: string
   readonly code: string
   readonly key?: string | undefined
-  readonly locale?: string | undefined
+  readonly locale?: string | null | undefined
   readonly message: string
   readonly count: number
 }

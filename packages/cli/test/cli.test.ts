@@ -438,6 +438,48 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     expect(await readFile(file, 'utf8')).toBe(invalid)
   })
 
+  it('treats a legacy null locale like an absent locale before scoped writes', async () => {
+    const dir = await fixture('vue-i18n')
+    const file = join(dir, 'baseline.json')
+    const args = [
+      'check',
+      '--baseline',
+      file,
+      '--only',
+      'unused-key',
+      '--locale',
+      'fr',
+      '--json',
+    ]
+    expect((await x18n(dir, [...args, '--update-baseline'])).code).toBe(0)
+    const { diagnostics } = JSON.parse(await readFile(file, 'utf8'))
+    expect(diagnostics).toHaveLength(2)
+    const legacy = JSON.stringify({
+      diagnostics: diagnostics.map(({ project: _project, ...entry }: { project: unknown }) => ({ ...entry, locale: null })),
+    })
+    await writeFile(file, legacy)
+    expect(json(await x18n(dir, args)).data.baseline).toEqual({ suppressed: 2, fixed: 0 })
+
+    const resources = () => Promise.all(['en', 'de'].map(locale => readFile(join(dir, `src/locales/${locale}.json`), 'utf8')))
+    const original = await resources()
+    for (const flags of [
+      [],
+      ['--update-baseline'],
+      ['--fix=unsafe'],
+    ]) {
+      const result = await x18n(dir, [
+        ...args,
+        '--project',
+        basename(dir),
+        ...flags,
+      ])
+      expect(result.code).toBe(2)
+      expect(json(result).errors[0].why).toContain('does not identify the project')
+      expect(await readFile(file, 'utf8')).toBe(legacy)
+      expect(await resources()).toEqual(original)
+    }
+  })
+
   it('keeps diagnostics without a location in file-scoped project checks', async () => {
     const dir = await fixture('vue-i18n')
     await writeFile(join(dir, 'project-check.mjs'), `export default () => ({

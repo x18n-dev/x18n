@@ -43,10 +43,10 @@ function missingLocales(message: string): string[] {
 }
 
 /** Whether this run reports a diagnostic (or a baseline entry), after `--locale`, `--only` and `--skip`. */
-function reported(d: { readonly code: string, readonly locale?: string | undefined, readonly message: string }, options: CheckOptions): boolean {
+function reported(d: Pick<BaselineEntry, 'code' | 'locale' | 'message'>, options: CheckOptions): boolean {
   const locales = list(options.locale)
   const only = list(options.only)
-  return (locales.length === 0 || d.locale === undefined || locales.includes(d.locale) || (d.code === 'missing-translation' && missingLocales(d.message).some(l => locales.includes(l))))
+  return (locales.length === 0 || d.locale == null || locales.includes(d.locale) || (d.code === 'missing-translation' && missingLocales(d.message).some(l => locales.includes(l))))
     && (only.length === 0 || only.includes(d.code))
     && !list(options.skip).includes(d.code)
 }
