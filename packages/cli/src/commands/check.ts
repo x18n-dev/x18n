@@ -317,7 +317,7 @@ export async function check(files: readonly string[], options: CheckOptions): Pr
   const workspace = await openWorkspace(options)
   if (options.project !== undefined && workspace.projects.length > 1) {
     const matches = workspace.projects.map(({ definition }) => `${definition.directory} (declared in ${definition.declaredIn})`)
-    throw errors.X18N0001({ issue: `--project "${options.project}" matches multiple projects: ${matches.join(', ')}. Give them distinct names before running a project check.` })
+    throw errors.X18N0001({ issue: `--project "${options.project}" matches multiple projects: ${matches.join(', ')}. Give projects in different directories distinct names. If multiple configs declare the same directory, use --config to select one declaring config.` })
   }
   const scope = scopeOf(workspace, files)
   await Promise.all(workspace.projects.filter(loaded => needsHistory(loaded, options)).map(async (loaded) => {

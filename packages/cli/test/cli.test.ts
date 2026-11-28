@@ -520,6 +520,32 @@ export default () => ({
     expect(await readFile(join(dir, 'watch-state'), 'utf8')).toBe('idle')
   })
 
+  it('explains how to select one config declaring a shared project directory', async () => {
+    const dir = await mkdtemp(join(work, 'shared-declarations-'))
+    for (const parent of ['a', 'b']) {
+      await mkdir(join(dir, parent))
+      await writeFile(join(dir, parent, 'x18n.config.json'), '{"root":"..","projects":["shared"]}')
+    }
+    await cp(join(fixtures, 'vue-i18n'), join(dir, 'shared'), { recursive: true })
+    await writeFile(join(dir, 'shared/x18n.config.json'), '{"name":"web"}')
+    const args = [
+      'check',
+      '--project',
+      'web',
+      '--only',
+      'missing-key',
+      '--json',
+    ]
+    const ambiguous = await x18n(dir, args)
+    expect(ambiguous.code).toBe(2)
+    expect(json(ambiguous).errors[0].why).toContain('--config')
+    const selected = await x18n(dir, [...args, '--config', 'a/x18n.config.json'])
+    expect(selected.code).toBe(1)
+    expect(json(selected).diagnostics).toMatchObject([
+      { project: 'web', code: 'missing-key' },
+    ])
+  })
+
   it('keeps diagnostics without a location in file-scoped project checks', async () => {
     const dir = await fixture('vue-i18n')
     await writeFile(join(dir, 'project-check.mjs'), `export default () => ({
