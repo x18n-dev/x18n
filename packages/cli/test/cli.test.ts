@@ -298,11 +298,21 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     ])
     expect(json(duplicate).data.baseline).toEqual({ suppressed: 6, fixed: 0 })
 
+    await writeFile(app, source.replace('app.titel', 'app.new'))
+    const mixed = await x18n(dir, ['check', 'src/App.vue'])
+    expect(mixed.code).toBe(1)
+    expect(mixed.stdout).toContain('Known diagnostic occurrences absent from this check: 1.')
+    expect(mixed.stdout).toContain('Review the reported diagnostics before updating. An update can accept new diagnostics in the selected scope.')
+
     // Fixed diagnostics are counted, and --update-baseline drops them.
     await writeFile(app, source.replace(`<p>{{ $t('app.titel') }}</p>`, ''))
     const fixed = await x18n(dir, ['check'])
     expect(fixed.code).toBe(0)
-    expect(fixed.stdout).toContain('The baseline left out 5 known diagnostics.\n\nFixed since the baseline: 1. Run `x18n check --update-baseline` to drop them from it.\n')
+    expect(fixed.stdout).toContain('The baseline left out 5 known diagnostics.')
+    expect(fixed.stdout).toContain('Known diagnostic occurrences absent from this check: 1.')
+    expect(fixed.stdout).toContain('Check which projects, checks, locales and file paths this baseline covers before updating it.')
+    expect(fixed.stdout).not.toContain('Review the reported diagnostics')
+
     await x18n(dir, [
       'check',
       '--update-baseline',
@@ -311,6 +321,29 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     ])
     expect(JSON.parse(await readFile(file, 'utf8')).diagnostics).toHaveLength(5)
     expect(json(await x18n(dir, ['check', '--json'])).data.baseline).toEqual({ suppressed: 5, fixed: 0 })
+  })
+
+  it('check counts unmatched occurrences of a known diagnostic', async () => {
+    const dir = await fixture('vue-i18n')
+    const app = join(dir, 'src/App.vue')
+    const source = await readFile(app, 'utf8')
+    const usage = `<p>{{ $t('app.titel') }}</p>`
+    const args = ['check', '--only', 'missing-key']
+    await writeFile(app, source.replace(usage, [usage, usage, usage].join('\n')))
+    expect((await x18n(dir, [...args, '--update-baseline'])).code).toBe(0)
+
+    await writeFile(app, source)
+    const result = await x18n(dir, args)
+    expect(result.code).toBe(0)
+    expect(result.stdout).toContain('Known diagnostic occurrences absent from this check: 2.')
+    expect(json(await x18n(dir, [...args, '--json'])).data.baseline).toEqual({ suppressed: 1, fixed: 2 })
+    const excluded = await x18n(dir, [
+      'check',
+      '--skip',
+      'missing-key',
+      '--json',
+    ])
+    expect(json(excluded).data.baseline).toEqual({ suppressed: 0, fixed: 0 })
   })
 
   it('check --baseline reads another file, and fails on a new diagnostic', async () => {
@@ -337,10 +370,24 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     const all = json(await x18n(dir, ['check', '--json']))
     expect(all.diagnostics).toHaveLength(6)
     expect(all.data).not.toHaveProperty('baseline')
-    await writeFile(join(dir, 'baseline.json'), '{')
-    const invalid = await x18n(dir, ['check', '--baseline', 'baseline.json'])
+    const custom = 'team\'s baseline.json'
+    await writeFile(join(dir, custom), '{')
+    const args = [
+      'check',
+      'src/App.vue',
+      '--baseline',
+      custom,
+    ]
+    const invalid = await x18n(dir, args)
     expect(invalid.code).toBe(2)
-    expect(invalid.stderr).toContain('is not valid. Run `x18n check --update-baseline` to write it again.')
+    const invalidJson = await x18n(dir, [...args, '--json'])
+    expect(invalidJson.code).toBe(2)
+    for (const message of [invalid.stderr, json(invalidJson).errors[0].why]) {
+      expect(message).toContain(`${custom} is not valid. Correct this file or restore a known-good copy.`)
+      expect(message).toContain('choose the projects, checks, locales and file paths this file should cover')
+      expect(message).toContain('Use --update-baseline with the same baseline file, working directory and workspace configuration')
+      expect(message).toContain('Rebuilding can accept new diagnostics in the selected scope.')
+    }
   })
 
   it('status, keys, get and locales return JSON', async () => {

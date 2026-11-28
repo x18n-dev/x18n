@@ -88,8 +88,8 @@ export function createBaseline(located: readonly Located[], kept: readonly Basel
 }
 
 /**
- * Leaves out the diagnostics the baseline holds, up to the count of each entry. `fixed` counts the entries that no
- * longer occur; `relevant` limits it to the entries this run could have reported (see `--only`).
+ * Leaves out known diagnostics up to the count of each relevant baseline entry.
+ * `fixed` counts the occurrences left unmatched in those entries.
  */
 export function applyBaseline<T extends Located>(located: readonly T[], baseline: Baseline, relevant: (entry: BaselineEntry) => boolean = () => true): { kept: T[] } & BaselineSummary {
   const left = new Map<string, number>()
@@ -130,8 +130,14 @@ export async function readBaseline(file: string): Promise<Baseline | undefined> 
   }
   catch {}
   const diagnostics = (value as Partial<Baseline> | null)?.diagnostics
-  if (!Array.isArray(diagnostics) || !diagnostics.every(e => typeof e?.path === 'string' && typeof e.code === 'string' && typeof e.message === 'string' && Number.isInteger(e.count)))
-    throw new Error(`the check baseline ${file} is not valid. Run \`x18n check --update-baseline\` to write it again.`)
+  if (!Array.isArray(diagnostics) || !diagnostics.every(e => typeof e?.path === 'string' && typeof e.code === 'string' && typeof e.message === 'string' && Number.isInteger(e.count))) {
+    throw new Error([
+      `the check baseline ${file} is not valid. Correct this file or restore a known-good copy.`,
+      'To rebuild it, first choose the projects, checks, locales and file paths this file should cover.',
+      'Use --update-baseline with the same baseline file, working directory and workspace configuration.',
+      'Rebuilding can accept new diagnostics in the selected scope.',
+    ].join(' '))
+  }
   return { diagnostics }
 }
 
