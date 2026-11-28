@@ -118,7 +118,7 @@ export function createBaseline(located: readonly Located[]): Baseline {
  * Leaves out the diagnostics the baseline holds, up to the count of each entry. `fixed` counts the entries that no
  * longer occur in the selected baseline.
  */
-export function applyBaseline<T extends Located>(located: readonly T[], baseline: Baseline): { kept: T[] } & BaselineSummary {
+export function applyBaseline<T extends Located>(located: readonly T[], baseline: Baseline): { kept: T[], unmatchedLegacyFile: string | undefined } & BaselineSummary {
   const left = new Map<string, number>()
   for (const entry of baseline.diagnostics) {
     const id = idOf(entry)
@@ -149,7 +149,15 @@ export function applyBaseline<T extends Located>(located: readonly T[], baseline
   let fixed = 0
   for (const count of left.values())
     fixed += count
-  return { kept, suppressed, fixed }
+  const unmatchedLegacyFile = fixed > 0
+    ? baseline.diagnostics.find(entry => !entry.project && entry.path.includes('/') && (left.get(idOf(entry)) ?? 0) > 0)?.path
+    : undefined
+  return {
+    kept,
+    suppressed,
+    fixed,
+    unmatchedLegacyFile,
+  }
 }
 
 function relativePath(root: string, path: string): string {

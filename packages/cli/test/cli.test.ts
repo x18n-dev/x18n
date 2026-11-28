@@ -746,6 +746,9 @@ export default () => ({
     await writeFile(source, (await readFile(source, 'utf8')).replace('app.titel', 'app.title'))
     expect((await check(nested, '--update-baseline')).code).toBe(2)
     expect(await readFile(file, 'utf8')).toBe(legacy)
+    await rm(source)
+    expect((await check(nested, '--update-baseline')).code).toBe(2)
+    expect(await readFile(file, 'utf8')).toBe(legacy)
     expect((await check('--update-baseline')).code).toBe(0)
     expect((await check(literal, '--update-baseline')).code).toBe(0)
     expect(JSON.parse(await readFile(file, 'utf8')).diagnostics).toMatchObject([

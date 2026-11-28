@@ -263,6 +263,12 @@ async function selectBaseline(workspace: LoadedWorkspace, options: CheckOptions,
       retained.push(stored)
     }
   }
+  // Once a file disappears, its old slash spelling no longer tells us which file was fixed.
+  if (options.updateBaseline && scope && sep === '/' && selected.some(entry => !entry.project && entry.path.includes('/'))) {
+    const { unmatchedLegacyFile } = applyBaseline(locate(workspace, options, scope), { diagnostics: selected })
+    if (unmatchedLegacyFile !== undefined)
+      throw new Error(`The older baseline cannot identify the file for every occurrence of "${unmatchedLegacyFile}". ${migrationHint(workspace, options)}`)
+  }
   return {
     selected: { diagnostics: selected },
     retained,
