@@ -31,7 +31,7 @@ Bare `x18n` prints `x18n status` followed by the main commands. It never starts 
 
 ### Check
 
-`x18n check` is to i18n what `tsc --noEmit` is to types. It reports invalid, untranslated and unused keys (the check table in [05-builtins.md](./05-builtins.md)). The editor shows exactly the same diagnostics.
+`x18n check [...files]` is to i18n what `tsc --noEmit` is to types. It reports invalid, untranslated and unused keys (the check table in [05-builtins.md](./05-builtins.md)). The editor shows exactly the same diagnostics. File paths limit the report to their diagnostics, which is how a staged task such as lint-staged calls it: the checks still read the whole project, so `unused-key` and `missing-translation` see every usage and locale. `--fix`, `--update-baseline` and the baseline follow the same scope, and a diagnostic without a location stays, because no file holds it.
 
 ```
 src/pages/Home.vue:12:15 - error missing-key: "home.titel" is not defined in en.
@@ -50,13 +50,13 @@ Found 1 error and 1 warning in 2 files.
 | `--only <checkIds>` / `--skip <checkIds>` | Narrow the checks. |
 | `--max-warnings <n>` | Fail when there are more than `n` warnings. |
 | `--reporter <id>` | `pretty` (default), `json`, `markdown`, `github`, `sarif`. Repeatable, with `--output <file>`. |
-| `--update-baseline` | Write the reported diagnostics into the baseline. Entries that `--only`, `--skip` or `--locale` leave out stay. |
+| `--update-baseline` | Write the reported diagnostics into the baseline. Entries that `--only`, `--skip`, `--locale` or file paths leave out stay. |
 | `--baseline <file>` | Baseline file (default `.x18n/check-baseline.json` in the workspace root). |
 | `--fix` | Apply the `safe` fixes of the reported diagnostics (after `--locale`, `--only` and `--skip`, baseline or not) in one plan, then report what is left. |
 | `--fix=unsafe` | Also apply the `unsafe` fixes, which delete. |
 | `--dry-run` | With `--fix`: print the plan, write nothing. |
 
-While the baseline file exists, `check` reports and fails only on diagnostics it does not hold. After applying the check and locale filters, `data.baseline` in `--json` counts matched (`suppressed`) and unmatched (`fixed`) occurrences of known diagnostics. An entry is a path relative to the workspace root, a check id, a key, a locale and a message, with a count; no line, so moving code keeps it known, while one more identical diagnostic in the same file is new. The file is sorted for small diffs. The editor still shows every diagnostic. The idea comes from [i18next-cli](https://github.com/i18next/i18next-cli) `lint --update-baseline` and ESLint bulk suppressions.
+While the baseline file exists, `check` reports and fails only on diagnostics it does not hold. After applying the check, locale and file path filters, `data.baseline` in `--json` counts matched (`suppressed`) and unmatched (`fixed`) occurrences of known diagnostics. An entry is a path relative to the workspace root, a check id, a key, a locale and a message, with a count; no line, so moving code keeps it known, while one more identical diagnostic in the same file is new. The file is sorted for small diffs. The editor still shows every diagnostic. The idea comes from [i18next-cli](https://github.com/i18next/i18next-cli) `lint --update-baseline` and ESLint bulk suppressions.
 
 Without `--fix`, `x18n check` is read-only. Each fix of a diagnostic has a level ([03-plugins.md](./03-plugins.md)): `safe` fixes only add, `unsafe` fixes can lose data, and fixes without a level are offered in the editor only. The built-ins:
 
