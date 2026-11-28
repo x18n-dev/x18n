@@ -181,6 +181,26 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     expect(result.stdout).toMatch(/✖ \d+ errors?(?: {2}⚠ \d+ warnings?)? {2}\d+ files?\n$/)
   })
 
+  it('check reports only the files it is given', async () => {
+    const dir = await fixture('vue-i18n')
+    const app = await x18n(dir, ['check', 'src/App.vue'])
+    expect(app.code).toBe(1)
+    expect(app.stdout).toContain('src/App.vue:17:15')
+    expect(app.stdout).not.toContain('src/locales/')
+    expect(app.stdout).toMatch(/✖ 1 error {2}1 file\n$/)
+
+    const locales = await x18n(dir, ['check', 'src/locales/de.json'])
+    expect(locales.stdout).toContain('src/locales/de.json')
+    expect(locales.stdout).not.toContain('src/App.vue')
+
+    // Tools such as lint-staged pass absolute paths, and files x18n does not read simply have no diagnostics.
+    expect((await x18n(dir, [
+      'check',
+      join(dir, 'src/App.vue'),
+    ])).stdout).toContain('src/App.vue:17:15')
+    expect((await x18n(dir, ['check', 'package.json'])).stdout).toBe('Found no errors.\n')
+  })
+
   it('check --json follows the contract', async () => {
     const dir = await fixture('i18next')
     const result = await x18n(dir, ['check', '--json'])
@@ -418,6 +438,41 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     expect(await readFile(file, 'utf8')).toBe(invalid)
   })
 
+  it('keeps diagnostics without a location in file-scoped project checks', async () => {
+    const dir = await fixture('vue-i18n')
+    await writeFile(join(dir, 'project-check.mjs'), `export default () => ({
+  name: 'project-check',
+  checks: [{ id: 'whole-project', defaultSeverity: 'error', run: () => [{ message: 'Project error' }] }],
+})`)
+    await writeFile(join(dir, 'x18n.config.json'), JSON.stringify({
+      name: 'web',
+      plugins: ['./project-check.mjs'],
+    }))
+    const check = (...args: string[]): Promise<Result> => x18n(dir, [
+      'check',
+      'src/App.vue',
+      '--project',
+      'web',
+      '--only',
+      'whole-project',
+      '--json',
+      ...args,
+    ])
+    expect((await check()).code).toBe(1)
+    expect((await check('--update-baseline')).code).toBe(0)
+    const file = join(dir, '.x18n/check-baseline.json')
+    const before = await readFile(file, 'utf8')
+    expect(json(await check('--update-baseline')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    expect(await readFile(file, 'utf8')).toBe(before)
+
+    const baseline = JSON.parse(before)
+    delete baseline.diagnostics[0].project
+    const legacy = JSON.stringify(baseline)
+    await writeFile(file, legacy)
+    expect((await check('--fix', '--update-baseline')).code).toBe(2)
+    expect(await readFile(file, 'utf8')).toBe(legacy)
+  })
+
   it('keeps sibling baseline counts on a scoped refresh and migrates moved projects on a full refresh', async () => {
     const dir = await vueWorkspace()
     await writeFile(join(dir, 'x18n.config.json'), JSON.stringify({
@@ -568,6 +623,15 @@ describe('x18n binary', { timeout: 30_000 }, () => {
       diagnostics: [legacy],
     }))
     expect(json(await check('--only', 'missing-key')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    const app = [
+      'src/App.vue',
+      ...scoped,
+      '--only',
+      'missing-key',
+    ]
+    expect((await check(...app)).code).toBe(1)
+    expect(json(await check(...app, '--update-baseline')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    expect(JSON.parse(await readFile(file, 'utf8')).diagnostics).toContainEqual(legacy)
     expect(json(await check(...scoped, '--skip', 'missing-key')).data.baseline).toEqual({ suppressed: 0, fixed: 0 })
     expect((await check(...scoped, '--only', 'empty-translation', '--update-baseline')).code).toBe(0)
     const before = await readFile(file, 'utf8')
