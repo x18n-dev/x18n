@@ -328,7 +328,12 @@ export async function check(files: readonly string[], options: CheckOptions): Pr
   // Check ownership before --fix can edit a resource in a project-scoped run.
   const scoped = options.project === undefined
     ? undefined
-    : await readProjectBaseline(workspace, options, scope, file)
+    : await readProjectBaseline(workspace, options, scope, file).catch((error: unknown) => {
+        // History watchers can keep the CLI alive after it reports the migration error.
+        for (const { project } of workspace.projects)
+          project.dispose()
+        throw error
+      })
   const fixes = level && await fix(workspace, options, scope, level)
   let baseline = scoped
     ? scoped.selected

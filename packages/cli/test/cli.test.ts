@@ -480,6 +480,46 @@ describe('x18n binary', { timeout: 30_000 }, () => {
     }
   })
 
+  it('releases history watchers when a legacy baseline prevents watching', async () => {
+    const dir = await fixture('vue-i18n')
+    await writeFile(join(dir, 'watch-state'), 'idle')
+    await writeFile(join(dir, 'history.mjs'), `import { writeFileSync } from 'node:fs'
+export default () => ({
+  name: 'test-history',
+  histories: [{
+    id: 'test',
+    load: async () => undefined,
+    watch() {
+      writeFileSync('watch-state', 'active')
+      return { dispose: () => writeFileSync('watch-state', 'idle') }
+    },
+  }],
+})`)
+    await writeFile(join(dir, 'x18n.config.json'), '{"name":"web","plugins":["./history.mjs"],"checks":{"stale-translation":"warning"}}')
+    await writeFile(join(dir, 'baseline.json'), JSON.stringify({
+      diagnostics: [
+        {
+          path: '.',
+          code: 'unused-key',
+          message: 'Legacy entry',
+          count: 1,
+        },
+      ],
+    }))
+    const refused = await x18n(dir, [
+      'check',
+      '--watch',
+      '--project',
+      'web',
+      '--baseline',
+      'baseline.json',
+      '--json',
+    ])
+    expect(refused.code).toBe(2)
+    expect(json(refused).errors[0].why).toContain('does not identify the project')
+    expect(await readFile(join(dir, 'watch-state'), 'utf8')).toBe('idle')
+  })
+
   it('keeps diagnostics without a location in file-scoped project checks', async () => {
     const dir = await fixture('vue-i18n')
     await writeFile(join(dir, 'project-check.mjs'), `export default () => ({
