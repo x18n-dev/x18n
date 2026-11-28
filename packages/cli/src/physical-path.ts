@@ -1,4 +1,4 @@
-import { lstatSync, readlinkSync, realpathSync } from 'node:fs'
+import { lstatSync, readlinkSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path'
 
 function missing(error: unknown): boolean {
@@ -75,4 +75,34 @@ export function discoveredPath(root: string, path: string): string {
     skipped = relative(root, dir).split(sep).some(ignored)
   }
   return dir
+}
+
+/** Existing POSIX filenames that the old baseline writer encoded as this slash-separated path. */
+export function legacyFileSpellings(root: string, path: string): string[] {
+  const absolute = isAbsolute(path)
+  const parts = (absolute
+    ? path.slice(1)
+    : path).split('/')
+  const files: string[] = []
+  function visit(dir: string, start: number): void {
+    for (let end = start + 1; end <= parts.length; end++) {
+      const file = resolve(dir, parts.slice(start, end).join('\\'))
+      let stat
+      try {
+        stat = statSync(file, { throwIfNoEntry: false })
+      }
+      catch (error) {
+        // Joining more segments only makes this candidate filename longer.
+        if ((error as NodeJS.ErrnoException).code === 'ENAMETOOLONG')
+          break
+        throw error
+      }
+      if (stat && end === parts.length)
+        files.push(file)
+      else if (stat?.isDirectory())
+        visit(file, end)
+    }
+  }
+  visit(absolute ? sep : root, 0)
+  return files
 }

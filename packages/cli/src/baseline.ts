@@ -129,8 +129,16 @@ export function applyBaseline<T extends Located>(located: readonly T[], baseline
     const e = identity(item)
     let id = idOf(e)
     // A full workspace can still match unowned rows from an older baseline.
-    if (!left.get(id))
+    if (!left.get(id)) {
       id = idOf(e, null)
+      // Older baselines also treated literal POSIX backslashes as separators.
+      if (!left.get(id) && e.path.includes('\\')) {
+        id = idOf({
+          ...e,
+          path: e.path.replaceAll('\\', '/'),
+        }, null)
+      }
+    }
     const count = left.get(id) ?? 0
     if (count === 0)
       return true

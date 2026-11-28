@@ -682,6 +682,77 @@ export default () => ({
     expect(remaining.filter((row: { code: string }) => row.code === 'missing-key').map((row: { project: { declaredIn: string } }) => row.project.declaredIn).sort()).toEqual(['nested/two', 'one'])
   })
 
+  it.skipIf(process.platform === 'win32')('checks a POSIX filename containing a literal backslash', async () => {
+    const dir = await fixture('vue-i18n')
+    const file = 'src/A\\pp.vue'
+    await rename(join(dir, 'src/App.vue'), join(dir, file))
+    const baseline = join(dir, 'known.json')
+    const check = baselineCheck(dir, baseline, '--only', 'missing-key')
+    const fresh = await check(file)
+    expect(fresh.code).toBe(1)
+    expect(json(fresh).diagnostics).toMatchObject([
+      { code: 'missing-key', key: 'app.titel' },
+    ])
+    expect((await check(file, '--update-baseline')).code).toBe(0)
+    expect(json(await check(file)).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    // Baselines from before project ownership replaced literal backslashes with slashes.
+    const legacy = {
+      path: 'src/A/pp.vue',
+      code: 'missing-key',
+      key: 'app.titel',
+      locale: 'en',
+      message: '"app.titel" is not defined in en.',
+      count: 1,
+    }
+    await writeFile(baseline, JSON.stringify({
+      diagnostics: [legacy],
+    }))
+    expect(json(await check()).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    expect(json(await check(file)).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    expect((await check('--update-baseline')).code).toBe(0)
+    expect(JSON.parse(await readFile(baseline, 'utf8')).diagnostics).toMatchObject([
+      { path: file, count: 1 },
+    ])
+  })
+
+  it.skipIf(process.platform === 'win32')('migrates a legacy filename shared by two POSIX spellings', async () => {
+    const dir = await fixture('vue-i18n')
+    const literal = 'src/A\\pp.vue'
+    const nested = 'src/A/pp.vue'
+    await mkdir(join(dir, 'src/A'))
+    await rename(join(dir, 'src/App.vue'), join(dir, literal))
+    await cp(join(dir, literal), join(dir, nested))
+    const file = join(dir, 'known.json')
+    const check = baselineCheck(dir, file, '--only', 'missing-key')
+    const legacy = JSON.stringify({
+      diagnostics: [
+        {
+          path: nested,
+          code: 'missing-key',
+          key: 'app.titel',
+          locale: 'en',
+          message: '"app.titel" is not defined in en.',
+          count: 2,
+        },
+      ],
+    })
+    await writeFile(file, legacy)
+    for (const path of [literal, nested]) {
+      expect((await check(path, '--update-baseline')).code).toBe(2)
+      expect(await readFile(file, 'utf8')).toBe(legacy)
+    }
+    expect(json(await check()).data.baseline).toEqual({ suppressed: 2, fixed: 0 })
+    const source = join(dir, literal)
+    await writeFile(source, (await readFile(source, 'utf8')).replace('app.titel', 'app.title'))
+    expect((await check(nested, '--update-baseline')).code).toBe(2)
+    expect(await readFile(file, 'utf8')).toBe(legacy)
+    expect((await check('--update-baseline')).code).toBe(0)
+    expect((await check(literal, '--update-baseline')).code).toBe(0)
+    expect(JSON.parse(await readFile(file, 'utf8')).diagnostics).toMatchObject([
+      { path: nested, count: 1 },
+    ])
+  })
+
   it('uses the same baseline through a workspace directory alias', async () => {
     const dir = await mkdtemp(join(work, 'aliased-workspace-'))
     const parent = join(dir, 'parent')

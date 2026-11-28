@@ -3,12 +3,12 @@ import type { LoadedProject, LoadedWorkspace, Workspace } from '@x18n/node'
 import type { Baseline, BaselineEntry, Located } from '../baseline'
 import type { GlobalOptions } from '../context'
 import { writeFile } from 'node:fs/promises'
-import { isAbsolute, join, relative, resolve } from 'node:path'
+import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import process from 'node:process'
 import { errors } from '@x18n/core'
 import { applyBaseline, createBaseline, readBaseline, writeBaseline } from '../baseline'
 import { answer, cwd, displayPath, formatPlan, openWorkspace, out, useColor } from '../context'
-import { physicalPath } from '../physical-path'
+import { legacyFileSpellings, physicalPath } from '../physical-path'
 
 export interface CheckOptions extends GlobalOptions {
   readonly watch?: boolean | undefined
@@ -52,7 +52,12 @@ function reported(d: Pick<BaselineEntry, 'code' | 'locale' | 'message'>, options
 }
 
 /** Tests a workspace-relative path against the physical files selected on the command line. */
-type Scope = ((path: string) => boolean) | undefined
+interface FileScope {
+  includes: (path: string) => boolean
+  /** Membership of paths an old POSIX baseline could spell the same way. */
+  legacy: (path: string) => ReadonlySet<boolean> | undefined
+}
+type Scope = FileScope | undefined
 
 function scopeOf(workspace: Workspace, files: readonly string[]): Scope {
   if (files.length === 0)
@@ -61,23 +66,36 @@ function scopeOf(workspace: Workspace, files: readonly string[]): Scope {
   // The baseline stores diagnostics without a location under their project's effective root.
   for (const loaded of workspace.projects)
     paths.add(physicalPath(loaded.root))
-  return path => paths.has(physicalPath(resolve(workspace.root, path)))
+  const includes = (path: string): boolean => paths.has(physicalPath(resolve(workspace.root, path)))
+  const selected = new Set([...paths].map(file => relative(workspace.root, file).replaceAll('\\', '/')))
+  const cached = new Map<string, Set<boolean>>()
+  return {
+    includes,
+    legacy(path) {
+      if (sep !== '/' || !path.includes('/'))
+        return undefined
+      let membership = cached.get(path)
+      if (!membership) {
+        membership = new Set(legacyFileSpellings(workspace.root, path).map(file => paths.has(physicalPath(file))))
+        if (selected.has(path) || includes(path))
+          membership.add(true)
+        cached.set(path, membership)
+      }
+      return membership
+    },
+  }
 }
 
 /** A diagnostic without a location stays: no file holds it. */
 function inScope(scope: Scope, path: string | undefined): boolean {
-  return scope === undefined || path === undefined || scope(path)
-}
-
-function reportsEntry(entry: BaselineEntry, options: CheckOptions, scope: Scope): boolean {
-  return reported(entry, options) && inScope(scope, entry.path)
+  return scope === undefined || path === undefined || scope.includes(path)
 }
 
 /** The path of a diagnostic, posix and relative to the workspace root; `undefined` when it has no location. */
 function pathOf(workspace: Workspace, loaded: LoadedProject, path: string | undefined): string | undefined {
   return path === undefined
     ? undefined
-    : relative(workspace.root, join(loaded.root, path)).replace(/\\/g, '/') || '.'
+    : relative(workspace.root, join(loaded.root, path)).split(sep).join('/') || '.'
 }
 
 function filterDiagnostics(diagnostics: readonly Diagnostic[], options: CheckOptions, inFiles: (diagnostic: Diagnostic) => boolean = () => true): Diagnostic[] {
@@ -202,7 +220,9 @@ function migrationHint(workspace: LoadedWorkspace, options: CheckOptions): strin
 
 /** A relative legacy path can name a selected file through a different root or a symlink. */
 function legacyPathInScope(entry: BaselineEntry, scope: Scope): boolean {
-  return (entry.workspace === undefined && !isAbsolute(entry.path)) || inScope(scope, entry.path)
+  return (entry.workspace === undefined && !isAbsolute(entry.path))
+    || (!entry.project && scope?.legacy(entry.path)?.has(true) === true)
+    || inScope(scope, entry.path)
 }
 
 interface BaselineSelection {
@@ -225,10 +245,23 @@ async function selectBaseline(workspace: LoadedWorkspace, options: CheckOptions,
     const owner = current.project
     const matches = options.project === undefined || (stored.workspace !== undefined && owner
       && workspace.projects.some(({ definition }) => definition.declaredIn === owner.declaredIn && definition.directory === owner.directory))
-    if (matches && reportsEntry(current, options, scope))
-      selected.push(current)
-    else
+    if (!matches || !reported(current, options)) {
       retained.push(stored)
+      continue
+    }
+    const membership = !owner && scope
+      ? scope.legacy(current.path)
+      : undefined
+    if (current.count !== 0 && membership && membership.size > 1)
+      throw new Error(`The older baseline uses "${stored.path}" for both a selected and an excluded filename. ${migrationHint(workspace, options)}`)
+    if (membership
+      ? membership.has(true)
+      : inScope(scope, current.path)) {
+      selected.push(current)
+    }
+    else {
+      retained.push(stored)
+    }
   }
   return {
     selected: { diagnostics: selected },
@@ -335,19 +368,21 @@ export async function check(files: readonly string[], options: CheckOptions): Pr
     await loaded.host.flush()
   }))
   const file = baselineFile(workspace, options)
-  // Check ownership before --fix can edit a resource in a project-scoped run.
-  const scoped = options.project === undefined
-    ? undefined
-    : await selectBaseline(workspace, options, scope, file).catch((error: unknown) => {
-        // History watchers can keep the CLI alive after it reports the migration error.
-        for (const { project } of workspace.projects)
-          project.dispose()
-        throw error
-      })
+  // Resolve ambiguous project or legacy file ownership before a fix can edit resources.
+  const preflight = options.project !== undefined || (level && scope && sep === '/')
+  const select = (): Promise<BaselineSelection | undefined> => selectBaseline(workspace, options, scope, file).catch((error: unknown) => {
+    // History watchers can keep the CLI alive after it reports a migration error.
+    for (const { project } of workspace.projects)
+      project.dispose()
+    throw error
+  })
+  const scoped = preflight
+    ? await select()
+    : undefined
   const fixes = level && await fix(workspace, options, scope, level)
-  const selection = options.project !== undefined
+  const selection = preflight
     ? scoped
-    : await selectBaseline(workspace, options, scope, file)
+    : await select()
   const baseline = options.updateBaseline
     ? await updateBaseline(workspace, options, scope, file, selection)
     : selection?.selected
