@@ -690,6 +690,8 @@ export default () => ({
     await writeFile(join(actual, 'x18n.config.json'), '{"projects":["shared"]}')
     await symlink(actual, join(parent, 'alias'), 'junction')
     await symlink(parent, join(dir, 'link'), 'junction')
+    await mkdir(join(parent, 'outer/node_modules'))
+    await symlink(actual, join(parent, 'outer/node_modules/pkg'), 'junction')
     const file = join(dir, 'known.json')
     const check = baselineCheck(dir, file, '--only', 'missing-key')
     for (const [root, alias] of [
@@ -697,6 +699,7 @@ export default () => ({
       ['parent/outer', 'parent/alias'],
       ['parent/outer', 'link/alias'],
       ['link/outer', 'parent/alias'],
+      ['parent/outer', 'parent/outer/node_modules/pkg'],
     ] as const) {
       await rm(file, { force: true })
       expect((await check('--root', root, '--update-baseline')).code).toBe(0)
@@ -706,6 +709,37 @@ export default () => ({
       expect((await check(...selected, '--update-baseline')).code).toBe(0)
       expect(await readFile(file, 'utf8')).toBe(before)
     }
+  })
+
+  it('refreshes the declaration named by a linked workspace package', async () => {
+    const dir = await mkdtemp(join(work, 'linked-member-'))
+    const actual = join(dir, 'packages/app')
+    const member = join(dir, 'web')
+    await cp(join(fixtures, 'vue-i18n'), actual, { recursive: true })
+    await writeFile(join(actual, 'x18n.config.json'), '{"name":"web"}')
+    await symlink(actual, member, 'junction')
+    await mkdir(join(dir, 'node_modules'))
+    await symlink(process.platform === 'win32'
+      ? member
+      : '../web', join(dir, 'node_modules/web'), 'junction')
+
+    const file = join(dir, 'known.json')
+    const check = baselineCheck(dir, file, '--only', 'missing-key')
+    expect(json(await check('--update-baseline')).data.baseline).toEqual({ suppressed: 2, fixed: 0 })
+    const fresh = join(dir, 'member-first.json')
+    const memberFirst = baselineCheck(dir, fresh, '--only', 'missing-key')
+    expect((await memberFirst('--root', 'node_modules/web', '--project', 'web', '--update-baseline')).code).toBe(0)
+    expect(json(await memberFirst()).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    expect(json(await memberFirst('--root', 'web', '--project', 'web')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+    expect((await memberFirst('--root', 'packages/app', '--project', 'web')).code).toBe(1)
+    const app = join(actual, 'src/App.vue')
+    await writeFile(app, (await readFile(app, 'utf8')).replace('app.titel', 'app.title'))
+    expect((await check('--root', 'node_modules/web', '--project', 'web', '--update-baseline')).code).toBe(0)
+    expect(JSON.parse(await readFile(file, 'utf8')).diagnostics).toMatchObject([
+      {
+        project: { declaredIn: 'packages/app', directory: 'packages/app' },
+      },
+    ])
   })
 
   it('keeps a default baseline portable when created through a workspace alias', async () => {

@@ -5,7 +5,7 @@ import type { ProjectDefinition, Workspace } from '@x18n/node'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import * as v from 'valibot'
-import { physicalPath } from './physical-path'
+import { discoveredPath, physicalPath } from './physical-path'
 
 /**
  * One known diagnostic and how often it occurs. It is identified by its reporting project, path, check, key, locale and message, not by
@@ -249,7 +249,7 @@ async function readBaselineFile(file: string): Promise<Baseline | undefined> {
   throw new Error(`the check baseline ${file} is not valid. Run \`x18n check --update-baseline\` to write it again.`)
 }
 
-export async function readBaseline(file: string, workspaceRoot: string, rebuild: boolean): Promise<SavedRow[] | undefined> {
+export async function readBaseline(file: string, workspace: Workspace, rebuild: boolean): Promise<SavedRow[] | undefined> {
   const baseline = await readBaselineFile(file).catch((error: unknown) => {
     if (!rebuild)
       throw error
@@ -264,7 +264,8 @@ export async function readBaseline(file: string, workspaceRoot: string, rebuild:
       return { stored, current: stored }
     let rebase = roots.get(stored.workspace)
     if (!rebase) {
-      rebase = rebaseRows(resolve(directory, stored.workspace), workspaceRoot)
+      const savedRoot = resolve(directory, stored.workspace)
+      rebase = rebaseRows(savedRoot, workspaceLocation(workspace, savedRoot))
       roots.set(stored.workspace, rebase)
     }
     return {
@@ -278,7 +279,7 @@ export async function readBaseline(file: string, workspaceRoot: string, rebuild:
  * Canonicalize the checkout prefix (including Windows short names), keeping any symlinks
  * named by the config's root option in the same positions as the project loader.
  */
-function workspaceLocation({ root, configFile }: Workspace): string {
+function workspaceLocation({ root, configFile }: Workspace, savedRoot?: string): string {
   let prefix = configFile
     ? dirname(configFile)
     : root
@@ -288,7 +289,24 @@ function workspaceLocation({ root, configFile }: Workspace): string {
       return physicalPath(root)
     prefix = parent
   }
-  return resolve(physicalPath(prefix), relative(prefix, root))
+  const location = savedRoot === undefined
+    ? physicalPath(prefix)
+    : discoveredPath(savedRoot, prefix)
+  return resolve(location, relative(prefix, root))
+}
+
+/**
+ * An ignored package link names a member of its enclosing workspace. Save the member
+ * relative to that workspace even when it is the first project to populate the shared file.
+ */
+function initialWorkspace(loaded: Workspace, directory: string): string {
+  const member = workspaceLocation(loaded, directory)
+  if (member === loaded.root)
+    return workspaceLocation(loaded)
+  let parent = loaded.root
+  while (within(parent, member) === undefined && dirname(parent) !== parent)
+    parent = dirname(parent)
+  return parent
 }
 
 export async function writeBaseline(file: string, loaded: Workspace, baseline: Baseline, retained: readonly BaselineEntry[], previousWorkspace?: string): Promise<number> {
@@ -296,8 +314,9 @@ export async function writeBaseline(file: string, loaded: Workspace, baseline: B
   const directory = dirname(physicalPath(file))
   // The node loader resolves project definitions against its lexical root. A config root can be
   // a symlink: resolving ".." from its target would identify a different declaring directory.
-  const workspace = previousWorkspace ?? relativePath(directory, workspaceLocation(loaded))
-  const rebase = rebaseRows(loaded.root, resolve(directory, workspace))
+  const workspace = previousWorkspace ?? relativePath(directory, initialWorkspace(loaded, directory))
+  const savedRoot = resolve(directory, workspace)
+  const rebase = rebaseRows(workspaceLocation(loaded, savedRoot), savedRoot)
   const diagnostics = [
     ...baseline.diagnostics.map(entry => ({
       workspace,

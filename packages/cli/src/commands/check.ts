@@ -212,7 +212,7 @@ interface BaselineSelection {
 }
 
 async function selectBaseline(workspace: LoadedWorkspace, options: CheckOptions, scope: Scope, file: string): Promise<BaselineSelection | undefined> {
-  const rows = await readBaseline(file, workspace.root, options.project === undefined && !!options.updateBaseline)
+  const rows = await readBaseline(file, workspace, options.project === undefined && !!options.updateBaseline)
   if (!rows)
     return undefined
   const selected: BaselineEntry[] = []
