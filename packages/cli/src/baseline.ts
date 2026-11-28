@@ -1,7 +1,7 @@
 // Baseline after i18next-cli (MIT, https://github.com/i18next/i18next-cli), src/utils/lint-baseline.ts,
 // and ESLint bulk suppressions.
 import type { BaselineSummary, Diagnostic } from '@x18n/core'
-import type { ProjectDefinition } from '@x18n/node'
+import type { ProjectDefinition, Workspace } from '@x18n/node'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import * as v from 'valibot'
@@ -274,13 +274,30 @@ export async function readBaseline(file: string, workspaceRoot: string, rebuild:
   })
 }
 
-export async function writeBaseline(file: string, root: string, baseline: Baseline, retained: readonly BaselineEntry[], previousWorkspace?: string): Promise<number> {
+/**
+ * Canonicalize the checkout prefix (including Windows short names), keeping any symlinks
+ * named by the config's root option in the same positions as the project loader.
+ */
+function workspaceLocation({ root, configFile }: Workspace): string {
+  let prefix = configFile
+    ? dirname(configFile)
+    : root
+  while (within(prefix, root) === undefined) {
+    const parent = dirname(prefix)
+    if (parent === prefix)
+      return physicalPath(root)
+    prefix = parent
+  }
+  return resolve(physicalPath(prefix), relative(prefix, root))
+}
+
+export async function writeBaseline(file: string, loaded: Workspace, baseline: Baseline, retained: readonly BaselineEntry[], previousWorkspace?: string): Promise<number> {
   await mkdir(dirname(file), { recursive: true })
   const directory = dirname(physicalPath(file))
   // The node loader resolves project definitions against its lexical root. A config root can be
   // a symlink: resolving ".." from its target would identify a different declaring directory.
-  const workspace = previousWorkspace ?? relativePath(directory, root)
-  const rebase = rebaseRows(root, resolve(directory, workspace))
+  const workspace = previousWorkspace ?? relativePath(directory, workspaceLocation(loaded))
+  const rebase = rebaseRows(loaded.root, resolve(directory, workspace))
   const diagnostics = [
     ...baseline.diagnostics.map(entry => ({
       workspace,

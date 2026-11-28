@@ -240,7 +240,7 @@ async function selectBaseline(workspace: LoadedWorkspace, options: CheckOptions,
 /** Refresh the reported diagnostics and keep the original rows outside this run. */
 async function updateBaseline(workspace: LoadedWorkspace, options: CheckOptions, scope: Scope, file: string, selection: BaselineSelection | undefined): Promise<Baseline> {
   const baseline = createBaseline(locate(workspace, options, scope))
-  const count = await writeBaseline(file, workspace.root, baseline, selection?.retained ?? [], selection?.workspace)
+  const count = await writeBaseline(file, workspace, baseline, selection?.retained ?? [], selection?.workspace)
   process.stderr.write(`Wrote ${count} ${count === 1
     ? 'diagnostic'
     : 'diagnostics'} to the baseline ${relative(cwd(), file).replace(/\\/g, '/')}.\n`)

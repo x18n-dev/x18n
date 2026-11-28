@@ -708,6 +708,25 @@ export default () => ({
     }
   })
 
+  it('keeps a default baseline portable when created through a workspace alias', async () => {
+    const dir = await mkdtemp(join(work, 'portable-baseline-'))
+    const actual = join(dir, 'actual')
+    await cp(join(fixtures, 'vue-i18n'), actual, { recursive: true })
+    await symlink(actual, join(dir, 'alias'), 'junction')
+    expect((await x18n(dir, [
+      'check',
+      '--root',
+      'alias',
+      '--update-baseline',
+    ])).code).toBe(0)
+    const file = '.x18n/check-baseline.json'
+    const original = await readFile(join(actual, file), 'utf8')
+    expect(JSON.parse(original).diagnostics[0].workspace).toBe('..')
+    await rename(actual, join(dir, 'moved'))
+    const check = await x18n(dir, ['check', '--root', 'moved', '--json'])
+    expect(json(check).data.baseline).toEqual({ suppressed: 6, fixed: 0 })
+  })
+
   it('keeps a declaring directory outside a symlinked config root', async () => {
     const dir = await mkdtemp(join(work, 'linked-root-'))
     const resources = join(dir, 'outside/resources')
