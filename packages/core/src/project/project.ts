@@ -2,7 +2,7 @@ import type { X18nError } from '../errors'
 import type { Setup } from '../resolve'
 import type { KeySeparator } from '../types/config'
 import type { FileEvent, Host } from '../types/host'
-import type { Diagnostic, KeyString, LocaleCode, LocaleInfo, Message, MessageLeaf, MessageTree, Resource, TextRange, Usage } from '../types/model'
+import type { Diagnostic, KeyString, LocaleCode, LocaleInfo, Message, MessageLeaf, MessageNode, MessageTree, Resource, TextRange, Usage } from '../types/model'
 import type { FinderContext, HardString, HistoryContext, KeyFile, ParseResult, ScanResult, SourceFile } from '../types/plugin'
 import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, ResourceNode, SearchMatch, SearchOptions, UsageMatch } from '../types/project'
 import type { MachineRecord, ReviewData, ReviewFilter, ReviewThread } from '../types/review'
@@ -74,6 +74,8 @@ interface ResourceIndex {
   readonly keyPaths: Map<KeyString, { namespace: string | undefined, path: string[] }>
   readonly nodes: Map<string, ResourceNode[]>
   readonly parents: Set<KeyString>
+  /** The keys of the nodes that are arrays, a subset of `parents`. */
+  readonly arrays: Set<KeyString>
   readonly derived: Map<KeyString, KeyString[]>
 }
 
@@ -675,6 +677,7 @@ export function createProject(options: CreateProjectOptions): Project {
     readonly keyPaths: Map<KeyString, { namespace: string | undefined, path: string[] }>
     readonly nodes: Map<string, ResourceNode[]>
     readonly parents: Set<KeyString>
+    readonly arrays: Set<KeyString>
     readonly usages: Usage[]
     readonly usagesByKey: Map<KeyString, Usage[]>
     readonly prefixUsages: Usage[]
@@ -687,12 +690,13 @@ export function createProject(options: CreateProjectOptions): Project {
     const keyPaths = new Map<KeyString, { namespace: string | undefined, path: string[] }>()
     const nodes = new Map<string, ResourceNode[]>()
     const parents = new Set<KeyString>()
+    const arrays = new Set<KeyString>()
     for (const state of resourceStates.values()) {
       const { resource } = state
       const fileNodes = nodes.get(resource.path) ?? []
       nodes.set(resource.path, fileNodes)
       const shift = (range: TextRange): TextRange => ({ start: range.start + state.offset, end: range.end + state.offset })
-      const visit = (tree: MessageTree, stored: string[]): void => {
+      const visit = (tree: MessageTree | readonly MessageNode[], stored: string[]): void => {
         for (const [segment, child] of Object.entries(tree)) {
           const path = [...stored, segment]
           const key = keyFor(resource, path)
@@ -744,6 +748,8 @@ export function createProject(options: CreateProjectOptions): Project {
           }
           else {
             parents.add(key)
+            if (Array.isArray(child))
+              arrays.add(key)
             visit(child, path)
           }
         }
@@ -770,6 +776,7 @@ export function createProject(options: CreateProjectOptions): Project {
       keyPaths,
       nodes,
       parents,
+      arrays,
       derived,
     }
   }
@@ -907,6 +914,7 @@ export function createProject(options: CreateProjectOptions): Project {
       ],
       messages: idx().messages,
       parents: idx().parents,
+      arrays: idx().arrays,
       usages: idx().usages,
       usagesByKey: idx().usagesByKey,
       prefixUsages: idx().prefixUsages,

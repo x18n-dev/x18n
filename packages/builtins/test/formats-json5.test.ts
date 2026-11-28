@@ -102,7 +102,10 @@ describe('json5 format', () => {
       return undefined
     }
     expect(code('{ a: ')).toBe('X18N2002')
+    // Arrays are read from JSON only, and JSON5 cannot write one back yet.
     expect(code('{ a: [1] }')).toBe('X18N2003')
+    expect(code('{ a: { b: [] } }')).toBe('X18N2003')
+    expect(code('{ a: { b: [{ c: 1 }] } }')).toBe('X18N2003')
     expect(() => format.edit!('{ a: ', [
       {
         type: 'delete',

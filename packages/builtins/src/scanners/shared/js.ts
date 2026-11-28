@@ -27,6 +27,7 @@ interface CallDetails {
   readonly params?: readonly string[]
   readonly paramValues?: Readonly<Record<string, string>>
   readonly defaultValue?: string
+  readonly subtree?: boolean
 }
 
 /** A value read from call arguments: an AST node, or the props of a JSX element seen as one object argument. */
@@ -406,6 +407,33 @@ class FileScan {
     return names
   }
 
+  /**
+   * True when the options object of the call names the option, unless its value is plainly false. A value the scanner cannot
+   * read (a variable, an expression) may be true: a key that is kept is safer than one that is deleted.
+   */
+  optionMayBeTrue(args: readonly ArgValue[], source: ParamsSource, name: string): boolean {
+    return [source.arg].flat().some((index) => {
+      const value = args[index]
+      const node = value && !('props' in value)
+        ? unwrap(value)
+        : undefined
+      return node?.type === 'ObjectExpression' && node.properties.some(property => property.type === 'Property'
+        && !property.computed
+        && propertyName(property.key) === name
+        && !(property.value.type === 'Literal'
+          ? !property.value.value
+          : property.value.type === 'Identifier' && property.value.name === 'undefined'))
+    })
+  }
+
+  /** The call takes the subtree under its key: always, or when the option the spec names may be `true`. */
+  takesSubtree(args: readonly ArgValue[], spec: CallSpec): boolean {
+    const { subtree } = spec
+    return typeof subtree === 'object'
+      ? spec.params !== undefined && this.optionMayBeTrue(args, spec.params, subtree.option)
+      : subtree === true
+  }
+
   callDetails(args: readonly ArgValue[], spec: CallSpec): CallDetails {
     const params = spec.params
       ? this.paramNames(args, spec.params)
@@ -426,6 +454,9 @@ class FileScan {
       ...defaultValue === undefined
         ? {}
         : { defaultValue },
+      ...this.takesSubtree(args, spec)
+        ? { subtree: true }
+        : {},
     }
   }
 
@@ -675,6 +706,7 @@ class FileScan {
             params: spec.params,
             defaultValue: spec.defaultValue,
             description: spec.description,
+            subtree: spec.subtree,
           },
           namespace,
           keyPrefix,

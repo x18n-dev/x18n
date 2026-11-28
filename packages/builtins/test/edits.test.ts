@@ -819,3 +819,43 @@ describe('prompts', () => {
     expect(project.prompt('review', 'de', { check: true }).items.map(i => i.key)).toEqual(['greeting', 'ok', 'save'])
   })
 })
+
+describe('a set that is skipped', () => {
+  const files = {
+    'package.json': json({
+      dependencies: { 'vue-i18n': '*' },
+    }),
+    'src/locales/en.json': '{\n  "z": "Z",\n  "menu": { "open": "Open" },\n  "a": "A"\n}\n',
+  }
+
+  it.each([
+    ['in place', {}],
+    [
+      'written in full, sorted',
+      {
+        write: { sort: 'binary' },
+      },
+    ],
+  ] as const)('plans no change to the file, files %s', async (_name, config) => {
+    const { project } = await createTestProject(files, config as never)
+    // `replace: false` skips a key under a message, and a key that is a parent of other keys, with a warning.
+    const plan = project.plan([
+      {
+        type: 'set',
+        key: 'menu.open.deeper',
+        locale: 'en',
+        value: 'x',
+        replace: false,
+      },
+      {
+        type: 'set',
+        key: 'menu',
+        locale: 'en',
+        value: 'x',
+        replace: false,
+      },
+    ])
+    expect(plan.warnings).toHaveLength(2)
+    expect(plan.changes).toEqual([])
+  })
+})

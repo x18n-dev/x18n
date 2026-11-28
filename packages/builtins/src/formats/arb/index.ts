@@ -1,13 +1,13 @@
 import type { MessageTree, Plugin } from '@x18n/core'
 import type { JsonOptions } from '../shared/json'
-import { isMessageLeaf, pathId } from '@x18n/core'
+import { isMessageObject, pathId } from '@x18n/core'
 import { createJsonFormat } from '../shared/json'
 
 /** The `description` of each `@key` metadata entry, keyed by the path of `key`. */
 function descriptionsOf(tree: MessageTree): Map<string, string> {
   const descriptions = new Map<string, string>()
   for (const [name, entry] of Object.entries(tree)) {
-    if (!name.startsWith('@') || name.startsWith('@@') || isMessageLeaf(entry))
+    if (!name.startsWith('@') || name.startsWith('@@') || !isMessageObject(entry))
       continue
     const description = entry.description
     if (typeof description === 'string' && description.trim() !== '') {

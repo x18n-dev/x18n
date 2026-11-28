@@ -135,8 +135,14 @@ interface ParseResult {
 }
 
 type MessageOp
-  = | { type: 'set', path: readonly string[], value: MessageLeaf }
-    | { type: 'delete', path: readonly string[] }
+  = | {
+    type: 'set'
+    path: readonly string[]
+    value: MessageLeaf
+    /** What each new parent on the path is, `array` or `object` (`shape[i]` is the node at `path.slice(0, i + 1)`). A parent that exists keeps its shape. Without a shape a new parent is an object. */
+    shape?: readonly ('array' | 'object')[]
+  }
+  | { type: 'delete', path: readonly string[] }
 // Renames are planned by core: in-place key text edits, or delete + set (D33).
 ```
 
@@ -210,6 +216,8 @@ interface CallSpec {
   readonly factory?: boolean
   /** Type names that mark a parameter or prop as a translate function: ['TFunction']. */
   readonly types?: readonly string[]
+  /** The call returns everything under its key (vue-i18n `tm('list')`). The messages below the key count as used. `{ option }`: only when the call writes that option and its value is not plainly false (i18next `returnObjects`). */
+  readonly subtree?: boolean | { readonly option: string }
 }
 ```
 

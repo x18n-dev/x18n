@@ -148,14 +148,14 @@ describe('locale info', () => {
 })
 
 describe('isMessageTree', () => {
-  it('accepts nested objects of leaves only', () => {
+  it('accepts nested objects of leaves, and arrays in them', () => {
     expect(isMessageTree({
       a: 'x',
       b: { c: 1, d: null, e: true },
     })).toBe(true)
     expect(isMessageTree(['a'])).toBe(false)
     expect(isMessageTree({
-      a: ['x'],
+      a: undefined,
     })).toBe(false)
   })
 })

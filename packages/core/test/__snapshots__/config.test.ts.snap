@@ -677,6 +677,25 @@ exports[`schemas > config schema 1`] = `
                 },
                 "type": "array",
               },
+              "subtree": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "option": {
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "option",
+                    ],
+                    "type": "object",
+                  },
+                ],
+              },
               "types": {
                 "items": {
                   "type": "string",
@@ -1207,6 +1226,25 @@ exports[`schemas > plugin schema 1`] = `
                   "type": "string",
                 },
                 "type": "array",
+              },
+              "subtree": {
+                "anyOf": [
+                  {
+                    "type": "boolean",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "option": {
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "option",
+                    ],
+                    "type": "object",
+                  },
+                ],
               },
               "types": {
                 "items": {
