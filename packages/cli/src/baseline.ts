@@ -3,14 +3,17 @@
 import type { BaselineSummary, Diagnostic } from '@x18n/core'
 import type { ProjectDefinition } from '@x18n/node'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import * as v from 'valibot'
+import { physicalPath } from './physical-path'
 
 /**
  * One known diagnostic and how often it occurs. It is identified by its reporting project, path, check, key, locale and message, not by
  * its line, so moving code keeps it in the baseline, while one more identical diagnostic in the same file is new.
  */
 export interface BaselineEntry {
+  /** Root for this row's paths, relative to the directory containing the baseline file. */
+  readonly workspace?: string
   /** Present when the baseline records which project reported this diagnostic. */
   readonly project?: ProjectDefinition
   /** File relative to the workspace root, with `/`; the project directory for diagnostics without a location. */
@@ -29,6 +32,7 @@ export interface Baseline {
 
 const BaselineSchema = v.object({
   diagnostics: v.array(v.object({
+    workspace: v.exactOptional(v.string()),
     project: v.exactOptional(v.object({
       declaredIn: v.string(),
       directory: v.string(),
@@ -87,10 +91,8 @@ function order(a: Identity, b: Identity): number {
 }
 
 /** The baseline that holds these diagnostics, sorted so that diffs stay small. */
-export function createBaseline(located: readonly Located[], kept: readonly BaselineEntry[] = []): Baseline {
+export function createBaseline(located: readonly Located[]): Baseline {
   const entries = new Map<string, BaselineEntry>()
-  for (const entry of kept)
-    entries.set(idOf(entry), entry)
   for (const item of located) {
     const id = identity(item)
     const key = idOf(id)
@@ -112,29 +114,15 @@ export function createBaseline(located: readonly Located[], kept: readonly Basel
   }
 }
 
-/** Keep entries outside this project check unchanged, including their occurrence counts. */
-export function includeUnreportedEntries(selected: Baseline, outsideScope: readonly BaselineEntry[]): Baseline {
-  return outsideScope.length
-    ? {
-        diagnostics: [
-          ...selected.diagnostics,
-          ...outsideScope,
-        ].sort(order),
-      }
-    : selected
-}
-
 /**
  * Leaves out the diagnostics the baseline holds, up to the count of each entry. `fixed` counts the entries that no
- * longer occur; `relevant` limits it to the entries this run could have reported (see `--only`).
+ * longer occur in the selected baseline.
  */
-export function applyBaseline<T extends Located>(located: readonly T[], baseline: Baseline, relevant: (entry: BaselineEntry) => boolean = () => true): { kept: T[] } & BaselineSummary {
+export function applyBaseline<T extends Located>(located: readonly T[], baseline: Baseline): { kept: T[] } & BaselineSummary {
   const left = new Map<string, number>()
   for (const entry of baseline.diagnostics) {
-    if (relevant(entry)) {
-      const id = idOf(entry)
-      left.set(id, (left.get(id) ?? 0) + entry.count)
-    }
+    const id = idOf(entry)
+    left.set(id, (left.get(id) ?? 0) + entry.count)
   }
   let suppressed = 0
   const kept = located.filter((item) => {
@@ -156,8 +144,92 @@ export function applyBaseline<T extends Located>(located: readonly T[], baseline
   return { kept, suppressed, fixed }
 }
 
+function relativePath(root: string, path: string): string {
+  return relative(root, path).split(sep).join('/') || '.'
+}
+
+function within(root: string, path: string): string | undefined {
+  const suffix = relative(root, path)
+  return suffix === '..' || suffix.startsWith(`..${sep}`) || isAbsolute(suffix)
+    ? undefined
+    : suffix
+}
+
+/**
+ * Map two spellings of the same workspace (or its ancestors) without collapsing
+ * distinct project paths inside it, such as projects matched through different symlinks.
+ */
+function rebaseRows(from: string, to: string): (entry: BaselineEntry) => BaselineEntry {
+  if (from === to)
+    return entry => entry
+  const ancestors = (root: string): string[] => {
+    const paths = [root]
+    for (let dir = root; dirname(dir) !== dir; dir = dirname(dir))
+      paths.push(dirname(dir))
+    return paths
+  }
+  const destinations = new Map(ancestors(to).map(dir => [
+    physicalPath(dir),
+    dir,
+  ]))
+  const aliases: [string, string][] = []
+  for (const source of ancestors(from)) {
+    const destination = destinations.get(physicalPath(source))
+    if (destination === source)
+      break
+    if (destination)
+      aliases.push([source, destination])
+  }
+  // An external alias can enter a subdirectory of the original workspace directly.
+  if (!aliases.length && within(from, to) === undefined && within(to, from) === undefined) {
+    const enters = (start: string, root: string): [string, string] | undefined => {
+      const physicalRoot = physicalPath(root)
+      for (const dir of ancestors(start).reverse()) {
+        const suffix = within(physicalRoot, physicalPath(dir))
+        if (suffix !== undefined) {
+          return [
+            dir,
+            resolve(root, suffix),
+          ]
+        }
+      }
+    }
+    const fromAlias = enters(from, to)
+    const toAlias = enters(to, from)
+    if (fromAlias)
+      aliases.push(fromAlias)
+    else if (toAlias)
+      aliases.push([toAlias[1], toAlias[0]])
+  }
+  const path = (value: string): string => {
+    const absolute = resolve(from, value)
+    for (const [source, destination] of aliases) {
+      const inside = within(source, absolute)
+      if (inside !== undefined)
+        return relativePath(to, resolve(destination, inside))
+    }
+    return relativePath(to, absolute)
+  }
+  return entry => ({
+    ...entry,
+    ...entry.project && {
+      project: {
+        ...entry.project,
+        declaredIn: path(entry.project.declaredIn),
+        directory: path(entry.project.directory),
+      },
+    },
+    path: path(entry.path),
+  })
+}
+
+interface SavedRow {
+  readonly stored: BaselineEntry
+  readonly current: BaselineEntry
+}
+
 /** The baseline, or undefined when the file does not exist. A file that does not parse throws. */
-export async function readBaseline(file: string): Promise<Baseline | undefined> {
+async function readBaselineFile(file: string): Promise<Baseline | undefined> {
   let text: string
   try {
     text = await readFile(file, 'utf8')
@@ -172,13 +244,50 @@ export async function readBaseline(file: string): Promise<Baseline | undefined> 
     value = JSON.parse(text)
   }
   catch {}
-  // Keep the original rows, including extra fields on entries outside a scoped refresh.
   if (v.is(BaselineSchema, value))
     return value
   throw new Error(`the check baseline ${file} is not valid. Run \`x18n check --update-baseline\` to write it again.`)
 }
 
-export async function writeBaseline(file: string, baseline: Baseline): Promise<void> {
+export async function readBaseline(file: string, workspaceRoot: string, rebuild: boolean): Promise<SavedRow[] | undefined> {
+  const baseline = await readBaselineFile(file).catch((error: unknown) => {
+    if (!rebuild)
+      throw error
+    return undefined
+  })
+  if (!baseline)
+    return undefined
+  const directory = dirname(physicalPath(file))
+  const roots = new Map<string, (entry: BaselineEntry) => BaselineEntry>()
+  return baseline.diagnostics.map((stored) => {
+    if (stored.workspace === undefined)
+      return { stored, current: stored }
+    let rebase = roots.get(stored.workspace)
+    if (!rebase) {
+      rebase = rebaseRows(resolve(directory, stored.workspace), workspaceRoot)
+      roots.set(stored.workspace, rebase)
+    }
+    return {
+      stored,
+      current: rebase(stored),
+    }
+  })
+}
+
+export async function writeBaseline(file: string, root: string, baseline: Baseline, retained: readonly BaselineEntry[], previousWorkspace?: string): Promise<number> {
   await mkdir(dirname(file), { recursive: true })
-  await writeFile(file, `${JSON.stringify(baseline, null, 2)}\n`)
+  const directory = dirname(physicalPath(file))
+  // The node loader resolves project definitions against its lexical root. A config root can be
+  // a symlink: resolving ".." from its target would identify a different declaring directory.
+  const workspace = previousWorkspace ?? relativePath(directory, root)
+  const rebase = rebaseRows(root, resolve(directory, workspace))
+  const diagnostics = [
+    ...baseline.diagnostics.map(entry => ({
+      workspace,
+      ...rebase(entry),
+    })),
+    ...retained,
+  ].sort(order)
+  await writeFile(file, `${JSON.stringify({ diagnostics }, null, 2)}\n`)
+  return diagnostics.reduce((sum, entry) => sum + entry.count, 0)
 }

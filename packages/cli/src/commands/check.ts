@@ -2,13 +2,13 @@ import type { BaselineSummary, Diagnostic, FixSummary, Reporter, ReportInput } f
 import type { LoadedProject, LoadedWorkspace, Workspace } from '@x18n/node'
 import type { Baseline, BaselineEntry, Located } from '../baseline'
 import type { GlobalOptions } from '../context'
-import { realpathSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
-import { join, relative, resolve } from 'node:path'
+import { isAbsolute, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { errors } from '@x18n/core'
-import { applyBaseline, createBaseline, includeUnreportedEntries, readBaseline, writeBaseline } from '../baseline'
+import { applyBaseline, createBaseline, readBaseline, writeBaseline } from '../baseline'
 import { answer, cwd, displayPath, formatPlan, openWorkspace, out, useColor } from '../context'
+import { physicalPath } from '../physical-path'
 
 export interface CheckOptions extends GlobalOptions {
   readonly watch?: boolean | undefined
@@ -51,36 +51,26 @@ function reported(d: Pick<BaselineEntry, 'code' | 'locale' | 'message'>, options
     && !list(options.skip).includes(d.code)
 }
 
-/** Workspace-relative paths this run reports, or `undefined` for all files. */
-type Scope = ReadonlySet<string> | undefined
+/** Tests a workspace-relative path against the physical files selected on the command line. */
+type Scope = ((path: string) => boolean) | undefined
 
 function scopeOf(workspace: Workspace, files: readonly string[]): Scope {
-  // `process.cwd()` is the physical path, so a symlinked directory in an argument would not match otherwise.
-  const absolute = (file: string): string => {
-    const path = resolve(cwd(), file)
-    try {
-      return realpathSync(path)
-    }
-    catch {
-      return path
-    }
-  }
   if (files.length === 0)
     return undefined
-  const paths = new Set(files.map(file => relative(workspace.root, absolute(file)).replace(/\\/g, '/')))
+  const paths = new Set(files.map(file => physicalPath(resolve(cwd(), file))))
   // The baseline stores diagnostics without a location under their project's effective root.
   for (const loaded of workspace.projects)
-    paths.add(relative(workspace.root, loaded.root).replace(/\\/g, '/') || '.')
-  return paths
+    paths.add(physicalPath(loaded.root))
+  return path => paths.has(physicalPath(resolve(workspace.root, path)))
 }
 
-/** Whether the run reports a path. A diagnostic without a location stays: no file holds it. */
+/** A diagnostic without a location stays: no file holds it. */
 function inScope(scope: Scope, path: string | undefined): boolean {
-  return scope === undefined || path === undefined || scope.has(path)
+  return scope === undefined || path === undefined || scope(path)
 }
 
 function reportsEntry(entry: BaselineEntry, options: CheckOptions, scope: Scope): boolean {
-  return inScope(scope, entry.path) && reported(entry, options)
+  return reported(entry, options) && inScope(scope, entry.path)
 }
 
 /** The path of a diagnostic, posix and relative to the workspace root; `undefined` when it has no location. */
@@ -92,7 +82,7 @@ function pathOf(workspace: Workspace, loaded: LoadedProject, path: string | unde
 
 function filterDiagnostics(diagnostics: readonly Diagnostic[], options: CheckOptions, inFiles: (diagnostic: Diagnostic) => boolean = () => true): Diagnostic[] {
   return diagnostics
-    .filter(d => inFiles(d) && reported(d, options))
+    .filter(d => reported(d, options) && inFiles(d))
     .map(d => options.strict && d.severity === 'warning'
       ? { ...d, severity: 'error' as const }
       : d)
@@ -114,7 +104,7 @@ type Fixes = ReadonlyMap<LoadedProject, FixSummary>
 
 function reportInputs(workspace: LoadedWorkspace, options: CheckOptions, scope: Scope, baseline: Baseline | undefined, fixes?: Fixes): { inputs: ReportInput[], summary: BaselineSummary | undefined } {
   const located = locate(workspace, options, scope)
-  const applied = baseline && applyBaseline(located, baseline, entry => reportsEntry(entry, options, scope))
+  const applied = baseline && applyBaseline(located, baseline)
   const kept = applied?.kept ?? located
   const inputs = workspace.projects.map((loaded: LoadedProject) => {
     const analysis = loaded.project.analyze()
@@ -210,32 +200,47 @@ function migrationHint(workspace: LoadedWorkspace, options: CheckOptions): strin
   return `${scopeHint} From ${where}, run \`${command}\` to review the workspace check, then \`${command} --update-baseline\` once.`
 }
 
-/** Resource paths can cross project roots, so they cannot identify the project that reported a legacy entry. */
-async function readProjectBaseline(workspace: LoadedWorkspace, options: CheckOptions, scope: Scope, file: string): Promise<{ selected: Baseline | undefined, outsideScope: BaselineEntry[] }> {
-  const baseline = await readBaseline(file)
-  const selected: BaselineEntry[] = []
-  const outsideScope: BaselineEntry[] = []
-  for (const entry of baseline?.diagnostics ?? []) {
-    const owner = entry.project
-    if (reportsEntry(entry, options, scope)) {
-      if (!owner && entry.count !== 0)
-        throw new Error(`The baseline does not identify the project that reported "${entry.path}". ${migrationHint(workspace, options)}`)
-      if (owner && workspace.projects.some(({ definition }) => definition.declaredIn === owner.declaredIn && definition.directory === owner.directory)) {
-        selected.push(entry)
-        continue
-      }
-    }
-    outsideScope.push(entry)
-  }
-  return { selected: baseline && { diagnostics: selected }, outsideScope }
+/** A relative legacy path can name a selected file through a different root or a symlink. */
+function legacyPathInScope(entry: BaselineEntry, scope: Scope): boolean {
+  return (entry.workspace === undefined && !isAbsolute(entry.path)) || inScope(scope, entry.path)
 }
 
-/** Refresh the reported diagnostics and keep baseline entries outside this run. */
-async function updateBaseline(workspace: LoadedWorkspace, options: CheckOptions, scope: Scope, file: string, previous: Baseline | undefined, outsideScope: readonly BaselineEntry[] = []): Promise<Baseline> {
-  const baseline = createBaseline(locate(workspace, options, scope), previous?.diagnostics.filter(entry => !reportsEntry(entry, options, scope)))
-  const combined = includeUnreportedEntries(baseline, outsideScope)
-  await writeBaseline(file, combined)
-  const count = combined.diagnostics.reduce((sum, entry) => sum + entry.count, 0)
+interface BaselineSelection {
+  readonly selected: Baseline
+  readonly retained: readonly BaselineEntry[]
+  readonly workspace: string | undefined
+}
+
+async function selectBaseline(workspace: LoadedWorkspace, options: CheckOptions, scope: Scope, file: string): Promise<BaselineSelection | undefined> {
+  const rows = await readBaseline(file, workspace.root, options.project === undefined && !!options.updateBaseline)
+  if (!rows)
+    return undefined
+  const selected: BaselineEntry[] = []
+  const retained: BaselineEntry[] = []
+  for (const { stored, current } of rows) {
+    if (options.project !== undefined && (!current.project || stored.workspace === undefined)
+      && current.count !== 0 && reported(current, options) && legacyPathInScope(current, scope)) {
+      throw new Error(`The baseline does not identify the project and workspace that reported "${stored.path}". ${migrationHint(workspace, options)}`)
+    }
+    const owner = current.project
+    const matches = options.project === undefined || (stored.workspace !== undefined && owner
+      && workspace.projects.some(({ definition }) => definition.declaredIn === owner.declaredIn && definition.directory === owner.directory))
+    if (matches && reportsEntry(current, options, scope))
+      selected.push(current)
+    else
+      retained.push(stored)
+  }
+  return {
+    selected: { diagnostics: selected },
+    retained,
+    workspace: rows.find(row => row.stored.project && row.stored.workspace !== undefined)?.stored.workspace,
+  }
+}
+
+/** Refresh the reported diagnostics and keep the original rows outside this run. */
+async function updateBaseline(workspace: LoadedWorkspace, options: CheckOptions, scope: Scope, file: string, selection: BaselineSelection | undefined): Promise<Baseline> {
+  const baseline = createBaseline(locate(workspace, options, scope))
+  const count = await writeBaseline(file, workspace.root, baseline, selection?.retained ?? [], selection?.workspace)
   process.stderr.write(`Wrote ${count} ${count === 1
     ? 'diagnostic'
     : 'diagnostics'} to the baseline ${relative(cwd(), file).replace(/\\/g, '/')}.\n`)
@@ -333,22 +338,19 @@ export async function check(files: readonly string[], options: CheckOptions): Pr
   // Check ownership before --fix can edit a resource in a project-scoped run.
   const scoped = options.project === undefined
     ? undefined
-    : await readProjectBaseline(workspace, options, scope, file).catch((error: unknown) => {
+    : await selectBaseline(workspace, options, scope, file).catch((error: unknown) => {
         // History watchers can keep the CLI alive after it reports the migration error.
         for (const { project } of workspace.projects)
           project.dispose()
         throw error
       })
   const fixes = level && await fix(workspace, options, scope, level)
-  let baseline = scoped
-    ? scoped.selected
-    : await readBaseline(file).catch((error: unknown) => {
-        if (options.updateBaseline)
-          return undefined
-        throw error
-      })
-  if (options.updateBaseline)
-    baseline = await updateBaseline(workspace, options, scope, file, baseline, scoped?.outsideScope)
+  const selection = options.project !== undefined
+    ? scoped
+    : await selectBaseline(workspace, options, scope, file)
+  const baseline = options.updateBaseline
+    ? await updateBaseline(workspace, options, scope, file, selection)
+    : selection?.selected
   const code = await report(workspace, options, scope, baseline, fixes)
   if (!options.watch)
     return code
