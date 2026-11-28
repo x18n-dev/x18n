@@ -797,12 +797,20 @@ export default () => ({
     const file = join(dir, 'known.json')
     const check = baselineCheck(dir, file, '--only', 'missing-key')
     expect(json(await check('--update-baseline')).data.baseline).toEqual({ suppressed: 2, fixed: 0 })
-    const fresh = join(dir, 'member-first.json')
-    const memberFirst = baselineCheck(dir, fresh, '--only', 'missing-key')
-    expect((await memberFirst('--root', 'node_modules/web', '--project', 'web', '--update-baseline')).code).toBe(0)
-    expect(json(await memberFirst()).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
-    expect(json(await memberFirst('--root', 'web', '--project', 'web')).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
-    expect((await memberFirst('--root', 'packages/app', '--project', 'web')).code).toBe(1)
+    for (const [first, second] of [
+      ['node_modules/web', 'packages/app'],
+      ['web', 'packages/app'],
+      ['packages/app', 'web'],
+    ] as const) {
+      const fresh = join(dir, 'member-first.json')
+      await rm(fresh, { force: true })
+      const memberFirst = baselineCheck(dir, fresh, '--only', 'missing-key')
+      expect((await memberFirst('--root', first, '--project', 'web', '--update-baseline')).code).toBe(0)
+      expect(json(await memberFirst()).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
+      expect((await memberFirst('--root', second, '--project', 'web')).code).toBe(1)
+      expect((await memberFirst('--root', second, '--project', 'web', '--update-baseline')).code).toBe(0)
+      expect(json(await memberFirst()).data.baseline).toEqual({ suppressed: 2, fixed: 0 })
+    }
     const app = join(actual, 'src/App.vue')
     await writeFile(app, (await readFile(app, 'utf8')).replace('app.titel', 'app.title'))
     expect((await check('--root', 'node_modules/web', '--project', 'web', '--update-baseline')).code).toBe(0)

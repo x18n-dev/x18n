@@ -307,7 +307,11 @@ function workspaceLocation({ root, configFile }: Workspace, savedRoot?: string):
  * An ignored package link names a member of its enclosing workspace. Save the member
  * relative to that workspace even when it is the first project to populate the shared file.
  */
-function initialWorkspace(loaded: Workspace, directory: string): string {
+function initialWorkspace(loaded: Workspace, directory: string, projectScoped: boolean): string {
+  // An external file shared by individual declarations needs a common starting point,
+  // including when the first selected directory has a separately discoverable alias.
+  if (projectScoped && within(physicalPath(loaded.root), directory) === undefined)
+    return directory
   const member = workspaceLocation(loaded, directory)
   if (member === loaded.root)
     return workspaceLocation(loaded)
@@ -317,12 +321,12 @@ function initialWorkspace(loaded: Workspace, directory: string): string {
   return parent
 }
 
-export async function writeBaseline(file: string, loaded: Workspace, baseline: Baseline, retained: readonly BaselineEntry[], previousWorkspace?: string): Promise<number> {
+export async function writeBaseline(file: string, loaded: Workspace, baseline: Baseline, retained: readonly BaselineEntry[], previousWorkspace: string | undefined, projectScoped: boolean): Promise<number> {
   await mkdir(dirname(file), { recursive: true })
   const directory = dirname(physicalPath(file))
   // The node loader resolves project definitions against its lexical root. A config root can be
   // a symlink: resolving ".." from its target would identify a different declaring directory.
-  const workspace = previousWorkspace ?? relativePath(directory, initialWorkspace(loaded, directory))
+  const workspace = previousWorkspace ?? relativePath(directory, initialWorkspace(loaded, directory, projectScoped))
   const savedRoot = resolve(directory, workspace)
   const rebase = rebaseRows(workspaceLocation(loaded, savedRoot), savedRoot)
   const diagnostics = [
