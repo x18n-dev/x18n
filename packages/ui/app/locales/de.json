@@ -52,7 +52,8 @@
     "new": "Legt einen neuen Schlüssel an",
     "none": "Keine fest codierten Strings gefunden.",
     "one": "Diesen String extrahieren",
-    "strings": "Strings: {count}"
+    "strings": "Strings: {count}",
+    "uncertain": "Nach Reihenfolge zugeordnet: derselbe Text ist anderswo erschienen oder verschwunden, prüfe diesen Schlüssel vor dem Extrahieren."
   },
   "keys": {
     "allNamespaces": "Alle Namespaces",

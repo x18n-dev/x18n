@@ -52,7 +52,8 @@
     "new": "创建新键",
     "none": "未发现硬编码字符串。",
     "one": "提取此字符串",
-    "strings": "字符串：{count}"
+    "strings": "字符串：{count}",
+    "uncertain": "按顺序配对：相同文本在其他位置出现或消失，提取前请检查这个 key。"
   },
   "keys": {
     "allNamespaces": "所有命名空间",
