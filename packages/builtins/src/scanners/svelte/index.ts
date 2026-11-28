@@ -14,6 +14,20 @@ function isSvelteNode(value: unknown): value is SvelteNode {
   return typeof value === 'object' && value !== null && 'type' in value && typeof value.type === 'string' && 'start' in value && typeof value.start === 'number' && 'end' in value && typeof value.end === 'number'
 }
 
+// `<style>` blocks outside comments, found the way `preprocess` from `svelte/compiler` finds them for style preprocessors.
+const styleBlocks = /<!--[\s\S]*?-->|(<style(?:\s+[^=>'"/\s]+=(?:"[^"]*"|'[^']*'|[^"'>\s]+)|\s+[^=>'"/\s]+)*\s*>)([\s\S]*?)<\/style>/g
+
+/**
+ * Blanks the content of every `<style>` block, keeping offsets and line breaks. The parser rejects
+ * SCSS, Less and other style languages, which a preprocessor may apply without a `lang`, and
+ * styles hold no usages.
+ */
+function blankStyles(text: string): string {
+  return text.replace(styleBlocks, (block, open?: string, content = '') => open === undefined
+    ? block
+    : `${open}${content.replace(/[^\r\n]/g, ' ')}</style>`)
+}
+
 const expressionTypes = new Set([
   'ExpressionTag',
   'HtmlTag',
@@ -69,7 +83,7 @@ export function svelte(): Plugin {
         keySlots.push(...result.keySlots ?? [])
         hardStrings.push(...result.hardStrings ?? [])
       }
-      const ast: unknown = parse(file.text, { modern: true })
+      const ast: unknown = parse(blankStyles(file.text), { modern: true })
       const scan = (text: string, offset: number, expression: boolean): void => {
         try {
           add(scanSource(parseJs, text, {
