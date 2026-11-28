@@ -181,7 +181,7 @@ function rebaseRows(from: string, to: string): (entry: BaselineEntry) => Baselin
       aliases.push([source, destination])
   }
   // An external alias can enter a subdirectory of the original workspace directly.
-  if (!aliases.length && within(from, to) === undefined && within(to, from) === undefined) {
+  if (within(from, to) === undefined && within(to, from) === undefined) {
     const enters = (start: string, root: string): [string, string] | undefined => {
       const physicalRoot = physicalPath(root)
       for (const dir of ancestors(start).reverse()) {
@@ -197,9 +197,9 @@ function rebaseRows(from: string, to: string): (entry: BaselineEntry) => Baselin
     const fromAlias = enters(from, to)
     const toAlias = enters(to, from)
     if (fromAlias)
-      aliases.push(fromAlias)
+      aliases.unshift(fromAlias)
     else if (toAlias)
-      aliases.push([toAlias[1], toAlias[0]])
+      aliases.unshift([toAlias[1], toAlias[0]])
   }
   const path = (value: string): string => {
     const absolute = resolve(from, value)

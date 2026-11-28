@@ -684,22 +684,24 @@ export default () => ({
 
   it('uses the same baseline through a workspace directory alias', async () => {
     const dir = await mkdtemp(join(work, 'aliased-workspace-'))
-    const actual = join(dir, 'outer/nested')
+    const parent = join(dir, 'parent')
+    const actual = join(parent, 'outer/nested')
     await cp(join(fixtures, 'vue-i18n'), join(actual, 'shared'), { recursive: true })
     await writeFile(join(actual, 'x18n.config.json'), '{"projects":["shared"]}')
-    await symlink(actual, join(dir, 'alias'), 'junction')
+    await symlink(actual, join(parent, 'alias'), 'junction')
+    await symlink(parent, join(dir, 'link'), 'junction')
     const file = join(dir, 'known.json')
     const check = baselineCheck(dir, file, '--only', 'missing-key')
-    const selected = [
-      '--root',
-      'alias',
-      '--project',
-      'shared',
-    ]
-    for (const root of ['outer/nested', 'outer']) {
+    for (const [root, alias] of [
+      ['parent/outer/nested', 'parent/alias'],
+      ['parent/outer', 'parent/alias'],
+      ['parent/outer', 'link/alias'],
+      ['link/outer', 'parent/alias'],
+    ] as const) {
       await rm(file, { force: true })
       expect((await check('--root', root, '--update-baseline')).code).toBe(0)
       const before = await readFile(file, 'utf8')
+      const selected = ['--root', alias, '--project', 'shared']
       expect(json(await check(...selected)).data.baseline).toEqual({ suppressed: 1, fixed: 0 })
       expect((await check(...selected, '--update-baseline')).code).toBe(0)
       expect(await readFile(file, 'utf8')).toBe(before)
